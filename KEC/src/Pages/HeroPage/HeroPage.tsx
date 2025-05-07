@@ -100,8 +100,8 @@ const HeroPage = () => {
                   "polygon(0 0, 100% 0, 100% 100%, 87% 94%, 71% 100%, 53% 94%, 37% 100%, 19% 94%, 0 100%)",
               }}
             />
-            <h1 className="text-white top-14 w-[50%] ml-3 font-bold left-0 absolute">
-              Explore comprehensive course in Mechanical Engineering
+            <h1 className="text-white top-1/9 w-[40%] ml-3 font-bold left-0 absolute">
+              Explore comprehensive course in Mechanical <span className="text-[#022F40]">Engineering</span>
             </h1>
             <p className="align-justify pl-3 font-poppins pt-7 w-[100%] text-[.7rem] text-[black]">
               Learn from top experts and gain skills in mechanical Engineering
@@ -110,14 +110,14 @@ const HeroPage = () => {
               beginner or looking to advance your career, our platform offers
               flexible, accessible learning to meet your needs.
             </p>
-            <div className="flex justify-between mb-4 w-[40%] align-center">
+            <div className="flex justify-between mb-4 w-[150px] align-center">
               <button
-                className={`justify-center px-1 py-1 text-[11px] border-solid border-[1px] font-Poppins transition-all ease-in-out duration-500 cursor-pointer border-[#022F40] hover:border-[#022F40] font-normal hover:bg-white hover:text-[#022F40]  text-white rounded-md bg-[#022F40] h-auto w-full shadow-md mt-6 ml-3`}
+                className={`justify-center px-1 py-1 text-[11px]  border-none font-Poppins transition-all ease-in-out duration-500 cursor-pointer border-[#022F40] hover:border-[#022F40] font-normal hover:bg-white hover:text-[#022F40]  text-white rounded-[4px] bg-[#022F40] h-auto w-full shadow-md mt-6 ml-3`}
               >
                 Create Account
               </button>
               <button
-                className={`justify-center px-1 py-1 text-[11px] border-solid border-[1px] font-Poppins transition-all ease-in-out duration-500 cursor-pointer border-[#022F40] hover:border-[#022F40] font-normal hover:bg-[#022F40] hover:text-[white]  text-[#022F40] rounded-md bg-[white] mt-6 shadow-xl ml-1`}
+                className={`justify-center px-1 py-1 text-[11px] border-none border-[0.1px] font-Poppins transition-all ease-in-out duration-500 cursor-pointer border-[#022F40] hover:border-[#022F40] font-normal hover:bg-[#022F40] hover:text-[white]  text-[#022F40] rounded-[4px] bg-[white] mt-6 shadow-xl ml-1`}
               >
                 Login
               </button>

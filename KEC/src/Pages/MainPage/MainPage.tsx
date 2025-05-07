@@ -10,6 +10,13 @@ const MainPage = () => {
       </div>
     );
   };
+  const PhoneArrow = () => {
+    return (
+      <div className="flex items-center justify-center w-[20px] h-[20px] bg-white rounded-full shadow-lg cursor-pointer ml-0">
+        <FaArrowRight size={1.5} className="text-[#000] w-3 h-3" />
+      </div>
+    );
+  };
   const data: { title: string; content: string }[] = [
     {
       title: "Easy to use",
@@ -49,7 +56,11 @@ const MainPage = () => {
             </div>
             <div className="flex w-full">
               <div className="w-[50%]">
-                <img src="/images/subHero.png" className="object-fit h-[440px]" alt="" />
+                <img
+                  src="/images/subHero.png"
+                  className="object-fit h-[440px]"
+                  alt=""
+                />
               </div>
               <div className="w-[50%]">
                 {data.map((i) => {
@@ -59,12 +70,71 @@ const MainPage = () => {
                         {ArrowIcon()}
                       </div>
                       <div className="align-justify">
-                        <h1 className="font-semiBold text-2xl text-[#022F40] font-bold">{i.title}</h1>
-                        <p className="text-[13px]  lg:text-[16px]">{i.content}</p>
+                        <h1 className="font-semiBold text-2xl text-[#022F40] font-bold">
+                          {i.title}
+                        </h1>
+                        <p className="text-[13px]  lg:text-[16px]">
+                          {i.content}
+                        </p>
                       </div>
                     </div>
                   );
                 })}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* mobile stuff */}
+      <div className={`block sm:hidden ${styles.parent_section}`}>
+        <div className={`block sm:hidden ${styles.section}`}>
+          <div className="block w-full">
+            <div className="flex my-3 justify-center">
+              <h1 className="full text-[20px] font-bold ">How we work</h1>
+            </div>
+            <div className="align-justify text-[11px] font-poppins ">
+              <p>
+                Welcome to our platform, offering comprehensive online courses
+                in Mechanical Engineering. Here's how our system works to
+                provide an exceptional learning experience.
+              </p>
+              <img
+                src="/images/subHero.png"
+                alt=""
+                className="h-[200px] w-full pt-2"
+              />
+              <div className="flex mt-5 w-full">
+                <div className="block  w-[50%]">
+                  {data.map((i) => {
+                    return (
+                      <div className="flex align-center  gap-4 w-full pb-4">
+                        <div className="flex  justify-start  ">
+                          {PhoneArrow()}
+                        </div>
+                        <div className="align-center">
+                          <h1 className="font-semiBold text-[12px]  text-[#000] font-bold">
+                            {i.title}
+                          </h1>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="block align-justify w-[50%] bg-white shadow-lg rounded-[3px] h-[125px]">
+                  {data.map((i,index) => {
+                    return (
+                      <div className=" ml-2 block justify-center">
+                        <div className="w-[90%] mx-auto flex justify-center">
+                        <h3 className="font-bold">  {index===1 ? i.title :""}</h3>
+                        </div>
+                      <p className="text-[9px] w-[90%] font-medium font-poppins  mx-auto my-auto  ">
+                        {index===1 ? i.content :""}
+                      </p>
+                    </div>
+                    );
+                  })}
+                </div>
               </div>
             </div>
           </div>
