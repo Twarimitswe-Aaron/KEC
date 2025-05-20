@@ -58,7 +58,7 @@ const MainPage = () => {
               <div className="w-[50%]">
                 <img
                   src="/images/subHero.png"
-                  className="object-fit h-[440px]"
+                  className="object-cover rounded h-[440px]"
                   alt=""
                 />
               </div>
@@ -102,7 +102,7 @@ const MainPage = () => {
               <img
                 src="/images/subHero.png"
                 alt=""
-                className="h-[200px] w-full pt-2"
+                className="h-[200px] w-full pt-2 object-cover"
               />
               <div className="flex mt-5 w-full">
                 <div className="block  w-[50%]">

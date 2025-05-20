@@ -8,11 +8,14 @@ import { IoPersonCircleOutline } from "react-icons/io5";
 import "../../App.css";
 
 const HeaderPage = () => {
-  const link: string[] = ["Featured Courses", "How We Work", "Why Us?"];
+  const [isActive, setActive] = useState(false);
+  const link: string[] = ["Home", "Featured Courses", "How We Work", "Why Us?"];
   const [activeLink, setActiveLink] = useState("Home");
   return (
     <>
-      <div className={`${styles.parent_section} align-center`}>
+      <div
+        className={`${styles.parent_section} items-center sticky top-0 z-30`}
+      >
         <div className={`${styles.section}`}>
           <div className="w-full mb-5 rounded-b-md bg-white">
             {/* Tablet Header (iPad) */}
@@ -26,17 +29,10 @@ const HeaderPage = () => {
                     className="w-[10rem] h-[2rem] object-contain" // Adjusted for tablets
                   />
                 </Link>
-                <button
-                  className={`${
-                    activeLink == "Home" ? styles.dark_btn : ""
-                  } hidden sm:block`}
-                >
-                  Home
-                </button>
               </div>
 
               {/* Center Section */}
-              <div className="hidden sm:flex w-[60%] justify-center">
+              <div className="hidden sm:flex w-[60%] justify-center ">
                 <ul className="flex gap-4">
                   {link.map((item, index) => (
                     <li
@@ -50,7 +46,7 @@ const HeaderPage = () => {
                             {i < item.split(" ").length - 1 && <>&nbsp;</>}
                           </React.Fragment>
                         ))}
-                        <span className="absolute bottom-0 left-0 w-0 h-[0.125rem] bg-[#022F40] origin-left transition-all duration-300 group-hover:w-full" />
+                        <span className={!isActive ? `${styles.link_hover}`:''} />
                       </Link>
                     </li>
                   ))}
@@ -80,21 +76,12 @@ const HeaderPage = () => {
                     className="w-[9.375rem] h-[2.5rem] object-contain"
                   />
                 </Link>
-                <button
-                  onClick={() => {
-                    setActiveLink("Home");
-                  }}
-                  className={`${
-                    activeLink == "Home" ? styles.dark_btn : ""
-                  } hidden sm:block`}
-                >
-                  Home
-                </button>
               </div>
 
               {/* Center Section */}
               <div className="hidden lg:flex w-[10px] justify-center">
-                <ul className="flex gap-8">
+                <ul className="flex gap-6 items-center">
+                  
                   {link.map((item, index) => (
                     <li
                       onClick={() => {
@@ -102,8 +89,8 @@ const HeaderPage = () => {
                       }}
                       key={index}
                       className={`text-[1rem] ${
-                        activeLink == item ? styles.dark_btn : ""
-                      } font-Poppins font-normal text-[#022F40] relative group`}
+                        activeLink == item ? 'cursor-pointer justify-center px-2 py-1 text-[16px] border-solid border-[1px] font-Poppins transition-all ease-in-out duration-500  border-[#022F40] font-normal  text-white rounded-md bg-[#022F40] h-auto w-full' : " text-[#022F40] border-transparent hover:text-[#011d29]"
+                      } font-Poppins font-normal text-[#022F40] px-2 py-1 relative group`}
                     >
                       <Link to={`/${item.replace(/\s+/g, "-").toLowerCase()}`}>
                         {item.split(" ").map((word, i) => (
@@ -112,7 +99,7 @@ const HeaderPage = () => {
                             {i < item.split(" ").length - 1 && <>&nbsp;</>}
                           </React.Fragment>
                         ))}
-                        <span className="absolute bottom-0 left-0 w-0 h-[0.125rem] bg-[#022F40] origin-left transition-all duration-300 group-hover:w-full" />
+                        <span className={activeLink != item ? `${styles.link_hover}` : ''} />
                       </Link>
                     </li>
                   ))}

@@ -37,10 +37,11 @@ const HeroPage = () => {
                 <img
                   src="/images/Hero.png"
                   alt=""
-                  className="relative inline-block w-[500px] my-auto h-[200px] scale-[122%] ml-10"
+                  className=" inline-block w-[90%] my-[20%] h-[50%] scale-[112%] right-0 items-center  absolute"
                   style={{
                     clipPath:
                       "polygon(100% 0, 100% 50%, 100% 100%, 0% 100%, 25% 50%, 0% 0%)",
+                    objectFit: "cover",
                   }}
                 />
               </div>
@@ -62,24 +63,27 @@ const HeroPage = () => {
                   meet your needs.
                 </p>
               </div>
-              <div className="w-[50%] h-[auto] bg-white my-auto align-center block relative">
-                <div className="block my-auto">
+              <div className="w-[50%]  bg-white align-center  relative">
+                <div className="block h-[45%] relative">
                   <img
                     src="/images/Hero.png"
-                    alt="none"
-                    className=" inline-block w-[full] "
+                    alt=""
+                    className=" inline-block w-[90%] my-[15%] h-[100%] scale-[112%] right-0 items-center  absolute"
                     style={{
                       clipPath:
                         "polygon(100% 0, 100% 50%, 100% 100%, 0% 100%, 25% 50%, 0% 0%)",
+                      objectFit: "cover",
                     }}
                   />
-                  <div className={`flex w-[260px] `}>
-                    <button className={`${styles.dark_btn} mt-10 ml-10`}>
+                </div>
+                <div
+                  className={`flex w-[505]   h-[30%] absolute -bottom-3 right-3`}
+                >
+                  <div className="flex gap-4 h-[35px] w-[full]">
+                    <button className={`${styles.dark_btn} `}>
                       Create Account
                     </button>
-                    <button className={`${styles.light_btn} mt-10 ml-5`}>
-                      Login
-                    </button>
+                    <button className={`${styles.light_btn} `}>Login</button>
                   </div>
                 </div>
               </div>
@@ -94,14 +98,15 @@ const HeroPage = () => {
             <img
               src="/images/Hero.png"
               alt=""
-              className="relative inline-block w-[100%]   "
+              className="relative inline-block w-[100%] object-cover  "
               style={{
                 clipPath:
                   "polygon(0 0, 100% 0, 100% 100%, 87% 94%, 71% 100%, 53% 94%, 37% 100%, 19% 94%, 0 100%)",
               }}
             />
             <h1 className="text-white top-1/9 w-[40%] ml-3 font-bold left-0 absolute">
-              Explore comprehensive course in Mechanical <span className="text-[#022F40]">Engineering</span>
+              Explore comprehensive course in Mechanical{" "}
+              <span className="text-[#022F40]">Engineering</span>
             </h1>
             <p className="align-justify pl-3 font-poppins pt-7 w-[100%] text-[.7rem] text-[black]">
               Learn from top experts and gain skills in mechanical Engineering
