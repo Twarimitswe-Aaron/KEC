@@ -4,8 +4,11 @@ import Hero from './Components/Hero/Hero.tsx';
 import Main from './Components/Main/Main.tsx'
 import FeaturedCourses from './Components/FeaturedCourses/FeaturedCourses.tsx';
 import WhatStudentsSay from './Components/WhatStudentsSay/WhatStudentsSay.tsx';
-import WhyUs from './Components/WhyUs/WhyUs.jsx';
+import WhyUs from './Components/WhyUs/WhyUs.js';
 import CoreTeam from './Components/CoreTeam/CoreTeam.tsx'
+import FAQ from './Components/FAQ/FAQ.tsx'
+import JoinRwanda from './Components/JoinRwanda/JoinRwanda.tsx'
+import Footer from './Components/Footer/Footer.tsx'
 
 
 export {
@@ -16,5 +19,8 @@ export {
     FeaturedCourses,
     WhatStudentsSay,
     WhyUs,
-    CoreTeam
+    CoreTeam,
+    FAQ,
+    JoinRwanda,
+    Footer
 }

@@ -14,7 +14,7 @@ const CourseCarousel = () => {
     slides: {
       origin: "auto",
       spacing: 15,
-      perView: "auto", // Ensures spacing is respected between fixed cards
+      perView: "auto",
     },
   });
 
@@ -74,7 +74,7 @@ const CourseCarousel = () => {
   ];
 
   return (
-    <div className="relative w-full px-4 py-8 overflow-hidden">
+    <div className="relative w-full px-4 pb-8 pt-3 overflow-hidden font-roboto">
       {/* Left Arrow */}
       <button
         className="absolute top-1/2 -translate-y-1/2 left-4 z-10 bg-white rounded-full shadow p-2"
@@ -94,7 +94,10 @@ const CourseCarousel = () => {
       {/* Slider */}
       <div ref={sliderRef} className="keen-slider">
         {cardData.map((item, index) => (
-          <div className="keen-slider__slide !w-[280px] flex-shrink-0" key={index}>
+          <div
+            className="keen-slider__slide !w-[280px] flex-shrink-0"
+            key={index}
+          >
             <div className="bg-white shadow-md rounded-xl p-2 h-[490px] w-full">
               <div className="h-[50%]">
                 <img

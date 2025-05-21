@@ -1,6 +1,6 @@
 import React from 'react'
-import CoreTeamPage from '../../Pages/CoreTeamPage/CoreTeamPage.jsx'
-import styles from '../../Styles/styles.js'
+import CoreTeamPage from '../../Pages/CoreTeamPage/CoreTeamPage.tsx'
+import styles from '../../Styles/styles.ts'
 
 const CoreTeam = () => {
   return (

@@ -1,5 +1,5 @@
 import React from "react";
-import WhyUsPage from "../../Pages/WhyUsPage/WhyUsPage.jsx";
+import WhyUsPage from "../../Pages/WhyUsPage/WhyUsPage.js";
 import styles from "../../Styles/styles.js";
 
 const WhyUs = () => {

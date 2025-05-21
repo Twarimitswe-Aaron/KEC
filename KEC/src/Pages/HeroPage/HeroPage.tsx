@@ -10,12 +10,12 @@ const HeroPage = () => {
             {/* pc based */}
             <div className="hidden lg:flex w-full h-[500px] rounded-xl bg-white shadow-2xl overflow-hidden ">
               <div className="w-[50%] bg-white pt-15  block index-20">
-                <h1 className="font-poppins pl-10 text-[2rem] font-bold text-[#022F40]">
+                <h1 className="font-roboto pl-10 text-[2rem] font-bold text-[#022F40]">
                   Explore <br /> Comprehensive course
                   <br /> in Mechanical
                   <br /> Engineering
                 </h1>
-                <p className="align-justify h-auto pl-10 font-poppins pt-7 w-[100%] text-[1rem] text-[black]">
+                <p className="align-justify h-auto pl-10 font-roboto pt-7 w-[100%] text-[1rem] text-[black]">
                   Learn from top experts and gain skills in mechanical
                   Engineering systems. Our courses come with certificates to
                   showcase your new skills, ensuring you stay ahead in your
@@ -49,12 +49,12 @@ const HeroPage = () => {
             {/* ipad based */}
             <div className="hidden lg:hidden sm:flex  rounded-xl w-full h-[350px] bg-white shadow-2xl overflow-hidden ">
               <div className="w-[50%] bg-white pt-15 h-[100%]  block index-20">
-                <h1 className="font-poppins pl-10 text-[1.5rem] font-bold text-[#022F40]">
+                <h1 className="font-roboto pl-10 text-[1.5rem] font-bold text-[#022F40]">
                   Explore <br /> Comprehensive course
                   <br /> in Mechanical
                   <br /> Engineering
                 </h1>
-                <p className="align-justify pl-10 font-poppins pt-7 w-[100%] text-[.7rem] text-[black]">
+                <p className="align-justify pl-10 font-roboto pt-7 w-[100%] text-[.7rem] text-[black]">
                   Learn from top experts and gain skills in mechanical
                   Engineering systems. Our courses come with certificates to
                   showcase your new skills, ensuring you stay ahead in your
@@ -108,7 +108,7 @@ const HeroPage = () => {
               Explore comprehensive course in Mechanical{" "}
               <span className="text-[#022F40]">Engineering</span>
             </h1>
-            <p className="align-justify pl-3 font-poppins pt-7 w-[100%] text-[.7rem] text-[black]">
+            <p className="align-justify pl-3 font-roboto pt-7 w-[100%] text-[.7rem] text-[black]">
               Learn from top experts and gain skills in mechanical Engineering
               systems. Our courses come with certificates to showcase your new
               skills, ensuring you stay ahead in your field. Whether you're a
@@ -117,12 +117,12 @@ const HeroPage = () => {
             </p>
             <div className="flex justify-between mb-4 w-[150px] align-center">
               <button
-                className={`justify-center px-1 py-1 text-[11px]  border-none font-Poppins transition-all ease-in-out duration-500 cursor-pointer border-[#022F40] hover:border-[#022F40] font-normal hover:bg-white hover:text-[#022F40]  text-white rounded-[4px] bg-[#022F40] h-auto w-full shadow-md mt-6 ml-3`}
+                className={`justify-center px-1 py-1 text-[11px]  border-none font-roboto transition-all ease-in-out duration-500 cursor-pointer border-[#022F40] hover:border-[#022F40] font-normal hover:bg-white hover:text-[#022F40]  text-white rounded-[4px] bg-[#022F40] h-auto w-full shadow-md mt-6 ml-3`}
               >
                 Create Account
               </button>
               <button
-                className={`justify-center px-1 py-1 text-[11px] border-none border-[0.1px] font-Poppins transition-all ease-in-out duration-500 cursor-pointer border-[#022F40] hover:border-[#022F40] font-normal hover:bg-[#022F40] hover:text-[white]  text-[#022F40] rounded-[4px] bg-[white] mt-6 shadow-xl ml-1`}
+                className={`justify-center px-1 py-1 text-[11px] border-none border-[0.1px] font-roboto transition-all ease-in-out duration-500 cursor-pointer border-[#022F40] hover:border-[#022F40] font-normal hover:bg-[#022F40] hover:text-[white]  text-[#022F40] rounded-[4px] bg-[white] mt-6 shadow-xl ml-1`}
               >
                 Login
               </button>

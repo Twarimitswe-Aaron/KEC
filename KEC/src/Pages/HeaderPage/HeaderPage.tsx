@@ -37,7 +37,7 @@ const HeaderPage = () => {
                   {link.map((item, index) => (
                     <li
                       key={index}
-                      className="text-[0.875rem] font-Poppins font-normal text-[#022F40] relative group"
+                      className="text-[0.875rem] font-roboto font-normal text-[#022F40] relative group"
                     >
                       <Link to={`/${item.replace(/\s+/g, "-").toLowerCase()}`}>
                         {item.split(" ").map((word, i) => (
@@ -46,7 +46,7 @@ const HeaderPage = () => {
                             {i < item.split(" ").length - 1 && <>&nbsp;</>}
                           </React.Fragment>
                         ))}
-                        <span className={!isActive ? `${styles.link_hover}`:''} />
+                        <span className={!isActive ? `${styles.link_hover}` : ''} />
                       </Link>
                     </li>
                   ))}
@@ -81,7 +81,6 @@ const HeaderPage = () => {
               {/* Center Section */}
               <div className="hidden lg:flex w-[10px] justify-center">
                 <ul className="flex gap-6 items-center">
-                  
                   {link.map((item, index) => (
                     <li
                       onClick={() => {
@@ -89,8 +88,10 @@ const HeaderPage = () => {
                       }}
                       key={index}
                       className={`text-[1rem] ${
-                        activeLink == item ? 'cursor-pointer justify-center px-2 py-1 text-[16px] border-solid border-[1px] font-Poppins transition-all ease-in-out duration-500  border-[#022F40] font-normal  text-white rounded-md bg-[#022F40] h-auto w-full' : " text-[#022F40] border-transparent hover:text-[#011d29]"
-                      } font-Poppins font-normal text-[#022F40] px-2 py-1 relative group`}
+                        activeLink == item
+                          ? 'cursor-pointer justify-center px-2 py-1 text-[16px] border-solid border-[1px] font-roboto transition-all ease-in-out duration-500 border-[#022F40] font-normal text-white rounded-md bg-[#022F40] h-auto w-full'
+                          : "text-[#022F40] border-transparent hover:text-[#011d29]"
+                      } font-roboto font-normal text-[#022F40] px-2 py-1 relative group`}
                     >
                       <Link to={`/${item.replace(/\s+/g, "-").toLowerCase()}`}>
                         {item.split(" ").map((word, i) => (

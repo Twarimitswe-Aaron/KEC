@@ -9,7 +9,7 @@ const CoreTeamPage = () => {
   const [sliderRef, instanceRef]=useKeenSlider({
     loop:true,
     mode:"snap",
-    renderMode:"perfomance",
+    renderMode:"performance",
     slides:{
       origin:"auto",
       spacing:15,
@@ -32,6 +32,18 @@ const CoreTeamPage = () => {
       image: "/images/teacher.png",
     },
     {
+      id: 4,
+      name: "MAHORO Samson",
+      role: "Machine Designer",
+      image: "/images/teacher.png",
+    },
+    {
+      id: 10,
+      name: "MAHORO Samson",
+      role: "Machine Designer",
+      image: "/images/teacher.png",
+    },
+    {
       id: 2,
       name: "MAHORO Samson",
       role: "Machine Designer",
@@ -44,7 +56,7 @@ const CoreTeamPage = () => {
       image: "/images/teacher.png",
     },
     {
-      id: 4,
+      id: 6,
       name: "MAHORO Samson",
       role: "Machine Designer",
       image: "/images/teacher.png",
@@ -52,18 +64,20 @@ const CoreTeamPage = () => {
   ];
   return (
     <div className="w-full ">
-      <h2 className="text-5xl font-bold w-full sticky  text-black [font-family:'Inria_Serif',Helvetica] text-center mb-8">
-        Core team
-      </h2>
+      <div className="flex w-full justify-center items center">
+        <h1 className="font-bold sm:text-3xl text-[22px] my-6 sm:mb-14  sm:mt-5 ">
+          Core Team
+        </h1>
+      </div>
 
-      <div className=" keen-slider flex justify-start w-full gap-20 overflow-hidden">
+      <div ref={sliderRef} className=" keen-slider justify-evenly text-center items-center">
         {teamMembers.map((member) => (
           <div
             key={member.id}
-            className="keen-slider_slide min-w-[223px] items-center block justify-start h-[277px]"
+            className="keen-slider__slide !w-[280px] flex-shrink-0 justify-center items-center"
           >
             <img
-              className="w-[219px] h-[210px] object-cover shadow-8lg rounded-full circle"
+              className="w-[219px] h-[210px] object-cover shadow-8lg mx-auto rounded-full circle"
               alt="now"
               src={member.image}
             />

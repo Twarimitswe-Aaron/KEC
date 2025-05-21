@@ -10,6 +10,9 @@ const config: Config = {
         '1027px': '1027px', // Custom breakpoint for minimum width
         '1067px': { max: '1067px' }, // Custom breakpoint for maximum width
       },
+      fontFamily: {
+        roboto: ['Roboto', 'sans-serif'],
+      },
     },
   },
   plugins: [],
