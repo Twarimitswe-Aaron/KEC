@@ -1,14 +1,14 @@
-import Tests from './Components/tests/Tests';
-import Header from './Components/Header/Header.tsx';
-import Hero from './Components/Hero/Hero.tsx';
-import Main from './Components/Main/Main.tsx'
-import FeaturedCourses from './Components/FeaturedCourses/FeaturedCourses.tsx';
-import WhatStudentsSay from './Components/WhatStudentsSay/WhatStudentsSay.tsx';
-import WhyUs from './Components/WhyUs/WhyUs.js';
-import CoreTeam from './Components/CoreTeam/CoreTeam.tsx'
-import FAQ from './Components/FAQ/FAQ.tsx'
-import JoinRwanda from './Components/JoinRwanda/JoinRwanda.tsx'
-import Footer from './Components/Footer/Footer.tsx'
+import Tests from './Components/Landing/tests/Tests.tsx';
+import Header from './Components/Landing/Header/Header.tsx';
+import Hero from './Components/Landing/Hero/Hero.tsx';
+import Main from './Components/Landing/Main/Main.tsx'
+import FeaturedCourses from './Components/Landing/FeaturedCourses/FeaturedCourses.tsx';
+import WhatStudentsSay from './Components/Landing/WhatStudentsSay/WhatStudentsSay.tsx';
+import WhyUs from './Components/Landing/WhyUs/WhyUs.js';
+import CoreTeam from './Components/Landing/CoreTeam/CoreTeam.tsx'
+import FAQ from './Components/Landing/FAQ/FAQ.tsx'
+import JoinRwanda from './Components/Landing/JoinRwanda/JoinRwanda.tsx'
+import Footer from './Components/Landing/Footer/Footer.tsx'
 
 
 export {

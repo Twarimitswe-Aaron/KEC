@@ -17,7 +17,7 @@ import styles from "./Styles/styles";
 
 const App = () => {
   return (
-    <div className="bg-[#F2F2F2] font-Poppins overflow-x-hidden">
+    <div className="bg-[#F2F2F2] font-robot overflow-x-hidden">
       <Header />
       <Hero />
       <Main />
