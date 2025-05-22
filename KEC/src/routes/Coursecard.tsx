@@ -2,7 +2,7 @@ import React, { useEffect } from "react";
 import { useKeenSlider } from "keen-slider/react";
 import "keen-slider/keen-slider.min.css";
 import { FaArrowLeft, FaArrowRight, FaStar } from "react-icons/fa6";
-import styles from "../../../Styles/styles";
+import styles from "../Styles/styles";
 import { GoStopwatch } from "react-icons/go";
 import { BsCameraVideoFill } from "react-icons/bs";
 
@@ -101,7 +101,7 @@ const CourseCarousel = () => {
             <div
               className="bg-white overflow-hidden shadow-[0_4px_4px_rgba(0,0,0,0.5)] mb-4 mr-4 rounded-2xl p-2 h-[490px] w-full"
             >
-              <div className="h-[48%]">
+              <div className="h-[50%]">
                 <img
                   src={item.image_url}
                   alt="Course"
@@ -148,7 +148,7 @@ const CourseCarousel = () => {
                     </p>
                   </div>
                 </div>
-                <div className="my-3 flex justify-center">
+                <div className="mt-3 flex justify-center">
                   <button className={styles.light_btn}>Start Course</button>
                 </div>
               </div>

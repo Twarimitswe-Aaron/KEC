@@ -63,7 +63,7 @@ const CoreTeamPage = () => {
     },
   ];
   return (
-    <div className="w-full ">
+    <div className="w-full " id="coreTeam">
       <div className="flex w-full justify-center items center">
         <h1 className="font-bold sm:text-3xl text-[22px] my-6 sm:mb-14  sm:mt-5 ">
           Core Team

@@ -64,7 +64,7 @@ const MainPage: React.FC = () => {
   return (
     <>
       {/* Desktop view */}
-      <div className={`hidden sm:flex ${styles.parent_section}`}>
+      <div className={`hidden sm:flex ${styles.parent_section}`} id="main">
         <div className={`hidden sm:block ${styles.section}`}>
           <div className="block w-full">
             <div className="block my-4">
@@ -82,7 +82,7 @@ const MainPage: React.FC = () => {
               <div className="w-[50%]">
                 <img
                   src="/images/subHero.png"
-                  className="object-cover rounded h-[440px]"
+                  className="object-cover rounded h-[370px]"
                   alt="Mechanical engineering learning platform"
                 />
               </div>
@@ -113,7 +113,7 @@ const MainPage: React.FC = () => {
       </div>
 
       {/* Mobile view */}
-      <div className={`block sm:hidden ${styles.parent_section}`}>
+      <div className={`block sm:hidden ${styles.parent_section}`} id="main">
         <div className={`block sm:hidden ${styles.section}`}>
           <div className="block w-full">
             <div className="flex my-3 justify-center">

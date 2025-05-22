@@ -1,35 +1,30 @@
-import React from "react";
-import "./App.css";
-import {
-  Tests,
-  Header,
-  Hero,
-  Main,
-  FeaturedCourses,
-  WhatStudentsSay,
-  WhyUs,
-  CoreTeam,
-  FAQ,
-  JoinRwanda,
-  Footer
-} from "./Routes";
-import styles from "./Styles/styles";
 
-const App = () => {
+import { Routes, Route } from "react-router-dom";
+
+import DashboardLayout from "./layouts/DashboardLayout";
+
+import Dashboard from "./routes/Dashboard";
+import Login from "./Pages/LoginPages/LoginPage.tsx";
+import Signup from "./Pages/Signup.tsx";
+
+import "./App.css";
+import Landing from "./Landing/Landing";
+function App() {
   return (
-    <div className="bg-[#F2F2F2] font-robot overflow-x-hidden">
-      <Header />
-      <Hero />
-      <Main />
-      <FeaturedCourses />
-      <WhatStudentsSay />
-      <WhyUs />
-      <CoreTeam />
-      <FAQ />
-      <JoinRwanda/>
-      <Footer/>
-    </div>
+    <Routes>
+    
+      <Route path="/" element={<Landing />} />
+
+    
+      <Route path="/login" element={<Login />} />
+      <Route path="/signup" element={<Signup />} />
+
+      {/* Protected routes with DashboardLayout */}
+      <Route element={<DashboardLayout />}>
+        <Route path="/dashboard" element={<Dashboard />} />
+      </Route>
+    </Routes>
   );
-};
+}
 
 export default App;

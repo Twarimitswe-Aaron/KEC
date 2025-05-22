@@ -48,7 +48,7 @@ const WhatStudentsSayPage = () => {
   ];
 
   return (
-    <div className="w-full mb-10 ">
+    <div className="w-full mb-10 " id="tudentsSays">
       <div className="flex w-full justify-center items center">
         <h1 className="font-bold sm:text-3xl text-[22px] mb-6 sm:mb-14  sm:mt-5 ">
           What our students say

@@ -3,7 +3,7 @@ import styles from "../../../Styles/styles";
 
 const JoinRwandaPage = () => {
   return (
-    <div className="">
+    <div className="" id="joinRwanda">
       {/* Desktop view */}
       <div className="w-full sm:flex hidden bg-white rounded-md shadow-[0_4px_4px_rgba(0,0,0,0.5)] overflow-hidden">
         <div className="w-[50%]">

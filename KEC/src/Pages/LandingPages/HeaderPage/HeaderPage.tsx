@@ -1,21 +1,29 @@
 import React, { useState } from "react";
+import { HashLink } from "react-router-hash-link";
+
 import styles from "../../../Styles/styles";
 import { Link } from "react-router-dom";
 import { FaGlobe, FaWhatsapp } from "react-icons/fa";
 import { CiGlobe } from "react-icons/ci";
 import { BsList } from "react-icons/bs";
 import { IoClose, IoPersonCircleOutline } from "react-icons/io5";
-
+import clsx from "clsx";
 
 const HeaderPage = () => {
   const [isActive, setActive] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const toggleMenu = () => setMenuOpen(!menuOpen);
 
-  const link: string[] = ["Home", "Featured Courses", "How We Work", "Why Us?"];
-  const [activeLink, setActiveLink] = useState("Home");
+  const links = [
+    { to: "#hero", name: "Home Alone" },
+    { to: "#main", name: "How We Work" },
+    { to: "#featuredCourses", name: "Featured Courses" },
+    { to: "#whyUs", name: "Why Us?" },
+  ];
+
+  const [activeLink, setActiveLink] = useState("Home Alone");
   return (
-    < div className="">
+    <div className="">
       <div
         className={`${styles.parent_section} items-center fixed  left-0 w-full  top-0 z-30`}
       >
@@ -25,7 +33,7 @@ const HeaderPage = () => {
             <div className="hidden sm:flex lg:hidden justify-between items-center px-4 py-4">
               {/* Left Section */}
               <div className="flex items-center gap-4 sm:w-[190px]">
-                <Link to="/">
+                <Link to="#hero">
                   <img
                     src="/images/Logo.svg"
                     alt="Logo"
@@ -37,22 +45,17 @@ const HeaderPage = () => {
               {/* Center Section */}
               <div className="hidden sm:flex w-[60%] justify-center ">
                 <ul className="flex gap-4">
-                  {link.map((item, index) => (
+                  {links.map((item, index) => (
                     <li
                       key={index}
                       className="text-[0.875rem] font-roboto font-normal text-[#022F40] relative group"
                     >
-                      <Link to={`/${item.replace(/\s+/g, "-").toLowerCase()}`}>
-                        {item.split(" ").map((word, i) => (
-                          <React.Fragment key={i}>
-                            {word}
-                            {i < item.split(" ").length - 1 && <>&nbsp;</>}
-                          </React.Fragment>
-                        ))}
+                      <HashLink smooth to={item.to}>
+                        {index === 0 ? item.name.slice(4) : item.name}
                         <span
                           className={!isActive ? `${styles.link_hover}` : ""}
                         />
-                      </Link>
+                      </HashLink>
                     </li>
                   ))}
                 </ul>
@@ -73,7 +76,7 @@ const HeaderPage = () => {
             <div className="hidden lg:flex justify-between items-center px-6 py-4">
               {/* Left Section */}
               <div className="flex items-center gap-4 lg:w-[150px]">
-                <Link to="/">
+                <Link to="#hero">
                   <img
                     src="/images/Logo.svg"
                     alt="Logo"
@@ -83,33 +86,32 @@ const HeaderPage = () => {
               </div>
 
               {/* Center Section */}
-              <div className="hidden lg:flex w-[10px] justify-center">
+              <div className="hidden lg:flex  justify-center ">
                 <ul className="flex gap-6 items-center">
-                  {link.map((item, index) => (
+                  {links.map((item, index) => (
                     <li
                       onClick={() => {
-                        setActiveLink(item);
+                        setActiveLink(item.name);
                       }}
                       key={index}
-                      className={`text-[1rem] ${
-                        activeLink == item
-                          ? "cursor-pointer justify-center px-2 py-1 text-[16px] border-solid border-[1px] font-roboto transition-all ease-in-out duration-500 border-[#022F40] font-normal text-white rounded-md bg-[#022F40] h-auto w-full"
-                          : "text-[#022F40] border-transparent hover:text-[#011d29]"
-                      } font-roboto font-normal text-[#022F40] px-2 py-1 relative group`}
+                      className={clsx(
+                        "text-[1rem] font-roboto font-normal text-[#022F40] px-2 py-1 relative group ",
+                        activeLink == item.name &&
+                          "cursor-pointer justify-center px-2 py-1 text-[16px] border-solid border-[1px] font-roboto transition-all ease-in-out duration-500 border-[#022F40] font-normal text-white rounded-md bg-[#022F40] h-auto ",
+                        activeLink != item.name &&
+                          "text-[#022F40] border-transparent hover:text-[#011d29]"
+                      )}
                     >
-                      <Link to={`/${item.replace(/\s+/g, "-").toLowerCase()}`}>
-                        {item.split(" ").map((word, i) => (
-                          <React.Fragment key={i}>
-                            {word}
-                            {i < item.split(" ").length - 1 && <>&nbsp;</>}
-                          </React.Fragment>
-                        ))}
+                      <HashLink smooth to={item.to}>
+                        {index === 0 ? item.name.slice(0, 4) : item.name}
                         <span
                           className={
-                            activeLink != item ? `${styles.link_hover}` : ""
+                            activeLink != item.name
+                              ? `${styles.link_hover}`
+                              : ""
                           }
                         />
-                      </Link>
+                      </HashLink>
                     </li>
                   ))}
                 </ul>
@@ -166,26 +168,18 @@ const HeaderPage = () => {
               />
             </div>
             <ul className="space-y-5 font-medium text-[15px]">
-              <li>
-                <Link to="/" onClick={toggleMenu}>
-                  Home
-                </Link>
-              </li>
-              <li>
-                <Link to="/featured-course" onClick={toggleMenu}>
-                  Featured Course
-                </Link>
-              </li>
-              <li>
-                <Link to="/how-we-work" onClick={toggleMenu}>
-                  How we work
-                </Link>
-              </li>
-              <li>
-                <Link to="/why-us" onClick={toggleMenu}>
-                  why us
-                </Link>
-              </li>
+              {links.map((item, index) => (
+                <li
+                  key={index}
+                  onClick={() => setMenuOpen(false)}
+                  className="text-[0.875rem] font-roboto font-normal text-[#022F40] relative group"
+                >
+                  <HashLink smooth to={item.to}>
+                    <span />
+                    {item.name}
+                  </HashLink>
+                </li>
+              ))}
               <li className="flex items-center gap-2">
                 <FaGlobe />
                 <p>Language</p>

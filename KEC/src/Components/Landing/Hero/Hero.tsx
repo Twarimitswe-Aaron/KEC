@@ -3,7 +3,7 @@ import HeroPage from '../../../Pages/LandingPages/HeroPage/HeroPage.tsx'
 
 const Hero = () => {
   return (
-    <div>
+    <div >
       <HeroPage />
     </div>
   )

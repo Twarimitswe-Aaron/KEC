@@ -4,7 +4,7 @@ import styles from "../../../Styles/styles";
 const HeroPage = () => {
   return (
     <>
-      <div className={`${styles.parent_section}`}>
+      <div className={`${styles.parent_section}`} id="hero">
         <div className={`${styles.section}`}>
           <div className="w-full ">
             {/* pc based */}

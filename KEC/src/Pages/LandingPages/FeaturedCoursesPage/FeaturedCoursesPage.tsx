@@ -4,7 +4,7 @@ import CourseCarousel from './Coursecard.js';
 
 const FeaturedCoursesPage = () => {
   return (
-    <div className={`${styles.parent_section} font-roboto`}> 
+    <div className={`${styles.parent_section} font-roboto`} id='featuredCourses'> 
 
       <div className={`${styles.section}`}>
         <div className="flex justify-center">
@@ -12,8 +12,9 @@ const FeaturedCoursesPage = () => {
             Featured courses
           </h1>
         </div>
-        <div className="flex justify-around overflow-hidden">
+        <div className="block justify-around overflow-hidden">
           <CourseCarousel />
+          
         </div>
       </div>
       

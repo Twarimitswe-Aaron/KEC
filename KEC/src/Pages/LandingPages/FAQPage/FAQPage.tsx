@@ -42,7 +42,7 @@ export const FAQPage = () => {
   };
 
   return (
-    <section className="w-full mx-auto my-10 px-4 font-roboto">
+    <section className="w-full mx-auto my-10 px-4 font-roboto" id="FAQ">
       <div className="my-10">
         <h2 className="sm:text-3xl text-[22px] mx-auto text-center font-bold mb-4">
           Frequently Asked Questions
