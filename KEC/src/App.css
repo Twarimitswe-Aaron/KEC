@@ -4,3 +4,30 @@
 html{
     scroll-behavior: smooth;
 }
+
+/* Add these custom toast styles */
+.Toastify__toast {
+  background-color: rgba(255, 255, 255, 0.95) !important;
+  color: #022F40 !important;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1) !important;
+  border-radius: 8px !important;
+  border: 1px solid rgba(2, 47, 64, 0.1) !important;
+  font-family: 'Roboto', sans-serif !important;
+  font-size: 14px !important;
+}
+
+.Toastify__toast--success {
+  border-left: 4px solid rgba(34, 197, 94, 0.8) !important;
+}
+
+.Toastify__toast--error {
+  border-left: 4px solid rgba(239, 68, 68, 0.8) !important;
+}
+
+.Toastify__toast-icon {
+  color: #022F40 !important;
+}
+
+.Toastify__progress-bar {
+  background: linear-gradient(to right, rgba(2, 47, 64, 0.2), rgba(2, 47, 64, 0.1)) !important;
+}

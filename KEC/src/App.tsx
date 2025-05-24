@@ -5,27 +5,28 @@ import DashboardLayout from "./layouts/DashboardLayout";
 import Dashboard from "./routes/Dashboard";
 import Login from "./Pages/Login/LoginPage.tsx";
 import Signup from "./Pages/Login/Signup.tsx";
-import { ToastContainer} from "react-toastify";
+import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 import "./App.css";
 import Landing from "./Landing/Landing";
 import Verification from "./Pages/Login/verification";
+import PassReset from "./Pages/Login/PassReset";
 
 function App() {
   return (
     <>
     <ToastContainer
-    position="top-center"
-    autoClose={5000}
-    hideProgressBar={false}
-    newestOnTop={false}
-    closeOnClick
-    rtl={false}
-    pauseOnFocusLoss
-    draggable
-    pauseOnHover
-    theme="colored"
+      position="top-center"
+      autoClose={5000}
+      hideProgressBar={false}
+      newestOnTop={false}
+      closeOnClick
+      rtl={false}
+      pauseOnFocusLoss
+      draggable
+      pauseOnHover
+      theme="light"
     />
     <Routes>
     
@@ -34,7 +35,8 @@ function App() {
   
     <Route path="/login" element={<Login />} />
     <Route path="/signup" element={<Signup />} />
-    <Route path="/verification" element={<Verification />} />
+    <Route path="/signup/verification" element={<Verification />} />
+    <Route path="/passReset" element={<PassReset />} />
 
     {/* Protected routes with DashboardLayout */}
     <Route element={<DashboardLayout />}>

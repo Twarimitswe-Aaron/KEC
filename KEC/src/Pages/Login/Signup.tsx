@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { MdEmail } from "react-icons/md";
 import { FaEyeSlash, FaEye } from "react-icons/fa";
 import { IoIosLock } from "react-icons/io";
+import { toast } from "react-toastify";
 import clsx from "clsx";
 
 const Signup = () => {
@@ -34,9 +35,11 @@ const Signup = () => {
 
   const validate = (
     name: string,
-    value: string | boolean
+    value: string | boolean,
+    showToast: boolean = false
   ): { [key: string]: string[] } => {
     const errors: { [key: string]: string[] } = {};
+
     if (name === "email") {
       errors.email = [];
       if (!value) {
@@ -52,13 +55,18 @@ const Signup = () => {
         errors.password.push("Password is required.");
       } else {
         const val = value as string;
-        if (!/[A-Z]/.test(val))
+        if (!/[A-Z]/.test(val)) {
           errors.password.push("Include at least one uppercase letter.");
-        if (!/[0-9]/.test(val))
+        }
+        if (!/[0-9]/.test(val)) {
           errors.password.push("Include at least one number.");
-        if (!/[!@#$%^&*(),.?\":{}|<>]/.test(val))
+        }
+        if (!/[!@#$%^&*(),.?\":{}|<>]/.test(val)) {
           errors.password.push("Include one special character.");
-        if (val.length < 6) errors.password.push("Minimum 6 characters.");
+        }
+        if (val.length < 6) {
+          errors.password.push("Minimum 6 characters.");
+        }
       }
     }
 
@@ -68,28 +76,61 @@ const Signup = () => {
         errors.confirmPassword.push("Please confirm your password.");
       } else if (value !== formData.password) {
         errors.confirmPassword.push("Password does not match.");
+        if (showToast) toast.error("Passwords do not match");
       }
     }
 
     if (name === "firstName") {
       errors.firstName = [];
-      if (!value) errors.firstName.push("• First name is required.");
+      if (!value) {
+        errors.firstName.push("First name is required.");
+      }
     }
 
     if (name === "lastName") {
       errors.lastName = [];
-      if (!value) errors.lastName.push("• Last name is required.");
+      if (!value) {
+        errors.lastName.push("Last name is required.");
+      }
     }
 
     return errors;
   };
 
-  const goToVerification=()=>{
-   
-    
+  const goToVerification = () => {
+    const emailErrors = validate("email", formData.email, true);
+    const passErrors = validate("password", formData.password, true);
+    const confirmPassErrors = validate(
+      "confirmPassword",
+      formData.confirmPassword,
+      true
+    );
+    const firstNameErrors = validate("firstName", formData.firstName, true);
+    const lastNameErrors = validate("lastName", formData.lastName, true);
 
-    navigate("Verification",{state:{email:formData.email}})
-  }
+    const allErrors = {
+      ...emailErrors,
+      ...passErrors,
+      ...confirmPassErrors,
+      ...firstNameErrors,
+      ...lastNameErrors,
+    };
+
+    const hasErrors = Object.values(allErrors).some(
+      (arr) => arr && arr.length > 0
+    );
+
+    if (hasErrors) {
+      return;
+    }
+
+    toast.success("go to your email to verify your account");
+
+    setTimeout(() => {
+      navigate(`/signup/verification?email=${encodeURIComponent(formData.email)}`);
+
+    }, 1500);
+  };
 
   const handleBlur = (e: ChangeEvent<HTMLInputElement>) => {
     const { name } = e.target;
@@ -111,7 +152,7 @@ const Signup = () => {
       [name]: fieldValue,
     }));
 
-    const errors = validate(name, fieldValue);
+    const errors = validate(name, fieldValue, false);
     setFormErrors((prev) => ({
       ...prev,
       [name]: errors[name] || [],
@@ -131,14 +172,15 @@ const Signup = () => {
     e.preventDefault();
     setIsLoading(true);
 
-    const emailErrors = validate("email", formData.email);
-    const passErrors = validate("password", formData.password);
+    const emailErrors = validate("email", formData.email, true);
+    const passErrors = validate("password", formData.password, true);
     const confirmPasswordErrors = validate(
       "confirmPassword",
-      formData.confirmPassword
+      formData.confirmPassword,
+      true
     );
-    const firstNameErrors = validate("firstName", formData.firstName);
-    const lastNameErrors = validate("lastName", formData.lastName);
+    const firstNameErrors = validate("firstName", formData.firstName, true);
+    const lastNameErrors = validate("lastName", formData.lastName, true);
 
     const allErrors = {
       ...emailErrors,
@@ -158,9 +200,10 @@ const Signup = () => {
       return;
     }
 
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-    setIsLoading(false);
-    alert("Signup successful (mock)");
+    // Navigate to verification with email
+    navigate(
+      `/signup/verification?email=${encodeURIComponent(formData.email)}`
+    );
   };
 
   return (
@@ -330,7 +373,7 @@ const Signup = () => {
 
           <div className="w-[90%] mx-auto mt-4">
             <button
-            onClick={goToVerification}
+              onClick={goToVerification}
               type="submit"
               disabled={isLoading}
               className={clsx(

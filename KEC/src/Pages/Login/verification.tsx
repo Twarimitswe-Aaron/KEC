@@ -1,88 +1,98 @@
 import React, { useState } from 'react';
-import { Link, Navigate } from 'react-router-dom';
+import { Link, Navigate, useSearchParams } from 'react-router-dom';
+import { IoIosArrowBack } from "react-icons/io";
+import { FaLock } from "react-icons/fa";
 import clsx from 'clsx';
 
-interface VerificationProps {
-  email?: string;
-}
-
-
-const Verification: React.FC<VerificationProps> = ({ email }) => {
-  const [step, setStep] = useState<'login' | 'verify'>('verify'); // Start at verify since email is passed
+const Verification = () => {
+  const [searchParams] = useSearchParams();
+  const email = searchParams.get('email');
   const [loading, setLoading] = useState(false);
 
-  const handleResendCode = () => console.log('Resending code...');
+  const handleResendCode = () => {
+    console.log('Resending code...');
+  };
 
   const handleSubmitVerification = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
     await new Promise((resolve) => setTimeout(resolve, 1000));
     setLoading(false);
-    // Proceed with verification logic
+    // Handle actual verification logic
   };
-  if (!email) {
-    // If no email is passed, redirect back to sign up or home
-    return <Navigate to="/signup" replace />;
-  }
+
+  if (!email) return <Navigate to="/signup" replace />;
 
   return (
-    <div className="flex w-full justify-center font-robot gap-0">
-      <div className="w-[690px] items-center my-auto h-full flex justify-center relative">
+    <div className="flex w-full min-h-screen font-sans bg-white">
+      {/* Left side: Form */}
+      <div className="flex-1 flex items-center justify-center p-6">
         <form
           onSubmit={handleSubmitVerification}
-          className="justify-center px-5 pb-18 sm:w-[390px] sm:top-3 mt-10 w-[320px] h-auto border rounded-md border-[#022F40] text-center"
+          className="w-[360px]  space-y-5 border rounded-xl shadow-md px-8 py-10"
         >
-          <div>
-            <Link to="/" className="flex justify-center items-center relative">
-              <img
-                src="/images/Logo.svg"
-                alt="Logo"
-                className="absolute w-25 object-cover top-4"
-              />
+          {/* Logo */}
+          <div className="flex justify-center">
+            <Link to="/">
+              <img src="/images/Logo.svg" alt="Logo" className="w-24" />
             </Link>
           </div>
 
-          <h1 className="text-2xl md:text-3xl font-bold text-[#022F40] mt-20">
-            Verify
-          </h1>
+          {/* Header */}
+          <div className="flex items-center justify-between mt-6">
+            <Link to="/signup">
+              <IoIosArrowBack className="text-2xl text-gray-700" />
+            </Link>
+            <h1 className="text-2xl font-semibold text-gray-900">Verify</h1>
+            <FaLock className="text-2xl text-gray-700" />
+          </div>
 
-          <p className="text-sm text-[#022F40] mt-4 font-semibold">Confirmation</p>
-          <p className="text-sm mt-2 text-black font-medium px-2">
-            Please type the verification code sent to<br />
-            <span className="font-bold">{email}</span>
-          </p>
+          {/* Instruction */}
+          <div>
+            <p className="text-sm text-gray-500 font-medium mb-1">Confirmation</p>
+            <p className="text-sm text-gray-700">
+              Please type the verification code sent to:
+              <br />
+              <span className="font-semibold text-[#022F40]">{email}</span>
+            </p>
+          </div>
 
-          <div className="flex justify-center gap-4 mt-6 mb-4">
+          {/* Code input boxes */}
+          <div className="flex justify-between gap-2 mt-4">
             {[...Array(6)].map((_, i) => (
               <input
                 key={i}
                 type="text"
                 maxLength={1}
-                className="w-10 h-10 text-center border-b-2 border-gray-400 text-lg outline-none focus:border-[#022F40]"
+                className="w-10 capitalize h-10 text-2xl items-center font-bold text-center border rounded-lg border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#022F40] justify-center transition"
               />
             ))}
           </div>
 
-          <button
-            type="button"
-            className="text-sm text-[#022F40] underline hover:text-blue-800 mb-6"
-            onClick={handleResendCode}
-          >
-            Resend code
-          </button>
+          {/* Resend */}
+          <div className="text-start">
+            <button
+              type="button"
+              onClick={handleResendCode}
+              className="text-sm cursor-pointer text-[#022F40] underline hover:text-blue-900 transition"
+            >
+              Resend code
+            </button>
+          </div>
 
+          {/* Submit */}
           <button
             type="submit"
-            className={clsx(
-              'w-full p-2 rounded-md shadow text-white transition-all duration-300',
-              loading
-                ? 'bg-white text-[#022F40] border border-[#022F40] cursor-not-allowed opacity-50'
-                : 'bg-[#022F40] border border-white hover:bg-white hover:text-[#022F40] hover:border-[#022F40]'
-            )}
             disabled={loading}
+            className={clsx(
+              'w-full py-2 cursor-pointer text-white font-semibold rounded-lg transition-all duration-300',
+              loading
+                ? 'bg-gray-300 cursor-not-allowed'
+                : 'bg-[#022F40] hover:bg-white hover:text-[#022F40] border border-[#022F40]'
+            )}
           >
             {loading ? (
-              <span className="w-5 h-5 border-2 border-dashed border-current border-t-transparent rounded-full animate-spin inline-block"></span>
+              <span className="w-5 justify-center items-center h-5 border-2 border-dashed border-current border-t-transparent rounded-full animate-spin inline-block" />
             ) : (
               'Confirm'
             )}
@@ -90,12 +100,9 @@ const Verification: React.FC<VerificationProps> = ({ email }) => {
         </form>
       </div>
 
-      <div className="hidden lg:flex bg-[#022F40] w-[680px] h-screen items-center justify-center">
-        <img
-          src="/images/Login.png"
-          alt="Login Illustration"
-          className="w-full object-cover h-full"
-        />
+      {/* Right side: Image */}
+      <div className="hidden lg:flex w-1/2 bg-[#022F40] items-center justify-center">
+        <img src="/images/Login.png" alt="Login Illustration" className="w-full h-full object-cover" />
       </div>
     </div>
   );
