@@ -149,7 +149,7 @@ const CourseCarousel = () => {
                   </div>
                 </div>
                 <div className="my-3 flex justify-center">
-                  <button className={styles.light_btn}>Start Course</button>
+                  <button className=" w-[7rem] cursor-pointer transition-all ease-in-out duration-500 hover:bg-[#022F40] shadow-[0px_4px_4px_#00000040] hover:text-white border-white bg-white rounded-md text-[#022F40] h-[2.5rem] font-roboto">Start Course</button>
                 </div>
               </div>
             </div>

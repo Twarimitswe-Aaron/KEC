@@ -1,5 +1,6 @@
 import React from "react";
 import styles from "../../../Styles/styles";
+import { Link } from "react-router-dom";
 
 const JoinRwandaPage = () => {
   return (
@@ -25,17 +26,19 @@ const JoinRwandaPage = () => {
             Start Registration here
           </p>
           <div className="flex mt-10 justify-center gap-10 w-full">
+            <Link to="/SignUp">
             <button
               className={`w-[10rem] cursor-pointer transition-all ease-in-out duration-500 hover:bg-white shadow-[0px_4px_4px_#00000040] hover:text-[#022F40] border-white bg-[#022F40] rounded-md text-white h-[2.5rem] font-roboto`}
             >
               Create Account
-            </button>
+            </button></Link>
 
+            <Link to="/login">
             <button
               className={`font-bold w-[7rem] cursor-pointer transition-all ease-in-out duration-500 hover:bg-[#022F40] shadow-[0px_4px_4px_#00000040] hover:text-white border-white bg-white rounded-md text-[#022F40] h-[2.5rem] font-roboto`}
             >
               Login
-            </button>
+            </button></Link>
           </div>
         </div>
       </div>

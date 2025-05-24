@@ -1,7 +1,21 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import styles from "../../../Styles/styles";
+import { Link } from "react-router-dom";
 
 const HeroPage = () => {
+  const fullText =
+    "Explore comprehensive <br/> course in Mechanical <br/> Engineering";
+  const [text, setText] = useState("");
+  const [index, setIndex] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setText(fullText.slice(0, index));
+      setIndex(index + 1);
+    }, 60);
+    return () => clearInterval(interval);
+  }, [index]);
+
   return (
     <>
       <div className={`${styles.parent_section}`} id="hero">
@@ -10,11 +24,12 @@ const HeroPage = () => {
             {/* pc based */}
             <div className="hidden mt-25 lg:flex w-full h-[500px] rounded-xl bg-white shadow-[0_4px_4px_rgba(0,0,0,0.5)] overflow-hidden ">
               <div className="w-[50%] bg-white pt-15  block index-20">
-                <h1 className="font-roboto pl-10 text-[2rem] font-bold text-[#022F40]">
-                  Explore <br /> Comprehensive course
-                  <br /> in Mechanical
-                  <br /> Engineering
-                </h1>
+                <h1
+                  className="font-roboto pl-10 text-[2rem] font-bold text-[#022F40]"
+                  dangerouslySetInnerHTML={{
+                    __html: text + '<span class="animate-pulse">|</span>',
+                  }}
+                />
                 <p className="align-justify h-auto pl-10 font-roboto pt-7 w-[100%] text-[1rem] text-[black]">
                   Learn from top experts and gain skills in mechanical
                   Engineering systems. Our courses come with certificates to
@@ -25,12 +40,20 @@ const HeroPage = () => {
                 </p>
 
                 <div className={`flex w-[260px] 1027px:hidden 1067px:hidden`}>
-                  <button className={`${styles.dark_btn}  mt-10 ml-10`}>
-                    Create Account
-                  </button>
-                  <button className={`${styles.light_btn} mt-10 ml-5`}>
-                    Login
-                  </button>
+                  <Link to="/SignUp">
+                    <button
+                      className={`cursor-pointer justify-center px-2 py-2 text-[16px] border-solid border-[1px] font-Poppins transition-all ease-in-out duration-500 font-normal hover:bg-white shadow-[0px_4px_4px_#00000040] hover:text-[#022F40] border-white  text-white rounded-md bg-[#022F40] h-auto  mt-10 ml-10`}
+                    >
+                      Create Account
+                    </button>
+                  </Link>
+                  <Link to="/login">
+                    <button
+                      className={` justify-center px-2 py-2 border-1 text-[16px]  font-Poppins transition-all ease-in-out duration-500 cursor-pointer border-[#022F40] hover:border-[#022F40] font-normal hover:bg-[#022F40] hover:text-[white]  text-[#022F40] rounded-md bg-[white] mt-10 ml-5`}
+                    >
+                      Login
+                    </button>
+                  </Link>
                 </div>
               </div>
               <div className="w-[50%] h-[100%] bg-white align-center flex relative">

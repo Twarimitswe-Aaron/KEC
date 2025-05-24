@@ -33,7 +33,7 @@ const HeaderPage = () => {
             <div className="hidden sm:flex lg:hidden justify-between items-center px-4 py-4">
               {/* Left Section */}
               <div className="flex items-center gap-4 sm:w-[190px]">
-                <Link to="#hero">
+                <Link to="/">
                   <img
                     src="/images/Logo.svg"
                     alt="Logo"
@@ -76,7 +76,7 @@ const HeaderPage = () => {
             <div className="hidden lg:flex justify-between items-center px-6 py-4">
               {/* Left Section */}
               <div className="flex items-center gap-4 lg:w-[150px]">
-                <Link to="#hero">
+                <Link to="/">
                   <img
                     src="/images/Logo.svg"
                     alt="Logo"
@@ -123,10 +123,10 @@ const HeaderPage = () => {
                   <FaWhatsapp size={38} />
                 </div>
                 <button className={`${styles.light_btn} md:w-[70px]`}>
-                  Signup
+                 <Link to="/Signup">Signup</Link>
                 </button>
-                <button className={`${styles.dark_btn} w-[100px]`}>
-                  Login
+                <button className={`${styles.dark_btn} w-full `}>
+                 <Link to="/login">Login</Link>
                 </button>
                 <button className={`${styles.light_btn} w-[42px]`}>
                   <CiGlobe size={25} />
