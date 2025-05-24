@@ -1,10 +1,11 @@
 import React, { useState, ChangeEvent } from "react";
 import { Link } from "react-router-dom";
 import { HiOutlineMail } from "react-icons/hi";
-import { MdEmail } from "react-icons/md";
+
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { IoIosLock } from "react-icons/io";
 import clsx from "clsx";
+import { useNavigate } from "react-router-dom";
 
 const Login = () => {
   interface FormData {
@@ -88,6 +89,7 @@ const Login = () => {
     }));
   };
 
+  const navigate = useNavigate();
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -100,6 +102,7 @@ const Login = () => {
         email: emailErrors.email || [],
         password: passErrors.password || [],
       });
+      
       setIsLoading(false);
       return;
     }
@@ -262,15 +265,14 @@ const Login = () => {
                 </ul>
               )}
 
-              <div className="flex gap-3 mt-6 justify-center">
+              <div className="flex w-full h-[40px] gap-3 mt-6 justify-center">
                 <button
                   onClick={() => setOpen(false)}
                   className="w-[45%] p-2 border cursor-pointer rounded-md border-[#022F40] hover:text-[#022F40] hover:bg-white transition-all duration-300"
                 >
                   Back
                 </button>
-               <Link to="/verification">
-               <button
+                <button
                   type="submit"
                   disabled={isLoading}
                   className={clsx(
@@ -289,7 +291,8 @@ const Login = () => {
                   ) : (
                     "Sign Up"
                   )}
-                </button></Link>
+                </button>
+               
               </div>
             </>
           )}

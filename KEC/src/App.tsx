@@ -1,13 +1,12 @@
 import { Routes, Route } from "react-router-dom";
 
-import DashboardLayout from "./layouts/DashboardLayout";
+import DashboardLayout from "./layouts/DashBoard/DashboardLayout.tsx";
 
 import Dashboard from "./routes/Dashboard";
 import Login from "./Pages/Login/LoginPage.tsx";
 import Signup from "./Pages/Login/Signup.tsx";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-
 import "./App.css";
 import Landing from "./Landing/Landing";
 import Verification from "./Pages/Login/verification";

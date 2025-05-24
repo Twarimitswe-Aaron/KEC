@@ -24,12 +24,12 @@ const Verification = () => {
   if (!email) return <Navigate to="/signup" replace />;
 
   return (
-    <div className="flex w-full min-h-screen font-sans bg-white">
+    <div className="flex justify-center items-center   min-h-screen font-sans bg-white">
       {/* Left side: Form */}
-      <div className="flex-1 flex items-center justify-center p-6">
+      <div className="flex-1 w-[90%]  items-center justify-center p-6">
         <form
           onSubmit={handleSubmitVerification}
-          className="w-[360px]  space-y-5 border rounded-xl shadow-md px-8 py-10"
+          className="w-[360px]  space-y-5 border  mx-auto rounded-xl shadow-md px-8 py-10"
         >
           {/* Logo */}
           <div className="flex justify-center">

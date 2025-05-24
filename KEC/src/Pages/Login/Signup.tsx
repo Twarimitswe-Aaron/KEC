@@ -208,10 +208,10 @@ const Signup = () => {
 
   return (
     <div className="flex w-full justify-center font-robot gap-0">
-      <div className="w-[690px] items-top h-full flex justify-center relative">
+      <div className="w-[690px] items-top  h-full flex justify-center relative">
         <form
           onSubmit={handleSubmit}
-          className="justify-center px-5 sm:w-[390px] sm:top-3 mt-10 w-[320px] h-auto border rounded-md border-[#022F40] text-center"
+          className="justify-center mx:auto px-5 sm:w-[390px] sm:top-3 mt-10 w-[320px] h-auto border rounded-md border-[#022F40] text-center"
         >
           <Link to="/" className="flex justify-center items-center relative">
             <img
