@@ -62,46 +62,48 @@ const RightSidebar = () => {
       {/* Rating Section - only for non-admin/non-teacher */}
       {isStudent(userRole) && <Rating />}
 
-      {/* Top Student Locations */}
-      <div>
-        <h3 className="text-sm font-semibold text-gray-700 mb-2">
-          Top Student Location
-        </h3>
-        <ul className="space-y-2">
-          {topLocations.map((loc, index) => (
-            <li key={loc.name} className="rounded-md overflow-hidden">
-              <div className="flex items-center justify-between p-2 relative">
-                {index < 3 ? (
-                  <div
-                    className={`flex items-center gap-2 rounded-md px-3 py-2 text-sm ${loc.color}`}
-                    style={{
-                      width: loc.percent,
-                      minWidth: "fit-content",
-                      maxWidth: "100%",
-                      overflow: "hidden",
-                    }}
-                  >
-                    <div className="flex items-center justify-center w-5 h-5">
-                      <FaPeopleRoof className="text-sm" />
+      {/* Top Student Locations - only for admin/teacher */}
+      {!isStudent(userRole) && (
+        <div>
+          <h3 className="text-sm font-semibold text-gray-700 mb-2">
+            Top Student Location
+          </h3>
+          <ul className="space-y-2">
+            {topLocations.map((loc, index) => (
+              <li key={loc.name} className="rounded-md overflow-hidden">
+                <div className="flex items-center justify-between p-2 relative">
+                  {index < 3 ? (
+                    <div
+                      className={`flex items-center gap-2 rounded-md px-3 py-2 text-sm ${loc.color}`}
+                      style={{
+                        width: loc.percent,
+                        minWidth: "fit-content",
+                        maxWidth: "100%",
+                        overflow: "hidden",
+                      }}
+                    >
+                      <div className="flex items-center justify-center w-5 h-5">
+                        <FaPeopleRoof className="text-sm" />
+                      </div>
+                      <span className="truncate">{loc.name}</span>
+                      <span className="text-xs ml-auto">{loc.students}</span>
                     </div>
-                    <span className="truncate">{loc.name}</span>
-                    <span className="text-xs ml-auto">{loc.students}</span>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2 px-3 text-sm">
-                    <div className="flex items-center justify-center w-5 h-5">
-                      <FaPeopleRoof className="text-sm" />
+                  ) : (
+                    <div className="flex items-center gap-2 px-3 text-sm">
+                      <div className="flex items-center justify-center w-5 h-5">
+                        <FaPeopleRoof className="text-sm" />
+                      </div>
+                      <span>{loc.name}</span>
+                      <span className="text-xs ml-auto">{loc.students}</span>
                     </div>
-                    <span>{loc.name}</span>
-                    <span className="text-xs ml-auto">{loc.students}</span>
-                  </div>
-                )}
-                <span className="text-xs text-gray-500 ml-2">{loc.percent}</span>
-              </div>
-            </li>
-          ))}
-        </ul>
-      </div>
+                  )}
+                  <span className="text-xs text-gray-500 ml-2">{loc.percent}</span>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {/* Workshops */}
       <div>
