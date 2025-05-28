@@ -79,9 +79,9 @@ const Sidebar = ({ role }: SidebarProps) => {
 
   return (
     <div
-      className={`h-screen fixed rounded-r-xl top-0 left-0 flex flex-col transition-all duration-300 shadow-lg bg-[#F5FAFF] p-5
+      className={`h-screen md:fixed top-0 left-0 rounded-r-xl  flex flex-col transition-all duration-300 shadow-lg bg-[#F5FAFF] p-5
         ${collapsed ? "w-20" : "w-64"}
-        lg:w-64 md:static md:rounded-none md:shadow-none`}
+        lg:w-64 md:rounded-none md:shadow-none`}
     >
       {/* Logo and Collapse Button */}
       <div className="flex justify-between items-center">
@@ -92,9 +92,9 @@ const Sidebar = ({ role }: SidebarProps) => {
         )}
         <button onClick={() => setCollapsed(!collapsed)} className="text-white cursor-pointer">
           {collapsed ? (
-            <FaChevronRight size={20} className="text-[#034153]" />
+            <FaChevronRight size={20} className="text-[#034153] lg:hidden" />
           ) : (
-            <FaChevronLeft size={20} className="text-[#034153]" />
+            <FaChevronLeft size={20} className="text-[#034153] lg:hidden" />
           )}
         </button>
       </div>

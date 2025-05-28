@@ -6,7 +6,7 @@ import RightSidebar from "../../Components/RightSidebar"; // Optional
 
 const DashboardLayout = () => {
   return (
-    <div className="min-h-screen flex">
+    <div className="min-h-screen justify-center  flex">
       {/* Optional Sidebar */}
       <Sidebar role="admin" />
       <div className="flex-1">

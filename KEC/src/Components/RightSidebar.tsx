@@ -39,7 +39,10 @@ const RightSidebar = () => {
   ];
 
   return (
-    <aside className="lg:w-full md:w-[250px] sm:w-[80%] max-w-[280px]  p-4 bg-white shadow-xl hidden md:block rounded-xl space-y-6">
+    <aside className="lg:w-full md:w-[250px] sm:w-[80%] max-w-[280px] p-4 bg-white shadow-xl hidden md:block rounded-xl space-y-6
+    max-h-screen overflow-y-auto hover:overflow-y-scroll scroll-hide"
+  
+  >
       {/* Profile Section */}
       <div className="text-center flex justify-center items-center">
         <h2 className="text-lg font-semibold mb-2 capitalize">{userRole}</h2>

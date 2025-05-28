@@ -289,7 +289,7 @@ const Login = () => {
                   {isLoading ? (
                     <span className="w-5 h-5 border-2 border-dashed border-current border-t-transparent rounded-full animate-spin"></span>
                   ) : (
-                    "Sign Up"
+                    "Sign In"
                   )}
                 </button>
                

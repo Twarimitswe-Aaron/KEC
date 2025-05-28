@@ -31,3 +31,12 @@ html{
 .Toastify__progress-bar {
   background: linear-gradient(to right, rgba(2, 47, 64, 0.2), rgba(2, 47, 64, 0.1)) !important;
 }
+
+/* Hides scrollbars but keeps scroll functionality */
+.scroll-hide {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+.scroll-hide::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
