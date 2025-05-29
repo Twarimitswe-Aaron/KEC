@@ -40,6 +40,7 @@ function App() {
     {/* Protected routes with DashboardLayout */}
     <Route element={<DashboardLayout />}>
       <Route path="/dashboard" element={<Dashboard />} />
+      
     </Route>
   </Routes></>
   );

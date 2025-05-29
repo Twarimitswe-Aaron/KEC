@@ -1,12 +1,10 @@
-import React from "react";
+import React, { useContext } from "react";
 import { FaPeopleRoof } from "react-icons/fa6";
 import Rating from "./Rating";
-
-type UserRole = "admin" | "teacher" | "student";
+import { UserRoleContext, UserRole } from "../UserRoleContext";
 
 const RightSidebar = () => {
-  // Mock role — replace this with actual role from auth context or props
-  const userRole: UserRole = "student"; // Change to "admin" or "teacher" to test different roles
+  const userRole = useContext(UserRoleContext) as UserRole;
 
   const isStudent = (role: UserRole): role is "student" => role === "student";
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import { NavLink } from "react-router-dom";
 
 import {
@@ -11,10 +11,7 @@ import { MdContacts, MdPayment, MdOutlineAnnouncement } from "react-icons/md";
 import { BsGraphUp } from "react-icons/bs";
 import { LuMessageSquareMore } from "react-icons/lu";
 import { CgLogOut } from "react-icons/cg";
-
-interface SidebarProps {
-  role: "teacher" | "admin" | "student";
-}
+import { UserRoleContext, UserRole } from "../UserRoleContext";
 
 type SidebarItem = {
   label: string;
@@ -58,7 +55,8 @@ const Dashboard: RoleBasedSidebar = {
   ],
 };
 
-const Sidebar = ({ role }: SidebarProps) => {
+const Sidebar = () => {
+  const role = useContext(UserRoleContext) as UserRole;
   const [collapsed, setCollapsed] = useState(false);
 
   useEffect(() => {
