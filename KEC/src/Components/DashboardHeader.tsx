@@ -1,21 +1,36 @@
 import { FiSearch } from "react-icons/fi";
 import { IoMdNotificationsOutline } from "react-icons/io";
+import { FaBars } from "react-icons/fa6";
 
-const DashboardHeader = () => {
+interface DashboardHeaderProps {
+  onHamburgerClick?: () => void; // This toggles sidebar open state
+}
+
+const DashboardHeader = ({ onHamburgerClick }: DashboardHeaderProps) => {
   return (
-    <header className="flex flex-wrap items-center justify-between gap-4 p-4 bg-white shadow rounded-xl w-full">
+    <header className="flex flex-row md:flex-row items-center justify-between gap-2 md:gap-4 p-4 bg-white md:-ml-30 lg:ml-0 shadow rounded-xl md:w-[80%] lg:w-[60%]">
+      
+      {/* Hamburger for mobile - only change is using onHamburgerClick */}
+      <button
+        className="md:hidden mr-2 p-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+        onClick={onHamburgerClick}
+        aria-label="Open sidebar"
+      >
+        <FaBars className="w-6 h-6 text-gray-700" />
+      </button>
+
       {/* Left: Greeting */}
-      <div className="flex-1 lg:ml-66 ml-2 sm:ml-20 min-w-[180px] text-start md:text-left">
+      <div className="w-full md:flex-1 text-start md:text-left mb-2 md:mb-0">
         <h2 className="text-xl font-semibold text-gray-800">Hello, Aaron</h2>
         <p className="text-sm text-gray-500">Let's see something new today</p>
       </div>
 
       {/* Middle: Search */}
-      <div className="relative flex-1 items-center min-w-[180px] sm:block hidden max-w-md w-full">
+      <div className="relative w-full md:flex-1 min-w-[180px] sm:block hidden max-w-md">
         <input
           type="text"
           placeholder="Search anything here..."
-          className="w-full pl-4 pr-10 py-2 text-sm  rounded-md border border-gray-200 shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+          className="w-full pl-4 pr-10 py-2 text-sm rounded-md border border-gray-200 shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
         />
         <FiSearch className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
       </div>

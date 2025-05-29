@@ -5,6 +5,7 @@ import { UserRoleContext, UserRole } from "../UserRoleContext";
 
 const RightSidebar = () => {
   const userRole = useContext(UserRoleContext) as UserRole;
+  console.log(userRole);
 
   const isStudent = (role: UserRole): role is "student" => role === "student";
 
@@ -37,7 +38,7 @@ const RightSidebar = () => {
   ];
 
   return (
-    <aside className="lg:w-full md:w-[250px] sm:w-[80%] max-w-[280px] p-4 bg-white shadow-xl hidden md:block rounded-xl space-y-6
+    <aside className="lg:!w-[300px] md:!w-[250px] z-10 sm:!w-[80%] !max-w-[280px] p-4 bg-white shadow-xl hidden md:block rounded-xl space-y-6
     max-h-screen overflow-y-auto hover:overflow-y-scroll scroll-hide"
   
   >

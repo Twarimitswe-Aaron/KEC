@@ -1,6 +1,18 @@
 import { useEffect, useState, useContext } from "react";
 import axios from "axios";
-import { FaMoneyBillWave, FaStar, FaGraduationCap, FaBook } from "react-icons/fa";
+import { useKeenSlider } from "keen-slider/react";
+import "keen-slider/keen-slider.min.css";
+import {
+  FaMoneyBillWave,
+  FaStar,
+  FaGraduationCap,
+  FaBook,
+} from "react-icons/fa";
+import {
+  PiNotebookDuotone,
+  PiCertificateDuotone,
+  PiStudentDuotone,
+} from "react-icons/pi";
 import { UserRoleContext } from "../UserRoleContext";
 
 type Stats = {
@@ -8,6 +20,9 @@ type Stats = {
   rating: number;
   students: number;
   courses: number;
+  ongoingCourses: number;
+  completedCourses: number;
+  certificates: number;
 };
 
 const DashboardStats = () => {
@@ -27,10 +42,29 @@ const DashboardStats = () => {
     fetchStats();
   }, []);
 
+  const [sliderRef, instanceRef] = useKeenSlider({
+    loop: true,
+    mode: "snap",
+    renderMode: "performance",
+    slides: {
+      origin: "auto",
+      spacing: 15,
+      perView: "auto",
+    },
+  });
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      instanceRef.current?.next();
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [instanceRef]);
+
   if (!stats) {
     return <p className="text-center py-10">Loading stats...</p>;
   }
 
+  // General Stats (all roles)
   let statCards = [
     {
       label: "Total Revenue",
@@ -58,22 +92,51 @@ const DashboardStats = () => {
     },
   ];
 
+  // Remove revenue for teachers and students
   if (userRole === "teacher" || userRole === "student") {
-    statCards = statCards.filter(card => card.label !== "Total Revenue");
+    statCards = statCards.filter((card) => card.label !== "Total Revenue");
+    if (userRole === "student") {
+      statCards = [];
+    }
   }
 
   return (
-    <div className="grid lg:ml-66  md:grid-cols-2  grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-      {statCards.map((stat, index) => (
-        <div
-          key={index}
-          className={`flex flex-col items-center p-4 rounded-xl shadow ${stat.bg}`}
-        >
-          <div className="mb-2">{stat.icon}</div>
-          <p className="text-sm font-medium text-gray-500">{stat.label}</p>
-          <p className="text-xl font-bold text-gray-800">{stat.value}</p>
+    <div className="z-1 w-full md:-ml-45 lg:ml-0 overflow-x-auto hide-scrollbar">
+      <div
+        className="keen-slider  flex mx-auto max-w-screen-xl px-4"
+        ref={sliderRef}
+      >
+        {/* Ongoing Course */}
+        <div className="keen-slider__slide flex flex-col items-center p-4 rounded-xl  bg-slate-100 !w-[280px] flex-shrink-0">
+          <div className="bg-slate-700 p-3 rounded-full mb-2">
+            <PiNotebookDuotone className="h-6 w-6 text-white" />
+          </div>
+          <p className="text-sm font-medium text-gray-500">Ongoing course</p>
+          <p className="text-xl font-bold text-gray-800">
+            {stats.ongoingCourses}
+          </p>
         </div>
-      ))}
+        {/* Completed Courses */}
+        <div className="keen-slider__slide flex flex-col items-center p-4 rounded-xl  bg-rose-100 !w-[280px] flex-shrink-0">
+          <div className="bg-rose-500 p-3 rounded-full mb-2">
+            <PiStudentDuotone className="h-6 w-6 text-white" />
+          </div>
+          <p className="text-sm font-medium text-gray-500">Completed courses</p>
+          <p className="text-xl font-bold text-gray-800">
+            {stats.completedCourses}
+          </p>
+        </div>
+        {/* Certificates */}
+        <div className="keen-slider__slide flex flex-col items-center p-4 rounded-xl  bg-yellow-100 !w-[280px] flex-shrink-0">
+          <div className="bg-yellow-500 p-3 rounded-full mb-2">
+            <PiCertificateDuotone className="h-6 w-6 text-white" />
+          </div>
+          <p className="text-sm font-medium text-gray-500">Certificates</p>
+          <p className="text-xl font-bold text-gray-800">
+            {stats.certificates}
+          </p>
+        </div>
+      </div>
     </div>
   );
 };

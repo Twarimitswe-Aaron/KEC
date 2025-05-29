@@ -6,12 +6,14 @@ import {
   FiSettings,
 } from "react-icons/fi";
 import { FaChevronLeft, FaChevronRight, FaRegUser } from "react-icons/fa6";
+import { FaTimes } from "react-icons/fa";
 import { RiMessage3Line } from "react-icons/ri";
 import { MdContacts, MdPayment, MdOutlineAnnouncement } from "react-icons/md";
 import { BsGraphUp } from "react-icons/bs";
 import { LuMessageSquareMore } from "react-icons/lu";
 import { CgLogOut } from "react-icons/cg";
 import { UserRoleContext, UserRole } from "../UserRoleContext";
+
 
 type SidebarItem = {
   label: string;
@@ -22,6 +24,11 @@ type SidebarItem = {
 type RoleBasedSidebar = {
   [role: string]: SidebarItem[];
 };
+
+interface SidebarProps {
+  isMobileOpen?: boolean;
+  onClose?: () => void;
+}
 
 const Dashboard: RoleBasedSidebar = {
   admin: [
@@ -55,69 +62,79 @@ const Dashboard: RoleBasedSidebar = {
   ],
 };
 
-const Sidebar = () => {
+const Sidebar = ({ isMobileOpen, onClose }: SidebarProps) => {
   const role = useContext(UserRoleContext) as UserRole;
   const [collapsed, setCollapsed] = useState(false);
+  const sidebarLinks = Dashboard[role];
 
+  // Handle resize behavior
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth < 1024) {
-        setCollapsed(true);
+        setCollapsed(false); // default collapsed for mobile = false (w-20)
       } else {
-        setCollapsed(false);
+        setCollapsed(true); // default expanded for desktop = true (w-64)
       }
     };
 
-    handleResize();
+    handleResize(); // call on mount
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  const sidebarLinks = Dashboard[role];
+  const sidebarWidth = collapsed ? "w-64" : "w-20";
 
   return (
     <div
-      className={`h-screen md:fixed top-0 left-0 rounded-r-xl  flex flex-col transition-all duration-300 shadow-lg bg-[#F5FAFF] p-5
-        ${collapsed ? "w-20" : "w-64"}
-        lg:w-64 md:rounded-none md:shadow-none`}
+      className={`h-screen mt-10 sm:mt-0 flex flex-col transition-all  duration-300 shadow-lg bg-[#F5FAFF] p-5
+        ${sidebarWidth} md:fixed top-0 left-0 rounded-r-xl z-30
+        ${isMobileOpen ? "fixed top-0 left-0 z-50" : ""}
+      `}
     >
-      {/* Logo and Collapse Button */}
-      <div className="flex justify-between items-center">
-        {!collapsed && (
-          <div className="text-left w-full">
-            <img src="/images/Logo.svg" alt="logo" className="w-20 h-20" />
-          </div>
+      {/* Mobile Close Button */}
+      {isMobileOpen && (
+        <button
+          className="absolute -top-8 left-3 p-2 rounded-full bg-white shadow-sm z-50"
+          onClick={onClose}
+          aria-label="Close sidebar"
+        >
+          <FaTimes className="w-5 h-5 text-gray-700" />
+        </button>
+      )}
+
+      {/* Logo & Collapse Toggle */}
+      <div className="flex justify-between items-center mb-4">
+        {collapsed && (
+          <img src="/images/Logo.svg" alt="logo" className="w-20 h-20" />
         )}
-        <button onClick={() => setCollapsed(!collapsed)} className="text-white cursor-pointer">
-          {collapsed ? (
-            <FaChevronRight size={20} className="text-[#034153] lg:hidden" />
-          ) : (
-            <FaChevronLeft size={20} className="text-[#034153] lg:hidden" />
-          )}
+        <button
+          onClick={() => setCollapsed(!collapsed)}
+          className="text-[#034153] md:block"
+        >
+          {collapsed ? <FaChevronLeft /> : <FaChevronRight />}
         </button>
       </div>
 
-      {/* Navigation Links */}
+      {/* Navigation */}
       <nav className="flex flex-col gap-2 mt-4">
         {sidebarLinks.map((item) => {
           const isLogout = item.label.toLowerCase() === "logout";
-
           return (
             <NavLink
               key={item.path}
               to={item.path}
               className={({ isActive }) =>
-                `flex items-center gap-3 p-3 rounded-md cursor-pointer transition-all ${
-                  isLogout
-                    ? "bg-[#FDF0EC] text-[#81290E] hover:bg-[#fce5e0]"
-                    : isActive
-                    ? "bg-[#034153] text-white"
-                    : "bg-white text-[#034153] hover:bg-[#e6f2f5] hover:text-[#034153]"
+                `flex items-center p-3 rounded-md cursor-pointer transition-all gap-3
+                ${isLogout
+                  ? "bg-[#FDF0EC] text-[#81290E] hover:bg-[#fce5e0]"
+                  : isActive
+                  ? "bg-[#034153] text-white"
+                  : "bg-white text-[#034153] hover:bg-[#e6f2f5] hover:text-[#034153]"
                 }`
               }
             >
               {item.icon}
-              {!collapsed && item.label}
+              {collapsed && <span className="whitespace-nowrap">{item.label}</span>}
             </NavLink>
           );
         })}

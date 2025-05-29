@@ -23,7 +23,7 @@ const HeaderPage = () => {
 
   const [activeLink, setActiveLink] = useState("Home Alone");
   return (
-    <div className="">
+    <div className={` ${menuOpen ? "z-50": ""}`}>
       <div
         className={`${styles.parent_section} items-center fixed  left-0 w-full  top-0 z-30`}
       >
