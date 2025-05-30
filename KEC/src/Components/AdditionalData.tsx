@@ -81,14 +81,16 @@ const AdditionalData = () => {
   }, []);
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
+    <div className="flex flex-cols-1 md:flex-cols-2 w-full gap-2 mt-18">
       {/* Weekly Sales Statistics */}
-      <div className="bg-white rounded-xl shadow p-4">
+      <div className="bg-white rounded-xl md:w-[60%] shadow p-4">
         <h3 className="text-lg font-semibold mb-4">Weekly Sales Statistics</h3>
-        <div className="grid grid-cols-3 font-semibold text-sm text-gray-500 border-b pb-2 mb-2">
+        <div className="flex flex-cols-3 justify-between font-semibold text-sm text-gray-500 border-b pb-2 mb-2">
           <span>Course</span>
+          <div className="flex justify-between w-[26%]">
           <span>Sale</span>
           <span>Earnings</span>
+          </div>
         </div>
         {loading ? (
           <p>Loading...</p>
@@ -96,7 +98,7 @@ const AdditionalData = () => {
           Array.isArray(courses) && courses.map((course) => (
             <div
               key={course.id}
-              className="grid grid-cols-3 items-center mb-4"
+              className="flex flex-cols-3 items-center justify-between mb-4"
             >
               <div className="flex items-center gap-2">
                 <img
@@ -108,19 +110,21 @@ const AdditionalData = () => {
                   {course.name}
                 </span>
               </div>
+              <div className="flex justify-between w-[26%]">
               <span className="text-center text-sm text-gray-700">
                 {course.sales}
               </span>
               <span className="text-sm text-green-600 font-semibold">
                 {course.earnings} frw
               </span>
+              </div>
             </div>
           ))
         )}
       </div>
 
       {/* Popular Courses */}
-      <div className="bg-white rounded-xl shadow p-4">
+      <div className="bg-white rounded-xl md:w-[40%] shadow p-4">
         <h3 className="text-lg font-semibold mb-4">Popular courses</h3>
         {loading ? (
           <p>Loading...</p>
