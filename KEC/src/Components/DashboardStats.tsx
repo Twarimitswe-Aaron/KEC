@@ -46,7 +46,7 @@ const DashboardStats = () => {
     averageScore: 85,
   };
 
-  // ✅ Fetch stats from backend on mount
+  // Fetch stats from backend on mount
   useEffect(() => {
     const fetchStats = async () => {
       try {
@@ -60,7 +60,7 @@ const DashboardStats = () => {
     fetchStats();
   }, []);
 
-  // ✅ Initialize KeenSlider
+  // Initialize KeenSlider
   const [sliderRef, instanceRef] = useKeenSlider({
     loop: true,
     mode: "snap",

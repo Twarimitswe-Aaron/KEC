@@ -1,10 +1,13 @@
 import React from 'react';
 import DashboardStats from '../Components/DashboardStats';
+import GrapshSection from '../Components/GrapshSection';
+import AdditionalData from '../Components/AdditionalData';
 const Dashboard = () => {
   return (
     <div>
       <DashboardStats />
-      {/* Dashboard content will go here */}
+      <GrapshSection/>
+      <AdditionalData/>
     </div>
   );
 };
