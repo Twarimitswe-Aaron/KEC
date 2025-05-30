@@ -1,5 +1,7 @@
 // Import necessary libraries
 import React, { useEffect, useState } from "react";
+import axios from "axios";
+import Skeleton from "./Skeleton";
 import {
   ResponsiveContainer,
   BarChart,
@@ -13,7 +15,6 @@ import {
   Legend,
   ComposedChart,
 } from "recharts";
-import axios from "axios";
 
 interface DataPoint {
   month: string;
@@ -21,9 +22,9 @@ interface DataPoint {
   revenue: number;
 }
 
-// Component definition
-const GraphSection = () => {
+const GrapshSection = () => {
   const [data, setData] = useState<DataPoint[]>([]);
+  const [loading, setLoading] = useState(true);
 
   // Fallback data in case backend is not ready
   const fallbackData = [
@@ -55,10 +56,20 @@ const GraphSection = () => {
           error
         );
         setData(fallbackData);
+      } finally {
+        setLoading(false);
       }
     };
     fetchData();
   }, []);
+
+  if (loading) {
+    return (
+      <div className="w-full h-[270px] p-4 rounded-xl">
+        <Skeleton width="w-full" height="h-[270px]" rounded="rounded-xl" />
+      </div>
+    );
+  }
 
   return (
     <div className="w-full h-[270px] p-4 rounded-xl">
@@ -129,7 +140,6 @@ const GraphSection = () => {
               gap: 12,
             }}
           />
-
           <Bar
             yAxisId="left"
             dataKey="sales"
@@ -153,4 +163,4 @@ const GraphSection = () => {
   );
 };
 
-export default GraphSection;
+export default GrapshSection;

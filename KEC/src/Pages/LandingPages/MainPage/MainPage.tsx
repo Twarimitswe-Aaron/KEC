@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import styles from "../../../Styles/styles";
 import { FaArrowRight } from "react-icons/fa6";
+import Skeleton from '../../../Components/Skeleton';
 
 type DataItem = {
   title: string;
@@ -30,12 +31,19 @@ const PhoneArrow: React.FC<{
 
 const MainPage: React.FC = () => {
   const [index1, setIndex] = useState(0);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const interval = setInterval(() => {
       setIndex((prevIndex) => (prevIndex === 3 ? 0 : prevIndex + 1));
     }, 5000);
     return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    // Simulate loading for demonstration
+    const timer = setTimeout(() => setLoading(false), 1200);
+    return () => clearTimeout(timer);
   }, []);
 
   const data: DataItem[] = [
@@ -80,32 +88,50 @@ const MainPage: React.FC = () => {
 
             <div className="flex w-full">
               <div className="w-[50%]">
-                <img
-                  src="/images/subHero.png"
-                  className="object-cover rounded h-[370px]"
-                  alt="Mechanical engineering learning platform"
-                />
+                {loading ? (
+                  <Skeleton width="w-full" height="h-[370px]" rounded="rounded" />
+                ) : (
+                  <img
+                    src="/images/subHero.png"
+                    className="object-cover rounded h-[370px]"
+                    alt="Mechanical engineering learning platform"
+                  />
+                )}
               </div>
 
               <div className="w-[50%]">
-                {data.map((item, idx) => (
-                  <div
-                    key={`${item.title}-${idx}`}
-                    className="flex gap-4 w-full pb-4"
-                  >
-                    <div className="flex justify-center">
-                      <ArrowIcon />
+                {loading ? (
+                  <>
+                    {[...Array(4)].map((_, idx) => (
+                      <div key={idx} className="flex gap-4 w-full pb-4">
+                        <Skeleton width="w-8" height="h-8" rounded="rounded-full" />
+                        <div className="flex-1">
+                          <Skeleton width="w-32" />
+                          <Skeleton width="w-48" />
+                        </div>
+                      </div>
+                    ))}
+                  </>
+                ) : (
+                  data.map((item, idx) => (
+                    <div
+                      key={`${item.title}-${idx}`}
+                      className="flex gap-4 w-full pb-4"
+                    >
+                      <div className="flex justify-center">
+                        <ArrowIcon />
+                      </div>
+                      <div className="text-justify">
+                        <h1 className="font-semibold text-2xl text-[#022F40] ">
+                          {item.title}
+                        </h1>
+                        <p className="text-[13px] text-gray-700 lg:text-[16px]">
+                          {item.content}
+                        </p>
+                      </div>
                     </div>
-                    <div className="text-justify">
-                      <h1 className="font-semibold text-2xl text-[#022F40] ">
-                        {item.title}
-                      </h1>
-                      <p className="text-[13px] text-gray-700 lg:text-[16px]">
-                        {item.content}
-                      </p>
-                    </div>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
             </div>
           </div>
@@ -127,49 +153,50 @@ const MainPage: React.FC = () => {
                 provide an exceptional learning experience.
               </p>
 
-              <img
-                src="/images/subHero.png"
-                alt="Mechanical engineering learning platform"
-                className="h-[200px] w-full pt-2 object-cover"
-              />
-
               <div className="flex mt-5 w-full">
                 <div className="w-[50%]">
-                  {data.map((item, idx) => (
-                    <div
-                      key={`${item.title}-${idx}`}
-                      className={`flex items-center gap-4 w-full pb-4 cursor-pointer ${
-                        idx === index1 ? "font-bold text-[#022f40]" : ""
-                      }`}
-                      onClick={() => setIndex(idx)}
-                    >
-                      <PhoneArrow
-                        idx={idx}
-                        currentIndex={index1}
-                        onClick={setIndex}
-                      />
-                      <div>
-                        <h1
-                          className={`text-[14px] text-[#000] font-medium ${
-                            idx === index1 ? "font-bold text-[#022f40]" : ""
-                          }`}
-                        >
-                          {item.title}
-                        </h1>
-                      </div>
-                    </div>
-                  ))}
+                  {loading ? (
+                    <Skeleton width="w-full" height="h-[200px]" rounded="rounded" />
+                  ) : (
+                    <img
+                      src="/images/subHero.png"
+                      alt="Mechanical engineering learning platform"
+                      className="h-[200px] w-full pt-2 object-cover"
+                    />
+                  )}
                 </div>
                 <div className="w-[70%] bg-white shadow-[0_4px_4px_rgba(0,0,0,0.5)] rounded-[3px] p-4 h-auto">
-                  {data[index1] && (
-                    <div className="mx-auto w-[90%]">
-                      <h3 className="text-sm font-bold text-[#022f40]">
-                        {data[index1].title}
-                      </h3>
-                      <p className="text-[13px] font-poppins my-1 text-gray-700">
-                        {data[index1].content}
-                      </p>
-                    </div>
+                  {loading ? (
+                    <>
+                      {[...Array(4)].map((_, idx) => (
+                        <div key={idx} className="flex gap-4 w-full pb-4">
+                          <Skeleton width="w-8" height="h-8" rounded="rounded-full" />
+                          <div className="flex-1">
+                            <Skeleton width="w-32" />
+                            <Skeleton width="w-48" />
+                          </div>
+                        </div>
+                      ))}
+                    </>
+                  ) : (
+                    data.map((item, idx) => (
+                      <div
+                        key={`${item.title}-${idx}`}
+                        className="flex gap-4 w-full pb-4"
+                      >
+                        <div className="flex justify-center">
+                          <ArrowIcon />
+                        </div>
+                        <div className="text-justify">
+                          <h1 className="font-semibold text-2xl text-[#022F40] ">
+                            {item.title}
+                          </h1>
+                          <p className="text-[13px] text-gray-700 lg:text-[16px]">
+                            {item.content}
+                          </p>
+                        </div>
+                      </div>
+                    ))
                   )}
                 </div>
               </div>

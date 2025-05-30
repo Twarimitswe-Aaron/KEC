@@ -21,21 +21,10 @@ import {
 } from "react-icons/pi";
 
 import { UserRoleContext } from "../UserRoleContext";
-
-// Define the shape of the API response
-type Stats = {
-  revenue: number;
-  rating: number;
-  students: number;
-  courses: number;
-  ongoingCourses: number;
-  completedCourses: number;
-  certificates: number;
-  averageScore: number;
-};
+import { DashboardStats as StatsType } from "../types/dashboard";
 
 const DashboardStats = () => {
-  const [stats, setStats] = useState<Stats | null>(null);
+  const [stats, setStats] = useState<StatsType | null>(null);
   const userRole = useContext(UserRoleContext);
 
   // Sample mock data for students
@@ -60,7 +49,7 @@ const DashboardStats = () => {
     fetchStats();
   }, []);
 
-  // ✅ Initialize KeenSlider
+  // Initialize KeenSlider
   const [sliderRef, instanceRef] = useKeenSlider({
     loop: true,
     mode: "snap",
@@ -100,7 +89,6 @@ const DashboardStats = () => {
 
   // Define cards shown to admin/teacher
   let statCards = [
-  
     {
       label: "Average Rating",
       value: `${stats?.rating}/5`,
@@ -138,7 +126,7 @@ const DashboardStats = () => {
     },
   ];
 
-  // ✅ Hide revenue from teacher/student/admin
+  // Hide revenue from teacher/student/admin
   if (userRole === "teacher") {
     statCards = statCards.filter((card) => card.label !== "Total Revenue");
     statCards = statCards.filter((card) => card.label !== "Average Score");
@@ -150,13 +138,8 @@ const DashboardStats = () => {
 
   return (
     <div className="z-1 w-full overflow-x-auto hide-scrollbar">
-      
       {userRole === "student" ? (
-       
-        <div
-          className="keen-slider  max-w-screen-xl"
-          ref={sliderRef}
-        >
+        <div className="keen-slider max-w-screen-xl" ref={sliderRef}>
           {/* Ongoing Courses */}
           <div className="keen-slider__slide flex flex-col items-center p-4 justify-center rounded-xl bg-slate-100 !w-[180px] flex-shrink-0">
             <div className="bg-slate-700 p-3 rounded-full mb-2">
@@ -202,11 +185,7 @@ const DashboardStats = () => {
           </div>
         </div>
       ) : (
-       
-        <div
-          className="keen-slider max-w-screen-xl"
-          ref={sliderRef}
-        >
+        <div className="keen-slider max-w-screen-xl" ref={sliderRef}>
           {statCards.map((card, index) => (
             <div
               key={index}
