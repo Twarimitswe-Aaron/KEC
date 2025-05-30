@@ -56,11 +56,11 @@ const HeaderCourseCard: React.FC<HeaderCourseCardProps> = ({
       </div>
       */}
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-bold">Your Courses</h2>
+        <h2 className="sm:text-xl text-12 font-bold">Your Courses</h2>
         <select
           value={initialSelectedCourse}
           onChange={(e) => onCourseChange(e.target.value)}
-          className="block w-64 rounded-md border border-gray-300 bg-white py-2 px-3 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 sm:text-sm"
+          className="block w-64 rounded-md border border-gray-300 bg-white py-2 px-3 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 text-10 sm:text-sm"
         >
           {displayCourses.map((course) => (
             <option key={course.id} value={course.id}>
@@ -72,10 +72,10 @@ const HeaderCourseCard: React.FC<HeaderCourseCardProps> = ({
       
       {initialSelectedCourse && (
         <div className="mt-4">
-          <h3 className="text-lg font-semibold">
+          <h3 className="sm:text-lg text-sm font-semibold">
             {displayCourses.find(c => c.id === initialSelectedCourse)?.name}
           </h3>
-          <p className="text-gray-600 mt-2">
+          <p className="text-gray-600 text-sm sm:text-lg mt-2">
             {displayCourses.find(c => c.id === initialSelectedCourse)?.description}
           </p>
           {displayCourses.find(c => c.id === initialSelectedCourse)?.progress !== undefined && (

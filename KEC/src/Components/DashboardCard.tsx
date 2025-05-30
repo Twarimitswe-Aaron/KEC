@@ -260,17 +260,43 @@ const DashboardCard = () => {
             key={index}
             className="bg-white w-full rounded-xl shadow-md overflow-hidden relative"
           >
-            {/* Expanded description above card */}
+            {/* Expanded description modal */}
             {expandedIndex === index && (
-              <div className="absolute -top-[120px] left-0 right-0 z-10 bg-white p-4 border border-gray-200 rounded-lg shadow-lg">
-                <div className="flex flex-col gap-2">
-                  <p className="text-sm text-gray-700 leading-relaxed">{item.description}</p>
+              <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+                <div className="bg-white rounded-lg shadow-xl max-w-lg w-full p-6 relative">
                   <button
-                    className="text-blue-600 text-xs self-end hover:text-blue-800 transition-colors"
+                    className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 transition-colors"
                     onClick={() => setExpandedIndex(null)}
                   >
-                    Show less
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
                   </button>
+                  
+                  <div className="flex flex-col gap-4">
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-800">{item.title}</h3>
+                      <p className="text-sm text-gray-500 mt-1">{item.uploader.name}</p>
+                    </div>
+                    
+                    <p className="text-gray-600 leading-relaxed">{item.description}</p>
+                    
+                    <div className="flex items-center gap-4 text-sm text-gray-500">
+                      <span className="flex items-center gap-2">
+                        <BsCameraVideoFill className="text-blue-500" /> {item.no_lessons} lessons
+                      </span>
+                      <span className="flex items-center gap-2">
+                        <GoStopwatch className="text-blue-500" /> {item.no_hours}
+                      </span>
+                    </div>
+                    
+                    <div className="flex items-center justify-between pt-4 border-t">
+                      <p className="text-lg font-bold text-[#022F40]">{item.price}</p>
+                      <button className="px-6 py-2 bg-[#022F40] text-white rounded hover:bg-opacity-90 transition-colors">
+                        Start Course
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
@@ -295,12 +321,15 @@ const DashboardCard = () => {
                 </p>
 
                 {expandedIndex !== index && (
-                  <div className="flex justify-between items-center mt-1">
+                  <div className="flex justify-between items-center mt-2">
                     <button
-                      className="text-blue-600 text-xs hover:text-blue-800 transition-colors"
+                      className="text-blue-600 text-xs hover:text-blue-800 transition-colors flex items-center gap-1"
                       onClick={() => setExpandedIndex(index)}
                     >
-                      Read more
+                      <span>Read more</span>
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                      </svg>
                     </button>   
                     <p className="text-sm font-semibold">{item.uploader.name}</p>
                   </div>
