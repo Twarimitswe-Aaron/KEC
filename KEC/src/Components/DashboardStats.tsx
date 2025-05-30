@@ -72,7 +72,7 @@ const DashboardStats = () => {
     },
   });
 
-  // ✅ Auto-slide every 5 seconds
+  // Auto-slide every 5 seconds
   useEffect(() => {
     const interval = setInterval(() => {
       instanceRef.current?.next();
@@ -80,7 +80,7 @@ const DashboardStats = () => {
     return () => clearInterval(interval);
   }, [instanceRef]);
 
-  // ✅ Show skeleton loader while stats are loading
+  // Show skeleton loader while stats are loading
   if (!stats && userRole !== "student") {
     return (
       <div className="flex space-x-3 px-6 py-8 overflow-x-auto">
@@ -98,15 +98,9 @@ const DashboardStats = () => {
     );
   }
 
-  // ✅ Define cards shown to admin/teacher
+  // Define cards shown to admin/teacher
   let statCards = [
-    {
-      label: "Total Revenue",
-      value: `${stats?.revenue} frw`,
-      icon: <FaMoneyBillWave className="text-2xl text-orange-600" />,
-      bg: "bg-orange-50",
-      iconBg: "bg-white",
-    },
+  
     {
       label: "Average Rating",
       value: `${stats?.rating}/5`,
@@ -123,10 +117,10 @@ const DashboardStats = () => {
     },
     {
       label: "Total Courses",
-      value: `${stats?.courses} no`, // ✅ Fixed: previously used students instead of courses
+      value: `${stats?.courses} no`, 
       icon: <PiStudentDuotone className="text-2xl text-white" />,
-      bg: "bg-red-50",
-      iconBg: "bg-red-500",
+      bg: "bg-slate-100",
+      iconBg: "bg-gray-700",
     },
     {
       label: "Average Score",
@@ -135,13 +129,23 @@ const DashboardStats = () => {
       bg: "bg-blue-50",
       iconBg: "bg-blue-500",
     },
+    {
+      label: "Total Revenue",
+      value: `${stats?.revenue} frw`,
+      icon: <FaMoneyBillWave className="text-2xl text-white" />,
+      bg: "bg-blue-50",
+      iconBg: "bg-blue-500",
+    },
   ];
 
-  // ✅ Hide revenue from teacher/student
+  // ✅ Hide revenue from teacher/student/admin
   if (userRole === "teacher") {
     statCards = statCards.filter((card) => card.label !== "Total Revenue");
+    statCards = statCards.filter((card) => card.label !== "Average Score");
   } else if (userRole === "student") {
     statCards = []; // Student only uses mock `student_data`, not these cards
+  } else if (userRole === "admin") {
+    statCards = statCards.filter((card) => card.label !== "Average Score");
   }
 
   return (
@@ -150,7 +154,7 @@ const DashboardStats = () => {
       {userRole === "student" ? (
        
         <div
-          className="keen-slider items-center justify-center flex mx-auto max-w-screen-xl"
+          className="keen-slider  max-w-screen-xl"
           ref={sliderRef}
         >
           {/* Ongoing Courses */}

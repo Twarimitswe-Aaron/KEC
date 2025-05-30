@@ -104,13 +104,13 @@ const Sidebar = ({ isMobileOpen, onClose }: SidebarProps) => {
       )}
 
       {/* Logo & Collapse Toggle */}
-      <div className="flex justify-between items-center mb-4">
+      <div className=" flex justify-between items-center">
         {collapsed && (
           <img src="/images/Logo.svg" alt="logo" className="w-20 h-20" />
         )}
         <button
           onClick={() => setCollapsed(!collapsed)}
-          className="text-[#034153] md:block"
+          className="text-[#034153] lg:hidden block"
         >
           {collapsed ? <FaChevronLeft /> : <FaChevronRight />}
         </button>

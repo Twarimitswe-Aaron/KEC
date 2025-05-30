@@ -14,7 +14,7 @@ const DashboardLayout = () => {
     <UserRoleContext.Provider value="admin">
       <div className="w-full min-h-screen flex">
         {/* Left Sidebar for md+ */}
-        <aside className="hidden md:block w-[10%] lg:w-[20%] h-screen sticky top-0">
+        <aside className="hidden md:block w-[10%] lg:w-[20%] h-screen sticky left-0 top-0">
           <Sidebar />
         </aside>
 
@@ -32,7 +32,7 @@ const DashboardLayout = () => {
 
         {/* Main Content Area */}
         <div className="flex-1 w-full md:w-[90%] lg:w-[60%] min-h-screen">
-          <div className="sticky top-0 z-30 bg-white">
+          <div className="sticky top-0 mx-3 z-30 bg-white">
             <DashboardHeader onHamburgerClick={toggleSidebar} />
           </div>
           <main className="p-4">
@@ -41,9 +41,10 @@ const DashboardLayout = () => {
         </div>
 
         {/* Right Sidebar */}
-        <aside className="hidden lg:block w-[20%] h-screen sticky top-0">
-          <RightSidebar />
-        </aside>
+        <aside className="hidden lg:block w-[20%] h-screen sticky right-0 top-0">
+  <RightSidebar />
+</aside>
+
       </div>
     </UserRoleContext.Provider>
   );

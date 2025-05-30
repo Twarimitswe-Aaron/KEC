@@ -67,7 +67,7 @@ const RightSidebar = () => {
           <h3 className="text-sm font-semibold text-gray-700 mb-2">
             Top Student Location
           </h3>
-          <ul className="space-y-2">
+          <ul className="">
             {topLocations.map((loc, index) => (
               <li key={loc.name} className="rounded-md overflow-hidden">
                 <div className="flex items-center justify-between p-2 relative">
