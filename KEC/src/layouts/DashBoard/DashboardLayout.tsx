@@ -12,17 +12,17 @@ const DashboardLayout = () => {
 
   return (
     <UserRoleContext.Provider value="admin">
-      <div className="w-[100%]  overflow-x-hidden min-h-screen flex flex-row relative">
+      <div className="w-full min-h-screen flex">
         {/* Left Sidebar for md+ */}
-        <div className="hidden  md:block w-[10%] lg:!w-[20%] h-full top-0 -left-1 z-30">
+        <aside className="hidden md:block w-[10%] lg:w-[20%] h-screen sticky top-0">
           <Sidebar />
-        </div>
+        </aside>
 
         {/* Mobile Sidebar Drawer */}
         {isSidebarOpen && (
           <div className="fixed inset-0 z-40 flex md:hidden">
             {/* Overlay */}
-            <div className="fixed inset-0 " onClick={closeSidebar}></div>
+            <div className="fixed inset-0 bg-black/30" onClick={closeSidebar}></div>
             {/* Sidebar Drawer */}
             <div className="relative w-20 h-full bg-[#F5FAFF] shadow-lg z-50">
               <Sidebar onClose={closeSidebar} isMobileOpen />
@@ -31,19 +31,19 @@ const DashboardLayout = () => {
         )}
 
         {/* Main Content Area */}
-        <div className="flex-1 min-h-screen lg:!w-[60%] sm:!w-[87%]  justify-center mx-auto  p-3  top-0 sm:right-0 right-3 z-10 relative">
-          <div className="sticky mx-auto w-full top-0  z-30 ">
+        <div className="flex-1 w-full md:w-[90%] lg:w-[60%] min-h-screen">
+          <div className="sticky top-0 z-30 bg-white">
             <DashboardHeader onHamburgerClick={toggleSidebar} />
           </div>
-          <main className="flex-1 mt-4 justify-center w-full">
+          <main className="p-4">
             <Outlet />
           </main>
         </div>
 
         {/* Right Sidebar */}
-        <div className="hidden lg:block lg:!w-[20%] h-full z-20">
+        <aside className="hidden lg:block w-[20%] h-screen sticky top-0">
           <RightSidebar />
-        </div>
+        </aside>
       </div>
     </UserRoleContext.Provider>
   );
