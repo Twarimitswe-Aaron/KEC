@@ -8,11 +8,10 @@ interface DashboardHeaderProps {
 
 const DashboardHeader = ({ onHamburgerClick }: DashboardHeaderProps) => {
   return (
-    <header className="flex flex-row md:flex-row items-center justify-between gap-2 md:gap-4 p-4 bg-white md:-ml-30 lg:ml-0 shadow rounded-xl md:w-[80%] lg:w-[60%]">
-      
+    <header className="flex flex-row  md:flex-row !w-full items-center justify-between  gap-2 p-4 bg-white shadow rounded-xl ">
       {/* Hamburger for mobile - only change is using onHamburgerClick */}
       <button
-        className="md:hidden mr-2 p-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+        className="md:hidden p-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
         onClick={onHamburgerClick}
         aria-label="Open sidebar"
       >
@@ -26,7 +25,7 @@ const DashboardHeader = ({ onHamburgerClick }: DashboardHeaderProps) => {
       </div>
 
       {/* Middle: Search */}
-      <div className="relative w-full md:flex-1 min-w-[180px] sm:block hidden max-w-md">
+      <div className="relative w-full md:flex-1 items-center min-w-[180px] sm:block hidden max-w-md">
         <input
           type="text"
           placeholder="Search anything here..."
@@ -36,7 +35,7 @@ const DashboardHeader = ({ onHamburgerClick }: DashboardHeaderProps) => {
       </div>
 
       {/* Right: Notification */}
-      <div className="relative flex-shrink-0 mt-2 md:mt-0">
+      <div className="relative flex-shrink-0 ">
         <button className="w-10 h-10 rounded-lg border border-gray-200 flex items-center justify-center shadow-sm hover:bg-gray-50">
           <IoMdNotificationsOutline className="text-xl text-gray-600" />
           <span className="absolute top-1.5 right-1.5 block w-2 h-2 rounded-full bg-red-500 ring-1 ring-white"></span>

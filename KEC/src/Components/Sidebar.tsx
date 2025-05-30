@@ -34,13 +34,13 @@ const Dashboard: RoleBasedSidebar = {
   admin: [
     { label: "Dashboard", path: "/dashboard", icon: <FiHome /> },
     { label: "Inbox", path: "/inbox", icon: <RiMessage3Line /> },
-    { label: "User Management", path: "/user-management", icon: <MdContacts /> },
-    { label: "Course Management", path: "/course-management", icon: <BsGraphUp /> },
-    { label: "Payment Management", path: "/payment-management", icon: <MdPayment /> },
+    { label: "User ", path: "/user-management", icon: <MdContacts /> },
+    { label: "Course ", path: "/course-management", icon: <BsGraphUp /> },
+    { label: "Payment ", path: "/payment-management", icon: <MdPayment /> },
     { label: "My Account", path: "/my-account", icon: <FaRegUser /> },
     { label: "Feedback", path: "/feedback", icon: <LuMessageSquareMore /> },
     { label: "Anouncements", path: "/anouncements", icon: <MdOutlineAnnouncement /> },
-    { label: "Certificates Creation", path: "/certificate-creation", icon: <FiSettings /> },
+    { label: "Certificates ", path: "/certificate-creation", icon: <FiSettings /> },
     { label: "Logout", path: "/logout", icon: <CgLogOut /> },
   ],
   teacher: [
@@ -86,19 +86,20 @@ const Sidebar = ({ isMobileOpen, onClose }: SidebarProps) => {
 
   return (
     <div
-      className={`h-screen mt-10 sm:mt-0 flex flex-col transition-all  duration-300 shadow-lg bg-[#F5FAFF] p-5
-        ${sidebarWidth} md:fixed top-0 left-0 rounded-r-xl z-30
-        ${isMobileOpen ? "fixed top-0 left-0 z-50" : ""}
+      className={`h-screen lg:w-full flex  flex-col transition-all  duration-300 shadow-lg bg-[#F5FAFF] p-5
+        ${sidebarWidth}  top-0 left-0 rounded-r-xl z-30
+        ${isMobileOpen ? " top-0 left-0 z-50" : ""}
+       
       `}
     >
       {/* Mobile Close Button */}
       {isMobileOpen && (
         <button
-          className="absolute -top-8 left-3 p-2 rounded-full bg-white shadow-sm z-50"
+          className={`${sidebarWidth=== "w-20" ? "translate-x-0":"translate-x-42"} absolute top-3 right-0 p-2  rounded-full bg-white shadow-sm z-50`}
           onClick={onClose}
           aria-label="Close sidebar"
         >
-          <FaTimes className="w-5 h-5 text-gray-700" />
+          <FaTimes className="w-3 h-3 text-gray-700" />
         </button>
       )}
 

@@ -28,6 +28,13 @@ type Stats = {
 const DashboardStats = () => {
   const [stats, setStats] = useState<Stats | null>(null);
   const userRole = useContext(UserRoleContext);
+  const student_data={
+    ongoingCourses:12,
+    onCompletedCourse:12,
+    certificates:12
+
+
+  }
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -100,40 +107,50 @@ const DashboardStats = () => {
     }
   }
 
+
   return (
-    <div className="z-1 w-full md:-ml-45 lg:ml-0 overflow-x-auto hide-scrollbar">
+    <div className="z-1 w-full  overflow-x-auto hide-scrollbar">
       <div
-        className="keen-slider  flex mx-auto max-w-screen-xl px-4"
+        className="keen-slider items-center justify-center flex mx-auto max-w-screen-xl px-4"
         ref={sliderRef}
       >
         {/* Ongoing Course */}
-        <div className="keen-slider__slide flex flex-col items-center p-4 rounded-xl  bg-slate-100 !w-[280px] flex-shrink-0">
+        <div className="keen-slider__slide flex flex-col items-center p-4 justify-center  rounded-xl  bg-slate-100 !w-[180px]  flex-shrink-0">
           <div className="bg-slate-700 p-3 rounded-full mb-2">
             <PiNotebookDuotone className="h-6 w-6 text-white" />
           </div>
           <p className="text-sm font-medium text-gray-500">Ongoing course</p>
           <p className="text-xl font-bold text-gray-800">
-            {stats.ongoingCourses}
+            {student_data.ongoingCourses}
           </p>
         </div>
         {/* Completed Courses */}
-        <div className="keen-slider__slide flex flex-col items-center p-4 rounded-xl  bg-rose-100 !w-[280px] flex-shrink-0">
+        <div className="keen-slider__slide flex flex-col items-center p-4 rounded-xl  bg-rose-100 !w-[180px] flex-shrink-0">
           <div className="bg-rose-500 p-3 rounded-full mb-2">
             <PiStudentDuotone className="h-6 w-6 text-white" />
           </div>
           <p className="text-sm font-medium text-gray-500">Completed courses</p>
           <p className="text-xl font-bold text-gray-800">
-            {stats.completedCourses}
+            {student_data.onCompletedCourse}
           </p>
         </div>
         {/* Certificates */}
-        <div className="keen-slider__slide flex flex-col items-center p-4 rounded-xl  bg-yellow-100 !w-[280px] flex-shrink-0">
+        <div className="keen-slider__slide flex flex-col items-center p-4 rounded-xl  bg-yellow-100 !w-[180px] flex-shrink-0">
           <div className="bg-yellow-500 p-3 rounded-full mb-2">
             <PiCertificateDuotone className="h-6 w-6 text-white" />
           </div>
           <p className="text-sm font-medium text-gray-500">Certificates</p>
           <p className="text-xl font-bold text-gray-800">
-            {stats.certificates}
+            {student_data.certificates}
+          </p>
+        </div>
+        <div className="keen-slider__slide flex flex-col items-center p-4 rounded-xl  bg-yellow-100 !w-[180px] flex-shrink-0">
+          <div className="bg-yellow-500 p-3 rounded-full mb-2">
+            <PiCertificateDuotone className="h-6 w-6 text-white" />
+          </div>
+          <p className="text-sm font-medium text-gray-500">Certificates</p>
+          <p className="text-xl font-bold text-gray-800">
+            {student_data.certificates}
           </p>
         </div>
       </div>
