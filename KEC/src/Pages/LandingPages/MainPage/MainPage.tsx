@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import styles from "../../../Styles/styles";
 import { FaArrowRight } from "react-icons/fa6";
-import Skeleton from '../../../Components/Skeleton';
+import Skeleton from '../../../Components/Dashboard/Skeleton';
 
 type DataItem = {
   title: string;

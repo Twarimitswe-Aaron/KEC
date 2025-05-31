@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { Outlet } from "react-router-dom";
-import Sidebar from "../../Components/Sidebar.tsx";
-import DashboardHeader from "../../Components/DashboardHeader.tsx";
-import RightSidebar from "../../Components/RightSidebar";
+import Sidebar from "../../Components/Dashboard/Sidebar";
+import DashboardHeader from "../../Components/Dashboard/DashboardHeader";
+import RightSidebar from "../../Components/Dashboard/RightSidebar";
 import { UserRoleContext } from "../../UserRoleContext";
 
 const DashboardLayout = () => {

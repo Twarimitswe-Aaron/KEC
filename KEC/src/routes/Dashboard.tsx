@@ -1,12 +1,12 @@
 import React, { useContext, useEffect, useState } from 'react';
-import DashboardStats from '../Components/DashboardStats';
-import GrapshSection from '../Components/GrapshSection';
-import AdditionalData from '../Components/AdditionalData';
+import DashboardStats from '../Components/Dashboard/DashboardStats';
+import GrapshSection from '../Components/Dashboard/GrapshSection';
+import AdditionalData from '../Components/Dashboard/AdditionalData';
 import { UserRoleContext } from '../UserRoleContext';
 import { DashboardState, Course } from '../types/dashboard';
 import { dashboardService } from '../services/dashboardService';
-import HeaderCourseCard from '../Components/HeaderCourseCard';
-import CourseComponent from "../Components/CourseComponent"
+import HeaderCourseCard from '../Components/Dashboard/HeaderCourseCard';
+import CourseComponent from "../Components/Dashboard/CourseComponent"
 
 interface DataPoint {
   month: string;

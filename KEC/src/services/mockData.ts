@@ -2,6 +2,14 @@ import { Course, DashboardStats } from '../types/dashboard';
 
 // Mock courses data
 export const mockCourses: Course[] = [
+
+  {
+    id: '1',
+    name: 'All',
+    description: 'Explore All courses',
+    instructor: 'John Doe',
+    progress: 100
+  },
   {
     id: '1',
     name: 'Advanced Thermodynamics',

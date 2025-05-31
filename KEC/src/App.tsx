@@ -1,6 +1,7 @@
 import { Routes, Route } from "react-router-dom";
 
 import DashboardLayout from "./layouts/DashBoard/DashboardLayout.tsx";
+import Inbox from "./layouts/Inbox/Inbox"
 
 import Dashboard from "./routes/Dashboard";
 import Login from "./Pages/Login/LoginPage.tsx";
@@ -40,8 +41,8 @@ function App() {
     {/* Protected routes with DashboardLayout */}
     <Route element={<DashboardLayout />}>
       <Route path="/dashboard" element={<Dashboard />} />
-      
     </Route>
+    <Route path="/inbox" element={<Inbox/>} />
   </Routes></>
   );
 }
