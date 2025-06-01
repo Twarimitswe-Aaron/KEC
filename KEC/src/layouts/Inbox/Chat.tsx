@@ -6,6 +6,7 @@ import { GoDeviceCameraVideo } from "react-icons/go";
 import { GoPaperclip } from "react-icons/go";
 import { BsEmojiSmile } from "react-icons/bs";
 import { MdInfoOutline } from "react-icons/md";
+import { CiMenuKebab } from "react-icons/ci";
 
 interface ChatProps {
   onToggleRightSidebar: () => void;
@@ -64,8 +65,8 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
   ]);
   const [newMessage, setNewMessage] = useState("");
 
-  const handleSendMessage = (e:React.MouseEvent<HTMLButtonElement>) => {
-    e.preventDefault();
+  const handleSendMessage = (e?: React.MouseEvent<HTMLButtonElement>) => {
+    e?.preventDefault();
     if (newMessage.trim()) {
       setMessages([
         ...messages,
@@ -78,6 +79,13 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
         },
       ]);
       setNewMessage("");
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage();
     }
   };
 
@@ -149,6 +157,8 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
               {message.text}
             </a>
           )}
+         
+        
         </div>
         <p className="text-xs text-gray-500 mt-1">
           {message.time}
@@ -165,8 +175,9 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
           type="text"
           value={newMessage}
           onChange={(e) => setNewMessage(e.target.value)}
+          onKeyDown={handleKeyDown}
           placeholder="Write your message..."
-          className="flex-1 p-1 rounded-md border border-gray-300 focus:outline-none "
+          className="flex-1 p-1 rounded-md border border-gray-300 focus:outline-none"
         />
         <span className="text-gray-500 cursor-pointer"><BsEmojiSmile/></span>
         <span className="text-gray-500 cursor-pointer"><GoPaperclip/></span>
@@ -174,7 +185,7 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
           onClick={handleSendMessage}
           className="bg-blue-500 text-white items-center justify-center p-2 rounded-md"
         >
-          <FiSend/>
+          <FiSend />
         </button>
       </div>
     </div>

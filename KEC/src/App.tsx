@@ -12,7 +12,7 @@ import "./App.css";
 import Landing from "./Landing/Landing";
 import Verification from "./Pages/Login/verification";
 import PassReset from "./Pages/Login/PassReset";
-
+import UserManagement from "./routes/UserManagement";
 function App() {
   return (
     <>
@@ -41,6 +41,7 @@ function App() {
     {/* Protected routes with DashboardLayout */}
     <Route element={<DashboardLayout />}>
       <Route path="/dashboard" element={<Dashboard />} />
+      <Route path="/user-management" element={<UserManagement/>} />
     </Route>
     <Route path="/inbox" element={<Inbox/>} />
   </Routes></>
