@@ -28,7 +28,7 @@ const InboxLayout = () => {
         className={`
           fixed top-0 left-0 h-full w-4/5 max-w-xs bg-[#F5FAFF] z-30 shadow-lg transition-transform duration-300
           ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
-          sm:static sm:translate-x-0 sm:w-[400px] sm:min-w-[300px] sm:max-w-[400px] 
+          sm:static sm:translate-x-0 sm:w-[300px] sm:min-w-[300px] sm:max-w-[400px] sm:border-r border-gray-200
           px-3 overflow-y-auto
         `}
       >
@@ -51,10 +51,10 @@ const InboxLayout = () => {
       {/* Right Sidebar (Shared Files/Photos) */}
       <div
          className={`
-           fixed top-0 right-0 h-full w-4/5 max-w-xs bg-gray-50 z-30 shadow-lg transition-transform duration-300
+           fixed top-0 right-0 h-full  bg-gray-50 z-30 shadow-lg transition-transform duration-300
            ${rightSidebarOpen ? "translate-x-0" : "translate-x-full"}
-           sm:static sm:translate-x-0 sm:w-[320px] sm:min-w-[250px] sm:max-w-[320px] 
-           ${!rightSidebarOpen && 'hidden sm:flex'}
+           sm:static sm:translate-x-0 sm:w-[320px] sm:min-w-[250px] sm:max-w-[320px]
+           ${!rightSidebarOpen && 'hidden lg:flex'}
            overflow-y-auto
          `}
       >

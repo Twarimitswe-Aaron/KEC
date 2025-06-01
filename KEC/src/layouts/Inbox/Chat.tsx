@@ -125,7 +125,7 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
 
       <div className={`max-w-[70%]`}>
         <div
-          className={`inline-block ${message.text && "p-2"} rounded-lg ${
+          className={`${message.type === 'text' && message.text && 'p-2'} rounded-lg ${
             message.sender === "You"
               ? "bg-[#ECEDF3] text-black text-right"
               : "bg-[#e7ebfc] text-black text-left"
@@ -144,7 +144,7 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
               href={message.text}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-blue-500 underline"
+              className="text-blue-500 underline p-2 block"
             >
               {message.text}
             </a>
