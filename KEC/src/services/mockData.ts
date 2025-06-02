@@ -1,10 +1,23 @@
 import { Course, DashboardStats } from '../types/dashboard';
+export interface Coursedata {
+  id?: number;
+  image_url: string;
+  title: string;
+  description: string;
+  price: string;
+  no_lessons: string;
+  no_hours: string;
+  uploader: {
+    name: string;
+    avatar_url: string;
+  };
+}
 
 // Mock courses data
 export const mockCourses: Course[] = [
 
   {
-    id: '1',
+    id: '0',
     name: 'All',
     description: 'Explore All courses',
     instructor: 'John Doe',
@@ -73,3 +86,78 @@ export const mockGraphData = [
   { month: "Oct", sales: 70, revenue: 690 },
   { month: "Nov", sales: 55, revenue: 450 },
 ]; 
+
+export const data: Coursedata[] = [
+  {
+    image_url: "/images/courseCard.png",
+    title: "Thermodynamics",
+    description: "Explore energy transfer, heat, and the laws of thermodynamics in detail through real-world applications.",
+    price: "100,000frw",
+    no_lessons: "10",
+    no_hours: "22hrs32min",
+    uploader: {
+      name: "Irakoze Rachel",
+      avatar_url: "/images/avatars/rachel.png",
+    },
+  },
+  {
+    image_url: "/images/courseCard.png",
+    title: "Thermodynamics",
+    description: "Explore energy transfer, heat, and the laws of thermodynamics in detail through real-world applications.",
+    price: "100,000frw",
+    no_lessons: "10",
+    no_hours: "22hrs32min",
+    uploader: {
+      name: "Irakoze Rachel",
+      avatar_url: "/images/avatars/rachel.png",
+    },
+  },
+  {
+    image_url: "/images/courseCard.png",
+    title: "Thermodynamics",
+    description: "Explore energy transfer, heat, and the laws of thermodynamics in detail through real-world applications.",
+    price: "100,000frw",
+    no_lessons: "10",
+    no_hours: "22hrs32min",
+    uploader: {
+      name: "Irakoze Rachel",
+      avatar_url: "/images/avatars/rachel.png",
+    },
+  },
+  {
+    image_url: "/images/courseCard.png",
+    title: "Thermodynamics",
+    description: "Explore energy transfer, heat, and the laws of thermodynamics in detail through real-world applications.",
+    price: "100,000frw",
+    no_lessons: "10",
+    no_hours: "22hrs32min",
+    uploader: {
+      name: "Irakoze Rachel",
+      avatar_url: "/images/avatars/rachel.png",
+    },
+  },
+  {
+    image_url: "/images/courseCard.png",
+    title: "Thermodynamics",
+    description: "Explore energy transfer, heat, and the laws of thermodynamics in detail through real-world applications.",
+    price: "100,000frw",
+    no_lessons: "10",
+    no_hours: "22hrs32min",
+    uploader: {
+      name: "Irakoze Rachel",
+      avatar_url: "/images/avatars/rachel.png",
+    },
+  },
+  {
+    image_url: "/images/courseCard.png",
+    title: "Fluid Mechanics",
+    description: "Covers fluid statics and dynamics, pressure distributions, and practical system design with flow analysis.",
+    price: "90,000frw",
+    no_lessons: "12",
+    no_hours: "18hrs40min",
+    uploader: {
+      name: "Ndayambaje Yves",
+      avatar_url: "/images/avatars/yves.png",
+    },
+  }
+];

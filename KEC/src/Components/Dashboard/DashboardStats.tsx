@@ -35,6 +35,13 @@ const DashboardStats = () => {
     averageScore: 85,
   };
 
+  interface student_data{
+    ongoingCourse:Number,
+    onCompletedCourse:Number,
+    certificates:Number,
+    averageScore:Number,
+  }
+
   //Fetch stats from backend on mount
   useEffect(() => {
     const fetchStats = async () => {

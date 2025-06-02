@@ -20,10 +20,10 @@ const Rating = () => {
   };
 
   return (
-    <div className="bg-gradient-to-br from-[#022F40] to-green-500 rounded-2xl p-5 w-full max-w-md shadow-lg flex flex-col items-center text-white">
+    <div className="bg-gradient-to-br justify-center text-center from-[#022F40] to-green-500 rounded-2xl p-5 w-full max-w-md shadow-lg flex flex-col items-center text-white">
       <h3 className="text-lg font-semibold mb-2">Rate your experience</h3>
 
-      <div className="flex items-center gap-2 mb-2">
+      <div className="flex items-center gap-1 mb-2">
         {[...Array(5)].map((_, i) => {
           const value = i + 1;
           const isActive = (hovered ?? rating) >= value;

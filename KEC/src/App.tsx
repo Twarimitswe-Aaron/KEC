@@ -13,6 +13,8 @@ import Landing from "./Landing/Landing";
 import Verification from "./Pages/Login/verification";
 import PassReset from "./Pages/Login/PassReset";
 import UserManagement from "./routes/UserManagement";
+import CourseManagement from "./routes/courseManagement"
+
 function App() {
   return (
     <>
@@ -42,6 +44,7 @@ function App() {
     <Route element={<DashboardLayout />}>
       <Route path="/dashboard" element={<Dashboard />} />
       <Route path="/user-management" element={<UserManagement/>} />
+      <Route path="/course-creation" element={<CourseManagement/>}/>
     </Route>
     <Route path="/inbox" element={<Inbox/>} />
   </Routes></>
