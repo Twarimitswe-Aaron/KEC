@@ -62,7 +62,7 @@ const CourseManagement = () => {
                     </div>
                 )}
             </div>
-            <div className="flex lg:flex-cols-4 md:flex-cols-3 sm:flex-cols-2 flex-cols-1">
+            <div className="scroll-hide">
                 <DashboardCard 
                     courses={courses}
                     onCourseAction={handleCourseCreation}

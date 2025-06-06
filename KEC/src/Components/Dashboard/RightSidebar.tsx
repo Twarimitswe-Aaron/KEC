@@ -38,7 +38,7 @@ const RightSidebar = () => {
   ];
 
   return (
-    <aside className=" hidden md:block md:w-full z-10  p-4 bg-white shadow-xl  rounded-xl space-y-6
+    <aside className=" hidden md:block md:w-full top-0 sticky z-10  p-4 bg-white shadow-xl  rounded-xl space-y-6
     max-h-screen overflow-y-auto hover:overflow-y-scroll scroll-hide"
   
   >

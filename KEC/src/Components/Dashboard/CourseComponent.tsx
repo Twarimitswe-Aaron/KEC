@@ -41,7 +41,7 @@ const CourseComponent = () => {
         </div>
       </div>
 
-      <div className="flex lg:flex-cols-4 md:flex-cols-3 sm:flex-cols-2 flex-cols-1">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-5">
         <DashboardCard 
           courses={courses}
           onCourseAction={handleCourseAction}
