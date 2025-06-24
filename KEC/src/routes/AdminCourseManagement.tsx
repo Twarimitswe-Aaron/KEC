@@ -1,17 +1,28 @@
 import React, { useContext, useEffect, useState } from "react";
-import { Plus, CloudUpload, Image, X, GitPullRequest, Upload } from "lucide-react";
+import {
+  Plus,
+  CloudUpload,
+  Image,
+  X,
+  GitPullRequest,
+  Upload,
+} from "lucide-react";
 
 // Mock data and types for demonstration
 const mockData = [
   {
     id: 1,
     title: "React Fundamentals",
-    description: "Learn React from scratch with hands-on projects and real-world examples",
+    description:
+      "Learn React from scratch with hands-on projects and real-world examples",
     price: "50,000 RWF",
     image_url: "/images/courseCard.png",
     no_lessons: "15",
     no_hours: "10",
-    uploader: { name: "John Doe", avatar_url: "https://via.placeholder.com/40" }
+    uploader: {
+      name: "John Doe",
+      avatar_url: "https://via.placeholder.com/40",
+    },
   },
   {
     id: 2,
@@ -21,7 +32,10 @@ const mockData = [
     image_url: "/images/courseCard.png",
     no_lessons: "20",
     no_hours: "15",
-    uploader: { name: "Jane Smith", avatar_url: "https://via.placeholder.com/40" }
+    uploader: {
+      name: "Jane Smith",
+      avatar_url: "https://via.placeholder.com/40",
+    },
   },
   {
     id: 3,
@@ -31,7 +45,10 @@ const mockData = [
     image_url: "/images/courseCard.png",
     no_lessons: "18",
     no_hours: "12",
-    uploader: { name: "Mike Johnson", avatar_url: "https://via.placeholder.com/40" }
+    uploader: {
+      name: "Mike Johnson",
+      avatar_url: "https://via.placeholder.com/40",
+    },
   },
   {
     id: 4,
@@ -41,17 +58,24 @@ const mockData = [
     image_url: "/images/courseCard.png",
     no_lessons: "22",
     no_hours: "16",
-    uploader: { name: "Sarah Wilson", avatar_url: "https://via.placeholder.com/40" }
+    uploader: {
+      name: "Sarah Wilson",
+      avatar_url: "https://via.placeholder.com/40",
+    },
   },
   {
     id: 5,
     title: "UI/UX Design Principles",
-    description: "Learn modern design principles and create beautiful interfaces",
+    description:
+      "Learn modern design principles and create beautiful interfaces",
     price: "45,000 RWF",
     image_url: "/images/courseCard.png",
     no_lessons: "12",
     no_hours: "8",
-    uploader: { name: "Alex Brown", avatar_url: "https://via.placeholder.com/40" }
+    uploader: {
+      name: "Alex Brown",
+      avatar_url: "https://via.placeholder.com/40",
+    },
   },
   {
     id: 6,
@@ -61,8 +85,11 @@ const mockData = [
     image_url: "/images/courseCard.png",
     no_lessons: "16",
     no_hours: "14",
-    uploader: { name: "Emma Davis", avatar_url: "https://via.placeholder.com/40" }
-  }
+    uploader: {
+      name: "Emma Davis",
+      avatar_url: "https://via.placeholder.com/40",
+    },
+  },
 ];
 
 interface Course {
@@ -90,23 +117,32 @@ interface DashboardCardProps {
   onCourseAction: (id: number) => void;
 }
 
-const DashboardCard: React.FC<DashboardCardProps> = ({ courses, onCourseAction }) => (
+const DashboardCard: React.FC<DashboardCardProps> = ({
+  courses,
+  onCourseAction,
+}) => (
   <div className="grid grid-cols-1 scroll-hide scroll-hide sm:grid-cols-2 lg:grid-cols-2 gap-6">
-    {courses.map(course => (
-      <div key={course.id} className="bg-white rounded-md shadow-md overflow-hidden hover:shadow-lg transition-shadow">
+    {courses.map((course) => (
+      <div
+        key={course.id}
+        className="bg-white rounded-md shadow-md overflow-hidden hover:shadow-lg transition-shadow"
+      >
         <div className="relative">
-          <img 
-            src={course.image_url} 
-            alt={course.title} 
+          <img
+            src={course.image_url}
+            alt={course.title}
             className="w-full h-48 object-cover"
             onError={(e) => {
-              e.currentTarget.src = "https://via.placeholder.com/400x200/004e64/white?text=Course+Image";
+              e.currentTarget.src =
+                "https://via.placeholder.com/400x200/004e64/white?text=Course+Image";
             }}
           />
         </div>
         <div className="p-4">
           <h3 className="font-semibold text-[#004e64] mb-2">{course.title}</h3>
-          <p className="text-gray-600 text-sm mb-3 line-clamp-2">{course.description}</p>
+          <p className="text-gray-600 text-sm mb-3 line-clamp-2">
+            {course.description}
+          </p>
           <div className="flex justify-between items-center">
             <p className="text-[#004e64] font-bold">{course.price}</p>
             <div className="flex items-center gap-2 text-sm text-gray-500">
@@ -121,7 +157,6 @@ const DashboardCard: React.FC<DashboardCardProps> = ({ courses, onCourseAction }
   </div>
 );
 
-
 interface ImageUploadAreaProps {
   onImageSelect: (imageUrl: string) => void;
   currentImage?: string;
@@ -133,11 +168,11 @@ interface ImageUploadAreaProps {
   };
 }
 
-const ImageUploadArea: React.FC<ImageUploadAreaProps> = ({ 
-  onImageSelect, 
-  currentImage, 
+const ImageUploadArea: React.FC<ImageUploadAreaProps> = ({
+  onImageSelect,
+  currentImage,
   className = "",
-  courseData = { title: "", description: "", price: "" }
+  courseData = { title: "", description: "", price: "" },
 }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [previewUrl, setPreviewUrl] = useState(currentImage || "");
@@ -173,7 +208,7 @@ const ImageUploadArea: React.FC<ImageUploadAreaProps> = ({
     e.preventDefault();
     e.stopPropagation();
     setIsDragging(false);
-    
+
     const files = e.dataTransfer.files;
     if (files.length > 0) {
       handleFileSelect(files[0]);
@@ -181,19 +216,19 @@ const ImageUploadArea: React.FC<ImageUploadAreaProps> = ({
   };
 
   const handleFileSelect = (file: File) => {
-    if (!file || !file.type.startsWith('image/')) {
-      alert('Please select a valid image file (JPG, PNG, GIF)');
+    if (!file || !file.type.startsWith("image/")) {
+      alert("Please select a valid image file (JPG, PNG, GIF)");
       return;
     }
 
     // Check file size (10MB limit)
     if (file.size > 10 * 1024 * 1024) {
-      alert('File size must be less than 10MB');
+      alert("File size must be less than 10MB");
       return;
     }
 
     setIsLoading(true);
-    
+
     const reader = new FileReader();
     reader.onload = (e) => {
       const imageUrl = e.target?.result as string;
@@ -202,7 +237,7 @@ const ImageUploadArea: React.FC<ImageUploadAreaProps> = ({
       setIsLoading(false);
     };
     reader.onerror = () => {
-      alert('Error reading file');
+      alert("Error reading file");
       setIsLoading(false);
     };
     reader.readAsDataURL(file);
@@ -222,7 +257,7 @@ const ImageUploadArea: React.FC<ImageUploadAreaProps> = ({
   };
 
   const handleClickToUpload = () => {
-    const fileInput = document.getElementById('file-input') as HTMLInputElement;
+    const fileInput = document.getElementById("file-input") as HTMLInputElement;
     fileInput?.click();
   };
 
@@ -231,7 +266,7 @@ const ImageUploadArea: React.FC<ImageUploadAreaProps> = ({
       <label className="block mb-2 font-medium text-[#004e64]">
         Course Cover Image *
       </label>
-      
+
       <div
         onDragOver={handleDragOver}
         onDragEnter={handleDragEnter}
@@ -240,11 +275,12 @@ const ImageUploadArea: React.FC<ImageUploadAreaProps> = ({
         onClick={handleClickToUpload}
         className={`
           relative border-2 border-dashed rounded-lg transition-all duration-300 ease-in-out
-          ${isDragging 
-            ? 'border-[#004e64] bg-gradient-to-br from-[#004e64]/10 via-[#004e64]/15 to-[#004e64]/10 scale-102 shadow-lg' 
-            : 'border-[#004e64]/30 hover:border-[#004e64]/50'
+          ${
+            isDragging
+              ? "border-[#004e64] bg-gradient-to-br from-[#004e64]/10 via-[#004e64]/15 to-[#004e64]/10 scale-102 shadow-lg"
+              : "border-[#004e64]/30 hover:border-[#004e64]/50"
           }
-          ${previewUrl ? 'p-3' : 'p-8'}
+          ${previewUrl ? "p-3" : "p-8"}
           bg-gradient-to-br from-white via-[#f8feff] to-white
           hover:shadow-md hover:shadow-[#004e64]/10
           cursor-pointer group
@@ -262,7 +298,9 @@ const ImageUploadArea: React.FC<ImageUploadAreaProps> = ({
             <div className="text-center">
               <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#004e64]/10 to-[#004e64]/5 rounded-full border border-[#004e64]/20">
                 <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                <span className="text-sm font-medium text-[#004e64]">Live Course Card Preview</span>
+                <span className="text-sm font-medium text-[#004e64]">
+                  Live Course Card Preview
+                </span>
               </div>
             </div>
 
@@ -276,25 +314,21 @@ const ImageUploadArea: React.FC<ImageUploadAreaProps> = ({
                       alt="Course Preview"
                       className="w-full h-48 object-cover"
                       onError={(e) => {
-                        console.error('Image failed to load:', previewUrl);
-                        e.currentTarget.src = "https://via.placeholder.com/400x200/004e64/white?text=Invalid+Image";
+                        console.error("Image failed to load:", previewUrl);
+                        e.currentTarget.src =
+                          "https://via.placeholder.com/400x200/004e64/white?text=Invalid+Image";
                       }}
                     />
-                    
-                    {/* Remove/Change Image Button */}
-                    <button
-                      onClick={removeImage}
-                      type="button"
-                      className="absolute top-3 right-3 bg-red-500/90 backdrop-blur-sm text-white p-2 rounded-full hover:bg-red-600 transition-all duration-300 shadow-lg transform hover:scale-110 z-20"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
+
+                
 
                     {/* Hover Overlay */}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center">
                       <div className="text-center transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
                         <CloudUpload className="w-8 h-8 text-white mx-auto mb-2 drop-shadow-lg" />
-                        <span className="text-white font-medium text-sm drop-shadow-lg">Click or drag to change image</span>
+                        <span className="text-white font-medium text-sm drop-shadow-lg">
+                          Click or drag to change image
+                        </span>
                       </div>
                     </div>
 
@@ -310,9 +344,10 @@ const ImageUploadArea: React.FC<ImageUploadAreaProps> = ({
                       {courseData.title || "Your Course Title Will Appear Here"}
                     </h3>
                     <p className="text-gray-600 text-sm mb-4 leading-relaxed line-clamp-3">
-                      {courseData.description || "Your detailed course description will be displayed here. This preview shows exactly how your course will appear to students browsing the course catalog."}
+                      {courseData.description ||
+                        "Your detailed course description will be displayed here. This preview shows exactly how your course will appear to students browsing the course catalog."}
                     </p>
-                    
+
                     {/* Course Stats */}
                     <div className="flex justify-between items-center mb-4">
                       <div className="flex items-center gap-3 text-sm text-gray-500">
@@ -334,7 +369,9 @@ const ImageUploadArea: React.FC<ImageUploadAreaProps> = ({
                         {courseData.price || "Set Your Price"}
                       </div>
                       <div className="px-3 py-1 bg-gradient-to-r from-[#004e64]/10 to-[#004e64]/5 rounded-full">
-                        <span className="text-xs font-semibold text-[#004e64]">NEW</span>
+                        <span className="text-xs font-semibold text-[#004e64]">
+                          NEW
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -348,7 +385,8 @@ const ImageUploadArea: React.FC<ImageUploadAreaProps> = ({
                 ✨ This is exactly how your course will appear on the dashboard
               </p>
               <p className="text-xs text-gray-500">
-                Update the form fields above to see changes reflected in real-time
+                Update the form fields above to see changes reflected in
+                real-time
               </p>
             </div>
           </div>
@@ -356,14 +394,22 @@ const ImageUploadArea: React.FC<ImageUploadAreaProps> = ({
           <div className="text-center">
             <div className="flex justify-center mb-4">
               <div className="relative">
-                <CloudUpload className={`w-12 h-12 transition-colors ${isDragging ? 'text-[#004e64] scale-110' : 'text-[#004e64]/60 group-hover:text-[#004e64]'}`} />
+                <CloudUpload
+                  className={`w-12 h-12 transition-colors ${
+                    isDragging
+                      ? "text-[#004e64] scale-110"
+                      : "text-[#004e64]/60 group-hover:text-[#004e64]"
+                  }`}
+                />
                 <div className="absolute -top-1 -right-1 w-4 h-4 bg-gradient-to-r from-[#004e64] to-[#022F40] rounded-full flex items-center justify-center">
                   <Image className="w-2 h-2 text-white" />
                 </div>
               </div>
             </div>
             <h3 className="text-lg font-semibold text-[#004e64] mb-2">
-              {isDragging ? 'Drop your image here!' : 'Drop your image here or click to browse'}
+              {isDragging
+                ? "Drop your image here!"
+                : "Drop your image here or click to browse"}
             </h3>
             <p className="text-sm text-gray-500 mb-4">
               Supports: JPG, PNG, GIF (Max 10MB)
@@ -375,7 +421,7 @@ const ImageUploadArea: React.FC<ImageUploadAreaProps> = ({
             </div>
           </div>
         )}
-        
+
         <input
           id="file-input"
           type="file"
@@ -384,7 +430,7 @@ const ImageUploadArea: React.FC<ImageUploadAreaProps> = ({
           className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
         />
       </div>
-      
+
       {previewUrl && (
         <div className="mt-2 text-xs text-gray-500">
           ✓ Image uploaded successfully
@@ -420,7 +466,7 @@ const AdminCourseManagement: React.FC = () => {
   // Load initial data
   useEffect(() => {
     setCourses(mockData);
-    
+
     // Cleanup function
     return () => {
       resetState();
@@ -470,7 +516,10 @@ const AdminCourseManagement: React.FC = () => {
       price: price,
       no_lessons: "N/A",
       no_hours: "N/A",
-      uploader: { name: "Admin User", avatar_url: "https://via.placeholder.com/40" },
+      uploader: {
+        name: "Admin User",
+        avatar_url: "https://via.placeholder.com/40",
+      },
     };
 
     setCourses((prev) => [courseToAdd, ...prev]);
@@ -501,7 +550,8 @@ const AdminCourseManagement: React.FC = () => {
           <div className="flex items-center gap-3 px-6 py-3  shadow-lg rounded-md  hover:shadow-xl transition-all duration-300 cursor-pointer group">
             <Upload className="text-[#004e64] text-xl group-hover:scale-110 transition-transform" />
             <span className="text-[#004e64] hidden sm:inline">
-              Uploaded <span className="font-bold text-md">{courses.length}</span>
+              Uploaded{" "}
+              <span className="font-bold text-md">{courses.length}</span>
             </span>
           </div>
         </div>
@@ -543,7 +593,7 @@ const AdminCourseManagement: React.FC = () => {
                 courseData={{
                   title: newCourse.title,
                   description: newCourse.description,
-                  price: newCourse.price
+                  price: newCourse.price,
                 }}
               />
 
