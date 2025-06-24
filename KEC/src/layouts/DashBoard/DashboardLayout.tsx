@@ -11,7 +11,7 @@ const DashboardLayout = () => {
   const closeSidebar = () => setSidebarOpen(false);
 
   return (
-    <UserRoleContext.Provider value="admin">
+    <UserRoleContext.Provider value="teacher">
       <div className="w-full min-h-screen flex">
         {/* Left Sidebar for md+ */}
         <aside className="hidden md:block w-[10%] lg:w-[20%] h-screen sticky left-0 top-0">
@@ -22,7 +22,10 @@ const DashboardLayout = () => {
         {isSidebarOpen && (
           <div className="fixed inset-0 z-40 flex md:hidden">
             {/* Overlay */}
-            <div className="fixed inset-0 bg-black/30" onClick={closeSidebar}></div>
+            <div
+              className="fixed inset-0 bg-black/30"
+              onClick={closeSidebar}
+            ></div>
             {/* Sidebar Drawer */}
             <div className="relative w-20 h-full bg-[#F5FAFF] shadow-lg z-50">
               <Sidebar onClose={closeSidebar} isMobileOpen />
@@ -42,9 +45,8 @@ const DashboardLayout = () => {
 
         {/* Right Sidebar */}
         <aside className="hidden lg:block w-[20%] h-screen sticky right-0 top-0">
-  <RightSidebar />
-</aside>
-
+          <RightSidebar />
+        </aside>
       </div>
     </UserRoleContext.Provider>
   );
