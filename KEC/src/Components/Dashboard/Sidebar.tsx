@@ -56,7 +56,8 @@ const Dashboard: RoleBasedSidebar = {
   student: [
     { label: "Dashboard", path: "/dashboard", icon: <FiHome /> },
     { label: "Inbox", path: "/inbox", icon: <RiMessage3Line /> },
-    { label: "Anouncements", path: "/anouncements", icon: <MdOutlineAnnouncement /> },
+    { label: "Anouncements", path: "/announcements", icon: <MdOutlineAnnouncement /> },
+    { label: "My Account", path: "/my-account", icon: <FaRegUser /> },
     { label: "Feedback", path: "/feedback", icon: <LuMessageSquareMore /> },
     { label: "Logout", path: "/logout", icon: <CgLogOut /> },
   ],

@@ -16,6 +16,7 @@ import UserManagement from "./routes/UserManagement";
 import CourseManagement from "./routes/courseManagement"
 import AdminCourseManagement from "./routes/AdminCourseManagement"
 import Announcements from "./routes/Announcements";
+import MyProfile from "./routes/MyProfile";
 
 
 function App() {
@@ -49,7 +50,8 @@ function App() {
       <Route path="/user-management" element={<UserManagement/>} />
       <Route path="/course-creation" element={<CourseManagement/>}/>
       <Route path="/course-management" element={<AdminCourseManagement/>}/>
-      <Route path="/anouncements" element={<Announcements/>}/>
+      <Route path="/announcements" element={<Announcements/>}/>
+      <Route path="/my-account" element={<MyProfile/>}/>
 
     </Route>
     <Route path="/inbox" element={<Inbox/>} />
