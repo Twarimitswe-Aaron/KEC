@@ -113,12 +113,6 @@ const ImageUploadArea: React.FC<ImageUploadAreaProps> = ({
       handleFileSelect(file);
     }
   };
-  const removeImage = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setPreviewUrl("");
-    onImageSelect("");
-    setIsLoading(false);
-  };
 
   const handleClickToUpload = () => {
     const fileInput = document.createElement("file-input") as HTMLInputElement;
@@ -135,7 +129,6 @@ const ImageUploadArea: React.FC<ImageUploadAreaProps> = ({
         onDragEnter={handleDragerEnter}
         onDragLeave={handleDrageLeaver}
         onDrop={handleDrop}
-        onClick={handleClickToUpload}
         className={`
         relative border-2 border-dashed rounded-lg transition-all duration-300  ease-in-out
         ${
@@ -282,7 +275,7 @@ const ImageUploadArea: React.FC<ImageUploadAreaProps> = ({
         )}
 
         <input
-        id="file-input"
+          id="file-input"
           type="file"
           accept="image/*"
           onChange={handleFileInputChange}
@@ -291,7 +284,9 @@ const ImageUploadArea: React.FC<ImageUploadAreaProps> = ({
       </div>
 
       {previewUrl && (
-        <div className="mt-2 text-xs text-gray-500">✓ Image uploaded successfully</div>
+        <div className="mt-2 text-xs text-gray-500">
+          ✓ Image uploaded successfully
+        </div>
       )}
     </div>
   );
@@ -328,47 +323,49 @@ const CourseManagement = () => {
     }));
   };
 
-  const handleInputChange=(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const {name,value}=e.target;
-    if(name==="title" && value.length > 50) return;
-    if(name === "description" && value.length > 250) return;
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    const { name, value } = e.target;
+    if (name === "title" && value.length > 50) return;
+    if (name === "description" && value.length > 250) return;
 
-    if(name in newCourse){
-      setNewCourse(prev =>({
+    if (name in newCourse) {
+      setNewCourse((prev) => ({
         ...prev,
-        [name as keyof NewCourseFormData]: value
-      }))
+        [name as keyof NewCourseFormData]: value,
+      }));
     }
-  }
+  };
 
-  const handleAddCourse=()=>{
-    const {image_url, title, description,price}=newCourse;
-    if(!image_url || !title || !description || !price){
+  const handleAddCourse = () => {
+    const { image_url, title, description, price } = newCourse;
+    if (!image_url || !title || !description || !price) {
       toast.error("Please fill all the fields");
       return;
     }
 
-    const courseToAdd: Course={
-      id:newCourse.id || Date.now(),
-      image_url:image_url,
-      title:title,
-      description:description,
-      price:price,
-      no_lessons:"1",
-      no_hours:"1",
-      uploader:{
-        name:"Admin",
-        avatar_url:"https://via.placeholder.com/40"
-      }
-    }
-  }
+    const courseToAdd: Course = {
+      id: newCourse.id || Date.now(),
+      image_url: image_url,
+      title: title,
+      description: description,
+      price: price,
+      no_lessons: "1",
+      no_hours: "1",
+      uploader: {
+        name: "Admin",
+        avatar_url: "https://via.placeholder.com/40",
+      },
+    };
+  };
 
   return (
     <div className="h-screen flex flex-col  ">
-      <div className="flex sticky top-4 flex-col">
+      <div className="flex flex-col">
         {userRole === "teacher" && (
           <div>
-            <div className="z-10 sticky top-40  flex place-items-start justify-between p-3 rounded-lg bg-white shadow-lg">
+            <div className="z-10  flex place-items-start justify-between p-3 rounded-lg bg-white shadow-lg">
               <span className="md:text-2xl text-lg font-normal text-gray-800">
                 Courses
               </span>
@@ -394,7 +391,7 @@ const CourseManagement = () => {
           </div>
         )}
       </div>
-      <div className="scroll-hide">
+      <div className="scroll-hide scroll-y-auto overflow-y-auto h-full ">
         <DashboardCard
           courses={courses}
           onCourseAction={handleCourseCreation}
@@ -402,7 +399,7 @@ const CourseManagement = () => {
       </div>
 
       {showModal && (
-        <div className="fixed inset-0 scroll-hide bg-black/50 backdrop-blur-sm justify-center items-center z-50 px-4">
+        <div className="fixed inset-0 scroll-hide bg-black/50  justify-center items-center z-50 px-4">
           <div className="bg-white mx-auto scroll-hide w-full max-w-3xl p-8 rounded-2xl shadow-2xl overflow-y-auto max-h-[90vh] border border-[#004e64]/10 ">
             <div className="flex items-center justify-between mb-8">
               <h2 className="text-3xl font-bold text-[#004e64] bg-gradient-to-r from-[#004e64] to-[#022f40] bg-clip-text ">
@@ -433,10 +430,20 @@ const CourseManagement = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="">
-                  <label className="block mb-2 font-medium text-[#004e64] ">Course Title *</label>
-                  <input type="text" name="title" value={newCourse.title} onChange={handleInputChange} placeholder="Enter course title..." maxLength={50} className="w-full rounded-md px-4 py-3 border border-[#004e64]/30 text-[#004e64] focus:outline-none focus:ring-2 focus:ring-[#004e64]/50 focus:border-transparent transition-all duration-300 hover:shadow-md" />
+                  <label className="block mb-2 font-medium text-[#004e64] ">
+                    Course Title *
+                  </label>
+                  <input
+                    type="text"
+                    name="title"
+                    value={newCourse.title}
+                    onChange={handleInputChange}
+                    placeholder="Enter course title..."
+                    maxLength={50}
+                    className="w-full rounded-md px-4 py-3 border border-[#004e64]/30 text-[#004e64] focus:outline-none focus:ring-2 focus:ring-[#004e64]/50 focus:border-transparent transition-all duration-300 hover:shadow-md"
+                  />
                 </div>
-                
+
                 <div>
                   <label className="block mb-2 font-medium text-[#004e64]">
                     Course Price *
@@ -450,36 +457,46 @@ const CourseManagement = () => {
                     className="w-full rounded-md px-4 py-3 border border-[#004e64]/30 text-[#004e64] focus:outline-none focus:ring-2 focus:ring-[#004e64]/50 focus:border-transparent transition-all duration-300 hover:shadow-md"
                   />
                 </div>
-
               </div>
 
               <div className="">
-                <label  className="block mb-2 font-medium text-[#004e64] ">Course Description *</label>
-                <textarea maxLength={250} onChange={handleInputChange} value={newCourse.description} placeholder="Describe what students will learn in this course..." name="description" id="" className="w-full rounded-md px-4 py-3 border border-[#004e64]/30 text-[#004e64] resize-none focus:outline-none focus:ring-2 focus:ring-[#004e64]/50 focus:border-transparent transition-all duration-300 hover:shadow-md" rows={4}/>
+                <label className="block mb-2 font-medium text-[#004e64] ">
+                  Course Description *
+                </label>
+                <textarea
+                  maxLength={250}
+                  onChange={handleInputChange}
+                  value={newCourse.description}
+                  placeholder="Describe what students will learn in this course..."
+                  name="description"
+                  id=""
+                  className="w-full rounded-md px-4 py-3 border border-[#004e64]/30 text-[#004e64] resize-none focus:outline-none focus:ring-2 focus:ring-[#004e64]/50 focus:border-transparent transition-all duration-300 hover:shadow-md"
+                  rows={4}
+                />
                 <div className="flex justify-between items-center mt-1">
-                  <span className="text-xs text-gray-400">{newCourse.description.length}/250 characters</span>
+                  <span className="text-xs text-gray-400">
+                    {newCourse.description.length}/250 characters
+                  </span>
                 </div>
               </div>
 
-                {/* Action Buttons */}
-            <div className="flex justify-end gap-4 mt-8 pt-6 border-t border-gray-200">
-              <button
-                onClick={handleCloseModal}
-                type="button"
-                className="px-6 py-3 rounded-md cursor-pointer bg-gradient-to-r from-gray-50 to-gray-100 text-gray-700 font-medium hover:from-gray-100 hover:to-gray-200 transition-all duration-300 border border-gray-300 hover:shadow-md"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleAddCourse}
-                type="button"
-                className="px-6 py-3 rounded-md cursor-pointer bg-gradient-to-r from-[#004e64] via-[#025d75] to-[#022F40] text-white font-semibold hover:from-[#022F40] hover:to-[#011d2b] transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105"
-              >
-                Create Course
-              </button>
-            </div> 
-
-
+              {/* Action Buttons */}
+              <div className="flex justify-end gap-4 mt-8 pt-6 border-t border-gray-200">
+                <button
+                  onClick={handleCloseModal}
+                  type="button"
+                  className="px-6 py-3 rounded-md cursor-pointer bg-gradient-to-r from-gray-50 to-gray-100 text-gray-700 font-medium hover:from-gray-100 hover:to-gray-200 transition-all duration-300 border border-gray-300 hover:shadow-md"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleAddCourse}
+                  type="button"
+                  className="px-6 py-3 rounded-md cursor-pointer bg-gradient-to-r from-[#004e64] via-[#025d75] to-[#022F40] text-white font-semibold hover:from-[#022F40] hover:to-[#011d2b] transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105"
+                >
+                  Create Course
+                </button>
+              </div>
             </div>
           </div>
         </div>

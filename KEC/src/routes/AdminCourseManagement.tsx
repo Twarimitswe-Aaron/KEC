@@ -7,6 +7,7 @@ import {
   GitPullRequest,
   Upload,
 } from "lucide-react";
+import { toast } from "react-toastify";
 
 // Mock data and types for demonstration
 const mockData = [
@@ -151,6 +152,7 @@ const DashboardCard: React.FC<DashboardCardProps> = ({
               <span>{course.no_hours} hours</span>
             </div>
           </div>
+
         </div>
       </div>
     ))}
@@ -217,13 +219,13 @@ const ImageUploadArea: React.FC<ImageUploadAreaProps> = ({
 
   const handleFileSelect = (file: File) => {
     if (!file || !file.type.startsWith("image/")) {
-      alert("Please select a valid image file (JPG, PNG, GIF)");
+      toast("Please select a valid image file (JPG, PNG, GIF)");
       return;
     }
 
     // Check file size (10MB limit)
     if (file.size > 10 * 1024 * 1024) {
-      alert("File size must be less than 10MB");
+      toast("File size must be less than 10MB");
       return;
     }
 
@@ -236,8 +238,8 @@ const ImageUploadArea: React.FC<ImageUploadAreaProps> = ({
       onImageSelect(imageUrl);
       setIsLoading(false);
     };
-    reader.onerror = () => {
-      alert("Error reading file");
+    reader.onerror = (e) => {
+      toast("Error reading file");
       setIsLoading(false);
     };
     reader.readAsDataURL(file);
@@ -248,17 +250,6 @@ const ImageUploadArea: React.FC<ImageUploadAreaProps> = ({
     if (file) {
       handleFileSelect(file);
     }
-  };
-
-  const removeImage = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setPreviewUrl("");
-    onImageSelect("");
-  };
-
-  const handleClickToUpload = () => {
-    const fileInput = document.getElementById("file-input") as HTMLInputElement;
-    fileInput?.click();
   };
 
   return (
@@ -272,7 +263,6 @@ const ImageUploadArea: React.FC<ImageUploadAreaProps> = ({
         onDragEnter={handleDragEnter}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
-        onClick={handleClickToUpload}
         className={`
           relative border-2 border-dashed rounded-lg transition-all duration-300 ease-in-out
           ${
@@ -320,8 +310,6 @@ const ImageUploadArea: React.FC<ImageUploadAreaProps> = ({
                       }}
                     />
 
-                
-
                     {/* Hover Overlay */}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center">
                       <div className="text-center transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
@@ -365,7 +353,7 @@ const ImageUploadArea: React.FC<ImageUploadAreaProps> = ({
 
                     {/* Price */}
                     <div className="flex justify-between items-center">
-                      <div className="text-2xl font-bold text-[#004e64] bg-gradient-to-r from-[#004e64] to-[#022F40] bg-clip-text">
+                      <div className="text-lg font-bold text-[#004e64] bg-gradient-to-r from-[#004e64] to-[#022F40] bg-clip-text">
                         {courseData.price || "Set Your Price"}
                       </div>
                       <div className="px-3 py-1 bg-gradient-to-r from-[#004e64]/10 to-[#004e64]/5 rounded-full">
@@ -562,6 +550,7 @@ const AdminCourseManagement: React.FC = () => {
         <div className="w-full max-w-6xl mx-auto">
           <DashboardCard
             courses={courses}
+            
             onCourseAction={(id) => console.log("Course action:", id)}
           />
         </div>
@@ -569,7 +558,7 @@ const AdminCourseManagement: React.FC = () => {
 
       {/* Enhanced Modal Form */}
       {showModal && (
-        <div className="fixed inset-0 scroll-hide bg-black/50 backdrop-blur-sm flex justify-center items-center z-50 px-4">
+        <div className="fixed inset-0 scroll-hide bg-black/50 flex justify-center items-center z-50 px-4">
           <div className="bg-white scroll-hide w-full max-w-3xl p-8 rounded-2xl shadow-2xl overflow-y-auto max-h-[90vh] border border-[#004e64]/10">
             <div className="flex items-center justify-between mb-8">
               <h2 className="text-3xl font-bold text-[#004e64] bg-gradient-to-r from-[#004e64] to-[#022F40] bg-clip-text">

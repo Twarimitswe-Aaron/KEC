@@ -15,7 +15,7 @@ const CourseComponent = () => {
     fetchData();
   }, []);
 
-  const handleCourseAction = (courseId: number) => {
+  const handleCourseAction = (courseId: number | String) => {
     console.log('Starting course:', courseId);
   };
 

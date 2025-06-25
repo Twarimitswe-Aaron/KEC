@@ -89,6 +89,7 @@ export const mockGraphData = [
 
 export const data: Coursedata[] = [
   {
+    id:1,
     image_url: "/images/courseCard.png",
     title: "Thermodynamics",
     description: "Explore energy transfer, heat, and the laws of thermodynamics in detail through real-world applications.",
@@ -101,6 +102,7 @@ export const data: Coursedata[] = [
     },
   },
   {
+    id:2,
     image_url: "/images/courseCard.png",
     title: "Thermodynamics",
     description: "Explore energy transfer, heat, and the laws of thermodynamics in detail through real-world applications.",
@@ -113,6 +115,7 @@ export const data: Coursedata[] = [
     },
   },
   {
+    id:3,
     image_url: "/images/courseCard.png",
     title: "Thermodynamics",
     description: "Explore energy transfer, heat, and the laws of thermodynamics in detail through real-world applications.",
@@ -125,6 +128,7 @@ export const data: Coursedata[] = [
     },
   },
   {
+    id:4,
     image_url: "/images/courseCard.png",
     title: "Thermodynamics",
     description: "Explore energy transfer, heat, and the laws of thermodynamics in detail through real-world applications.",
@@ -137,6 +141,7 @@ export const data: Coursedata[] = [
     },
   },
   {
+    id:5,
     image_url: "/images/courseCard.png",
     title: "Thermodynamics",
     description: "Explore energy transfer, heat, and the laws of thermodynamics in detail through real-world applications.",
@@ -149,6 +154,7 @@ export const data: Coursedata[] = [
     },
   },
   {
+    id:6,
     image_url: "/images/courseCard.png",
     title: "Fluid Mechanics",
     description: "Covers fluid statics and dynamics, pressure distributions, and practical system design with flow analysis.",
