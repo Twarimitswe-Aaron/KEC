@@ -4,82 +4,142 @@ import {
   FaMapMarkerAlt,
   FaBriefcase,
   FaGraduationCap,
-  FaHeart,
   FaCalendarAlt,
   FaPhone,
   FaEnvelope,
-  FaGlobe,
   FaCamera,
-  FaUserPlus,
-  FaEllipsisH,
 } from "react-icons/fa";
-import { MdClose, MdEdit } from "react-icons/md";
+import { MdClose, MdEdit, MdDelete } from "react-icons/md"; // Added MdDelete for list items
 import { UserRoleContext } from "../UserRoleContext";
 
 const ProfileComponent = () => {
   const UserRole = useContext(UserRoleContext);
-  const [activeTab, setActiveTab] = useState("Posts");
-  const [bio, setBio] = useState("Admin at Technology Company");
-  const [currentCity, setCurrentCity] = useState("Lives in Gasabo, Rwanda");
-  const [hometown, setHometown] = useState("From Kigali, Gasabo, Rwanda");
-  const [workplace, setWorkplace] = useState(
-    "Work in the new Technology Company"
-  );
-  const [education, setEducation] = useState(
-    "Studied in Kigali Secondary Education"
-  );
+
+  // CHANGED: These states are now ARRAYS to hold multiple entries
+  const [workplaces, setWorkplaces] = useState([
+    "Work in the new Technology Company",
+  ]);
+  const [educationPlaces, setEducationPlaces] = useState([
+    "Studied in Kigali Secondary Education",
+  ]);
+  const [currentCities, setCurrentCities] = useState([
+    "Lives in Gasabo, Rwanda",
+  ]);
+  const [hometowns, setHometowns] = useState(["From Kigali, Gasabo, Rwanda"]);
+
+  // States for toggling visibility of profile sections in the modal (for singular editing)
   const [showCurrentCity, setShowCurrentCity] = useState(true);
   const [showHometown, setShowHometown] = useState(true);
-  const [showWorkplace, setShowWorkplace] = useState(true);
-  const [showEducation, setShowEducation] = useState(true);
+  // Note: showWorkplace and showEducation checkboxes are less relevant now that we have lists.
+  // We'll keep them for consistency with your provided code, but their behavior will be different.
+
+  // State for modal visibility
   const [showModal, setShowModal] = useState(false);
-  const [editingWorkplace, setEditingWorkplace] = useState(false);
-  const [editingEducation, setEditingEducation] = useState(false);
-  const [newWorkplace, setNewWorkplace] = useState("");
-  const [newEducation, setNewEducation] = useState("");
-  const [postContent, setPostContent] = useState("");
+
+  // States for capturing new input in the modal (for adding new items)
+  const [newWorkplaceInput, setNewWorkplaceInput] = useState("");
+  const [newEducationInput, setNewEducationInput] = useState("");
+  const [newCurrentCityInput, setNewCurrentCityInput] = useState("");
+  const [newHometownInput, setNewHometownInput] = useState("");
+
+  // States for controlling visibility of "add new" input fields
+  const [showAddWorkplaceInput, setShowAddWorkplaceInput] = useState(false);
+  const [showAddEducationInput, setShowAddEducationInput] = useState(false);
+  const [showAddCurrentCityInput, setShowAddCurrentCityInput] = useState(false);
+  const [showAddHometownInput, setShowAddHometownInput] = useState(false);
+
+  // Static profile information (not editable in this version's modal)
   const [joinDate] = useState("Join June 27, 2007");
   const [email] = useState("aarontwarimitswe@gmail.com");
   const [phone] = useState("+250 784 156 865");
 
+  // --- Handlers for Adding Items ---
+
+  const handleAddWorkplace = () => {
+    if (newWorkplaceInput.trim() !== "") {
+      setWorkplaces([...workplaces, newWorkplaceInput.trim()]);
+      setNewWorkplaceInput(""); // Clear input
+      setShowAddWorkplaceInput(false); // Hide input field
+    }
+  };
+
+  const handleAddEducation = () => {
+    if (newEducationInput.trim() !== "") {
+      setEducationPlaces([...educationPlaces, newEducationInput.trim()]);
+      setNewEducationInput("");
+      setShowAddEducationInput(false);
+    }
+  };
+
+  const handleAddCurrentCity = () => {
+    if (newCurrentCityInput.trim() !== "") {
+      setCurrentCities([...currentCities, newCurrentCityInput.trim()]);
+      setNewCurrentCityInput("");
+      setShowAddCurrentCityInput(false);
+    }
+  };
+
+  const handleAddHometown = () => {
+    if (newHometownInput.trim() !== "") {
+      setHometowns([...hometowns, newHometownInput.trim()]);
+      setNewHometownInput("");
+      setShowAddHometownInput(false);
+    }
+  };
+
+  // --- Handlers for Deleting Items ---
+
+  const handleDeleteWorkplace = (indexToDelete: number) => {
+    setWorkplaces(workplaces.filter((_, index) => index !== indexToDelete));
+  };
+
+  const handleDeleteEducation = (indexToDelete: number) => {
+    setEducationPlaces(
+      educationPlaces.filter((_, index) => index !== indexToDelete)
+    );
+  };
+
+  const handleDeleteCurrentCity = (indexToDelete: number) => {
+    setCurrentCities(currentCities.filter((_, index) => index !== indexToDelete));
+  };
+
+  const handleDeleteHometown = (indexToDelete: number) => {
+    setHometowns(hometowns.filter((_, index) => index !== indexToDelete));
+  };
+
+  // The `handleSave` will now just close the modal, as changes are applied instantly
   const handleSave = () => {
-    if (newWorkplace.trim() !== "") {
-      setWorkplace(newWorkplace);
-      setNewWorkplace("");
-    }
-    if (newEducation.trim() !== "") {
-      setEducation(newEducation);
-      setNewEducation("");
-    }
-    setEditingWorkplace(false);
-    setEditingEducation(false);
     setShowModal(false);
+    // Reset any temporary input states
+    setNewWorkplaceInput("");
+    setNewEducationInput("");
+    setNewCurrentCityInput("");
+    setNewHometownInput("");
+    setShowAddWorkplaceInput(false);
+    setShowAddEducationInput(false);
+    setShowAddCurrentCityInput(false);
+    setShowAddHometownInput(false);
   };
 
-  const handlePostSubmit = () => {
-    console.log("Post submitted:", postContent);
-    setPostContent("");
-  };
-
-  const startEditingWorkplace = () => {
-    setNewWorkplace(workplace);
-    setEditingWorkplace(true);
-    setEditingEducation(false);
-  };
-
-  const startEditingEducation = () => {
-    setNewEducation(education);
-    setEditingEducation(true);
-    setEditingWorkplace(false);
+  const handleCancelModal = () => {
+    setShowModal(false);
+    // Reset any temporary input states if the user cancels
+    setNewWorkplaceInput("");
+    setNewEducationInput("");
+    setNewCurrentCityInput("");
+    setNewHometownInput("");
+    setShowAddWorkplaceInput(false);
+    setShowAddEducationInput(false);
+    setShowAddCurrentCityInput(false);
+    setShowAddHometownInput(false);
   };
 
   return (
     <div className="bg-gray-100 rounded-md min-h-screen">
-      {/* Cover Photo */}
+      {/* Profile Header Section */}
       <div className="flex flex-col items-center gap-3 justify-center h-90">
         <div className="inset-0 bg-white bg-opacity-20"></div>
 
-        {/* Profile Picture */}
         <div className="">
           <div className="relative">
             <img
@@ -112,50 +172,65 @@ const ProfileComponent = () => {
         </div>
       </div>
 
-      {/* Main Content */}
+      {/* Main Content Area */}
       <div className="max-w-6xl mx-auto px-8 py-6">
         <div className="">
-          {/* Right Content */}
           <div className="lg:col-span-2">
             <div className="bg-white rounded-lg shadow p-6">
               <h2 className="text-2xl font-bold mb-6">About Aaron</h2>
               <div className="space-y-6">
+                {/* Work Section (Displaying all workplaces) */}
                 <div>
-                  <h3 className="text-lg font-semibold mb-3">
-                    Work and Education
-                  </h3>
+                  <h3 className="text-lg font-semibold mb-3">Work</h3>
                   <div className="space-y-2">
-                    <div className="flex items-center gap-3">
-                      <FaBriefcase className="text-gray-500" />
-                      <span>{workplace}</span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <FaGraduationCap className="text-gray-500" />
-                      <span>{education}</span>
-                    </div>
+                    {workplaces.map((place, index) => (
+                      <div key={index} className="flex items-center gap-3">
+                        <FaBriefcase className="text-gray-500" />
+                        <span>{place}</span>
+                      </div>
+                    ))}
                   </div>
                 </div>
 
+                {/* Education Section (Displaying all education places) */}
+                <div>
+                  <h3 className="text-lg font-semibold mb-3">Education</h3>
+                  <div className="space-y-2">
+                    {educationPlaces.map((place, index) => (
+                      <div key={index} className="flex items-center gap-3">
+                        <FaGraduationCap className="text-gray-500" />
+                        <span>{place}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Places Lived Section (Displaying all current cities and hometowns) */}
                 <div>
                   <h3 className="text-lg font-semibold mb-3">Places lived</h3>
                   <div className="space-y-2">
-                    <div className="flex items-center gap-3">
-                      <FaHome className="text-gray-500" />
-                      <span>{currentCity}</span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <FaMapMarkerAlt className="text-gray-500" />
-                      <span>{hometown}</span>
-                    </div>
+                    {currentCities.map((city, index) => (
+                      <div key={index} className="flex items-center gap-3">
+                        <FaHome className="text-gray-500" />
+                        <span>{city}</span>
+                      </div>
+                    ))}
+                    {hometowns.map((town, index) => (
+                      <div key={index} className="flex items-center gap-3">
+                        <FaMapMarkerAlt className="text-gray-500" />
+                        <span>{town}</span>
+                      </div>
+                    ))}
                   </div>
                 </div>
 
+                {/* Contact Info Section */}
                 <div>
                   <h3 className="text-lg font-semibold mb-3">Contact info</h3>
                   <div className="space-y-2">
                     <div className="flex items-center gap-3">
                       <FaEnvelope className="text-gray-500" />
-                      <span className="text-blue-600">{email}</span>
+                      <span className="text-[#022F40]">{email}</span>
                     </div>
                     <div className="flex items-center gap-3">
                       <FaPhone className="text-gray-500" />
@@ -164,6 +239,7 @@ const ProfileComponent = () => {
                   </div>
                 </div>
 
+                {/* Basic Info Section */}
                 <div>
                   <h3 className="text-lg font-semibold mb-3">Basic info</h3>
                   <div className="flex items-center gap-3">
@@ -177,169 +253,286 @@ const ProfileComponent = () => {
         </div>
       </div>
 
-      {/* Edit Modal */}
+      {/* Edit Profile Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-[#00000099] bg-opacity-50 flex justify-center items-center z-50">
           <div className="bg-white rounded-lg w-full max-w-md p-6 relative shadow-xl">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-semibold">Edit Profile</h3>
-              <button onClick={() => setShowModal(false)}>
+              <button onClick={handleCancelModal}>
                 <MdClose className="text-2xl text-gray-500 hover:text-gray-700" />
               </button>
             </div>
+            {/* Scrollable content area for modal */}
             <div className="space-y-4 max-h-96 scroll-hide overflow-y-auto">
+              {/* Edit Workplaces */}
               <div>
                 <h4 className="font-semibold mb-2">Work</h4>
-                <label className="flex items-center gap-3">
-                  <input
-                    type="checkbox"
-                    checked={showWorkplace}
-                    onChange={() => setShowWorkplace(!showWorkplace)}
-                    className="w-4 h-4 accent-blue-600"
-                  />
-                  {editingWorkplace ? (
-                    <div className="flex flex-col w-full">
+                {/* Display existing workplaces with delete option */}
+                {workplaces.map((place, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center justify-between gap-3 mb-2"
+                  >
+                    <label className="flex items-center gap-3">
+                      {/* Checkbox for show/hide (from original logic, but acts on list presence now) */}
                       <input
-                        type="text"
-                        value={newWorkplace}
-                        onChange={(e) => setNewWorkplace(e.target.value)}
-                        className="border border-gray-300 rounded p-2 w-full"
-                        placeholder="Enter workplace"
+                        type="checkbox"
+                        checked={true} // Always checked as items in list are displayed
+                        onChange={() => {}} // No real effect on display here, just visual
+                        className="w-4 h-4 accent-blue-600"
                       />
-                      <div className="flex justify-end gap-2 mt-2">
-                        <button
-                          onClick={() => setEditingWorkplace(false)}
-                          className="text-sm text-gray-500 hover:text-gray-700"
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          onClick={() => {
-                            if (newWorkplace.trim() !== "") {
-                              setWorkplace(newWorkplace);
-                              setEditingWorkplace(false);
-                            }
-                          }}
-                          className="text-sm text-blue-600 hover:text-blue-800"
-                        >
-                          Save
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <>
-                      <span>{workplace}</span>
+                      <span>{place}</span>
+                    </label>
+                    <button
+                      onClick={() => handleDeleteWorkplace(index)}
+                      className="text-[022F40] hover:text-[#022F40]"
+                      aria-label={`Delete workplace ${place}`}
+                    >
+                      <MdDelete />
+                    </button>
+                  </div>
+                ))}
+                {/* Add new workplace section */}
+                {!showAddWorkplaceInput ? (
+                  <button
+                    onClick={() => setShowAddWorkplaceInput(true)}
+                    className="text-blue-600 hover:underline text-sm mt-1"
+                  >
+                    + Add workplace
+                  </button>
+                ) : (
+                  <div className="flex flex-col w-full mt-2">
+                    <input
+                      type="text"
+                      value={newWorkplaceInput}
+                      onChange={(e) => setNewWorkplaceInput(e.target.value)}
+                      className="border border-gray-300 rounded p-2 w-full"
+                      placeholder="Enter new workplace"
+                    />
+                    <div className="flex justify-end gap-2 mt-2">
                       <button
-                        onClick={startEditingWorkplace}
-                        className="ml-auto text-blue-600 hover:underline text-sm"
+                        onClick={() => {
+                          setShowAddWorkplaceInput(false);
+                          setNewWorkplaceInput("");
+                        }}
+                        className="text-sm text-gray-500 hover:text-gray-700"
                       >
-                        Edit
+                        Cancel
                       </button>
-                    </>
-                  )}
-                </label>
-                <button className="text-blue-600 hover:underline text-sm mt-1">
-                  + Add workplace
-                </button>
+                      <button
+                        onClick={handleAddWorkplace}
+                        className="text-sm text-[#022F40] hover:text-blue-800"
+                      >
+                        Add
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
 
+              {/* Edit Education Places */}
               <div>
                 <h4 className="font-semibold mb-2">Education</h4>
-                <label className="flex items-center gap-3">
-                  <input
-                    type="checkbox"
-                    checked={showEducation}
-                    onChange={() => setShowEducation(!showEducation)}
-                    className="w-4 h-4 accent-blue-600"
-                  />
-                  {editingEducation ? (
-                    <div className="flex flex-col w-full">
+                {educationPlaces.map((place, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center justify-between gap-3 mb-2"
+                  >
+                    <label className="flex items-center gap-3">
                       <input
-                        type="text"
-                        value={newEducation}
-                        onChange={(e) => setNewEducation(e.target.value)}
-                        className="border border-gray-300 rounded p-2 w-full"
-                        placeholder="Enter education"
+                        type="checkbox"
+                        checked={true}
+                        onChange={() => {}}
+                        className="w-4 h-4 accent-blue-600"
                       />
-                      <div className="flex justify-end gap-2 mt-2">
-                        <button
-                          onClick={() => setEditingEducation(false)}
-                          className="text-sm text-gray-500 hover:text-gray-700"
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          onClick={() => {
-                            if (newEducation.trim() !== "") {
-                              setEducation(newEducation);
-                              setEditingEducation(false);
-                            }
-                          }}
-                          className="text-sm text-blue-600 hover:text-blue-800"
-                        >
-                          Save
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <>
-                      <span>{education}</span>
+                      <span>{place}</span>
+                    </label>
+                    <button
+                      onClick={() => handleDeleteEducation(index)}
+                      className="text-[#022F40] hover:text-[#022F40]"
+                      aria-label={`Delete education place ${place}`}
+                    >
+                      <MdDelete />
+                    </button>
+                  </div>
+                ))}
+                {!showAddEducationInput ? (
+                  <button
+                    onClick={() => setShowAddEducationInput(true)}
+                    className="text-blue-600 hover:underline text-sm mt-1"
+                  >
+                    + Add education
+                  </button>
+                ) : (
+                  <div className="flex flex-col w-full mt-2">
+                    <input
+                      type="text"
+                      value={newEducationInput}
+                      onChange={(e) => setNewEducationInput(e.target.value)}
+                      className="border border-gray-300 rounded p-2 w-full"
+                      placeholder="Enter new education"
+                    />
+                    <div className="flex justify-end gap-2 mt-2">
                       <button
-                        onClick={startEditingEducation}
-                        className="ml-auto text-blue-600 hover:underline text-sm"
+                        onClick={() => {
+                          setShowAddEducationInput(false);
+                          setNewEducationInput("");
+                        }}
+                        className="text-sm text-gray-500 hover:text-gray-700"
                       >
-                        Edit
+                        Cancel
                       </button>
-                    </>
-                  )}
-                </label>
-                <button className="text-blue-600 hover:underline text-sm mt-1">
-                  + Add education
-                </button>
+                      <button
+                        onClick={handleAddEducation}
+                        className="text-sm text-[#022F40] hover:text-blue-800"
+                      >
+                        Add
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
 
+              {/* Edit Current Cities */}
               <div>
                 <h4 className="font-semibold mb-2">Current city</h4>
-                <label className="flex items-center gap-3">
-                  <input
-                    type="checkbox"
-                    checked={showCurrentCity}
-                    onChange={() => setShowCurrentCity(!showCurrentCity)}
-                    className="w-4 h-4 accent-blue-600"
-                  />
-                  <span>{currentCity}</span>
-                </label>
+                {currentCities.map((city, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center justify-between gap-3 mb-2"
+                  >
+                    <label className="flex items-center gap-3">
+                      <input
+                        type="checkbox"
+                        checked={showCurrentCity} // This checkbox still controls overall visibility (from your original logic)
+                        onChange={() => setShowCurrentCity(!showCurrentCity)}
+                        className="w-4 h-4 accent-blue-600"
+                      />
+                      <span>{city}</span>
+                    </label>
+                    <button
+                      onClick={() => handleDeleteCurrentCity(index)}
+                      className="text-[#022F40] hover:text-[#022F40]"
+                      aria-label={`Delete current city ${city}`}
+                    >
+                      <MdDelete />
+                    </button>
+                  </div>
+                ))}
+                {!showAddCurrentCityInput ? (
+                  <button
+                    onClick={() => setShowAddCurrentCityInput(true)}
+                    className="text-blue-600 hover:underline text-sm mt-1"
+                  >
+                    + Add current city
+                  </button>
+                ) : (
+                  <div className="flex flex-col w-full mt-2">
+                    <input
+                      type="text"
+                      value={newCurrentCityInput}
+                      onChange={(e) => setNewCurrentCityInput(e.target.value)}
+                      className="border border-gray-300 rounded p-2 w-full"
+                      placeholder="Enter new current city"
+                    />
+                    <div className="flex justify-end gap-2 mt-2">
+                      <button
+                        onClick={() => {
+                          setShowAddCurrentCityInput(false);
+                          setNewCurrentCityInput("");
+                        }}
+                        className="text-sm text-gray-500 hover:text-gray-700"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={handleAddCurrentCity}
+                        className="text-sm text-[#022F40] hover:text-blue-800"
+                      >
+                        Add
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
 
+              {/* Edit Hometowns */}
               <div>
                 <h4 className="font-semibold mb-2">Hometown</h4>
-                <label className="flex items-center gap-3">
-                  <input
-                    type="checkbox"
-                    checked={showHometown}
-                    onChange={() => setShowHometown(!showHometown)}
-                    className="w-4 h-4 accent-blue-600"
-                  />
-                  <span>{hometown}</span>
-                </label>
+                {hometowns.map((town, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center justify-between gap-3 mb-2"
+                  >
+                    <label className="flex items-center gap-3">
+                      <input
+                        type="checkbox"
+                        checked={showHometown} // This checkbox still controls overall visibility
+                        onChange={() => setShowHometown(!showHometown)}
+                        className="w-4 h-4 accent-blue-600"
+                      />
+                      <span>{town}</span>
+                    </label>
+                    <button
+                      onClick={() => handleDeleteHometown(index)}
+                      className="text-[#022F40] hover:text-[#022F40]"
+                      aria-label={`Delete hometown ${town}`}
+                    >
+                      <MdDelete />
+                    </button>
+                  </div>
+                ))}
+                {!showAddHometownInput ? (
+                  <button
+                    onClick={() => setShowAddHometownInput(true)}
+                    className="text-[#022F40] hover:underline text-sm mt-1"
+                  >
+                    + Add hometown
+                  </button>
+                ) : (
+                  <div className="flex flex-col w-full mt-2">
+                    <input
+                      type="text"
+                      value={newHometownInput}
+                      onChange={(e) => setNewHometownInput(e.target.value)}
+                      className="border border-gray-300 rounded p-2 w-full"
+                      placeholder="Enter new hometown"
+                    />
+                    <div className="flex justify-end gap-2 mt-2">
+                      <button
+                        onClick={() => {
+                          setShowAddHometownInput(false);
+                          setNewHometownInput("");
+                        }}
+                        className="text-sm text-gray-500 hover:text-gray-700"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={handleAddHometown}
+                        className="text-sm text-[#022F40] "
+                      >
+                        Add
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
+            {/* Modal Actions */}
             <div className="flex justify-end gap-2 mt-6 pt-4">
               <button
-                onClick={() => {
-                  setEditingWorkplace(false);
-                  setEditingEducation(false);
-                  setShowModal(false);
-                }}
+                onClick={handleCancelModal}
                 className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
               >
                 Cancel
               </button>
               <button
-                onClick={handleSave}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                onClick={handleSave} // This just closes the modal now
+                className="px-4 py-2 bg-[#022F40] text-white rounded-lg hover:bg-blue-700"
               >
-                Save
+                Done
               </button>
             </div>
           </div>

@@ -17,6 +17,7 @@ import CourseManagement from "./routes/courseManagement"
 import AdminCourseManagement from "./routes/AdminCourseManagement"
 import Announcements from "./routes/Announcements";
 import MyProfile from "./routes/MyProfile";
+import Feedback from "./routes/Feedback";
 
 
 function App() {
@@ -52,6 +53,7 @@ function App() {
       <Route path="/course-management" element={<AdminCourseManagement/>}/>
       <Route path="/announcements" element={<Announcements/>}/>
       <Route path="/my-account" element={<MyProfile/>}/>
+      <Route path="/feedback" element={<Feedback/>}/>
 
     </Route>
     <Route path="/inbox" element={<Inbox/>} />

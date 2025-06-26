@@ -1,5 +1,6 @@
 import React, { useState , useEffect,useContext } from "react";
 import { UserRoleContext as UserRoleContextImport } from "../UserRoleContext";
+import { User } from "lucide-react";
 
 
 type AnnouncementCardProps = {
@@ -86,31 +87,33 @@ const Announcements = () => {
 
   return (
     <div className="">
-          <div className="flex items-top p-2.5">
-  <img
-    src={userData.profileImage}
-    alt={userData.name}
-    className="w-10 h-10 rounded-full mr-2.5"
-  />
-  <div className="flex-1 bg-gray-100 rounded-lg p-2.5">
-    <div className="flex flex-col h-full">
-      <textarea
-        placeholder={userData.placeholderText || 'Type your feedback or request here'}
-        value={feedback}
-        onChange={(e) => setFeedback(e.target.value)}
-        className="w-full min-h-[140px] p-2.5 scroll-hide rounded-lg border-none resize-none bg-gray-100 focus:outline-none"
-      />
-      <div className="flex justify-end mt-1">
-        <button
-          onClick={handleSubmit}
-          className="px-4 py-1 bg-[#022F40] text-white rounded-lg cursor-pointer hover:bg-[#033549]"
-        >
-          Post
-        </button>
-      </div>
-    </div>
-  </div>
-</div>
+{(UserRole === "admin" || UserRole=== "teacher") && (
+            <div className="flex items-top p-2.5">
+            <img
+              src={userData.profileImage}
+              alt={userData.name}
+              className="w-10 h-10 rounded-full mr-2.5"
+            />
+            <div className="flex-1 bg-gray-100 rounded-lg p-2.5">
+              <div className="flex flex-col h-full">
+                <textarea
+                  placeholder={userData.placeholderText || 'Type your feedback or request here'}
+                  value={feedback}
+                  onChange={(e) => setFeedback(e.target.value)}
+                  className="w-full min-h-[140px] p-2.5 scroll-hide rounded-lg border-none resize-none bg-gray-100 focus:outline-none"
+                />
+                <div className="flex justify-end mt-1">
+                  <button
+                    onClick={handleSubmit}
+                    className="px-4 py-1 bg-[#022F40] text-white rounded-lg cursor-pointer hover:bg-[#033549]"
+                  >
+                    Post
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+)}
       <div className="max-w-4xl mx-auto px-6 py-8">
         <h2 className="text-3xl font-bold text-[#022F40] mb-6 tracking-tight">
           Announcements
