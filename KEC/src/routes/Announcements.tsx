@@ -6,28 +6,35 @@ type AnnouncementCardProps = {
   name: string;
   role: string;
   message: string;
+  date: string;
 };
 
 // Sub-component for individual announcement cards
-const AnnouncementCard = ({ name, role, message }: AnnouncementCardProps) => {
+const AnnouncementCard = ({ name, role, message,date }: AnnouncementCardProps) => {
   return (
     <div className="bg-white/60 backdrop-blur-md rounded-2xl shadow-lg border border-gray-200 p-5 mb-6 hover:shadow-xl transition duration-300">
       <div className="flex items-center gap-4 mb-3">
         <img
-          src={`https://ui-avatars.com/api/?name=${name}&background=004e64&color=ffffff&rounded=true&size=64`}
+          src={`https://ui-avatars.com/api/?name=${name}&background=022F40&color=ffffff&rounded=true&size=64`}
           alt={`${name} avatar`}
           className="w-12 h-12 rounded-full border-none  shadow-sm"
         />
-        <div>
-          <h3 className="font-semibold text-[#004e64] text-lg tracking-wide">
+        <div className="flex justify-between w-full items-center gap-2">
+       <div className="inline-block">
+       <h3 className="font-semibold text-[#022F40] text-lg tracking-wide">
             {name}
           </h3>
           <p className="text-xs text-gray-600 uppercase">{role}</p>
+       </div>
+       <div className="text-sm">
+        <p >{date}</p>
+       </div>
         </div>
       </div>
       <p className="text-gray-800 text-sm leading-relaxed tracking-wide">
         {message}
       </p>
+      
     </div>
   );
 };
@@ -57,18 +64,21 @@ const Announcements = () => {
     {
       name: "Cassie Morgan",
       role: "Teacher",
+      date:"2023-10-01",
       message:
         "Attention Mechanical Engineering students! Upcoming events include guest lectures, hands-on workshops, industry visits, internship opportunities, and student projects. Participate to enhance your learning and professional skills. Stay tuned for details!",
     },
     {
       name: "Mucyo Austin",
       role: "Teacher",
+      date:"2023-10-02",
       message:
         "Attention Mechanical Engineering students! We have exciting opportunities coming your way: guest lectures, hands-on workshops, industry visits, internships, and collaborative projects. Mark your calendars and participate to boost your skills and learning. More details to come!",
     },
     {
       name: "Cassie Morgan",
       role: "Teacher",
+      date:"2023-10-03",
       message:
         "Attention Mechanical Engineering students! Upcoming events include guest lectures, hands-on workshops, industry visits, internship opportunities, and student projects. Participate to enhance your learning and professional skills. Stay tuned for details!",
     },
@@ -112,6 +122,7 @@ const Announcements = () => {
               name={announcement.name}
               role={announcement.role}
               message={announcement.message}
+              date={announcement.date}
             />
           ))
         ) : (

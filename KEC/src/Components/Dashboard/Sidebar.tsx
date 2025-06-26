@@ -39,7 +39,7 @@ const Dashboard: RoleBasedSidebar = {
     { label: "Payment ", path: "/payment-management", icon: <MdPayment /> },
     { label: "My Account", path: "/my-account", icon: <FaRegUser /> },
     { label: "Feedback", path: "/feedback", icon: <LuMessageSquareMore /> },
-    { label: "Announcements", path: "/anouncements", icon: <MdOutlineAnnouncement /> },
+    { label: "Announcements", path: "/announcements", icon: <MdOutlineAnnouncement /> },
     { label: "Certificates ", path: "/certificate-creation", icon: <FiSettings /> },
     { label: "Logout", path: "/logout", icon: <CgLogOut /> },
   ],
@@ -50,7 +50,7 @@ const Dashboard: RoleBasedSidebar = {
     { label: "My Account", path: "/my-account", icon: <FaRegUser /> },
     { label: "Feedback", path: "/feedback", icon: <LuMessageSquareMore /> },
     { label: "Certificates Creation", path: "/certificate-creation", icon: <FiSettings /> },
-    { label: "Announcements", path: "/anouncements", icon: <MdOutlineAnnouncement /> },
+    { label: "Announcements", path: "/announcements", icon: <MdOutlineAnnouncement /> },
     { label: "Logout", path: "/logout", icon: <CgLogOut /> },
   ],
   student: [
