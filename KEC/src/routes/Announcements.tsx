@@ -1,4 +1,6 @@
-import React from "react";
+import React, { useState , useEffect,useContext } from "react";
+import { UserRoleContext as UserRoleContextImport } from "../UserRoleContext";
+
 
 type AnnouncementCardProps = {
   name: string;
@@ -32,6 +34,25 @@ const AnnouncementCard = ({ name, role, message }: AnnouncementCardProps) => {
 
 // Main Announcements component
 const Announcements = () => {
+    const UserRole=useContext(UserRoleContextImport);
+    const [feedback, setFeedback] = useState('');
+    const [userData, setUserData] = useState({
+      profileImage: "./images/user.png",
+      name: 'Aart',
+      placeholderText: 'Type your announcements here...',
+    });
+  
+    const handleSubmit = () => {
+      console.log('Feedback submitted:', feedback);
+      setFeedback('');
+    };
+  
+    // Simulate fetching data from a backend (e.g., on component mount)
+    useEffect(() => {
+      // This would typically be an API call, e.g., fetch('/api/user-data')
+      // For now, we'll use the initial state as mock data
+      // Replace with actual API logic as needed
+    }, []);
   const announcements = [
     {
       name: "Cassie Morgan",
@@ -54,22 +75,49 @@ const Announcements = () => {
   ];
 
   return (
-    <div className="max-w-4xl mx-auto px-6 py-8">
-      <h2 className="text-3xl font-bold text-[#004e64] mb-6 tracking-tight">
-        Announcements
-      </h2>
-      {announcements.length > 0 ? (
-        announcements.map((announcement, index) => (
-          <AnnouncementCard
-            key={index}
-            name={announcement.name}
-            role={announcement.role}
-            message={announcement.message}
-          />
-        ))
-      ) : (
-        <p className="text-gray-400 text-center">No announcements available.</p>
-      )}
+    <div className="">
+          <div className="flex items-top p-2.5">
+  <img
+    src={userData.profileImage}
+    alt={userData.name}
+    className="w-10 h-10 rounded-full mr-2.5"
+  />
+  <div className="flex-1 bg-gray-100 rounded-lg p-2.5">
+    <div className="flex flex-col h-full">
+      <textarea
+        placeholder={userData.placeholderText || 'Type your feedback or request here'}
+        value={feedback}
+        onChange={(e) => setFeedback(e.target.value)}
+        className="w-full min-h-[140px] p-2.5 scroll-hide rounded-lg border-none resize-none bg-gray-100 focus:outline-none"
+      />
+      <div className="flex justify-end mt-1">
+        <button
+          onClick={handleSubmit}
+          className="px-4 py-1 bg-[#022F40] text-white rounded-lg cursor-pointer hover:bg-[#033549]"
+        >
+          Post
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+      <div className="max-w-4xl mx-auto px-6 py-8">
+        <h2 className="text-3xl font-bold text-[#022F40] mb-6 tracking-tight">
+          Announcements
+        </h2>
+        {announcements.length > 0 ? (
+          announcements.map((announcement, index) => (
+            <AnnouncementCard
+              key={index}
+              name={announcement.name}
+              role={announcement.role}
+              message={announcement.message}
+            />
+          ))
+        ) : (
+          <p className="text-gray-400 text-center">No announcements available.</p>
+        )}
+      </div>
     </div>
   );
 };
