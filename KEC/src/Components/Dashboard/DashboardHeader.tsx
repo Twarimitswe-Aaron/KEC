@@ -8,7 +8,7 @@ interface DashboardHeaderProps {
 
 const DashboardHeader = ({ onHamburgerClick }: DashboardHeaderProps) => {
   return (
-    <header className="flex flex-row  md:flex-row !w-full items-center justify-between  gap-2 p-4 bg-white shadow rounded-xl ">
+    <header className="flex z-20 flex-row  md:flex-row !w-full items-center justify-between  gap-2 p-4 bg-white shadow rounded-xl ">
       {/* Hamburger for mobile - only change is using onHamburgerClick */}
       <button
         className="md:hidden p-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"

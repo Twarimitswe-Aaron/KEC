@@ -8,7 +8,7 @@ const FeaturedCoursesPage = () => {
 
       <div className={`${styles.section}`}>
         <div className="flex justify-center">
-          <h1 className="full sm:text-3xl text-[22px] mt-4 font-bold">
+          <h1 className="full sm:text-3xl text-[22px] my-7 font-bold">
             Featured courses
           </h1>
         </div>

@@ -1,29 +1,26 @@
-import React,{useEffect} from "react";
-import {useKeenSlider} from 'keen-slider/react';
+import React, { useEffect } from "react";
+import { useKeenSlider } from "keen-slider/react";
 import "keen-slider/keen-slider.min.css";
 
-
-
 const CoreTeamPage = () => {
-
-  const [sliderRef, instanceRef]=useKeenSlider({
-    loop:true,
-    mode:"snap",
-    renderMode:"performance",
-    slides:{
-      origin:"auto",
-      spacing:15,
-      perView:"auto"
+  const [sliderRef, instanceRef] = useKeenSlider({
+    loop: true,
+    mode: "snap",
+    renderMode: "performance",
+    slides: {
+      origin: "auto",
+      spacing: 15,
+      perView: "auto",
     },
   });
 
-  useEffect(()=>{
-    const interval=setInterval(()=>{
+  useEffect(() => {
+    const interval = setInterval(() => {
       instanceRef.current?.next();
-    },5000)
-    return ()=>clearInterval(interval);
-  },[instanceRef]);
-  
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [instanceRef]);
+
   const teamMembers = [
     {
       id: 1,
@@ -64,13 +61,16 @@ const CoreTeamPage = () => {
   ];
   return (
     <div className="w-full " id="coreTeam">
-      <div className="flex w-full justify-center items center">
-        <h1 className="font-bold sm:text-3xl text-[22px] my-6 sm:mb-14  sm:mt-5 ">
+      <div className="flex w-full justify-center mt-10 items center">
+        <h1 className="font-bold sm:text-3xl text-[22px]  sm:mb-14  sm:mt-5 ">
           Core Team
         </h1>
       </div>
 
-      <div ref={sliderRef} className=" keen-slider justify-evenly text-center items-center">
+      <div
+        ref={sliderRef}
+        className=" keen-slider justify-evenly text-center items-center"
+      >
         {teamMembers.map((member) => (
           <div
             key={member.id}

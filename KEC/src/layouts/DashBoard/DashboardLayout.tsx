@@ -6,13 +6,14 @@ import RightSidebar from "../../Components/Dashboard/RightSidebar";
 import { UserRoleContext } from "../../UserRoleContext";
 
 const DashboardLayout = () => {
+  const [logout, setLogout]=useState(false);
   const [isSidebarOpen, setSidebarOpen] = useState(false);
   const toggleSidebar = () => setSidebarOpen((open) => !open);
   const closeSidebar = () => setSidebarOpen(false);
 
   return (
-    <UserRoleContext.Provider value="teacher">
-      <div className="w-full min-h-screen flex">
+    <UserRoleContext.Provider value="admin">
+      <div className="w-full  min-h-screen flex">
         {/* Left Sidebar for md+ */}
         <aside className="hidden md:block w-[10%] lg:w-[20%] h-screen sticky left-0 top-0">
           <Sidebar />
@@ -34,8 +35,8 @@ const DashboardLayout = () => {
         )}
 
         {/* Main Content Area */}
-        <div className="flex-1 w-full md:w-[90%] lg:w-[60%] min-h-screen">
-          <div className="sticky top-0 mx-3 z-30 bg-white">
+        <div className="flex-1 w-full md:w-[90%]  lg:w-[60%] min-h-screen">
+          <div className="sticky z-50 top-0 mx-3 bg-white">
             <DashboardHeader onHamburgerClick={toggleSidebar} />
           </div>
           <main className="p-4">

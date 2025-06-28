@@ -75,8 +75,8 @@ const MainPage: React.FC = () => {
       <div className={`hidden sm:flex ${styles.parent_section}`} id="main">
         <div className={`hidden sm:block ${styles.section}`}>
           <div className="block w-full">
-            <div className="block my-4">
-              <h1 className="text-[35px] font-poppins font-bold">
+            <div className="block my-10">
+              <h1 className="text-[35px] my-6 font-poppins font-bold">
                 How we work
               </h1>
               <p className="sm:text-[13px] md:text-[16px] text-sm lg:text-lg">

@@ -18,6 +18,8 @@ import AdminCourseManagement from "./routes/AdminCourseManagement"
 import Announcements from "./routes/Announcements";
 import MyProfile from "./routes/MyProfile";
 import Feedback from "./routes/Feedback";
+import Logout from "./routes/Logout"
+import PaymentManagement from "./routes/PaymentManagement";
 
 
 function App() {
@@ -54,6 +56,8 @@ function App() {
       <Route path="/announcements" element={<Announcements/>}/>
       <Route path="/my-account" element={<MyProfile/>}/>
       <Route path="/feedback" element={<Feedback/>}/>
+      <Route path="/payment-management" element={<PaymentManagement/>}/>
+      <Route path="/logout" element={<Logout/>}/>
 
     </Route>
     <Route path="/inbox" element={<Inbox/>} />

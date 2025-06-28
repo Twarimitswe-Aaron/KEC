@@ -98,15 +98,15 @@ const CourseCarousel = () => {
             className="keen-slider__slide !w-[280px] flex-shrink-0"
             key={index}
           >
-            <div className="bg-white overflow-hidden shadow-[0_4px_4px_rgba(0,0,0,0.5)] mb-4 mr-4 rounded-2xl p-2 h-[490px] w-full">
+            <div className="bg-white overflow-hidden shadow-md mb-4 mr-4 rounded-2xl  h-[490px] w-full">
               <div className="h-[48%]">
                 <img
                   src={item.image_url}
                   alt="Course"
-                  className="w-full h-full object-cover rounded-md"
+                  className="w-full h-full object-cover"
                 />
               </div>
-              <div className="h-[50%] text-[18px]">
+              <div className="h-[50%] px-2 text-[18px]">
                 <h1 className="my-3 text-[16px] font-medium">{item.title}</h1>
                 <div className="flex items-center text-sm">
                   <p className="text-gray-500">Rating {item.rate}</p>
@@ -147,7 +147,7 @@ const CourseCarousel = () => {
                   </div>
                 </div>
                 <div className="my-3 flex justify-center">
-                  <button className=" w-[7rem] cursor-pointer transition-all ease-in-out duration-500 hover:bg-[#022F40] shadow-[0px_4px_4px_#00000040] hover:text-white border-white bg-white rounded-md text-[#022F40] h-[2.5rem] font-roboto">
+                  <button className=" w-[7rem] cursor-pointer transition-all ease-in-out duration-500 hover:bg-[#022F40] shadow-[0px_4px_4px_#00000040] hover:text-white border-white bg-[#022F40] rounded-md text-[#fff] h-[2.5rem] font-roboto">
                     Start Course
                   </button>
                 </div>

@@ -49,7 +49,7 @@ const Dashboard: RoleBasedSidebar = {
     { label: "Course Creation", path: "/course-creation", icon: <BsGraphUp /> },
     { label: "My Account", path: "/my-account", icon: <FaRegUser /> },
     { label: "Feedback", path: "/feedback", icon: <LuMessageSquareMore /> },
-    { label: "Certificates Creation", path: "/certificate-creation", icon: <FiSettings /> },
+    { label: "Certificates", path: "/certificate-creation", icon: <FiSettings /> },
     { label: "Announcements", path: "/announcements", icon: <MdOutlineAnnouncement /> },
     { label: "Logout", path: "/logout", icon: <CgLogOut /> },
   ],

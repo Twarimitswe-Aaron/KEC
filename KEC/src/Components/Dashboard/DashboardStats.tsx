@@ -97,28 +97,28 @@ const DashboardStats = () => {
   // Define cards shown to admin/teacher
   let statCards = [
     {
-      label: "Average Rating",
+      label: "Profit",
       value: `${stats?.rating}/5`,
       icon: <FaStar className="text-2xl text-white" />,
       bg: "bg-yellow-50",
       iconBg: "bg-yellow-500",
     },
     {
-      label: "Total Student",
+      label: "Expenses",
       value: `${stats?.students} no`,
       icon: <FaGraduationCap className="text-2xl text-white" />,
       bg: "bg-green-50",
       iconBg: "bg-green-500",
     },
     {
-      label: "Total Courses",
+      label: "Students",
       value: `${stats?.courses} no`, 
       icon: <PiStudentDuotone className="text-2xl text-white" />,
       bg: "bg-slate-100",
       iconBg: "bg-gray-700",
     },
     {
-      label: "Average Score",
+      label: "Teachers",
       value: `${stats?.averageScore}%`,
       icon: <FaChartLine className="text-2xl text-white" />,
       bg: "bg-blue-50",
@@ -153,55 +153,9 @@ const DashboardStats = () => {
 
   return (
     <div className="z-1 w-full overflow-x-auto hide-scrollbar">
-      {userRole === "student" ? (
+      {userRole === "admin" && (
         <div className="keen-slider max-w-screen-xl" ref={sliderRef}>
-          {/* Ongoing Courses */}
-          <div className="keen-slider__slide flex flex-col items-center p-4 justify-center rounded-xl bg-slate-100 !w-[180px] flex-shrink-0">
-            <div className="bg-slate-700 p-3 rounded-full mb-2">
-              <PiNotebookDuotone className="h-6 w-6 text-white" />
-            </div>
-            <p className="text-sm font-medium text-gray-500">Ongoing Courses</p>
-            <p className="text-xl font-bold text-gray-800">
-              {student_data.ongoingCourses}
-            </p>
-          </div>
-
-          {/* Completed Courses */}
-          <div className="keen-slider__slide flex flex-col items-center p-4 rounded-xl bg-blue-100 !w-[180px] flex-shrink-0">
-            <div className="bg-blue-500 p-3 rounded-full mb-2">
-              <PiBookOpenDuotone className="h-6 w-6 text-white" />
-            </div>
-            <p className="text-sm font-medium text-gray-500">Completed Courses</p>
-            <p className="text-xl font-bold text-gray-800">
-              {student_data.onCompletedCourse}
-            </p>
-          </div>
-
-          {/* Certificates */}
-          <div className="keen-slider__slide flex flex-col items-center p-4 rounded-xl bg-yellow-100 !w-[180px] flex-shrink-0">
-            <div className="bg-yellow-500 p-3 rounded-full mb-2">
-              <PiCertificateDuotone className="h-6 w-6 text-white" />
-            </div>
-            <p className="text-sm font-medium text-gray-500">Certificates</p>
-            <p className="text-xl font-bold text-gray-800">
-              {student_data.certificates}
-            </p>
-          </div>
-
-          {/* Average Score */}
-          <div className="keen-slider__slide flex flex-col items-center p-4 rounded-xl bg-green-100 !w-[180px] flex-shrink-0">
-            <div className="bg-green-500 p-3 rounded-full mb-2">
-              <PiChartLineDuotone className="h-6 w-6 text-white" />
-            </div>
-            <p className="text-sm font-medium text-gray-500">Average Score</p>
-            <p className="text-xl font-bold text-gray-800">
-              {student_data.averageScore}%
-            </p>
-          </div>
-        </div>
-      ) : (
-        <div className="keen-slider max-w-screen-xl" ref={sliderRef}>
-          {statCards.map((card, index) => (
+          {statCards.map((card, index) => ( 
             <div
               key={index}
               className={`keen-slider__slide flex flex-col items-center p-4 justify-center rounded-xl !w-[180px] flex-shrink-0 ${card.bg}`}
