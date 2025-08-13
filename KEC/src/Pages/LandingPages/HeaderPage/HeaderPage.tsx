@@ -15,20 +15,21 @@ const HeaderPage = () => {
   const toggleMenu = () => setMenuOpen(!menuOpen);
 
   const links = [
-    { to: "#hero", name: "Home Alone" },
+    { to: "#hero", name: "Home" },
     { to: "#main", name: "How We Work" },
     { to: "#featuredCourses", name: "Featured Courses" },
     { to: "#whyUs", name: "Why Us?" },
+    { to: "#others", name: "Others" },
   ];
 
-  const [activeLink, setActiveLink] = useState("Home Alone");
+  const [activeLink, setActiveLink] = useState("Home");
   return (
     <div className={` ${menuOpen ? "z-50": ""}`}>
       <div
         className={`${styles.parent_section} items-center fixed  left-0 w-full  top-0 z-30`}
       >
         <div className={`${styles.section}`}>
-          <div className="w-full mb-5 rounded-b-md backdrop-blur-3xl  bg-white/30">
+          <div className="w-full mb-5 rounded-b-md backdrop-blur-3xl bg-white/30">
             {/* Tablet Header (iPad) */}
             <div className="hidden sm:flex lg:hidden justify-between items-center px-4 py-4">
               {/* Left Section */}

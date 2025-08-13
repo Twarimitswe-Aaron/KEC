@@ -2,6 +2,7 @@ import { FiSearch } from "react-icons/fi";
 import { IoMdNotificationsOutline } from "react-icons/io";
 import { FaBars } from "react-icons/fa6";
 
+
 interface DashboardHeaderProps {
   onHamburgerClick?: () => void; // This toggles sidebar open state
 }

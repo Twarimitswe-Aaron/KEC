@@ -10,6 +10,7 @@ import FAQ from './Components/Landing/FAQ/FAQ.tsx'
 import JoinRwanda from './Components/Landing/JoinRwanda/JoinRwanda.tsx'
 import Footer from './Components/Landing/Footer/Footer.tsx'
 import Login from './Pages/Login/LoginPage.tsx';
+import OtherBusinesses from './Components/Landing/OtherBusinesses/OtherBusinesses.tsx';
 
 
 export {
@@ -23,5 +24,6 @@ export {
     CoreTeam,
     FAQ,
     JoinRwanda,
-    Footer
+    Footer,
+    OtherBusinesses
 }

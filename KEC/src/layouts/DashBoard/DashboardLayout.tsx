@@ -15,13 +15,13 @@ const DashboardLayout = () => {
     <UserRoleContext.Provider value="admin">
       <div className="w-full  min-h-screen flex">
         {/* Left Sidebar for md+ */}
-        <aside className="hidden md:block w-[10%] lg:w-[20%] h-screen sticky left-0 top-0">
+        <aside className="hidden md:block z-100 w-[10%] md:w-[20%] h-screen sticky left-0 top-0">
           <Sidebar />
         </aside>
 
         {/* Mobile Sidebar Drawer */}
         {isSidebarOpen && (
-          <div className="fixed inset-0 z-40 flex md:hidden">
+          <div className="fixed inset-0 z-100 flex md:hidden">
             {/* Overlay */}
             <div
               className="fixed inset-0 bg-black/30"

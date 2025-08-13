@@ -153,19 +153,19 @@ const MainPage: React.FC = () => {
                 provide an exceptional learning experience.
               </p>
 
-              <div className="flex mt-5 w-full">
-                <div className="w-[50%]">
+              <div className="flex flex-col md:flex-row mt-5 w-full">
+                <div className="md:w-[50%] rounded-md w-full">
                   {loading ? (
                     <Skeleton width="w-full" height="h-[200px]" rounded="rounded" />
                   ) : (
                     <img
                       src="/images/subHero.png"
                       alt="Mechanical engineering learning platform"
-                      className="h-[200px] w-full pt-2 object-cover"
+                      className="h-[200px] w-full rounded-t-md md:rounded-full  object-cover"
                     />
                   )}
                 </div>
-                <div className="w-[70%] bg-white shadow-[0_4px_4px_rgba(0,0,0,0.5)] rounded-[3px] p-4 h-auto">
+                <div className="md:w-[70%] w-full bg-white shadow-[0_4px_4px_rgba(0,0,0,0.5)] rounded-[3px] p-4 h-auto">
                   {loading ? (
                     <>
                       {[...Array(4)].map((_, idx) => (

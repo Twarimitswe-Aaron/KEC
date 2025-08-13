@@ -10,6 +10,7 @@ import {
   Main,
   WhatStudentsSay,
   WhyUs,
+  OtherBusinesses
 } from "../Routes";
 
 const Landing = () => {
@@ -22,6 +23,7 @@ const Landing = () => {
 
       <WhatStudentsSay />
       <WhyUs />
+      <OtherBusinesses/>
       <CoreTeam />
       <FAQ />
       <JoinRwanda />
