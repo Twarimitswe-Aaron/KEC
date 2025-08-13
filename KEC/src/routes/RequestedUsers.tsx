@@ -1,12 +1,6 @@
-import React, { useContext, useEffect, useState } from "react";
-import {
-  Plus,
-  CloudUpload,
-  Image,
-  X,
-  GitPullRequest,
-  Upload,
-} from "lucide-react";
+import React, { useEffect, useState } from "react";
+import StudentsRequest from "../Components/StudentsRequest";
+import { Plus, CloudUpload, Image, X, GitPullRequest, Upload } from "lucide-react";
 import { FaUserGraduate } from "react-icons/fa6";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
@@ -16,8 +10,7 @@ const mockData = [
   {
     id: 1,
     title: "React Fundamentals",
-    description:
-      "Learn React from scratch with hands-on projects and real-world examples",
+    description: "Learn React from scratch with hands-on projects and real-world examples",
     price: "50,000 RWF",
     image_url: "/images/courseCard.png",
     no_lessons: "15",
@@ -73,13 +66,12 @@ const mockData = [
   {
     id: 5,
     title: "UI/UX Design Principles",
-    description:
-      "Learn modern design principles and create beautiful interfaces",
+    description: "Learn modern design principles and create beautiful interfaces",
     price: "45,000 RWF",
     image_url: "/images/courseCard.png",
     no_lessons: "12",
     no_hours: "8",
-     open: false,
+    open: false,
     uploader: {
       name: "Alex Brown",
       avatar_url: "https://via.placeholder.com/40",
@@ -92,7 +84,7 @@ const mockData = [
     price: "55,000 RWF",
     image_url: "/images/courseCard.png",
     no_lessons: "16",
-     open: false,
+    open: false,
     no_hours: "14",
     uploader: {
       name: "Emma Davis",
@@ -121,62 +113,6 @@ interface NewCourseFormData {
   price: string;
 }
 
-// Mock DashboardCard component
-interface DashboardCardProps {
-  courses: Course[];
-  onCourseAction: (id: number) => void;
-}
-
-const DashboardCard: React.FC<DashboardCardProps> = ({
-  courses,
-  onCourseAction,
-}) => (
-  <div className="grid grid-cols-1 scroll-hide scroll-hide sm:grid-cols-2 lg:grid-cols-2 gap-6">
-    {courses.map((course) => (
-      <div
-        key={course.id}
-        className="bg-white rounded-md shadow-md overflow-hidden hover:shadow-lg transition-shadow"
-      >
-        <div className="relative">
-          <img
-            src={course.image_url}
-            alt={course.title}
-            className="w-full h-48 object-cover"
-            onError={(e) => {
-              e.currentTarget.src =
-                "https://via.placeholder.com/400x200/004e64/white?text=Course+Image";
-            }}
-          />
-        </div>
-        <div className="p-4">
-         <div className="flex justify-between">
-           <h3 className="font-semibold text-[#004e64] mb-2">{course.title}</h3>
-           { course.open ? (            <span className="text-green-500 text-sm font-medium">Open</span>) : (
-            <span className="text-red-500 text-sm font-medium">Closed</span>
-           )}
-
-         </div>
-          <p className="text-gray-600 text-sm mb-3 line-clamp-2">
-            {course.description}
-          </p>
-          <div className="flex justify-between items-center">
-            <p className="text-[#004e64] font-bold">{course.price}</p>
-            <div className="flex items-center gap-2 text-sm text-gray-500">
-              <span>{course.no_lessons} lessons</span>
-              <span>•</span>
-              <span>{course.no_hours} hours</span>
-            </div>
-          </div>
-          <div className=" justify-start flex items-center mt-4">
-            <button className="bg-[#004e64] w- py-2 px-4 text-white rounded-sm">View</button>
-          </div>
-
-        </div>
-      </div>
-    ))}
-  </div>
-);
-
 interface ImageUploadAreaProps {
   onImageSelect: (imageUrl: string) => void;
   currentImage?: string;
@@ -198,7 +134,6 @@ const ImageUploadArea: React.FC<ImageUploadAreaProps> = ({
   const [previewUrl, setPreviewUrl] = useState(currentImage || "");
   const [isLoading, setIsLoading] = useState(false);
 
-  // Update preview when currentImage changes
   useEffect(() => {
     setPreviewUrl(currentImage || "");
   }, [currentImage]);
@@ -218,7 +153,6 @@ const ImageUploadArea: React.FC<ImageUploadAreaProps> = ({
   const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
-    // Only set dragging to false if we're leaving the drop zone entirely
     if (!e.currentTarget.contains(e.relatedTarget as Node)) {
       setIsDragging(false);
     }
@@ -241,7 +175,6 @@ const ImageUploadArea: React.FC<ImageUploadAreaProps> = ({
       return;
     }
 
-    // Check file size (10MB limit)
     if (file.size > 10 * 1024 * 1024) {
       toast("File size must be less than 10MB");
       return;
@@ -256,7 +189,7 @@ const ImageUploadArea: React.FC<ImageUploadAreaProps> = ({
       onImageSelect(imageUrl);
       setIsLoading(false);
     };
-    reader.onerror = (e) => {
+    reader.onerror = () => {
       toast("Error reading file");
       setIsLoading(false);
     };
@@ -302,7 +235,6 @@ const ImageUploadArea: React.FC<ImageUploadAreaProps> = ({
           </div>
         ) : previewUrl ? (
           <div className="space-y-6">
-            {/* Preview Header */}
             <div className="text-center">
               <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#004e64]/10 to-[#004e64]/5 rounded-full border border-[#004e64]/20">
                 <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
@@ -312,7 +244,6 @@ const ImageUploadArea: React.FC<ImageUploadAreaProps> = ({
               </div>
             </div>
 
-            {/* Centered Course Card Preview */}
             <div className="flex justify-center">
               <div className="w-full max-w-sm">
                 <div className="bg-white rounded-lg shadow-xl overflow-hidden border border-[#004e64]/10 transform hover:scale-105 transition-all duration-300 hover:shadow-2xl">
@@ -322,13 +253,11 @@ const ImageUploadArea: React.FC<ImageUploadAreaProps> = ({
                       alt="Course Preview"
                       className="w-full h-48 object-cover"
                       onError={(e) => {
-                        console.error("Image failed to load:", previewUrl);
                         e.currentTarget.src =
                           "https://via.placeholder.com/400x200/004e64/white?text=Invalid+Image";
                       }}
                     />
 
-                    {/* Hover Overlay */}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center">
                       <div className="text-center transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
                         <CloudUpload className="w-8 h-8 text-white mx-auto mb-2 drop-shadow-lg" />
@@ -338,13 +267,11 @@ const ImageUploadArea: React.FC<ImageUploadAreaProps> = ({
                       </div>
                     </div>
 
-                    {/* Corner Badge */}
                     <div className="absolute top-3 left-3 bg-gradient-to-r from-[#004e64] to-[#022F40] text-white px-2 py-1 rounded-full text-xs font-semibold shadow-lg">
                       PREVIEW
                     </div>
                   </div>
 
-                  {/* Course Card Content */}
                   <div className="p-5 bg-white">
                     <h3 className="font-bold text-[#004e64] mb-3 text-lg leading-tight">
                       {courseData.title || "Your Course Title Will Appear Here"}
@@ -354,7 +281,6 @@ const ImageUploadArea: React.FC<ImageUploadAreaProps> = ({
                         "Your detailed course description will be displayed here. This preview shows exactly how your course will appear to students browsing the course catalog."}
                     </p>
 
-                    {/* Course Stats */}
                     <div className="flex justify-between items-center mb-4">
                       <div className="flex items-center gap-3 text-sm text-gray-500">
                         <div className="flex items-center gap-1">
@@ -369,7 +295,6 @@ const ImageUploadArea: React.FC<ImageUploadAreaProps> = ({
                       </div>
                     </div>
 
-                    {/* Price */}
                     <div className="flex justify-between items-center">
                       <div className="text-lg font-bold text-[#004e64] bg-gradient-to-r from-[#004e64] to-[#022F40] bg-clip-text">
                         {courseData.price || "Set Your Price"}
@@ -385,7 +310,6 @@ const ImageUploadArea: React.FC<ImageUploadAreaProps> = ({
               </div>
             </div>
 
-            {/* Preview Footer */}
             <div className="text-center space-y-2">
               <p className="text-sm text-gray-600 font-medium">
                 ✨ This is exactly how your course will appear on the dashboard
@@ -446,7 +370,7 @@ const ImageUploadArea: React.FC<ImageUploadAreaProps> = ({
   );
 };
 
-const AdminCourseManagement: React.FC = () => {
+const RequestedUsers: React.FC = () => {
   const [courses, setCourses] = useState<Course[]>([]);
   const [showModal, setShowModal] = useState(false);
   const navigate = useNavigate();
@@ -458,7 +382,6 @@ const AdminCourseManagement: React.FC = () => {
     price: "",
   });
 
-  // Reset function
   const resetState = () => {
     setShowModal(false);
     setNewCourse({
@@ -470,17 +393,13 @@ const AdminCourseManagement: React.FC = () => {
     });
   };
 
-  // Load initial data
   useEffect(() => {
     setCourses(mockData);
-
-    // Cleanup function
     return () => {
       resetState();
     };
   }, []);
 
-  // Handle modal close
   const handleCloseModal = () => {
     resetState();
   };
@@ -536,58 +455,45 @@ const AdminCourseManagement: React.FC = () => {
 
   return (
     <div className="flex flex-col h-screen font-sans bg-gradient-to-br from-[#f9fafb] via-white to-[#f0fafa]">
-      {/* Header */}
-    <header className="sticky top-20 z-30 bg-white/80 backdrop-blur-md py-6 px-4 shadow-lg border-b rounded-b-md border-[#004e64]/10">
-  <div className="flex justify-around gap-4 items-center max-w-6xl mx-auto">
+      <header className="sticky top-20 z-30 bg-white/80 backdrop-blur-md py-6 px-4 shadow-lg border-b rounded-b-md border-[#004e64]/10">
+        <div className="flex justify-around gap-4 items-center max-w-6xl mx-auto">
+          <div className="flex text-center items-center gap-3 px-4 py-3 border-[#004e64]/20 shadow-lg rounded-md hover:shadow-xl transition-all duration-300 cursor-pointer group">
+            <GitPullRequest className="text-[#004e64] text-sm group-hover:scale-110 transition-transform" />
+            <span className="text-[#004e64] hidden sm:inline">
+              Requested <span className="text-md">110</span>
+            </span>
+          </div>
 
-    {/* Requested Section */}
-    <div className="flex text-center items-center gap-3 px-4 py-3 border-[#004e64]/20 shadow-lg rounded-md hover:shadow-xl transition-all duration-300 cursor-pointer group">
-      <GitPullRequest className="text-[#004e64] text-sm group-hover:scale-110 transition-transform" />
-      <span className="text-[#004e64] hidden sm:inline">
-        Requested <span className="text-md">110</span>
-      </span>
-    </div>
+          <button
+            onClick={() => setShowModal(true)}
+            className="flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-[#004e64] via-[#025d75] to-[#022F40] text-white font-semibold rounded-md shadow-lg cursor-pointer hover:shadow-xl transition-all duration-300 transform hover:scale-105 hover:-translate-y-1"
+          >
+            <Plus className="text-lg" />
+            <span className="hidden sm:inline">Add Course</span>
+          </button>
 
-    {/* Add Course Button */}
-    <button
-      onClick={() => setShowModal(true)}
-      className="flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-[#004e64] via-[#025d75] to-[#022F40] text-white font-semibold rounded-md shadow-lg cursor-pointer hover:shadow-xl transition-all duration-300 transform hover:scale-105 hover:-translate-y-1"
-    >
-      <Plus className="text-lg" />
-      <span className="hidden sm:inline">Add Course</span>
-    </button>
+          <div className="flex items-center gap-3 px-6 py-3 shadow-lg rounded-md hover:shadow-xl transition-all duration-300 cursor-pointer group">
+            <Upload className="text-[#004e64] text-xl group-hover:scale-110 transition-transform" />
+            <span className="text-[#004e64] hidden sm:inline">
+              Uploaded <span className="font-bold text-md">{courses.length}</span>
+            </span>
+          </div>
 
-    {/* Uploaded Section */}
-    <div className="flex items-center gap-3 px-6 py-3 shadow-lg rounded-md hover:shadow-xl transition-all duration-300 cursor-pointer group">
-      <Upload className="text-[#004e64] text-xl group-hover:scale-110 transition-transform" />
-      <span className="text-[#004e64] hidden sm:inline">
-        Uploaded <span className="font-bold text-md">{courses.length}</span>
-      </span>
-    </div>
+          <div onClick={() => navigate("/course-management/students")} className="flex items-center gap-3 px-6 py-3 shadow-lg rounded-md hover:shadow-xl transition-all duration-300 cursor-pointer group">
+            <FaUserGraduate className="text-[#004e64] text-xl group-hover:scale-110 transition-transform" />
+            <span className="text-[#004e64] hidden sm:inline">
+              Students <span className="font-bold text-md"></span>
+            </span>
+          </div>
+        </div>
+      </header>
 
-    {/* Students Section */}
-    <div onClick={() => navigate("/course-management/students")} className="flex items-center gap-3 px-6 py-3 shadow-lg rounded-md hover:shadow-xl transition-all duration-300 cursor-pointer group">
-      <FaUserGraduate className="text-[#004e64] text-xl group-hover:scale-110 transition-transform" />
-      <span className="text-[#004e64] hidden sm:inline">
-        Students <span className="font-bold text-md"></span>
-      </span>
-    </div>
-
-  </div>
-</header>
-
-      {/* Course Cards Grid */}
       <main className="flex-1 overflow-y-auto scroll-hide py-8 px-4">
         <div className="w-full max-w-6xl mx-auto">
-          <DashboardCard
-            courses={courses}
-            
-            onCourseAction={(id) => console.log("Course action:", id)}
-          />
+          <StudentsRequest/>
         </div>
       </main>
 
-      {/* Enhanced Modal Form */}
       {showModal && (
         <div className="fixed inset-0 scroll-hide bg-black/50 flex justify-center items-center z-50 px-4">
           <div className="bg-white scroll-hide w-full max-w-3xl p-8 rounded-2xl shadow-2xl overflow-y-auto max-h-[90vh] border border-[#004e64]/10">
@@ -605,7 +511,6 @@ const AdminCourseManagement: React.FC = () => {
             </div>
 
             <div className="space-y-6">
-              {/* Image Upload Section */}
               <ImageUploadArea
                 onImageSelect={handleImageSelect}
                 currentImage={newCourse.image_url}
@@ -617,7 +522,6 @@ const AdminCourseManagement: React.FC = () => {
                 }}
               />
 
-              {/* Title and Price Row */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="block mb-2 font-medium text-[#004e64]">
@@ -654,7 +558,6 @@ const AdminCourseManagement: React.FC = () => {
                 </div>
               </div>
 
-              {/* Description */}
               <div>
                 <label className="block mb-2 font-medium text-[#004e64]">
                   Course Description *
@@ -676,7 +579,6 @@ const AdminCourseManagement: React.FC = () => {
               </div>
             </div>
 
-            {/* Action Buttons */}
             <div className="flex justify-end gap-4 mt-8 pt-6 border-t border-gray-200">
               <button
                 onClick={handleCloseModal}
@@ -700,4 +602,4 @@ const AdminCourseManagement: React.FC = () => {
   );
 };
 
-export default AdminCourseManagement;
+export default RequestedUsers;

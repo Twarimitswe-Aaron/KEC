@@ -2,6 +2,7 @@ import { Routes, Route } from "react-router-dom";
 
 import DashboardLayout from "./layouts/DashBoard/DashboardLayout.tsx";
 import Inbox from "./layouts/Inbox/Inbox"
+import RequestedUsers from "./routes/RequestedUsers";
 
 import Dashboard from "./routes/Dashboard";
 import Login from "./Pages/Login/LoginPage.tsx";
@@ -59,6 +60,7 @@ function App() {
       <Route path="/feedback" element={<Feedback/>}/>
       <Route path="/payment-management" element={<PaymentManagement/>}/>
       <Route path="/certificate-creation" element={<Certificates/>}/>
+      <Route path="/course-management/students" element={<RequestedUsers/>}/>
       <Route path="/logout" element={<Logout/>}/>
 
     </Route>
