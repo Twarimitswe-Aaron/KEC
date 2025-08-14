@@ -9,6 +9,8 @@ export interface Course {
   title: string;
   description: string;
   price: string;
+  open:boolean;
+  enrolled:boolean;
   no_lessons: string;
   no_hours: string;
   uploader: {
@@ -131,9 +133,9 @@ const CourseCard: React.FC<CourseCardProps> = ({
         {/* CTA Button */}
         <button 
           onClick={() => course.id && onAction(course.id)}
-          className="mt-2 py-2 w-full text-sm h-9 border cursor-pointer border-[#022F40] text-[#022F40] hover:bg-[#fff] shadow shadow-2xl hover:text-[#022F40] rounded transition"
+          className="mt-2 py-2 w-full text-sm h-9 border cursor-pointer border-[#022F40] text-[#022F40] hover:bg-[#fff]  shadow-2xl hover:text-[#022F40] rounded transition"
         >
-          {variant === 'student' ? 'Continue Course' : userRole === 'teacher' || 'admin' ? 'Edit Course' : 'Start Course'}
+          {variant === 'student' ? 'Continue Course' : userRole === 'teacher' || 'admin' ? 'View' : 'Start Course'}
         </button>
       </div>
     </div>

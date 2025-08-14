@@ -6,6 +6,7 @@ import { data } from "../services/mockData";
 import { UserRoleContext } from "../UserRoleContext";
 import { toast } from "react-toastify";
 import { CloudUpload, X, Image } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 export interface Course {
   id?: number;
@@ -13,6 +14,8 @@ export interface Course {
   title: string;
   description: string;
   price: string;
+  open: boolean;
+  enrolled: boolean;
   no_lessons: string;
   no_hours: string;
   uploader: {
@@ -293,6 +296,7 @@ const ImageUploadArea: React.FC<ImageUploadAreaProps> = ({
 };
 
 const CourseManagement = () => {
+  const navigate=useNavigate()
   const userRole = useContext(UserRoleContext);
   const [courses, setCourses] = useState<Course[]>([]);
   const [showModal, setShowModal] = useState(false);
@@ -351,6 +355,8 @@ const CourseManagement = () => {
       title: title,
       description: description,
       price: price,
+      open: true,
+      enrolled: false,
       no_lessons: "1",
       no_hours: "1",
       uploader: {
@@ -358,6 +364,8 @@ const CourseManagement = () => {
         avatar_url: "https://via.placeholder.com/40",
       },
     };
+    navigate("/create-modules")
+    
   };
 
   return (

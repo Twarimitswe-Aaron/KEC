@@ -3,6 +3,8 @@ export interface Coursedata {
   id?: number;
   image_url: string;
   title: string;
+  open:boolean;
+  enrolled:boolean;
   description: string;
   price: string;
   no_lessons: string;
@@ -94,6 +96,8 @@ export const data: Coursedata[] = [
     title: "Thermodynamics",
     description: "Explore energy transfer, heat, and the laws of thermodynamics in detail through real-world applications.",
     price: "100,000frw",
+    enrolled:false,
+    open:true,
     no_lessons: "10",
     no_hours: "22hrs32min",
     uploader: {
@@ -105,9 +109,11 @@ export const data: Coursedata[] = [
     id:2,
     image_url: "/images/courseCard.png",
     title: "Thermodynamics",
+    open:true,
     description: "Explore energy transfer, heat, and the laws of thermodynamics in detail through real-world applications.",
     price: "100,000frw",
     no_lessons: "10",
+    enrolled:true,
     no_hours: "22hrs32min",
     uploader: {
       name: "Irakoze Rachel",
@@ -120,7 +126,9 @@ export const data: Coursedata[] = [
     title: "Thermodynamics",
     description: "Explore energy transfer, heat, and the laws of thermodynamics in detail through real-world applications.",
     price: "100,000frw",
+    open:false,
     no_lessons: "10",
+    enrolled:false,
     no_hours: "22hrs32min",
     uploader: {
       name: "Irakoze Rachel",
@@ -133,6 +141,8 @@ export const data: Coursedata[] = [
     title: "Thermodynamics",
     description: "Explore energy transfer, heat, and the laws of thermodynamics in detail through real-world applications.",
     price: "100,000frw",
+    open:false,
+    enrolled:false,
     no_lessons: "10",
     no_hours: "22hrs32min",
     uploader: {
@@ -148,6 +158,8 @@ export const data: Coursedata[] = [
     price: "100,000frw",
     no_lessons: "10",
     no_hours: "22hrs32min",
+    open:false,
+    enrolled:false,
     uploader: {
       name: "Irakoze Rachel",
       avatar_url: "/images/avatars/rachel.png",
@@ -161,6 +173,8 @@ export const data: Coursedata[] = [
     price: "90,000frw",
     no_lessons: "12",
     no_hours: "18hrs40min",
+    enrolled:true,
+    open:false,
     uploader: {
       name: "Ndayambaje Yves",
       avatar_url: "/images/avatars/yves.png",

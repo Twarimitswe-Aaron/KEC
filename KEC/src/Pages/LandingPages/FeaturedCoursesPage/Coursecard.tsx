@@ -2,7 +2,7 @@ import React, { useEffect } from "react";
 import { useKeenSlider } from "keen-slider/react";
 import "keen-slider/keen-slider.min.css";
 import { FaArrowLeft, FaArrowRight, FaStar } from "react-icons/fa6";
-import styles from "../../../Styles/styles";
+
 import { GoStopwatch } from "react-icons/go";
 import { BsCameraVideoFill } from "react-icons/bs";
 
