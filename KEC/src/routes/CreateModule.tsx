@@ -1,4 +1,6 @@
+
 import React, { useState } from 'react'
+import { FaPlus, FaLock, FaUnlock,FaFile,FaTrash,FaCross, FaX } from 'react-icons/fa6'
 
 const CreateModule = () => {
   const [modules, setModules] = useState([
@@ -149,17 +151,17 @@ const CreateModule = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 p-4 sm:p-6">
+    <div className="min-h-screen bg-gradient-to-br ">
       <div className="max-w-7xl mx-auto">
         
         {/* Header Section */}
         <div className="mb-8">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <h1 className="text-4xl sm:text-5xl font-extrabold bg-gradient-to-r from-[#004e64] via-[#025a73] to-blue-600 bg-clip-text text-transparent">
+              <h1 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-[#004e64] via-[#025a73] to-blue-600 bg-clip-text text-transparent">
                 Course Modules
               </h1>
-              <p className="text-lg text-gray-600 mt-2 max-w-2xl">
+              <p className="text-md text-gray-600 mt-2 max-w-2xl">
                 Organize your course content, manage access permissions, and upload learning materials
               </p>
               <div className="flex items-center gap-4 mt-4 text-sm text-gray-500">
@@ -180,12 +182,10 @@ const CreateModule = () => {
             
             <button
               onClick={() => setShowAddModule(true)}
-              className="bg-gradient-to-r from-[#004e64] to-[#025a73] hover:from-[#003a4c] hover:to-[#014d61] text-white px-8 py-4 rounded-2xl font-bold shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300 flex items-center gap-3 text-lg"
+              className="bg-gradient-to-r from-[#004e64] to-[#025a73]  text-white px-3 py-3 rounded-xl font-bold   transform hover:scale-101 cursor-pointer transition-all duration-300 flex items-center sm:min-w-[10rem] max-w-[10rem] gap-3 text-sm"
             >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-              </svg>
-              Add New Module
+              <FaPlus size={20}/>
+             <span className=''>New Module</span>
             </button>
           </div>
         </div>
@@ -195,61 +195,32 @@ const CreateModule = () => {
           {sortedModules.map((module, index) => (
             <div
               key={module.id}
-              className={`group bg-white/80 backdrop-blur-sm rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-500 overflow-hidden border ${
+              className={`group bg-white/80 backdrop-blur-sm rounded-xl shadow-lg hover:shadow-2xl transition-all duration-500 overflow-hidden border ${
                 module.isUnlocked 
                   ? 'border-green-200 hover:border-green-300' 
                   : 'border-amber-200 hover:border-amber-300'
               }`}
             >
               {/* Module Header */}
-              <div className="p-8">
-                <div className="flex items-start justify-between">
+              <div className="p-4">
+                <div className="flex items-center  justify-between">
                   <div className="flex-1">
-                    <div className="flex items-center gap-4 mb-4">
-                      <div className={`w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg ${
+                    <div className="flex items-center gap-4">
+                      <div className={`w-12 h-10 rounded-xl flex items-center justify-center shadow-lg ${
                         module.isUnlocked 
                           ? 'bg-gradient-to-br from-green-400 to-green-600 text-white' 
                           : 'bg-gradient-to-br from-amber-400 to-amber-600 text-white'
                       }`}>
                         {module.isUnlocked ? (
-                          <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 14v3a2 2 0 002 2h4a2 2 0 002-2v-3" />
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 9l3 3 3-3" />
-                          </svg>
+                          <FaUnlock/>
                         ) : (
-                          <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
-                          </svg>
+                          <FaLock />
                         )}
                       </div>
                       
                       <div>
-                        <h2 className="text-2xl font-bold text-gray-900 mb-2">{module.title}</h2>
-                        <p className="text-gray-600 text-lg leading-relaxed">{module.description}</p>
-                        <div className="flex items-center gap-6 mt-4 text-sm text-gray-500">
-                          <span className="flex items-center gap-2">
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" />
-                            </svg>
-                            Module #{module.order}
-                          </span>
-                          <span className="flex items-center gap-2">
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3a2 2 0 012-2h4a2 2 0 012 2v4m-6 0v2m6-2v2m-6-2h6m-6 4h6m-6 0v4a2 2 0 002 2h2a2 2 0 002-2v-4" />
-                            </svg>
-                            {new Date(module.createdAt).toLocaleDateString('en-US', { 
-                              year: 'numeric', 
-                              month: 'long', 
-                              day: 'numeric' 
-                            })}
-                          </span>
-                          <span className="flex items-center gap-2">
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                            </svg>
-                            {module.resources.length} Resources
-                          </span>
-                        </div>
+                        <h2 className="text-xl font-bold text-gray-900 ">{module.order}. {module.title}</h2>
+                        <p className="text-gray-600 text-sm leading-relaxed">{module.description}</p>
                       </div>
                     </div>
                   </div>
@@ -258,38 +229,32 @@ const CreateModule = () => {
                   <div className="flex flex-col sm:flex-row items-end gap-3">
                     <button
                       onClick={() => toggleModuleUnlock(module.id)}
-                      className={`px-6 py-3 rounded-xl font-semibold shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-200 ${
+                      className={` py-2 cursor-pointer rounded-xl font-semibold shadow-md hover:shadow-lg transform hover:scale-101 transition-all duration-200 ${
                         module.isUnlocked
-                          ? 'bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-white'
-                          : 'bg-gradient-to-r from-green-400 to-green-500 hover:from-green-500 hover:to-green-600 text-white'
+                          ? 'bg-gradient-to-r px-3 from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-white'
+                          : 'bg-gradient-to-r px-2 from-green-400 to-green-500 hover:from-green-500 hover:to-green-600 text-white'
                       }`}
                     >
                       {module.isUnlocked ? (
                         <span className="flex items-center gap-2">
-                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
-                          </svg>
-                          Lock Module
+                          <FaLock size={15}/>
+                          Lock
                         </span>
                       ) : (
                         <span className="flex items-center gap-2">
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" />
-                          </svg>
-                          Unlock Module
+                          <FaUnlock size={15} />
+                          Unlock
                         </span>
                       )}
                     </button>
                     
                     <button
                       onClick={() => setShowAddResource(showAddResource === module.id ? null : module.id)}
-                      className="px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-xl font-semibold shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-200"
+                      className="px-3 cursor-pointer py-2 bg-gradient-to-r from-[#004e64] to-[#025a73]  text-white rounded-xl font-semibold shadow-md hover:shadow-lg transform hover:scale-101 transition-all duration-200"
                     >
                       <span className="flex items-center gap-2">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                        </svg>
-                        Add Resource
+                        <FaPlus/>
+                         Resource
                       </span>
                     </button>
                     
@@ -308,7 +273,7 @@ const CreateModule = () => {
               {/* Add Resource Section */}
               {showAddResource === module.id && (
                 <div className="border-t border-gray-200 bg-gradient-to-r from-gray-50 to-blue-50 p-6">
-                  <h3 className="text-lg font-bold text-gray-900 mb-4">Add New Resource</h3>
+                  <h3 className="text-md font-bold text-gray-900 mb-4">Add New Resource</h3>
                   <div 
                     className="grid grid-cols-1 md:grid-cols-2 gap-4"
                     onDragOver={handleDragOver}
@@ -316,7 +281,7 @@ const CreateModule = () => {
                   >
                     <button
                       onClick={() => simulateFileUpload(module.id, 'pdf')}
-                      className="group p-8 border-3 border-dashed border-red-300 hover:border-red-500 rounded-2xl hover:bg-red-50 transition-all duration-300 text-center transform hover:scale-105"
+                      className="group p-8 border-3 border-dashed border-red-300 hover:border-red-500 rounded-xll hover:bg-red-50 transition-all duration-300 text-center transform hover:scale-105"
                     >
                       <svg className="w-12 h-12 text-red-500 mx-auto mb-4 group-hover:scale-110 transition-transform duration-200" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clipRule="evenodd" />
@@ -327,7 +292,7 @@ const CreateModule = () => {
                     
                     <button
                       onClick={() => simulateFileUpload(module.id, 'video')}
-                      className="group p-8 border-3 border-dashed border-purple-300 hover:border-purple-500 rounded-2xl hover:bg-purple-50 transition-all duration-300 text-center transform hover:scale-105"
+                      className="group p-8 border-3 border-dashed border-purple-300 hover:border-purple-500 rounded-xll hover:bg-purple-50 transition-all duration-300 text-center transform hover:scale-105"
                     >
                       <svg className="w-12 h-12 text-purple-500 mx-auto mb-4 group-hover:scale-110 transition-transform duration-200" fill="currentColor" viewBox="0 0 20 20">
                         <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z" />
@@ -341,30 +306,26 @@ const CreateModule = () => {
 
               {/* Resources Section */}
               {module.resources.length > 0 && (
-                <div className="border-t border-gray-200 bg-white/50 p-6">
-                  <h3 className="text-lg font-bold text-gray-900 mb-6 flex items-center gap-2">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                    </svg>
-                    Course Resources ({module.resources.length})
+                <div className="border-t w-full border-gray-200 bg-white/50  py-3 px-6">
+                  <h3 className="text-md font-bold mb-3 text-gray-900  flex items-center ">
+      
+                    Resources ({module.resources.length})
                   </h3>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="grid  grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-3  justify-between  w-full">
                     {module.resources.map((resource) => (
                       <div
                         key={resource.id}
-                        className="group bg-white rounded-2xl p-5 shadow-md hover:shadow-xl border border-gray-200 hover:border-gray-300 transition-all duration-300 transform hover:scale-105"
+                        className="group bg-white flex gap-2   rounded-xl px-2 py-2 items-center shadow-md hover:shadow-xl border border-gray-200 hover:border-gray-300 transition-all w-full md:w-[16rem] duration-300 transform hover:scale-105"
                       >
-                        <div className="flex items-center justify-between mb-4">
-                          <div className={`w-12 h-12 rounded-xl flex items-center justify-center shadow-md ${
+                        <div className="flex items-center justify-between ">
+                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-md ${
                             resource.type === 'pdf' 
                               ? 'bg-gradient-to-br from-red-400 to-red-600 text-white' 
                               : 'bg-gradient-to-br from-purple-400 to-purple-600 text-white'
                           }`}>
                             {resource.type === 'pdf' ? (
-                              <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clipRule="evenodd" />
-                              </svg>
+                              <FaFile/>
                             ) : (
                               <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
                                 <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z" />
@@ -372,16 +333,8 @@ const CreateModule = () => {
                             )}
                           </div>
                           
-                          <button
-                            onClick={() => removeResource(module.id, resource.id)}
-                            className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 p-2 rounded-lg hover:bg-red-50 transition-all duration-200"
-                          >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                          </button>
+                          
                         </div>
-                        
                         <div>
                           <h4 className="font-bold text-gray-900 text-sm mb-2 line-clamp-2">{resource.name}</h4>
                           <div className="flex items-center justify-between text-xs text-gray-500">
@@ -394,6 +347,7 @@ const CreateModule = () => {
                             <span>{new Date(resource.uploadedAt).toLocaleDateString()}</span>
                           </div>
                         </div>
+                        
                       </div>
                     ))}
                   </div>
@@ -406,7 +360,7 @@ const CreateModule = () => {
         {/* Empty State */}
         {modules.length === 0 && (
           <div className="text-center py-16">
-            <div className="w-32 h-32 bg-gradient-to-br from-gray-200 to-gray-300 rounded-3xl flex items-center justify-center mx-auto mb-6">
+            <div className="w-32 h-32 bg-gradient-to-br from-gray-200 to-gray-300 rounded-xll flex items-center justify-center mx-auto mb-6">
               <svg className="w-16 h-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
               </svg>
@@ -415,7 +369,7 @@ const CreateModule = () => {
             <p className="text-gray-600 mb-6">Start building your course by adding your first module</p>
             <button
               onClick={() => setShowAddModule(true)}
-              className="bg-gradient-to-r from-[#004e64] to-[#025a73] text-white px-8 py-4 rounded-2xl font-bold shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300"
+              className="bg-gradient-to-r from-[#004e64] to-[#025a73] text-white px-8 py-4 rounded-xll font-bold shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300"
             >
               Create First Module
             </button>
@@ -425,30 +379,28 @@ const CreateModule = () => {
         {/* Add Module Modal */}
         {showAddModule && (
           <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-300">
-            <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-lg w-full transform scale-100 animate-in slide-in-from-bottom-4 duration-500">
-              <div className="flex items-center justify-between mb-8">
-                <h3 className="text-3xl font-bold bg-gradient-to-r from-[#004e64] to-[#025a73] bg-clip-text text-transparent">
+            <div className="bg-white rounded-xl shadow-2xl p-6 max-w-lg w-full transform scale-100 animate-in slide-in-from-bottom-4 duration-500">
+              <div className="flex items-center justify-between ">
+                <h3 className="text-2xl font-bold bg-gradient-to-r from-[#004e64] to-[#025a73] bg-clip-text text-transparent">
                   Create New Module
                 </h3>
                 <button
                   onClick={() => setShowAddModule(false)}
-                  className="text-gray-400 hover:text-gray-600 p-2 rounded-xl hover:bg-gray-100 transition-all duration-200"
+                  className="text-gray-400 cursor-pointer hover:text-gray-600 p-2 rounded-xl hover:bg-gray-100 transition-all duration-200"
                 >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
+                  <FaX/>
                 </button>
               </div>
               
-              <form onSubmit={handleAddModule} className="space-y-6">
+              <form onSubmit={handleAddModule} className="">
                 <div>
-                  <label className="block text-gray-700 font-bold mb-3 text-lg">Module Title</label>
+                  <label className="block text-gray-700 font-bold my-4 text-lg">Module Title</label>
                   <input
                     type="text"
                     value={newModule.title}
                     onChange={(e) => setNewModule({...newModule, title: e.target.value})}
-                    className="w-full px-6 py-4 border-2 border-gray-300 rounded-2xl focus:outline-none focus:ring-4 focus:ring-[#004e64]/20 focus:border-[#004e64] transition-all duration-200 text-lg"
-                    placeholder="Enter an engaging module title"
+                    className="w-full px-3 py-2 border-1 border-[#034153] rounded-md focus:outline-none focus:ring-1 focus:ring-[#004e64]/20 focus:border-[#004e64] transition-all duration-200 text-lg"
+                    placeholder="Enter module title"
                     required
                   />
                 </div>
@@ -458,19 +410,19 @@ const CreateModule = () => {
                   <textarea
                     value={newModule.description}
                     onChange={(e) => setNewModule({...newModule, description: e.target.value})}
-                    className="w-full px-6 py-4 border-2 border-gray-300 rounded-2xl focus:outline-none focus:ring-4 focus:ring-[#004e64]/20 focus:border-[#004e64] transition-all duration-200 text-lg"
+                    className="w-full px-6 py-4 border-2 border-gray-300 rounded-xll focus:outline-none focus:ring-4 focus:ring-[#004e64]/20 focus:border-[#004e64] transition-all duration-200 text-lg"
                     placeholder="Describe what students will learn in this module"
                     rows={4}
                   />
                 </div>
                 
-                <div className="flex items-center gap-4 p-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl border border-blue-200">
+                <div className="flex items-center gap-4 p-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xll border border-blue-200">
                   <input
                     type="checkbox"
                     id="unlocked"
                     checked={newModule.isUnlocked}
                     onChange={(e) => setNewModule({...newModule, isUnlocked: e.target.checked})}
-                    className="w-5 h-5 text-[#004e64] border-2 border-gray-300 rounded focus:ring-[#004e64] focus:ring-2"
+                    className="w-5 h-5 text-[#004e64] border-2 border-gray-300 rounded xlcus:ring-[#004e64] focus:ring-2"
                   />
                   <label htmlFor="unlocked" className="text-gray-700 font-bold text-lg flex-1">
                     Make this module available to students immediately
@@ -483,14 +435,14 @@ const CreateModule = () => {
                 <div className="flex gap-4 pt-4">
                   <button
                     type="submit"
-                    className="flex-1 bg-gradient-to-r from-[#004e64] to-[#025a73] hover:from-[#003a4c] hover:to-[#014d61] text-white py-4 px-6 rounded-2xl font-bold text-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300"
+                    className="flex-1 bg-gradient-to-r from-[#004e64] to-[#025a73] hover:from-[#003a4c] hover:to-[#014d61] text-white py-4 px-6 rounded-xll font-bold text-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300"
                   >
                     Create Module
                   </button>
                   <button
                     type="button"
                     onClick={() => setShowAddModule(false)}
-                    className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-4 px-6 rounded-2xl font-bold text-lg transition-all duration-200"
+                    className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-4 px-6 rounded-xll font-bold text-lg transition-all duration-200"
                   >
                     Cancel
                   </button>
