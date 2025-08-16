@@ -4,7 +4,8 @@ import DashboardLayout from "./layouts/DashBoard/DashboardLayout.tsx";
 import AdminCourseManagementLayout from "./layouts/DashBoard/AdminCourseManagementLayout";
 import Inbox from "./layouts/Inbox/Inbox";
 import RequestedCourses from "./routes/RequestedCourses";
-import CreateModule from "./routes/CreateModule"
+import CreateModule from "./routes/CreateModule";
+import LessonsView from "./Components/LessonsView.tsx";
 import Dashboard from "./routes/Dashboard";
 import Login from "./Pages/Login/LoginPage.tsx";
 import Signup from "./Pages/Login/Signup.tsx";
@@ -53,14 +54,21 @@ function App() {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/user-management" element={<UserManagement />} />
           <Route path="/course-creation" element={<CourseManagement />} />
-          <Route path="/course-management/create-modules" element={<CreateModule/>}/>
+          <Route
+            path="/course-management/create-modules"
+            element={<CreateModule />}
+          />
+          <Route
+            path="/course-management/view-lessons"
+            element={<LessonsView />}
+          />
           <Route
             path="/course-management"
             element={<AdminCourseManagementLayout />}
           >
             <Route path="students" element={<StudentsRequest />} />
-            <Route path="requestedCourses" element={<RequestedCourses/>} />
-            <Route path="" element={<AdminCourseManagement/>} />
+            <Route path="requestedCourses" element={<RequestedCourses />} />
+            <Route path="" element={<AdminCourseManagement />} />
           </Route>
           <Route path="/announcements" element={<Announcements />} />
           <Route path="/my-account" element={<MyProfile />} />

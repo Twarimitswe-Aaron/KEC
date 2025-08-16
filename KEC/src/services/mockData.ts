@@ -16,6 +16,56 @@ export interface Coursedata {
 }
 
 // Mock courses data
+
+export const Lessons =[
+  {
+    id: 1,
+    title: "Introduction to Course",
+    description: "Welcome and course overview",
+    isUnlocked: true,
+    order: 1,
+    createdAt: "2025-01-10",
+    resources: [
+      { id: 1, name: "Course_Introduction.pdf", type: "pdf", size: "2.1 MB", uploadedAt: "2025-01-10" },
+      { id: 2, name: "Welcome_Video.mp4", type: "video", duration: "12:45", uploadedAt: "2025-01-10" }
+    ],
+    uploader: {
+      name: "Aart",
+      avatar_url: "string"
+    }
+  },
+  {
+    id: 2,
+    title: "Getting Started",
+    description: "Basic setup and fundamentals",
+    isUnlocked: true,
+    order: 2,
+    createdAt: "2025-01-12",
+    resources: [
+      { id: 3, name: "Setup_Guide.pdf", type: "pdf", size: "1.8 MB", uploadedAt: "2025-01-12" },
+      { id: 4, name: "Setup_Tutorial.mp4", type: "video", duration: "18:30", uploadedAt: "2025-01-12" }
+    ],
+    uploader: {
+      name: "Aart",
+      avatar_url: "string"
+    }
+  },
+  {
+    id: 3,
+    title: "Advanced Topics",
+    description: "Deep dive into complex concepts",
+    isUnlocked: false,
+    order: 3,
+    createdAt: "2025-01-15",
+    resources: [
+      { id: 5, name: "Advanced_Concepts.pdf", type: "pdf", size: "4.2 MB", uploadedAt: "2025-01-15" }
+    ],
+    uploader: {
+      name: "Aart",
+      avatar_url: "string"
+    }
+  }
+]
 export const mockCourses: Course[] = [
 
   {

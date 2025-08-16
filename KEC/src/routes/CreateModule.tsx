@@ -1,58 +1,16 @@
 
 import React, { useState } from 'react'
 import { FaPlus, FaLock, FaUnlock,FaFile,FaTrash,FaCross, FaX } from 'react-icons/fa6'
+import ModuleManagement from '../Components/moduleManagement'
+import { Lessons } from '../services/mockData'
 
 const CreateModule = () => {
-  const [modules, setModules] = useState([
-    {
-      id: 1,
-      title: "Introduction to Course",
-      description: "Welcome and course overview",
-      isUnlocked: true,
-      order: 1,
-      createdAt: "2025-01-10",
-      resources: [
-        { id: 1, name: "Course_Introduction.pdf", type: "pdf", size: "2.1 MB", uploadedAt: "2025-01-10" },
-        { id: 2, name: "Welcome_Video.mp4", type: "video", duration: "12:45", uploadedAt: "2025-01-10" }
-      ]
-    },
-    {
-      id: 2,
-      title: "Getting Started",
-      description: "Basic setup and fundamentals",
-      isUnlocked: true,
-      order: 2,
-      createdAt: "2025-01-12",
-      resources: [
-        { id: 3, name: "Setup_Guide.pdf", type: "pdf", size: "1.8 MB", uploadedAt: "2025-01-12" },
-        { id: 4, name: "Setup_Tutorial.mp4", type: "video", duration: "18:30", uploadedAt: "2025-01-12" }
-      ]
-    },
-    {
-      id: 3,
-      title: "Advanced Topics",
-      description: "Deep dive into complex concepts",
-      isUnlocked: false,
-      order: 3,
-      createdAt: "2025-01-15",
-      resources: [
-        { id: 5, name: "Advanced_Concepts.pdf", type: "pdf", size: "4.2 MB", uploadedAt: "2025-01-15" }
-      ]
-    }
-  ])
-
-  const [showAddModule, setShowAddModule] = useState(false)
-  const [showAddResource, setShowAddResource] = useState<number | null>(null)
-  const [draggedFile, setDraggedFile] = useState(null)
   const [newModule, setNewModule] = useState({
     title: '',
     description: '',
     isUnlocked: false
   })
-
-  // Sort modules by creation date (latest first)
-  const sortedModules = [...modules].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-
+  const [showAddModule, setShowAddModule] = useState(false)
   const handleAddModule = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     if (!newModule.title.trim()) return
@@ -64,91 +22,18 @@ const CreateModule = () => {
       isUnlocked: newModule.isUnlocked,
       order: modules.length + 1,
       createdAt: new Date().toISOString().split('T')[0],
-      resources: []
+      resources: [],
+      uploader: {
+        name: "Current User",
+        avatar_url: "/images/avatars/default.png",
+      }
     }
 
     setModules(prev => [...prev, module])
     setNewModule({ title: '', description: '', isUnlocked: false })
     setShowAddModule(false)
   }
-
-  const toggleModuleUnlock = (moduleId:number) => {
-    setModules(prev => prev.map(module => 
-      module.id === moduleId 
-        ? { ...module, isUnlocked: !module.isUnlocked }
-        : module
-    ))
-  }
-
-  const deleteModule = (moduleId: number) => {
-    if (window.confirm('Are you sure you want to delete this module?')) {
-      setModules(prev => prev.filter(module => module.id !== moduleId))
-    }
-  }
-
-  const handleFileUpload = (moduleId: number, file: File, type: string) => {
-    const resource = type === 'pdf' 
-      ? {
-          id: Date.now(),
-          name: file.name,
-          type: type,
-          size: `${(file.size / 1024 / 1024).toFixed(1)} MB`,
-          uploadedAt: new Date().toISOString().split('T')[0]
-        }
-      : {
-          id: Date.now(),
-          name: file.name,
-          type: type,
-          duration: '15:30', // Simulated duration
-          uploadedAt: new Date().toISOString().split('T')[0]
-        }
-
-    setModules(prev => prev.map(module => 
-      module.id === moduleId 
-        ? { ...module, resources: [...module.resources, resource] }
-        : module
-    ))
-    setShowAddResource(null)
-  }
-
-  const simulateFileUpload = (moduleId: number, type: string) => {
-    const fileName = type === 'pdf' ? 'New_Document.pdf' : 'New_Video.mp4'
-    const fileSize = type === 'pdf' ? 2048000 : 10485760 // 2MB for PDF, 10MB for video
-    
-    // Create a proper File object
-    const fakeFile = new File([''], fileName, { 
-      type: type === 'pdf' ? 'application/pdf' : 'video/mp4',
-      lastModified: Date.now()
-    })
-    
-    // Override the size property since File constructor doesn't set it
-    Object.defineProperty(fakeFile, 'size', { value: fileSize })
-    
-    handleFileUpload(moduleId, fakeFile, type)
-  }
-
-  const removeResource = (moduleId: number, resourceId: number) => {
-    if (window.confirm('Remove this resource?')) {
-      setModules(prev => prev.map(module => 
-        module.id === moduleId 
-          ? { ...module, resources: module.resources.filter(r => r.id !== resourceId) }
-          : module
-      ))
-    }
-  }
-
-  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault()
-  }
-
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>, moduleId: number) => {
-    e.preventDefault()
-    const files = Array.from(e.dataTransfer.files)
-    files.forEach(file => {
-      const type = file.type.includes('pdf') ? 'pdf' : 'video'
-      handleFileUpload(moduleId, file, type)
-    })
-  }
+  const [modules, setModules] = useState(Lessons)
 
   return (
     <div className="min-h-screen bg-gradient-to-br ">
@@ -159,7 +44,7 @@ const CreateModule = () => {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <h1 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-[#004e64] via-[#025a73] to-blue-600 bg-clip-text text-transparent">
-                Course Modules
+                Course Lessons
               </h1>
               <p className="text-md text-gray-600 mt-2 max-w-2xl">
                 Organize your course content, manage access permissions, and upload learning materials
@@ -190,194 +75,9 @@ const CreateModule = () => {
           </div>
         </div>
 
-        {/* Modules Grid */}
-        <div className="space-y-8">
-          {sortedModules.map((module, index) => (
-            <div
-              key={module.id}
-              className={`group bg-white/80 backdrop-blur-sm rounded-xl shadow-lg hover:shadow-2xl transition-all duration-500 overflow-hidden border ${
-                module.isUnlocked 
-                  ? 'border-green-200 hover:border-green-300' 
-                  : 'border-amber-200 hover:border-amber-300'
-              }`}
-            >
-              {/* Module Header */}
-              <div className="p-4">
-                <div className="flex items-center  justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-4">
-                      <div className={`w-12 h-10 rounded-xl flex items-center justify-center shadow-lg ${
-                        module.isUnlocked 
-                          ? 'bg-gradient-to-br from-green-400 to-green-600 text-white' 
-                          : 'bg-gradient-to-br from-amber-400 to-amber-600 text-white'
-                      }`}>
-                        {module.isUnlocked ? (
-                          <FaUnlock/>
-                        ) : (
-                          <FaLock />
-                        )}
-                      </div>
-                      
-                      <div>
-                        <h2 className="text-xl font-bold text-gray-900 ">{module.order}. {module.title}</h2>
-                        <p className="text-gray-600 text-sm leading-relaxed">{module.description}</p>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* Module Actions */}
-                  <div className="flex flex-col sm:flex-row items-end gap-3">
-                    <button
-                      onClick={() => toggleModuleUnlock(module.id)}
-                      className={` py-2 cursor-pointer rounded-xl font-semibold shadow-md hover:shadow-lg transform hover:scale-101 transition-all duration-200 ${
-                        module.isUnlocked
-                          ? 'bg-gradient-to-r px-3 from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-white'
-                          : 'bg-gradient-to-r px-2 from-green-400 to-green-500 hover:from-green-500 hover:to-green-600 text-white'
-                      }`}
-                    >
-                      {module.isUnlocked ? (
-                        <span className="flex items-center gap-2">
-                          <FaLock size={15}/>
-                          Lock
-                        </span>
-                      ) : (
-                        <span className="flex items-center gap-2">
-                          <FaUnlock size={15} />
-                          Unlock
-                        </span>
-                      )}
-                    </button>
-                    
-                    <button
-                      onClick={() => setShowAddResource(showAddResource === module.id ? null : module.id)}
-                      className="px-3 cursor-pointer py-2 bg-gradient-to-r from-[#004e64] to-[#025a73]  text-white rounded-xl font-semibold shadow-md hover:shadow-lg transform hover:scale-101 transition-all duration-200"
-                    >
-                      <span className="flex items-center gap-2">
-                        <FaPlus/>
-                         Resource
-                      </span>
-                    </button>
-                    
-                    <button
-                      onClick={() => deleteModule(module.id)}
-                      className="px-6 py-3 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-xl font-semibold shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-200"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                      </svg>
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Add Resource Section */}
-              {showAddResource === module.id && (
-                <div className="border-t border-gray-200 bg-gradient-to-r from-gray-50 to-blue-50 p-6">
-                  <h3 className="text-md font-bold text-gray-900 mb-4">Add New Resource</h3>
-                  <div 
-                    className="grid grid-cols-1 md:grid-cols-2 gap-4"
-                    onDragOver={handleDragOver}
-                    onDrop={(e) => handleDrop(e, module.id)}
-                  >
-                    <button
-                      onClick={() => simulateFileUpload(module.id, 'pdf')}
-                      className="group p-8 border-3 border-dashed border-red-300 hover:border-red-500 rounded-xll hover:bg-red-50 transition-all duration-300 text-center transform hover:scale-105"
-                    >
-                      <svg className="w-12 h-12 text-red-500 mx-auto mb-4 group-hover:scale-110 transition-transform duration-200" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clipRule="evenodd" />
-                      </svg>
-                      <p className="text-lg font-bold text-red-700 mb-2">Upload PDF Document</p>
-                      <p className="text-sm text-red-600">Click or drag PDF files here</p>
-                    </button>
-                    
-                    <button
-                      onClick={() => simulateFileUpload(module.id, 'video')}
-                      className="group p-8 border-3 border-dashed border-purple-300 hover:border-purple-500 rounded-xll hover:bg-purple-50 transition-all duration-300 text-center transform hover:scale-105"
-                    >
-                      <svg className="w-12 h-12 text-purple-500 mx-auto mb-4 group-hover:scale-110 transition-transform duration-200" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z" />
-                      </svg>
-                      <p className="text-lg font-bold text-purple-700 mb-2">Upload Video</p>
-                      <p className="text-sm text-purple-600">Click or drag video files here</p>
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* Resources Section */}
-              {module.resources.length > 0 && (
-                <div className="border-t w-full border-gray-200 bg-white/50  py-3 px-6">
-                  <h3 className="text-md font-bold mb-3 text-gray-900  flex items-center ">
-      
-                    Resources ({module.resources.length})
-                  </h3>
-                  
-                  <div className="grid  grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-3  justify-between  w-full">
-                    {module.resources.map((resource) => (
-                      <div
-                        key={resource.id}
-                        className="group bg-white flex gap-2   rounded-xl px-2 py-2 items-center shadow-md hover:shadow-xl border border-gray-200 hover:border-gray-300 transition-all w-full md:w-[16rem] duration-300 transform hover:scale-105"
-                      >
-                        <div className="flex items-center justify-between ">
-                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-md ${
-                            resource.type === 'pdf' 
-                              ? 'bg-gradient-to-br from-red-400 to-red-600 text-white' 
-                              : 'bg-gradient-to-br from-purple-400 to-purple-600 text-white'
-                          }`}>
-                            {resource.type === 'pdf' ? (
-                              <FaFile/>
-                            ) : (
-                              <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                                <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z" />
-                              </svg>
-                            )}
-                          </div>
-                          
-                          
-                        </div>
-                        <div>
-                          <h4 className="font-bold text-gray-900 text-sm mb-2 line-clamp-2">{resource.name}</h4>
-                          <div className="flex items-center justify-between text-xs text-gray-500">
-                            <span className="flex items-center gap-1">
-                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                              </svg>
-                              {resource.type === 'pdf' ? resource.size : resource.duration}
-                            </span>
-                            <span>{new Date(resource.uploadedAt).toLocaleDateString()}</span>
-                          </div>
-                        </div>
-                        
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-
-        {/* Empty State */}
-        {modules.length === 0 && (
-          <div className="text-center py-16">
-            <div className="w-32 h-32 bg-gradient-to-br from-gray-200 to-gray-300 rounded-xll flex items-center justify-center mx-auto mb-6">
-              <svg className="w-16 h-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-              </svg>
-            </div>
-            <h3 className="text-2xl font-bold text-gray-900 mb-2">No modules yet</h3>
-            <p className="text-gray-600 mb-6">Start building your course by adding your first module</p>
-            <button
-              onClick={() => setShowAddModule(true)}
-              className="bg-gradient-to-r from-[#004e64] to-[#025a73] text-white px-8 py-4 rounded-xll font-bold shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300"
-            >
-              Create First Module
-            </button>
-          </div>
-        )}
-
-        {/* Add Module Modal */}
-        {showAddModule && (
+      <ModuleManagement WholeModules={modules} />
+          {/* Add Module Modal */}
+          {showAddModule && (
           <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-300">
             <div className="bg-white rounded-xl shadow-2xl p-6 max-w-lg w-full transform scale-100 animate-in slide-in-from-bottom-4 duration-500">
               <div className="flex items-center justify-between ">
@@ -406,17 +106,17 @@ const CreateModule = () => {
                 </div>
                 
                 <div>
-                  <label className="block text-gray-700 font-bold mb-3 text-lg">Description</label>
+                  <label className="block  text-gray-700 font-bold my-3 text-lg">Description</label>
                   <textarea
                     value={newModule.description}
                     onChange={(e) => setNewModule({...newModule, description: e.target.value})}
-                    className="w-full px-6 py-4 border-2 border-gray-300 rounded-xll focus:outline-none focus:ring-4 focus:ring-[#004e64]/20 focus:border-[#004e64] transition-all duration-200 text-lg"
-                    placeholder="Describe what students will learn in this module"
-                    rows={4}
+                    className="w-full rounded-md  px-4 py-4 border border-[#034153] focus:outline-none focus:ring-1 focus:ring-[#004e64]/20 focus:border-[#004e64] transition-all duration-200 text-lg"
+                    placeholder="Describe what students will learn in this lesson"
+                    rows={2}
                   />
                 </div>
                 
-                <div className="flex items-center gap-4 p-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xll border border-blue-200">
+                <div className="flex items-center gap-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-md border border-blue-200">
                   <input
                     type="checkbox"
                     id="unlocked"
@@ -424,7 +124,7 @@ const CreateModule = () => {
                     onChange={(e) => setNewModule({...newModule, isUnlocked: e.target.checked})}
                     className="w-5 h-5 text-[#004e64] border-2 border-gray-300 rounded xlcus:ring-[#004e64] focus:ring-2"
                   />
-                  <label htmlFor="unlocked" className="text-gray-700 font-bold text-lg flex-1">
+                  <label htmlFor="unlocked" className="text-gray-700 font-bold text-md flex-1">
                     Make this module available to students immediately
                     <span className="block text-sm font-normal text-gray-500 mt-1">
                       Students will be able to access this module right away
@@ -432,20 +132,21 @@ const CreateModule = () => {
                   </label>
                 </div>
                 
-                <div className="flex gap-4 pt-4">
-                  <button
-                    type="submit"
-                    className="flex-1 bg-gradient-to-r from-[#004e64] to-[#025a73] hover:from-[#003a4c] hover:to-[#014d61] text-white py-4 px-6 rounded-xll font-bold text-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300"
-                  >
-                    Create Module
-                  </button>
-                  <button
+                <div className="flex justify-end gap-4 mt-3 ">
+                <button
                     type="button"
                     onClick={() => setShowAddModule(false)}
-                    className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-4 px-6 rounded-xll font-bold text-lg transition-all duration-200"
+                    className="cursor-pointer rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 px-3 rounded-xll font-bold text-lg transition-all duration-200"
                   >
                     Cancel
                   </button>
+                  <button
+                    type="submit"
+                    className="px-3 py-2 cursor-pointer  bg-gradient-to-r from-[#004e64] to-[#025a73]  text-white rounded-xl font-semibold shadow-md hover:shadow-lg transform hover:scale-101 transition-all duration-200"
+                  >
+                    Create Module
+                  </button>
+               
                 </div>
               </form>
             </div>

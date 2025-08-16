@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 interface Course {
   id: number;
@@ -51,7 +52,15 @@ interface DashboardCardProps {
 }
 
 const DashboardCard: React.FC<DashboardCardProps> = ({ courses, onCourseAction }) => (
-  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6">
+ <div>
+ <div className="flex justify-center text-center -mt-6 mb-8">
+          <div className="bg-white px-3 py-2 rounded-lg shadow-sm ">
+            <h4 className="font-bold text-[17px] text-[#004e64]">
+              Requested Courses ({courses.length})
+            </h4>
+          </div>
+        </div>
+  <div className="grid grid-cols-1 sm:grid-cols-2  mt-4 lg:grid-cols-2 gap-6">
     {courses.map((course) => (
       <div
         key={course.id}
@@ -86,13 +95,12 @@ const DashboardCard: React.FC<DashboardCardProps> = ({ courses, onCourseAction }
             <p className="text-[#004e64] font-bold">{course.price}</p>
             <div className="flex items-center gap-2 text-sm text-gray-500">
               <span>{course.no_lessons} lessons</span>
-              <span>•</span>
-              <span>{course.no_hours} hours</span>
+           
             </div>
           </div>
           <div className="flex items-center mt-4">
             <button 
-              className="bg-[#004e64] py-2 px-4 text-white rounded-sm"
+              className="bg-[#004e64] cursor-pointer py-2 px-4 text-white rounded-sm"
               onClick={() => onCourseAction(course.id)}
             >
               View
@@ -102,9 +110,11 @@ const DashboardCard: React.FC<DashboardCardProps> = ({ courses, onCourseAction }
       </div>
     ))}
   </div>
+ </div>
 );
 
 const AdminCourseManagement: React.FC = () => {
+  const navigate=useNavigate()
   const [courses, setCourses] = useState<Course[]>([]);
 
   useEffect(() => {
@@ -113,6 +123,7 @@ const AdminCourseManagement: React.FC = () => {
 
   const handleCourseAction = (id: number) => {
     console.log("Course action:", id);
+    navigate("/course-management/create-modules")
     // You can implement navigation or other actions here
   };
 
