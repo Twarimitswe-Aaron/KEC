@@ -2,6 +2,7 @@ import React, { useState, useContext } from "react";
 import { FaEye } from "react-icons/fa";
 import CourseCard, { Course } from "./CourseCard";
 import { UserRoleContext } from "../../UserRoleContext";
+import { useNavigate } from "react-router-dom";
 
 interface DashboardCardProps {
   courses: Course[];
@@ -12,6 +13,7 @@ const DashboardCard: React.FC<DashboardCardProps> = ({
   courses,
   onCourseAction,
 }) => {
+  const navigate=useNavigate()
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [enrollingCourse, setEnrollingCourse] = useState<Course | null>(null);
   const userRole = useContext(UserRoleContext);
@@ -19,6 +21,9 @@ const DashboardCard: React.FC<DashboardCardProps> = ({
   const handleViewDetails = (course: Course) => {
     setSelectedCourse(course);
   };
+  const handleEnrollingCourse=()=>{
+    navigate("/dashboard/course/id")
+  }
 
   const handleCloseDetails = () => {
     setSelectedCourse(null);
@@ -228,7 +233,7 @@ const DashboardCard: React.FC<DashboardCardProps> = ({
           
           <button
             type="button"
-            className="w-full bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-white font-semibold py-3 px-6 rounded-md shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center justify-center gap-2"
+            className="w-full bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-white font-semibold py-3 px-6 rounded-md shadow-lg hover:shadow-xl transform cursor-pointer hover:scale-101 transition-all duration-200 flex items-center justify-center gap-2"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
@@ -239,8 +244,9 @@ const DashboardCard: React.FC<DashboardCardProps> = ({
 
         {/* Submit Button */}
         <button
+        onClick={handleEnrollingCourse}
           type="submit"
-          className="w-full bg-gradient-to-r from-[#004e64] to-[#025a73] hover:from-[#003a4c] hover:to-[#014d61] text-white font-bold py-4 px-6 rounded-md shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center justify-center gap-2"
+          className="w-full bg-gradient-to-r from-[#004e64] to-[#025a73] hover:from-[#003a4c] hover:to-[#014d61] text-white font-bold py-4 px-6 rounded-md shadow-lg hover:shadow-xl transform hover:scale-101 cursor-pointer transition-all duration-200 flex items-center justify-center gap-2"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />

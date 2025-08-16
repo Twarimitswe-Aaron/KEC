@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useContext } from "react";
 import { CiUndo, CiRedo } from "react-icons/ci";
-import { FaRegSquare } from "react-icons/fa";
+import { FaRegSquare, FaUser, FaEnvelope, FaUserTag, FaLock } from "react-icons/fa";
 import { FaRegCheckSquare } from "react-icons/fa";
 import { HiOutlineAdjustmentsHorizontal } from "react-icons/hi2";
 import { FaEye, FaTrash } from "react-icons/fa";
@@ -23,6 +23,22 @@ const UserManagement = () => {
   const [selectedUsers, setSelectedUsers] = useState<number[]>([]);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
+  const [showAddUserModal, setShowAddUserModal] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [newUser, setNewUser] = useState({
+    name: '',
+    email: '',
+    role: 'Student',
+    password: '',
+    confirmPassword: ''
+  });
+  const [formErrors, setFormErrors] = useState({
+    name: '',
+    email: '',
+    role: '',
+    password: '',
+    confirmPassword: ''
+  });
 
   // Simulate fetching data from the backend
   useEffect(() => {
@@ -142,6 +158,67 @@ const UserManagement = () => {
     setSelectedUser(null);
   };
 
+  const closeAddUserModal = () => {
+    setShowAddUserModal(false);
+    setNewUser({
+      name: '',
+      email: '',
+      role: 'Student',
+      password: '',
+      confirmPassword: ''
+    });
+    setFormErrors({
+      name: '',
+      email: '',
+      role: '',
+      password: '',
+      confirmPassword: ''
+    });
+  };
+
+  const handleInputChange = (field: string, value: string) => {
+    setNewUser(prev => ({ ...prev, [field]: value }));
+    setFormErrors(prev => ({ ...prev, [field]: '' }));
+  };
+
+  const handleAddUser = async () => {
+    setIsSubmitting(true);
+    
+    // Simple validation
+    const errors: any = {};
+    if (!newUser.name.trim()) errors.name = 'Name is required';
+    if (!newUser.email.trim()) errors.email = 'Email is required';
+    if (!newUser.password) errors.password = 'Password is required';
+    if (newUser.password !== newUser.confirmPassword) errors.confirmPassword = 'Passwords do not match';
+    
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      setIsSubmitting(false);
+      return;
+    }
+
+    try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      const newUserData: User = {
+        id: Date.now(),
+        name: newUser.name,
+        role: newUser.role,
+        lessons: 0,
+        time: '0hr:0min',
+        avatar: '/images/chat.png'
+      };
+      
+      setUsers(prev => [...prev, newUserData]);
+      closeAddUserModal();
+    } catch (error) {
+      console.error('Error adding user:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <div className="h-screen -mt-4 flex flex-col">
       {userRole === "admin" && (
@@ -160,7 +237,7 @@ const UserManagement = () => {
               <button className="w-8 h-8 flex items-center justify-center cursor-pointer rounded-full border border-gray-300 text-gray-600 hover:bg-gray-100">
                 <HiOutlineAdjustmentsHorizontal />
               </button>
-              <button className="flex items-center gap-1 px-4 py-2 bg-gradient-to-r from-[#1a3c34] cursor-pointer to-[#2e856e] text-white rounded-full hover:from-[#2e856e] hover:to-[#1a3c34]">
+              <button className="flex items-center gap-1 px-4 py-2 bg-gradient-to-r from-[#1a3c34] cursor-pointer to-[#2e856e] text-white rounded-full hover:from-[#2e856e] hover:to-[#1a3c34]" onClick={() => setShowAddUserModal(true)}>
                 <span>Add</span>
                 <span>+</span>
               </button>
@@ -268,6 +345,163 @@ const UserManagement = () => {
                     Delete
                   </button>
                 </div>
+              </div>
+            </div>
+          )}
+              {/* Add User Modal */}
+              {showAddUserModal && (
+            <div className="fixed inset-0 bg-[#00000090] bg-opacity-50 flex items-center justify-center z-50">
+              <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto">
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="text-xl font-semibold text-gray-800">Add New User</h2>
+                  <button
+                    onClick={closeAddUserModal}
+                    className="text-gray-500 cursor-pointer hover:text-gray-700 transition-colors"
+                  >
+                    <IoClose size={24} />
+                  </button>
+                </div>
+
+                <form onSubmit={(e) => { e.preventDefault(); handleAddUser(); }}>
+                  <div className="space-y-4">
+                    {/* Name Field */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        <FaUser className="inline mr-2" size={12} />
+                        Full Name *
+                      </label>
+                      <input
+                        type="text"
+                        value={newUser.name}
+                        onChange={(e) => handleInputChange('name', e.target.value)}
+                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#2e856e] ${
+                          formErrors.name ? 'border-red-300' : 'border-gray-300'
+                        }`}
+                        placeholder="Enter full name"
+                        disabled={isSubmitting}
+                      />
+                      {formErrors.name && (
+                        <p className="text-red-500 text-xs mt-1">{formErrors.name}</p>
+                      )}
+                    </div>
+
+                    {/* Email Field */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        <FaEnvelope className="inline mr-2" size={12} />
+                        Email Address *
+                      </label>
+                      <input
+                        type="email"
+                        value={newUser.email}
+                        onChange={(e) => handleInputChange('email', e.target.value)}
+                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#2e856e] ${
+                          formErrors.email ? 'border-red-300' : 'border-gray-300'
+                        }`}
+                        placeholder="Enter email address"
+                        disabled={isSubmitting}
+                      />
+                      {formErrors.email && (
+                        <p className="text-red-500 text-xs mt-1">{formErrors.email}</p>
+                      )}
+                    </div>
+
+                    {/* Role Field */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        <FaUserTag className="inline mr-2" size={12} />
+                        Role *
+                      </label>
+                      <select
+                        value={newUser.role}
+                        onChange={(e) => handleInputChange('role', e.target.value)}
+                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#2e856e] ${
+                          formErrors.role ? 'border-red-300' : 'border-gray-300'
+                        }`}
+                        disabled={isSubmitting}
+                      >
+                        <option value="Student">Student</option>
+                        <option value="Teacher">Teacher</option>
+                        <option value="Admin">Admin</option>
+                      </select>
+                      {formErrors.role && (
+                        <p className="text-red-500 text-xs mt-1">{formErrors.role}</p>
+                      )}
+                    </div>
+
+                    {/* Password Field */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        <FaLock className="inline mr-2" size={12} />
+                        Password *
+                      </label>
+                      <input
+                        type="password"
+                        value={newUser.password}
+                        onChange={(e) => handleInputChange('password', e.target.value)}
+                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#2e856e] ${
+                          formErrors.password ? 'border-red-300' : 'border-gray-300'
+                        }`}
+                        placeholder="Enter password"
+                        disabled={isSubmitting}
+                      />
+                      {formErrors.password && (
+                        <p className="text-red-500 text-xs mt-1">{formErrors.password}</p>
+                      )}
+                    </div>
+
+                    {/* Confirm Password Field */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        <FaLock className="inline mr-2" size={12} />
+                        Confirm Password *
+                      </label>
+                      <input
+                        type="password"
+                        value={newUser.confirmPassword}
+                        onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
+                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#2e856e] ${
+                          formErrors.confirmPassword ? 'border-red-300' : 'border-gray-300'
+                        }`}
+                        placeholder="Confirm password"
+                        disabled={isSubmitting}
+                      />
+                      {formErrors.confirmPassword && (
+                        <p className="text-red-500 text-xs mt-1">{formErrors.confirmPassword}</p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end gap-3 mt-6">
+                    <button
+                      type="button"
+                      onClick={closeAddUserModal}
+                      className="px-4 py-2 border border-gray-300 rounded-md text-gray-600 hover:bg-gray-50 transition-colors"
+                      disabled={isSubmitting}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isSubmitting}
+                      className={`px-6 py-2 bg-gradient-to-r from-[#1a3c34] to-[#2e856e] text-white rounded-md hover:from-[#2e856e] hover:to-[#1a3c34] transition-all duration-200 flex items-center gap-2 ${
+                        isSubmitting ? 'opacity-50 cursor-not-allowed' : ''
+                      }`}
+                    >
+                      {isSubmitting ? (
+                        <>
+                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                          Adding...
+                        </>
+                      ) : (
+                        <>
+                          <FaUser size={14} />
+                          Add User
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </form>
               </div>
             </div>
           )}

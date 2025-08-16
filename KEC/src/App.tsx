@@ -24,7 +24,8 @@ import Feedback from "./routes/Feedback";
 import Logout from "./routes/Logout";
 import PaymentManagement from "./routes/PaymentManagement";
 import Certificates from "./routes/Certificates";
-import StudentsRequest from "./Components/StudentsRequest.tsx";
+import StudentsRequest from "./Components/StudentsRequest";
+import UserLessonsView from "./Components/UserLessonsView.tsx";
 
 function App() {
   return (
@@ -52,6 +53,7 @@ function App() {
         {/* Protected routes with DashboardLayout */}
         <Route element={<DashboardLayout />}>
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/dashboard/course/id" element={<UserLessonsView />} />
           <Route path="/user-management" element={<UserManagement />} />
           <Route path="/course-creation" element={<CourseManagement />} />
           <Route
