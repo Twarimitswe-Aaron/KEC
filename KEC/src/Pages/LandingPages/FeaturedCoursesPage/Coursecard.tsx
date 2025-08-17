@@ -128,10 +128,7 @@ const CourseCarousel = () => {
                     <BsCameraVideoFill color="gray" />
                     {item.no_lessons} lessons
                   </span>
-                  <span className="flex items-center gap-2">
-                    <GoStopwatch color="gray" />
-                    {item.no_hours}
-                  </span>
+           
                 </div>
                 <div className="flex mt-2 items-center w-full">
                   <img

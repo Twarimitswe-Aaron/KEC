@@ -56,6 +56,7 @@ function App() {
           <Route path="/dashboard/course/id" element={<UserLessonsView />} />
           <Route path="/user-management" element={<UserManagement />} />
           <Route path="/course-creation" element={<CourseManagement />} />
+          <Route path="/course-creation/course/id" element={<LessonsView />} />
           <Route
             path="/course-management/create-modules"
             element={<CreateModule />}

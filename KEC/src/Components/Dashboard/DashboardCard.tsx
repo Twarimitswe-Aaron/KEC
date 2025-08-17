@@ -14,19 +14,19 @@ const DashboardCard: React.FC<DashboardCardProps> = ({
   onCourseAction,
 }) => {
   const navigate=useNavigate()
-  const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
+ 
   const [enrollingCourse, setEnrollingCourse] = useState<Course | null>(null);
   const userRole = useContext(UserRoleContext);
 
   const handleViewDetails = (course: Course) => {
-    setSelectedCourse(course);
+   navigate("/course-creation/course/id");
   };
   const handleEnrollingCourse=()=>{
     navigate("/dashboard/course/id")
   }
 
   const handleCloseDetails = () => {
-    setSelectedCourse(null);
+   
   };
 
   return (
@@ -72,8 +72,7 @@ const DashboardCard: React.FC<DashboardCardProps> = ({
                 <p className="text-[#004e64] ">{course.price}</p>
                 <div className="flex items-center gap-2 text-sm text-gray-500">
                   <span>{course.no_lessons} lessons</span>
-                  <span>•</span>
-                  <span>{course.no_hours} hours</span>
+                 
                 </div>
               </div>
 
@@ -82,17 +81,18 @@ const DashboardCard: React.FC<DashboardCardProps> = ({
                   onClick={() => {
                     if (course.enrolled) {
                       onCourseAction(course.id!); // continue course
+                      navigate("/dashboard/course/id")
                     } else if (course.open) {
                       setEnrollingCourse(course); // open enrollment modal
                     }
                   }}
                   disabled={!course.open && !course.enrolled}
-                  className={`mt-4 cursor-pointer w-full px-4 py-2 rounded text-white transition-colors ${
+                  className={`mt-4  w-full px-4 py-2 rounded text-white transition-colors ${
                     course.enrolled
-                      ? "bg-[#034153] "
+                      ? "bg-[#034153] cursor-pointer"
                       : course.open
-                      ? "bg-[#034154]"
-                      : "bg-gray-400 cursor-not-allowed"
+                      ? "bg-[#034154] cursor-pointer"
+                      : "bg-gray-400  cursor-not-allowed"
                   }`}
                 >
                   {course.enrolled
@@ -107,37 +107,7 @@ const DashboardCard: React.FC<DashboardCardProps> = ({
         ))}
       </div>
 
-      {/* Course Details Modal */}
-      {selectedCourse && (
-        <div className="fixed inset-0  flex items-center justify-center p-4 z-1000">
-          <div className="bg-white rounded-md shadow-xl p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto relative">
-            <button
-              onClick={handleCloseDetails}
-              className="absolute top-3 right-3 text-gray-600 hover:text-gray-900 text-2xl font-bold"
-            >
-              &times;
-            </button>
-            <h2 className="text-2xl font-bold text-[#004e64] mb-4">
-              {selectedCourse.title}
-            </h2>
-            <p className="text-gray-700 mb-4">{selectedCourse.description}</p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-gray-800">
-              <p>
-                <strong>Price:</strong> {selectedCourse.price}
-              </p>
-              <p>
-                <strong>Lessons:</strong> {selectedCourse.no_lessons}
-              </p>
-              <p>
-                <strong>Hours:</strong> {selectedCourse.no_hours}
-              </p>
-              <p>
-                <strong>Students:</strong> {12}
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
+ 
 
       {/* Enrollment Modal */}
       {enrollingCourse && (
