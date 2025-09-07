@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react'
 import { FaPlus, FaLock, FaUnlock,FaFile,FaTrash,FaCross, FaX } from 'react-icons/fa6'
-import ModuleManagement from '../Components/moduleManagement'
+import ModuleManagement from '../Components/ModuleManagement'
 import { Lessons } from '../services/mockData'
 
 const CreateModule = () => {
@@ -75,7 +75,7 @@ const CreateModule = () => {
           </div>
         </div>
 
-      <ModuleManagement WholeModules={modules} />
+      <ModuleManagement />
           {/* Add Module Modal */}
           {showAddModule && (
           <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-300">

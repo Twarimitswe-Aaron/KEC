@@ -1,6 +1,6 @@
 import React from 'react'
 import { Lessons } from '../services/mockData'
-import ModuleManagement from '../Components/moduleManagement'
+import ModuleManagement from '../Components/ModuleManagement'
 
 const LessonsView = () => {
   return (
@@ -41,7 +41,7 @@ const LessonsView = () => {
     
           </div>
         </div>
-       <ModuleManagement WholeModules={Lessons} />
+       <ModuleManagement />
     </div>
   )
 }

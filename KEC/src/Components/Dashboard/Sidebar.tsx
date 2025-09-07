@@ -1,10 +1,7 @@
 import React, { useState, useEffect, useContext } from "react";
 import { NavLink } from "react-router-dom";
 
-import {
-  FiHome,
-  FiSettings,
-} from "react-icons/fi";
+import { FiHome, FiSettings } from "react-icons/fi";
 import { FaChevronLeft, FaChevronRight, FaRegUser } from "react-icons/fa6";
 import { FaTimes } from "react-icons/fa";
 import { RiMessage3Line } from "react-icons/ri";
@@ -13,7 +10,7 @@ import { BsGraphUp } from "react-icons/bs";
 import { LuMessageSquareMore } from "react-icons/lu";
 import { CgLogOut } from "react-icons/cg";
 import { UserRoleContext, UserRole } from "../../UserRoleContext";
-
+import { GrTasks } from "react-icons/gr";
 
 type SidebarItem = {
   label: string;
@@ -37,26 +34,48 @@ const Dashboard: RoleBasedSidebar = {
     { label: "User ", path: "/user-management", icon: <MdContacts /> },
     { label: "Course ", path: "/course-management", icon: <BsGraphUp /> },
     { label: "Payment ", path: "/payment-management", icon: <MdPayment /> },
-    { label: "My Account", path: "/my-account", icon: <FaRegUser /> },
+
     { label: "Feedback", path: "/feedback", icon: <LuMessageSquareMore /> },
-    { label: "Announcements", path: "/announcements", icon: <MdOutlineAnnouncement /> },
-    { label: "Certificates ", path: "/certificate-creation", icon: <FiSettings /> },
+    {
+      label: "Announcements",
+      path: "/announcements",
+      icon: <MdOutlineAnnouncement />,
+    },
+    {
+      label: "Certificates ",
+      path: "/certificate-creation",
+      icon: <FiSettings />,
+    },
+    { label: "Tasks", path: "/tasks", icon: <GrTasks /> },
     { label: "Logout", path: "/logout", icon: <CgLogOut /> },
   ],
   teacher: [
     { label: "Dashboard", path: "/dashboard", icon: <FiHome /> },
-    { label: "Inbox", path: "/inbox", icon: <RiMessage3Line /> }, 
+    { label: "Inbox", path: "/inbox", icon: <RiMessage3Line /> },
     { label: "Course Creation", path: "/course-creation", icon: <BsGraphUp /> },
     { label: "My Account", path: "/my-account", icon: <FaRegUser /> },
     { label: "Feedback", path: "/feedback", icon: <LuMessageSquareMore /> },
-    { label: "Certificates", path: "/certificate-creation", icon: <FiSettings /> },
-    { label: "Announcements", path: "/announcements", icon: <MdOutlineAnnouncement /> },
+    {
+      label: "Certificates",
+      path: "/certificate-creation",
+      icon: <FiSettings />,
+    },
+    {
+      label: "Announcements",
+      path: "/announcements",
+      icon: <MdOutlineAnnouncement />,
+    },
+    { label: "Tasks", path: "/tasks", icon: <GrTasks /> },
     { label: "Logout", path: "/logout", icon: <CgLogOut /> },
   ],
   student: [
     { label: "Dashboard", path: "/dashboard", icon: <FiHome /> },
     { label: "Inbox", path: "/inbox", icon: <RiMessage3Line /> },
-    { label: "Anouncements", path: "/announcements", icon: <MdOutlineAnnouncement /> },
+    {
+      label: "Anouncements",
+      path: "/announcements",
+      icon: <MdOutlineAnnouncement />,
+    },
     { label: "My Account", path: "/my-account", icon: <FaRegUser /> },
     { label: "Feedback", path: "/feedback", icon: <LuMessageSquareMore /> },
     { label: "Logout", path: "/logout", icon: <CgLogOut /> },
@@ -96,7 +115,9 @@ const Sidebar = ({ isMobileOpen, onClose }: SidebarProps) => {
       {/* Mobile Close Button */}
       {isMobileOpen && (
         <button
-          className={`${sidebarWidth=== "w-20" ? "translate-x-0":"translate-x-42"} absolute top-3 right-0 p-2  rounded-full bg-white shadow-sm z-50`}
+          className={`${
+            sidebarWidth === "w-20" ? "translate-x-0" : "translate-x-42"
+          } absolute top-3 right-0 p-2  rounded-full bg-white shadow-sm z-50`}
           onClick={onClose}
           aria-label="Close sidebar"
         >
@@ -127,16 +148,19 @@ const Sidebar = ({ isMobileOpen, onClose }: SidebarProps) => {
               to={item.path}
               className={({ isActive }) =>
                 `flex items-center p-3 rounded-md cursor-pointer transition-all gap-3
-                ${isLogout
-                  ? "bg-[#FDF0EC] text-[#81290E] hover:bg-[#fce5e0]"
-                  : isActive
-                  ? "bg-[#034153] text-white"
-                  : "bg-white text-[#034153] hover:bg-[#e6f2f5] hover:text-[#034153]"
+                ${
+                  isLogout
+                    ? "bg-[#FDF0EC] text-[#81290E] hover:bg-[#fce5e0]"
+                    : isActive
+                    ? "bg-[#034153] text-white"
+                    : "bg-white text-[#034153] hover:bg-[#e6f2f5] hover:text-[#034153]"
                 }`
               }
             >
               {item.icon}
-              {collapsed && <span className="whitespace-nowrap">{item.label}</span>}
+              {collapsed && (
+                <span className="whitespace-nowrap">{item.label}</span>
+              )}
             </NavLink>
           );
         })}

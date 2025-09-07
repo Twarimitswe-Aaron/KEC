@@ -26,6 +26,7 @@ import PaymentManagement from "./routes/PaymentManagement";
 import Certificates from "./routes/Certificates";
 import StudentsRequest from "./Components/StudentsRequest";
 import UserLessonsView from "./Components/UserLessonsView.tsx";
+import Tasks from "./Components/Tasks";
 
 function App() {
   return (
@@ -79,6 +80,7 @@ function App() {
           <Route path="/payment-management" element={<PaymentManagement />} />
           <Route path="/certificate-creation" element={<Certificates />} />
           <Route path="/logout" element={<Logout />} />
+          <Route path="/tasks" element={<Tasks />} />
         </Route>
         <Route path="/inbox" element={<Inbox />} />
       </Routes>
