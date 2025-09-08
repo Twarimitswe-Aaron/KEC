@@ -1,12 +1,13 @@
 import React, { useState, useMemo } from "react";
-import { Search, Download, Plus, Edit2, Trash2, Filter, BarChart3, Users, BookOpen, TrendingUp } from "lucide-react";
+import { Search, Download, Plus, Edit2, Trash2, Filter, BarChart3, Users, BookOpen, TrendingUp, X } from "lucide-react";
 import { FaUser } from "react-icons/fa6";
 import { FaSearch } from "react-icons/fa";
 import { MdAssignmentAdd } from "react-icons/md";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
+
 // Expanded mock data with more realistic structure
-const mockData = [
+const initialMockData = [
   {
     id: 1,
     name: "Mechanical Engineering 101",
@@ -101,6 +102,7 @@ const mockData = [
 
 const Tasks = () => {
   // State management
+  const [data, setData] = useState(initialMockData);
   const [expandedCourses, setExpandedCourses] = useState<number[]>([]);
   const [selectedAssignments, setSelectedAssignments] = useState<Record<number, number | "total" | "analytics" | null>>({});
   const [searchTerm, setSearchTerm] = useState("");
@@ -108,6 +110,15 @@ const Tasks = () => {
   const [sortBy, setSortBy] = useState("name");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [viewMode, setViewMode] = useState<"table" | "cards">("table");
+  const [isAddAssignmentModalOpen, setIsAddAssignmentModalOpen] = useState(false);
+  const [currentCourse, setCurrentCourse] = useState<any>(null);
+  const [newAssignment, setNewAssignment] = useState({
+    title: "",
+    type: "assignment",
+    dueDate: "",
+    maxPoints: 100,
+    weight: 0.1,
+  });
 
   // Calculate weighted total marks per student across all assignments
   const calculateWeightedTotalMarks = (assignments: any[]) => {
@@ -186,7 +197,7 @@ const Tasks = () => {
 
   // Filter and sort functionality
   const filteredData = useMemo(() => {
-    let filtered = mockData;
+    let filtered = data;
 
     if (searchTerm) {
       filtered = filtered.filter(course => 
@@ -222,7 +233,7 @@ const Tasks = () => {
         return aValue < bValue ? 1 : -1;
       }
     });
-  }, [searchTerm, sortBy, sortOrder]);
+  }, [searchTerm, sortBy, sortOrder, data]);
 
   // Toggle course expand/collapse
   const toggleCourse = (courseId: number) => {
@@ -232,50 +243,127 @@ const Tasks = () => {
   };
 
   // Export functionality
-
-    // Save the file
-    const exportToExcel = (courseId: number) => {
-      const course = mockData.find(c => c.id === courseId);
-      const selected = selectedAssignments[courseId];
-    
-      if (!course) return;
-    
-      let worksheetData: any[] = [];
-    
-      if (selected === "total") {
-        const totalMarks = calculateWeightedTotalMarks(course.assignments);
-    
-        worksheetData = totalMarks.map(student => ({
+  const exportToExcel = (courseId: number) => {
+    const course = data.find(c => c.id === courseId);
+    const selected = selectedAssignments[courseId];
+  
+    if (!course) return;
+  
+    let worksheetData: any[] = [];
+  
+    if (selected === "total") {
+      const totalMarks = calculateWeightedTotalMarks(course.assignments);
+  
+      worksheetData = totalMarks.map(student => ({
+        "Student Name": student.name,
+        "Email": student.email,
+        "Total Score": student.mark.toFixed(2),
+        "Percentage": `${student.percentage.toFixed(2)}%`
+      }));
+    } else if (typeof selected === "number") {
+      const assignment = course.assignments.find(a => a.id === selected);
+      if (assignment) {
+        worksheetData = assignment.students.map(student => ({
           "Student Name": student.name,
           "Email": student.email,
-          "Total Score": student.mark.toFixed(2),
-          "Percentage": `${student.percentage.toFixed(2)}%`
+          "Mark": student.mark,
+          "Submission Date": student.submissionDate
         }));
-      } else if (typeof selected === "number") {
-        const assignment = course.assignments.find(a => a.id === selected);
-        if (assignment) {
-          worksheetData = assignment.students.map(student => ({
-            "Student Name": student.name,
-            "Email": student.email,
-            "Mark": student.mark,
-            "Submission Date": student.submissionDate
-          }));
-        }
       }
-    
-      // Create worksheet and workbook
-      const worksheet = XLSX.utils.json_to_sheet(worksheetData);
-      const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, "Grades");
-    
-      // Convert workbook to binary array
-      const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
-    
-      // Save the file
-      const fileName = `${course.code}_${selected}_grades.xlsx`;
-      saveAs(new Blob([excelBuffer], { type: "application/octet-stream" }), fileName);
-    };
+    }
   
+    // Create worksheet and workbook
+    const worksheet = XLSX.utils.json_to_sheet(worksheetData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Grades");
+  
+    // Convert workbook to binary array
+    const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
+  
+    // Save the file
+    const fileName = `${course.code}_${selected}_grades.xlsx`;
+    saveAs(new Blob([excelBuffer], { type: "application/octet-stream" }), fileName);
+  };
+
+  // Add new assignment to a course
+  const addAssignmentToCourse = (courseId: number) => {
+    if (!newAssignment.title || !newAssignment.dueDate) return;
+    
+    const course = data.find(c => c.id === courseId);
+    if (!course) return;
+    
+    // Get all student IDs enrolled in this course
+    const enrolledStudentIds = new Set();
+    course.assignments.forEach(assignment => {
+      assignment.students.forEach(student => {
+        enrolledStudentIds.add(student.id);
+      });
+    });
+    
+    // Create student entries for the new assignment
+    const students = Array.from(enrolledStudentIds).map(id => {
+      // Find student details from existing assignments
+      const existingStudent = course.assignments[0]?.students.find((s: any) => s.id === id);
+      return {
+        id: id as number,
+        name: existingStudent?.name || `Student ${id}`,
+        email: existingStudent?.email || `student${id}@university.edu`,
+        mark: 0, // Default to 0 (not submitted)
+        submissionDate: "" // Empty until submitted
+      };
+    });
+    
+    // Create the new assignment
+    const assignment = {
+      id: Math.max(...course.assignments.map((a: any) => a.id), 0) + 1,
+      ...newAssignment,
+      students
+    };
+    
+    // Update the data
+    setData(prev => prev.map(course => 
+      course.id === courseId 
+        ? {...course, assignments: [...course.assignments, assignment]}
+        : course
+    ));
+    
+    // Reset form and close modal
+    setNewAssignment({
+      title: "",
+      type: "assignment",
+      dueDate: "",
+      maxPoints: 100,
+      weight: 0.1,
+    });
+    setIsAddAssignmentModalOpen(false);
+  };
+
+  // Update student marks for an assignment
+  const updateStudentMark = (courseId: number, assignmentId: number, studentId: number, mark: number) => {
+    setData(prev => prev.map(course => {
+      if (course.id !== courseId) return course;
+      
+      return {
+        ...course,
+        assignments: course.assignments.map(assignment => {
+          if (assignment.id !== assignmentId) return assignment;
+          
+          return {
+            ...assignment,
+            students: assignment.students.map(student => {
+              if (student.id !== studentId) return student;
+              
+              return {
+                ...student,
+                mark: Math.min(mark, assignment.maxPoints), // Ensure mark doesn't exceed max points
+                submissionDate: mark > 0 ? new Date().toISOString().split('T')[0] : student.submissionDate
+              };
+            })
+          };
+        })
+      };
+    }));
+  };
 
   const getGradeColor = (percentage: number) => {
     if (percentage >= 90) return "text-green-600 bg-green-50";
@@ -300,16 +388,122 @@ const Tasks = () => {
     return "F";
   };
 
-  return (
-    <div className=" max-w-7xl mx-auto bg-gray-50 min-h-screen">
+  // Render the Add Assignment Modal
+  const renderAddAssignmentModal = () => {
+    if (!isAddAssignmentModalOpen || !currentCourse) return null;
     
+    return (
+      <div className="fixed inset-0 bg-black/60 bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white rounded-xl p-6 w-full max-w-md">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-xl font-bold">Add New Assignment to {currentCourse.name}</h3>
+            <button 
+              onClick={() => setIsAddAssignmentModalOpen(false)}
+              className="text-gray-500 cursor-pointer hover:text-gray-700"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+          
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Assignment Title
+              </label>
+              <input
+                type="text"
+                value={newAssignment.title}
+                onChange={(e) => setNewAssignment({...newAssignment, title: e.target.value})}
+                className="w-full px-3 py-2 border outline-none border-gray-300 rounded-md"
+                placeholder="Enter assignment title"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Type
+              </label>
+              <select
+                value={newAssignment.type}
+                onChange={(e) => setNewAssignment({...newAssignment, type: e.target.value})}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+              >
+                <option value="assignment">Assignment</option>
+                <option value="exam">Exam</option>
+                
+               
+                
+                <option value="practice">Practice</option>
+              </select>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Due Date
+              </label>
+              <input
+                type="date"
+                value={newAssignment.dueDate}
+                onChange={(e) => setNewAssignment({...newAssignment, dueDate: e.target.value})}
+                className="w-full px-3 py-2 border outline-none border-gray-300 rounded-md"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Max Points
+              </label>
+              <input
+                type="number"
+                value={newAssignment.maxPoints}
+                onChange={(e) => setNewAssignment({...newAssignment, maxPoints: Number(e.target.value)})}
+                className="w-full px-3 py-2 border outline-none border-gray-300 rounded-md"
+                min="1"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Weight (% of total grade)
+              </label>
+              <input
+                type="number"
+                value={newAssignment.weight * 100}
+                onChange={(e) => setNewAssignment({
+                  ...newAssignment, 
+                  weight: Math.min(Number(e.target.value) / 100, 1)
+                })}
+                className="w-full px-3 py-2 outline-none border border-gray-300 rounded-md"
+                min="1"
+                max="100"
+              />
+            </div>
+            
+            <button
+              onClick={() => addAssignmentToCourse(currentCourse.id)}
+              disabled={!newAssignment.title || !newAssignment.dueDate}
+              className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 disabled:bg-gray-400"
+            >
+              Add Assignment
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className=" mx-auto bg-gray-50 min-h-screen ">
+      
+
+     
 
       {/* Course Cards */}
       {filteredData.map((course) => {
         const isExpanded = expandedCourses.includes(course.id);
         const selected = selectedAssignments[course.id] ?? null;
         const assignment = selected && typeof selected === 'number' 
-          ? course.assignments.find((a) => a.id === selected) 
+          ? course.assignments.find((a: any) => a.id === selected) 
           : null;
 
         const totalMarks = selected === "total" ? calculateWeightedTotalMarks(course.assignments) : null;
@@ -319,24 +513,35 @@ const Tasks = () => {
           <div key={course.id} className="bg-white rounded-xl shadow-sm mb-6 overflow-hidden">
             {/* Course Header */}
             <div className="p-6 border-b border-gray-200">
-              <div
-                className="flex justify-between items-start cursor-pointer"
-                onClick={() => toggleCourse(course.id)}
-              >
+              <div className="flex justify-between items-start">
                 <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-2">
-                    <h2 className="text-2xl font-bold text-gray-900">{course.name}</h2>
+                
+                  <div className="flex gap-3 text-gray-500 items-center">
+                    <FaUser/>
+                    <span className="font-medium">{course.instructor}</span>
                    
                   </div>
-                    <div className="flex gap-3 text-gray-500 items-center"><FaUser/><span className="font-medium">{course.instructor}</span></div>
-                
                 </div>
                 
                 <div className="flex items-center gap-2">
+                  <button 
+                    onClick={() => {
+                      setCurrentCourse(course);
+                      setIsAddAssignmentModalOpen(true);
+                    }}
+                    className="px-3 py-1  cursor-pointer bg-[#034153] text-white rounded-md text-sm flex items-center gap-1"
+                  >
+                    <Plus className="h-4 text-white w-4" />
+                    
+                  </button>
+                  
                   <span className="text-sm text-gray-500">
                     {course.assignments.length} assignments
                   </span>
-                  <button className="text-[#034153] transition-colors">
+                  <button 
+                    onClick={() => toggleCourse(course.id)}
+                    className="text-[#034153] transition-colors"
+                  >
                     {isExpanded ? "▲ Collapse" : "▼ Expand"}
                   </button>
                 </div>
@@ -353,7 +558,7 @@ const Tasks = () => {
                       Select Assignment or View
                     </label>
                     <select
-                      className="w-full  rounded-md outline-none  px-3 py-2 border  border-slate-400"
+                      className="w-full rounded-md outline-none px-3 py-2 border border-slate-400"
                       value={selected ?? ""}
                       onChange={(e) => {
                         const value = e.target.value;
@@ -367,7 +572,7 @@ const Tasks = () => {
                     >
                       <option className="cursor-pointer" value="">-- Choose Option --</option>
                       <optgroup label="Assignments">
-                        {course.assignments.map((a) => (
+                        {course.assignments.map((a: any) => (
                           <option key={a.id} value={a.id}>
                             {a.title} ({a.type})
                           </option>
@@ -381,7 +586,7 @@ const Tasks = () => {
                   </div>
                   
                   {selected && (
-                    <div className="flex  h-10 gap-2">
+                    <div className="flex h-10 gap-2">
                       <button
                         onClick={() => exportToExcel(course.id)}
                         className="px-2 py-0 bg-green-600 cursor-pointer text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2"
@@ -399,7 +604,10 @@ const Tasks = () => {
                     {/* Assignment Info */}
                     <div className="bg-gray-50 rounded-lg p-4">
                       <div className="grid grid-cols-3 sm:grid-cols-4 gap-4 text-sm">
-                       
+                        <div>
+                          <span className="text-gray-600">Type:</span>
+                          <div className="font-medium capitalize">{assignment.type}</div>
+                        </div>
                         <div>
                           <span className="text-gray-600">Due Date:</span>
                           <div className="font-medium">{assignment.dueDate}</div>
@@ -424,30 +632,40 @@ const Tasks = () => {
                             <th className="border-b px-4 py-3 text-left font-medium text-gray-900">Email</th>
                             <th className="border-b px-4 py-3 text-left font-medium text-gray-900">Score</th>
                             <th className="border-b px-4 py-3 text-left font-medium text-gray-900">Percentage</th>
-                            <th className="border-b px-4 py-3 text-left font-medium text-gray-900">Grade</th>
+
                             <th className="border-b px-4 py-3 text-left font-medium text-gray-900">Submitted</th>
                           </tr>
                         </thead>
                         <tbody>
-                          {assignment.students.map((student, index) => {
+                          {assignment.students.map((student: any, index: number) => {
                             const percentage = (student.mark / assignment.maxPoints) * 100;
                             return (
                               <tr key={student.id} className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}>
                                 <td className="border-b px-4 py-3 font-medium">{student.name}</td>
                                 <td className="border-b px-4 py-3 text-gray-600 text-sm">{student.email}</td>
                                 <td className="border-b px-4 py-3">
-                                  <span className="font-medium">{student.mark}</span>
-                                  <span className="text-gray-500">/{assignment.maxPoints}</span>
+                                  <input
+                                    type="number"
+                                    value={student.mark}
+                                    onChange={(e) => updateStudentMark(
+                                      course.id, 
+                                      assignment.id, 
+                                      student.id, 
+                                      Number(e.target.value)
+                                    )}
+                                    className="w-16 px-2 py-1 border border-gray-300 rounded text-right"
+                                    min="0"
+                                    max={assignment.maxPoints}
+                                  />
+                                  <span className="text-gray-500"></span>
                                 </td>
                                 <td className="border-b px-4 py-3">
                                   <span className={`px-2 py-1 rounded-full text-xs font-medium ${getGradeColor(percentage)}`}>
                                     {percentage.toFixed(1)}%
                                   </span>
                                 </td>
-                                <td className="border-b px-4 py-3">
-                                  <span className="font-bold text-lg">{getLetterGrade(percentage)}</span>
-                                </td>
-                                <td className="border-b px-4 py-3 text-sm text-gray-600">{student.submissionDate}</td>
+                               
+                                <td className="border-b px-4 py-3 text-sm text-gray-600">{student.submissionDate || "Not submitted"}</td>
                               </tr>
                             );
                           })}
@@ -470,7 +688,6 @@ const Tasks = () => {
                       <table className="w-full border-collapse bg-white rounded-lg overflow-hidden shadow-sm">
                         <thead>
                           <tr className="bg-gray-100">
-
                             <th className="border-b border-gray-400 px-4 py-3 text-left font-medium text-gray-900">Student</th>
                             <th className="border-b border-gray-400 px-4 py-3 text-left font-medium text-gray-900">Email</th>
                             <th className="border-b border-gray-400 px-4 py-3 text-left font-medium text-gray-900">Total Score</th>
@@ -484,7 +701,6 @@ const Tasks = () => {
                             .sort((a, b) => b.percentage - a.percentage)
                             .map((student, index) => (
                               <tr key={student.name} className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}>
-                                
                                 <td className="border-b border-gray-400 px-4 py-3 font-medium">{student.name}</td>
                                 <td className="border-b border-gray-400 px-4 py-3 text-gray-600 text-sm">{student.email}</td>
                                 <td className="border-b border-gray-400 px-4 py-3 font-medium">{student.mark.toFixed(2)}</td>
@@ -579,8 +795,6 @@ const Tasks = () => {
                       </div>
                     </div>
 
-                   
-
                     {/* Insights */}
                     <div className="border-slate-200 rounded-lg p-4 border">
                       <h5 className="font-medium text-gray-900 mb-3"> Quick Insights</h5>
@@ -611,11 +825,10 @@ const Tasks = () => {
                 )}
 
                 {!selected && (
-                  <div className="text-center justify-center flex flex-col  py-12">
+                  <div className="text-center justify-center flex flex-col py-12">
                     <div className="text-6xl mb-4 text-gray-400 mx-auto"><MdAssignmentAdd /></div>
                     <h3 className="text-xl font-medium text-gray-900 mb-2">Select an Assignment or View</h3>
                     <p className="text-gray-600">Choose from the dropdown above to view detailed information</p>
-                   
                   </div>
                 )}
               </div>
@@ -634,10 +847,21 @@ const Tasks = () => {
 
       {/* Floating Action Button for Quick Actions */}
       <div className="fixed bottom-6 right-6 space-y-2">
-        <button className="bg-blue-600 hover:bg-blue-700 text-white rounded-full p-3 shadow-lg transition-all duration-200 hover:scale-105">
+        <button 
+          className="bg-blue-600 hover:bg-blue-700 text-white rounded-full p-3 shadow-lg transition-all duration-200 hover:scale-105"
+          onClick={() => {
+            // Optionally set a default course for the FAB
+            if (filteredData.length > 0) {
+              setCurrentCourse(filteredData[0]);
+              setIsAddAssignmentModalOpen(true);
+            }
+          }}
+        >
           <Plus className="h-6 w-6" />
         </button>
       </div>
+      
+      {renderAddAssignmentModal()}
     </div>
   );
 };

@@ -170,10 +170,10 @@ const CertificateManagement = () => {
   }) => (
     <button
       onClick={() => setSelectedTab(tab)}
-      className={`flex items-center w-full gap-3 px-4 py-3 cursor-pointer rounded-xl font-semibold transition-all duration-300 ${
+      className={`flex items-center w-full gap-3 px-4 py-3 cursor-pointer rounded-md border-slate-400 border font-semibold transition-all duration-300 ${
         selectedTab === tab
-          ? `bg-gradient-to-r ${color} text-white shadow-lg transform scale-105`
-          : "bg-white text-gray-600 hover:bg-gray-50 hover:shadow-md"
+          ? `bg-gradient-to-r ${color} border-slate-400 border text-white shadow-md transform scale-105`
+          : "bg-white text-gray-600  hover:shadow-md"
       }`}
     >
       <Icon className="text-lg sm:hidden block" />
@@ -199,13 +199,13 @@ const CertificateManagement = () => {
             tab="all"
             label="Certificates"
             icon={FaCertificate}
-            color="from-indigo-500 to-purple-600"
+            color="bg-[#034153]"
           />
           <TabButton
             tab="pending"
             label="Awaiting"
             icon={FaClock}
-            color="from-yellow-500 to-orange-600"
+            color="bg-yellow-500"
           />
           <TabButton
             tab="approved"
@@ -222,30 +222,30 @@ const CertificateManagement = () => {
         </div>
              {/* Request Counts */}
              <div className="flex gap-3 items-center">
-                        <div className="flex h-3 gap-[1px] items-baseline">
+                        <div className="flex h-3 gap-[3px] items-baseline">
                           <div className="bg-black w-2 h-2 rounded-full"></div>
-                          <div className="text-md font-semibold text-black ">
+                          <div className="text-md font-semibold text-gray-700 ">
                             Total
                           </div>
                         </div>
-                        <div className="flex h-3 gap-[1px] items-baseline ">
+                        <div className="flex h-3 gap-[3px] items-baseline ">
                           <div className="bg-yellow-300  w-2 h-2 rounded-full"></div>
-                          <div className="text-md font-semibold text-black ">
+                          <div className="text-md font-semibold text-gray-700 ">
                             Pending
                           </div>
                         </div>
                     
                        
-                          <div className="flex h-3 gap-[1px] items-baseline">
+                          <div className="flex h-3 gap-[3px] items-baseline">
                             <div className="bg-green-400 w-2 h-2 rounded-full"></div>
-                            <div className="text-md font-semibold text-black ">
+                            <div className="text-md font-semibold text-gray-700 ">
                               Approved
                             </div>
                           </div>
                     
-                          <div className="flex h-3 gap-[1px] items-baseline">
+                          <div className="flex h-3 gap-[3px] items-baseline">
                             <div className="bg-red-400 w-2 h-2 rounded-full"></div>
-                            <div className="text-md font-semibold text-black ">
+                            <div className="text-md font-semibold text-gray-700 ">
                              Rejected
                             </div>
                           </div>
@@ -620,13 +620,13 @@ const CertificateManagement = () => {
                     <div className="flex  sm:w-[30%] w-full  items-center justify-end gap-6">
                       {/* Request Counts */}
                       <div className="flex gap-3 items-center">
-                        <div className="flex h-3 gap-[1px] items-baseline">
+                        <div className="flex h-3 gap-[3px] items-baseline">
                           <div className="bg-black w-2 h-2 rounded-full"></div>
                           <div className="text-md text-black ">
                             {counts.total}
                           </div>
                         </div>
-                        <div className="flex h-3 gap-[1px] items-baseline ">
+                        <div className="flex h-3 gap-[3px] items-baseline ">
                           <div className="bg-yellow-300  w-2 h-2 rounded-full"></div>
                           <div className="text-md text-black ">
                             {counts.pending}
@@ -634,7 +634,7 @@ const CertificateManagement = () => {
                         </div>
                     
                         {counts.approved > 0 && (
-                          <div className="flex h-3 gap-[1px] items-baseline">
+                          <div className="flex h-3 gap-[3px] items-baseline">
                             <div className="bg-green-400 w-2 h-2 rounded-full"></div>
                             <div className="text-md  text-black ">
                               {counts.approved}
@@ -642,7 +642,7 @@ const CertificateManagement = () => {
                           </div>
                         )}
                         {counts.rejected > 0 && (
-                          <div className="flex h-3 gap-[1px] items-baseline">
+                          <div className="flex h-3 gap-[3px] items-baseline">
                             <div className="bg-red-400 w-2 h-2 rounded-full"></div>
                             <div className="text-md text-black ">
                               {counts.rejected}
@@ -652,7 +652,7 @@ const CertificateManagement = () => {
                       </div>
 
                       {/* Expand/Collapse Icon */}
-                      <div className="text-2xl text-black mt-3 transition-transform duration-300">
+                      <div className="text-md text-black mt-3 transition-transform duration-300">
                         {expandedCourses.has(course.id) ? (
                           <FaChevronDown />
                         ) : (
