@@ -21,10 +21,56 @@ enum Role {
 }
 model User {
   id Int @id @default(autoincrement())
-  name String
+  // name String
   email String @unique
   password String
   role Role
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  admin Admin?
+  teacher Teacher?
+  student Student?
+}
+
+model Admin {
+  id Int @id @default(autoincrement())
+  userId Int @unique
+  user User @relation(fields: [userId], references: [id])
+  courses Course[]
+}
+
+model Teacher {
+  id Int @id @default(autoincrement())
+  userId Int @unique
+  user User @relation(fields: [userId], references: [id])
+  courses Course[]
+}
+
+model Student {
+  id Int @id @default(autoincrement())
+  userId Int @unique
+  user User @relation(fields: [userId], references: [id])
+
+  onGoingCourses Course[] @relation("OnGoingCourses")
+  completedCourses Course[] @relation("CompletedCourses")
+  failedCourses Course[] @relation("FailedCourses")
+
+  certificates String?
+}
+
+model Course {
+  id Int @id @default(autoincrement())
+  teacherId Int
+  adminId Int
+  teacher Teacher @relation(fields: [teacherId], references: [id])
+  admin Admin @relation(fields: [adminId], references:[id])
+  title String
+  description String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  onGoingStudents Student[] @relation("OnGoingCourses")
+  completedStudents Student[] @relation("CompletedCourses")
+  failedStudents Student[] @relation("FailedCourses")
 }
