@@ -515,6 +515,7 @@ const Tasks = () => {
             <div className="p-6 border-b border-gray-200">
               <div className="flex justify-between items-start">
                 <div className="flex-1">
+                  <h2 className="text-2xl font-bold text-gray-900">{course.name}</h2>
                 
                   <div className="flex gap-3 text-gray-500 items-center">
                     <FaUser/>
