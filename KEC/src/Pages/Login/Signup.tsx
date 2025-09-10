@@ -5,6 +5,7 @@ import { FaEyeSlash, FaEye } from "react-icons/fa";
 import { IoIosLock } from "react-icons/io";
 import { toast } from "react-toastify";
 import clsx from "clsx";
+import { api } from "../../utils/api";
 
 const Signup = () => {
   interface FormData {
@@ -97,40 +98,41 @@ const Signup = () => {
     return errors;
   };
 
-  const goToVerification = () => {
-    const emailErrors = validate("email", formData.email, true);
-    const passErrors = validate("password", formData.password, true);
-    const confirmPassErrors = validate(
-      "confirmPassword",
-      formData.confirmPassword,
-      true
-    );
-    const firstNameErrors = validate("firstName", formData.firstName, true);
-    const lastNameErrors = validate("lastName", formData.lastName, true);
+  // const goToVerification = () => {
+  //   const emailErrors = validate("email", formData.email, true);
+  //   const passErrors = validate("password", formData.password, true);
+  //   const confirmPassErrors = validate(
+  //     "confirmPassword",
+  //     formData.confirmPassword,
+  //     true
+  //   );
+  //   const firstNameErrors = validate("firstName", formData.firstName, true);
+  //   const lastNameErrors = validate("lastName", formData.lastName, true);
 
-    const allErrors = {
-      ...emailErrors,
-      ...passErrors,
-      ...confirmPassErrors,
-      ...firstNameErrors,
-      ...lastNameErrors,
-    };
+  //   const allErrors = {
+  //     ...emailErrors,
+  //     ...passErrors,
+  //     ...confirmPassErrors,
+  //     ...firstNameErrors,
+  //     ...lastNameErrors,
+  //   };
 
-    const hasErrors = Object.values(allErrors).some(
-      (arr) => arr && arr.length > 0
-    );
+  //   const hasErrors = Object.values(allErrors).some(
+  //     (arr) => arr && arr.length > 0
+  //   );
 
-    if (hasErrors) {
-      return;
-    }
+  //   if (hasErrors) {
+  //     return;
+  //   }
 
-    toast.success("go to your email to verify your account");
+  //   toast.success("go to your email to verify your account");
 
-    setTimeout(() => {
-      navigate(`/signup/verification?email=${encodeURIComponent(formData.email)}`);
-
-    }, 1500);
-  };
+  //   setTimeout(() => {
+  //     navigate(
+  //       `/signup/verification?email=${encodeURIComponent(formData.email)}`
+  //     );
+  //   }, 1500);
+  // };
 
   const handleBlur = (e: ChangeEvent<HTMLInputElement>) => {
     const { name } = e.target;
@@ -200,10 +202,50 @@ const Signup = () => {
       return;
     }
 
+
+
+    try {
+      const response = await api.post("/student/create", {
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email,
+        password: formData.password,
+      });
+
+     
+
+      toast.success(response.data.message);
+
+      setFormData({
+        email: "",
+        password: "",
+        confirmPassword: "",
+        firstName: "",
+        lastName: "",
+      });
+  
+      // Clear errors and touched states if needed
+      setFormErrors({});
+      setTouched({});
+      setIsFocused({});
+      // Navigate to verification page after short delay
+      // setTimeout(() => {
+      //   navigate(`/signup/verification?email=${encodeURIComponent(formData.email)}`);
+      // }, 1500);
+    } catch (error: any) {
+      if (error.response?.data?.message) {
+        toast.error(error.response.data.message);
+      } else {
+        toast.error("Something went wrong. Please try again later");
+      }
+    } finally {
+      setIsLoading(false);
+    }
+
     // Navigate to verification with email
-    navigate(
-      `/signup/verification?email=${encodeURIComponent(formData.email)}`
-    );
+    // navigate(
+    //   `/signup/verification?email=${encodeURIComponent(formData.email)}`
+    // );
   };
 
   return (
@@ -373,7 +415,7 @@ const Signup = () => {
 
           <div className="w-[90%] mx-auto mt-4">
             <button
-              onClick={goToVerification}
+              onClick={handleSubmit}
               type="submit"
               disabled={isLoading}
               className={clsx(

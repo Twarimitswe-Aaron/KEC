@@ -12,7 +12,7 @@ const DashboardLayout = () => {
   const closeSidebar = () => setSidebarOpen(false);
 
   return (
-    <UserRoleContext.Provider value="teacher">
+    <UserRoleContext.Provider value="admin">
       <div className="w-full  min-h-screen flex">
         {/* Left Sidebar for md+ */}
         <aside className="hidden md:block z-100 w-[10%] md:w-[20%] h-screen sticky left-0 top-0">
