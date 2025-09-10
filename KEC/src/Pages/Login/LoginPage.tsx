@@ -6,6 +6,8 @@ import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { IoIosLock } from "react-icons/io";
 import clsx from "clsx";
 import { useNavigate } from "react-router-dom";
+import { api } from "../../utils/api";
+import { toast } from "react-toastify";
 
 const Login = () => {
   interface FormData {
@@ -90,6 +92,7 @@ const Login = () => {
   };
 
   const navigate = useNavigate();
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -107,8 +110,35 @@ const Login = () => {
       return;
     }
 
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-    setIsLoading(false);
+    try {
+      const {data}=await api.get('/csrf/token',{withCredentials:true})
+      const csrfToken=data.csrfToken;
+
+      
+
+      const res=await api.post('/auth/login',{
+        email:formData.email,
+        password:formData.password
+      },
+    {
+      withCredentials:true,
+      headers:{
+        'X-CSRF-TOKEN':csrfToken
+      }
+    })
+
+      if(res.data?.access_token){
+        localStorage.setItem('token',res.data.access_token)
+        navigate('/dashboard')
+      }
+
+
+    } catch (error) {
+      toast.error("Login failed. Please check your credentials.");
+      
+    }finally{
+      setIsLoading(false)
+    }
   };
 
   const handleContinue = (e: React.MouseEvent<HTMLButtonElement>) => {

@@ -8,15 +8,23 @@ import { AuthModule } from './auth/auth.module';
 import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
 import { CleanupService } from './cleanup/cleanup.service';
+import { UserModule } from './user/user.module';
+import { CsrfController } from './csrf/csrf.controller';
+import { CsrfModule } from './csrf/csrf.module';
 
 @Module({
-  imports: [StudentModule, PrismaModule, AuthModule,
+  imports: [
+    StudentModule,
+    PrismaModule,
+    AuthModule,
     ConfigModule.forRoot({
-      isGlobal:true,
+      isGlobal: true,
     }),
     ScheduleModule.forRoot(),
+    UserModule,
+    CsrfModule,
   ],
-  controllers: [AppController],
+  controllers: [AppController, CsrfController],
   providers: [AppService, PrismaService, CleanupService],
 })
 export class AppModule {}

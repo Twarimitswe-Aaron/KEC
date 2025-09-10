@@ -205,12 +205,22 @@ const Signup = () => {
 
 
     try {
+      
+      const {data}=await api.get('/csrf/token',{withCredentials:true})
+      const csrfToken=data.csrfToken
       const response = await api.post("/student/create", {
         firstName: formData.firstName,
         lastName: formData.lastName,
         email: formData.email,
         password: formData.password,
-      });
+      },
+    {
+      withCredentials:true,
+      headers:{
+        'X-CSRF-TOKEN':csrfToken
+      }
+
+    });
 
      
 
@@ -234,6 +244,7 @@ const Signup = () => {
       // }, 1500);
     } catch (error: any) {
       if (error.response?.data?.message) {
+       
         toast.error(error.response.data.message);
       } else {
         toast.error("Something went wrong. Please try again later");
