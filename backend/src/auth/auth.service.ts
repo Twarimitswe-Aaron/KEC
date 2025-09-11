@@ -38,11 +38,11 @@ export class AuthService {
       firstName: user.firstName,
       lastName: user.lastName,
     };
-    const refresh_token = await this.jwtService.signAsync(payload, {
+    const access_token = await this.jwtService.signAsync(payload, {
       expiresIn: '7d',
     });
 
-    const access_token = await this.jwtService.signAsync(
+    const refresh_token = await this.jwtService.signAsync(
       { sub: user.id },
       { expiresIn: '15m' },
     );
