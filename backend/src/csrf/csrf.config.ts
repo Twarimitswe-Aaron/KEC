@@ -7,7 +7,7 @@ const doubleCsrfOptions = {
     req.cookies?.['sid'] || (req.headers['x-session-id'] as string) || req.ip,
   cookieName: 'XSRF-TOKEN',
   cookieOptions: {
-    httpOnly: false,
+    httpOnly: true,
     sameSite: 'strict' as const,
     secure: process.env.NODE_ENV === 'production',
     path: '/',

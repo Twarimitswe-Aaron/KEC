@@ -84,6 +84,7 @@ function App() {
         </Route>
         <Route path="/inbox" element={<Inbox />} />
       </Routes>
+      
     </>
   );
 }

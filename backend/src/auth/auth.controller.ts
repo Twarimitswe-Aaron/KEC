@@ -5,8 +5,9 @@ import type { Response } from 'express';
 import type { Request as ExpressRequest } from 'express';
 import { AuthGuard } from './auth.guard';
 import { LoginDto } from './dto/login.dto';
-import { PrismaService } from '../prisma/prisma.service';
+
 import { JwtService } from '@nestjs/jwt';
+import { PrismaClient } from '@prisma/client';
 
 
 
@@ -15,7 +16,7 @@ export class AuthController {
   constructor(
     private readonly authService: AuthService, 
     private readonly configService: ConfigService,
-    private readonly prisma: PrismaService,
+    private readonly prisma: PrismaClient,
     private readonly jwtService: JwtService
   ) {}
 

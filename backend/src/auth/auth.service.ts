@@ -7,6 +7,7 @@ import { PrismaClient } from '@prisma/client';
 import { JwtService } from '@nestjs/jwt';
 import { UserService } from '../user/user.service';
 import * as bcrypt from 'bcrypt';
+import { Console } from 'console';
 @Injectable()
 export class AuthService {
   constructor(
@@ -17,20 +18,29 @@ export class AuthService {
 
   async Login(
     email: string,
-    pass: string,
+    password: string,
   ): Promise<{ access_token: string; refresh_token: string }> {
     const user = await this.UsersService.findOne(email);
-    if (!user) {
-      throw new UnauthorizedException('Invalid credentials');
-    }
-    const correctPassword = await bcrypt.compare(pass, user.password);
-     if( !user.isEmailVerified){
-        throw new UnauthorizedException('Please activate your email before logging in');
-     }
-    if (!correctPassword) {
-      throw new UnauthorizedException('Invalid credentials');
-    }
 
+  
+    if (!user) {
+      
+      throw new UnauthorizedException('Invalid credentials');
+    }
+  
+    // Correct password comparison
+    const correctPassword = await bcrypt.compare(password, user.password);
+    if (!correctPassword) {
+
+      console.log("Incorrect password");
+      throw new UnauthorizedException('Invalid credentials');
+    }
+  
+    if (!user.isEmailVerified) {
+      
+      throw new UnauthorizedException('Please activate your email before logging in');
+    }
+  
     const payload = {
       sub: user.id,
       email: user.email,
@@ -38,22 +48,25 @@ export class AuthService {
       firstName: user.firstName,
       lastName: user.lastName,
     };
+  
     const access_token = await this.jwtService.signAsync(payload, {
       expiresIn: '7d',
     });
-
+  
     const refresh_token = await this.jwtService.signAsync(
       { sub: user.id },
       { expiresIn: '15m' },
     );
-
+  
     await this.prisma.user.update({
       where: { id: user.id },
       data: { refresh_token: refresh_token },
     });
-
+  
     return { access_token, refresh_token };
   }
+  
+  
 
   async refreshToken(refresh_token: string): Promise<{ access_token: string }> {
     try {
