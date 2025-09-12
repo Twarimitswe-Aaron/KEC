@@ -1,10 +1,15 @@
 import React, { useState, useRef } from 'react';
+import { FaEye, FaEyeSlash } from 'react-icons/fa6';
+import { IoIosLock } from 'react-icons/io';
+import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
 
 const PassReset = () => {
   const [step, setStep] = useState<'email' | 'code' | 'reset'>('email');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const navigate=useNavigate();
 
   // Refs for code inputs
   const codeRefs = useRef<(HTMLInputElement | null)[]>([]);
@@ -31,10 +36,10 @@ const PassReset = () => {
       errors.email = [];
       if (!value) {
         errors.email.push('Email is required');
-        if (showToast) alert('Email is required');
+        if (showToast) toast.success('Email is required');
       } else if (!/\S+@\S+\.\S+/.test(value as string)) {
         errors.email.push('Please enter a valid email address');
-        if (showToast) alert('Please enter a valid email address');
+        if (showToast) toast.success('Please enter a valid email address');
       }
     }
 
@@ -44,10 +49,10 @@ const PassReset = () => {
       const codeString = codeArray.join('');
       if (codeString.length !== 6) {
         errors.code.push('Please enter the complete 6-digit code');
-        if (showToast) alert('Please enter the complete 6-digit code');
+        if (showToast) toast.success('Please enter the complete 6-digit code');
       } else if (!/^\d{6}$/.test(codeString)) {
         errors.code.push('Code must contain only numbers');
-        if (showToast) alert('Code must contain only numbers');
+        if (showToast) toast.success('Code must contain only numbers');
       }
     }
 
@@ -55,23 +60,23 @@ const PassReset = () => {
       errors.password = [];
       if (!value) {
         errors.password.push('Password is required');
-        if (showToast) alert('Password is required');
+        if (showToast) toast.success('Password is required');
       } else {
         if (!/[A-Z]/.test(value as string)) {
           errors.password.push('Include at least one uppercase letter');
-          if (showToast) alert('Password must include at least one uppercase letter');
+          if (showToast) toast.success('Password must include at least one uppercase letter');
         }
         if (!/[0-9]/.test(value as string)) {
           errors.password.push('Include at least one number');
-          if (showToast) alert('Password must include at least one number');
+          if (showToast) toast.success('Password must include at least one number');
         }
         if (!/[!@#$%^&*(),.?":{}|<>]/.test(value as string)) {
           errors.password.push('Include one special character');
-          if (showToast) alert('Password must include one special character');
+          if (showToast) toast.success('Password must include one special character');
         }
         if ((value as string).length < 6) {
           errors.password.push('Minimum 6 characters');
-          if (showToast) alert('Password must be at least 6 characters');
+          if (showToast) toast.success('Password must be at least 6 characters');
         }
       }
     }
@@ -80,10 +85,10 @@ const PassReset = () => {
       errors.confirmPassword = [];
       if (!value) {
         errors.confirmPassword.push('Please confirm your password');
-        if (showToast) alert('Please confirm your password');
+        if (showToast) toast.success('Please confirm your password');
       } else if (value !== formData.password) {
         errors.confirmPassword.push('Passwords do not match');
-        if (showToast) alert('Passwords do not match');
+        if (showToast) toast.success('Passwords do not match');
       }
     }
 
@@ -167,7 +172,7 @@ const PassReset = () => {
 
   const getBorderColor = (field: string): string => {
     if (!touched[field] || isFocused[field]) {
-      return 'border-slate-700';
+      return 'border-[#022F40]';
     }
     return formErrors[field]?.length
       ? 'border-red-500 placeholder-red-500'
@@ -186,7 +191,7 @@ const PassReset = () => {
       }
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000));
-      alert('Reset code sent to your email');
+      toast.success('Reset code sent to your email');
       setStep('code');
     } else if (step === 'code') {
       const codeErrors = validate('code', formData.code, true);
@@ -196,7 +201,7 @@ const PassReset = () => {
       }
       // Simulate API call to verify code
       await new Promise(resolve => setTimeout(resolve, 1000));
-      alert('Code verified successfully');
+      toast.success('Code verified successfully');
       setStep('reset');
     } else {
       const passErrors = validate('password', formData.password, true);
@@ -209,7 +214,7 @@ const PassReset = () => {
 
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000));
-      alert('Password reset successful');
+      toast.success('Password reset successful');
       setStep('email'); // Reset to first step for demo
     }
     setIsLoading(false);
@@ -219,7 +224,7 @@ const PassReset = () => {
     setIsLoading(true);
     // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 1000));
-    alert('New code sent to your email');
+    toast.success('New code sent to your email');
     setFormData(prev => ({
       ...prev,
       code: ['', '', '', '', '', '']
@@ -256,19 +261,17 @@ const PassReset = () => {
   };
 
   return (
-    <div className="flex w-full justify-center min-h-screen bg-gray-50">
-      <div className="w-full max-w-lg items-center my-auto flex justify-center relative">
+    <div className="flex w-full justify-center font-robot gap-0">
+      <div className="w-[690px] items-center my-auto h-full flex justify-center relative">
         <div
-          className="justify-center px-8 py-8 w-full max-w-md bg-white shadow-lg rounded-lg border border-slate-700 text-center"
+          className="justify-center px-5 py-8 sm:w-[390px] sm:top-3 mt-10 w-[320px] h-auto border rounded-md border-[#022F40] text-center"
         >
           {/* Logo */}
-          <div className="flex justify-center items-center relative mb-8">
-            <div className="w-16 h-16 bg-slate-700 rounded-full flex items-center justify-center">
-              <span className="text-white font-bold text-xl">L</span>
-            </div>
+          <div className="flex justify-center cursor-pointer items-center relative mb-8">
+            <img src="/images/Logo.svg" onClick={()=>navigate('/')} alt="" />
           </div>
 
-          <h1 className="text-2xl md:text-3xl font-bold text-slate-800 mb-2">
+          <h1 className="text-2xl md:text-3xl font-bold text-[#022F40] mb-2">
             {getStepTitle()}
           </h1>
 
@@ -279,11 +282,11 @@ const PassReset = () => {
           {step === 'email' ? (
             <>
               <div
-                className={`w-full flex items-center bg-white border rounded-md p-3 mb-3 ${getBorderColor(
+                className={`w-[90%] mt-10 flex items-center bg-white border mx-auto rounded-md p-2 transition-colors duration-200 ${getBorderColor(
                   'email'
                 )}`}
               >
-                <svg className="w-5 h-5 mr-3 text-slate-700" fill="currentColor" viewBox="0 0 20 20">
+                <svg className="w-5 h-5 mr-3 text-[#022F40]" fill="currentColor" viewBox="0 0 20 20">
                   <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"/>
                   <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"/>
                 </svg>
@@ -295,11 +298,11 @@ const PassReset = () => {
                   onFocus={handleFocus}
                   onBlur={handleBlur}
                   placeholder="Enter your email"
-                  className="w-full bg-transparent outline-none text-slate-800"
+                  className="w-full bg-transparent outline-none text-[#022F40]"
                 />
               </div>
               {formErrors.email && formErrors.email.length > 0 && (
-                <ul className="text-left mt-2 text-sm text-red-600 list-disc pl-5 space-y-1">
+                <ul className="text-left mt-2 text-sm text-red-600 list-disc pl-9 space-y-1">
                   {formErrors.email.map((err, i) => (
                     <li key={i}>{err}</li>
                   ))}
@@ -308,40 +311,28 @@ const PassReset = () => {
             </>
           ) : step === 'code' ? (
             <>
-              <div className="w-full mb-6">
+              <div className="w-[90%] mx-auto mb-6">
                 <div className="flex justify-center gap-3 mb-4">
                   {formData.code.map((digit, index) => (
                     <input
                       key={index}
-                      ref={el => { codeRefs.current[index] = el; }}
+                      ref={el => {codeRefs.current[index] = el}}
                       type="text"
                       maxLength={1}
                       value={digit}
                       onChange={(e) => handleCodeChange(index, e.target.value)}
                       onKeyDown={(e) => handleCodeKeyDown(index, e)}
                       onPaste={index === 0 ? handleCodePaste : undefined}
-                      className={`w-12 h-12 text-center text-lg font-bold border-2 rounded-md outline-none transition-colors ${
-                        formErrors.code?.length
-                          ? 'border-red-500 text-red-500'
-                          : digit
-                          ? 'border-green-500 text-slate-800'
-                          : 'border-slate-300 text-slate-800'
-                      } focus:border-blue-500`}
+                      className={`w-10 h-10 text-center text-lg font-bold border-2 rounded-md outline-none transition-colors text-[#022F40] border-slate-300 text-[#022F40]' focus:border-blue-500`}
                     />
                   ))}
                 </div>
-                {formErrors.code && formErrors.code.length > 0 && (
-                  <div className="text-center text-sm text-red-600 mb-3">
-                    {formErrors.code.map((err, i) => (
-                      <div key={i}>{err}</div>
-                    ))}
-                  </div>
-                )}
+         
                 <button
                   type="button"
                   onClick={handleResendCode}
                   disabled={isLoading}
-                  className="text-blue-600 text-sm underline hover:text-blue-800 disabled:opacity-50"
+                  className="text-[#022F40] text-sm cursor-pointer hover:underline disabled:opacity-50"
                 >
                   Resend code
                 </button>
@@ -354,9 +345,7 @@ const PassReset = () => {
                   'password'
                 )}`}
               >
-                <svg className="w-5 h-5 mr-3 text-slate-700" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd"/>
-                </svg>
+                 <IoIosLock className="text-[#022F40] w-5 h-5 mr-2" />
                 <input
                   type={showPassword ? 'text' : 'password'}
                   name="password"
@@ -365,23 +354,17 @@ const PassReset = () => {
                   onFocus={handleFocus}
                   onBlur={handleBlur}
                   placeholder="New password"
-                  className="w-full bg-transparent outline-none text-slate-800 pr-10"
+                  className="w-full bg-transparent outline-none border-none text-md pr-10"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(prev => !prev)}
-                  className="absolute right-3 text-slate-700 focus:outline-none hover:text-slate-500"
+                  className="absolute right-3 text-[#022F40] focus:outline-none hover:text-slate-500"
                 >
                   {showPassword ? (
-                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M3.707 2.293a1 1 0 00-1.414 1.414l14 14a1 1 0 001.414-1.414l-1.473-1.473A10.014 10.014 0 0019.542 10C18.268 5.943 14.478 3 10 3a9.958 9.958 0 00-4.512 1.074l-1.78-1.781zm4.261 4.26l1.514 1.515a2.003 2.003 0 012.45 2.45l1.514 1.514a4 4 0 00-5.478-5.478z" clipRule="evenodd"/>
-                      <path d="M12.454 16.697L9.75 13.992a4 4 0 01-3.742-3.741L2.335 6.578A9.98 9.98 0 00.458 10c1.274 4.057 5.065 7 9.542 7 .847 0 1.669-.105 2.454-.303z"/>
-                    </svg>
+                    <FaEyeSlash />
                   ) : (
-                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                      <path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/>
-                      <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd"/>
-                    </svg>
+                    <FaEye />
                   )}
                 </button>
               </div>
@@ -398,9 +381,7 @@ const PassReset = () => {
                   'confirmPassword'
                 )}`}
               >
-                <svg className="w-5 h-5 mr-3 text-slate-700" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd"/>
-                </svg>
+                 <IoIosLock className="text-[#022F40] w-5 h-5 mr-2" />
                 <input
                   type={showConfirmPassword ? 'text' : 'password'}
                   name="confirmPassword"
@@ -409,28 +390,22 @@ const PassReset = () => {
                   onFocus={handleFocus}
                   onBlur={handleBlur}
                   placeholder="Confirm new password"
-                  className="w-full bg-transparent outline-none text-slate-800 pr-10"
+                  className="w-full bg-transparent outline-none text-[#022F40] pr-10"
                 />
                 <button
                   type="button"
                   onClick={() => setShowConfirmPassword(prev => !prev)}
-                  className="absolute right-3 text-slate-700 focus:outline-none hover:text-slate-500"
+                  className="absolute right-3 text-[#022F40] focus:outline-none hover:text-slate-500"
                 >
                   {showConfirmPassword ? (
-                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M3.707 2.293a1 1 0 00-1.414 1.414l14 14a1 1 0 001.414-1.414l-1.473-1.473A10.014 10.014 0 0019.542 10C18.268 5.943 14.478 3 10 3a9.958 9.958 0 00-4.512 1.074l-1.78-1.781zm4.261 4.26l1.514 1.515a2.003 2.003 0 012.45 2.45l1.514 1.514a4 4 0 00-5.478-5.478z" clipRule="evenodd"/>
-                      <path d="M12.454 16.697L9.75 13.992a4 4 0 01-3.742-3.741L2.335 6.578A9.98 9.98 0 00.458 10c1.274 4.057 5.065 7 9.542 7 .847 0 1.669-.105 2.454-.303z"/>
-                    </svg>
+                    <FaEyeSlash />
                   ) : (
-                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                      <path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/>
-                      <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd"/>
-                    </svg>
+                    <FaEye />
                   )}
                 </button>
               </div>
               {formErrors.confirmPassword && formErrors.confirmPassword.length > 0 && (
-                <ul className="text-left mt-2 mb-3 text-sm text-red-600 list-disc pl-5 space-y-1">
+                <ul className="text-left ml-5 mt-2 mb-3 text-sm text-red-600 list-disc pl-5 space-y-1">
                   {formErrors.confirmPassword.map((err, i) => (
                     <li key={i}>{err}</li>
                   ))}
@@ -439,22 +414,19 @@ const PassReset = () => {
             </>
           )}
 
-          <div className="w-full mt-6">
+          <div className="w-[90%] mx-auto mt-4">
             <button
               type="button"
               onClick={handleSubmit}
               disabled={isLoading}
-              className={`w-full p-3 rounded-md shadow-md text-white font-semibold transition-all duration-300 ${
+              className={`w-full p-2 cursor-pointer text-white bg-[#022F40] rounded-md shadow hover:bg-white hover:text-[#022F40] transition-all duration-300 border border-[#022F40] hover:border-[#022F40] ${
                 isLoading 
-                  ? 'bg-gray-400 cursor-not-allowed opacity-50'
-                  : 'bg-slate-700 hover:bg-slate-800 active:transform active:scale-95'
+                  ? 'bg-white text-[#022F40] border border-[#022F40] cursor-not-allowed opacity-50'
+                  : 'bg-[#022F40] border border-white hover:bg-white hover:text-[#022F40]'
               }`}
             >
               {isLoading ? (
-                <div className="flex items-center justify-center">
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                  Processing...
-                </div>
+                <span className="w-5 h-5 border-2 border-dashed border-current border-t-transparent rounded-full animate-spin inline-block"></span>
               ) : step === 'email' ? (
                 'Send Reset Code'
               ) : step === 'code' ? (
@@ -465,16 +437,24 @@ const PassReset = () => {
             </button>
           </div>
 
-          <div className="flex gap-2 justify-center mt-6 text-sm">
+          <div className="flex gap-2 justify-center mt-4 text-sm">
             <p className="text-gray-600">Remember your password?</p>
             <button
-              onClick={() => setStep('email')}
-              className="text-blue-600 underline hover:text-blue-800"
+              onClick={() => navigate('/login')}
+              className="text-[#022F40] cursor-pointer hover:underline "
             >
-              Back to Login
+              Login
             </button>
           </div>
         </div>
+      </div>
+
+      <div className="hidden lg:flex bg-[#022F40] w-[680px] h-screen items-center justify-center">
+        <img
+          src="/images/Login.png"
+          alt="Login Illustration"
+          className="w-[100%] object-cover h-[100%]"
+        />
       </div>
     </div>
   );
