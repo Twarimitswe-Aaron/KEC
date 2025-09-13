@@ -8,6 +8,9 @@ import { LoginDto } from './dto/login.dto';
 
 import { JwtService } from '@nestjs/jwt';
 import { PrismaClient } from '@prisma/client';
+import {ForgotPass } from './dto/forgotPass.dto';
+import { VerifyToken } from './dto/verifyToken';
+import { ResetPassword } from './dto/resetPassword.dto';
 
 
 
@@ -112,4 +115,70 @@ export class AuthController {
       return res.redirect(`${this.configService.get('FRONTEND_URL')}/verification-failed`);
      }
   }
+
+  @Post("requestCode")
+  async forgotPassword(@Body() forgotDto:ForgotPass){
+   const user=await this.prisma.user.findUnique({
+    where:{email:forgotDto.email}
+   })
+   if(!user){
+    throw new BadRequestException("No user with this email, Please sign up")
+   }
+   const code=Math.floor(100000 + Math.random() * 900000).toString();
+   await this.prisma.resetToken.create({
+    data:{
+      email:user.email,
+      code,
+      expiresAt:new Date(Date.now()+10*60*1000) 
+    }
+   })
+   await this.authService.sendResetCode(user.email,code);
+   return {message:`Reset code sent to ${user.email}. It is valid for 10 minutes.`}
+  }
+
+  @Post("verifyResetCode")
+  async verifyResetCode(@Body() verifyDto:VerifyToken ){
+    const record=await this.prisma.resetToken.findFirst({
+      where:{email:verifyDto.email,code:verifyDto.token}
+    })
+
+    if(!record){
+      throw new BadRequestException("Invalid reset code");
+      
+    }
+
+    if(record.expiresAt <new Date()){
+      throw new BadRequestException("Reset code has expired. Please request a new one.");
+
+    }
+    const email=verifyDto.email
+    
+
+    return {email}
+  }
+
+  @Post('resetPassword')
+  async resetPassword(@Body() resetDto:ResetPassword){
+    if(resetDto.password !== resetDto.confirmPassword){
+throw new BadRequestException("Passwords does not match")
+    }
+
+    const record=await this.prisma.resetToken.findFirst({
+      where:{email:resetDto.email}
+    });
+    if(!record){
+      throw new BadRequestException("Invalid request")
+    }
+    if(record.expiresAt < new Date()){
+      throw new BadRequestException("Reset token has expired. Please request a new one.")
+    }
+    const hashedPassword=await this.authService.hashPassword(resetDto.password);
+    await this.prisma.user.update({
+      where:{email:resetDto.email},
+      data:{password:hashedPassword}
+    })
+
+    return {message:"Password reset successful"}
+  }
+ 
 }

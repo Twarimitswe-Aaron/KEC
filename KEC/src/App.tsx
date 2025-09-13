@@ -14,7 +14,8 @@ import "react-toastify/dist/ReactToastify.css";
 import "./App.css";
 import Landing from "./Landing/Landing";
 import Verification from "./Pages/Login/verification";
-import PassReset from "./Pages/Login/PassReset";
+import PasswordReset from "./Pages/Login/PasswordReset";
+import ForgotPass from "./Pages/Login/ForgotPass";
 import UserManagement from "./routes/UserManagement";
 import CourseManagement from "./routes/courseManagement";
 import AdminCourseManagement from "./routes/AdminCourseManagement";
@@ -49,7 +50,8 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/signup/verification" element={<Verification />} />
-        <Route path="/passReset" element={<PassReset />} />
+        <Route path="/forgotPass" element={<ForgotPass />} />
+        <Route path="/passReset" element={<PasswordReset />} />
 
         {/* Protected routes with DashboardLayout */}
         <Route element={<DashboardLayout />}>

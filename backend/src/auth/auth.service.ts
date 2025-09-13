@@ -7,13 +7,15 @@ import { PrismaClient } from '@prisma/client';
 import { JwtService } from '@nestjs/jwt';
 import { UserService } from '../user/user.service';
 import * as bcrypt from 'bcrypt';
-import { Console } from 'console';
+import * as nodemailer from 'nodemailer';
+import { ConfigService } from '@nestjs/config';
 @Injectable()
 export class AuthService {
   constructor(
     private readonly prisma: PrismaClient,
     private jwtService: JwtService,
     private UsersService: UserService,
+    private configService: ConfigService,
   ) {}
 
   async Login(
@@ -118,5 +120,27 @@ export class AuthService {
         tokenExpiresAt: null,
       },
     });
+  }
+
+  async hashPassword(password:string):Promise<string>{
+  
+    return await bcrypt.hash(password, 10)
+  }
+
+  async sendResetCode(email:string, code:string){
+    const transporter=nodemailer.createTransport({
+      service: 'gmail',
+      auth:{
+        user:this.configService.get('SMTP_USER'),
+        pass:this.configService.get('SMTP_PASS')
+      }
+    })
+
+    await transporter.sendMail({
+      from:this.configService.get('SMTP_USER'),
+      to:email,
+      subject:'Password Reset Code',
+      text:`Your password reset code is ${code}.`
+    })
   }
 }

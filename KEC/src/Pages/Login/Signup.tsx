@@ -8,10 +8,11 @@ import clsx from "clsx";
 
 import { useCsrfToken } from "../../hooks/useCsrfToken";
 import { useSignupMutation } from "../../state/api/authApi";
+import { FcGoogle } from "react-icons/fc";
 
 const Signup = () => {
   const navigate = useNavigate();
-  const { getToken } = useCsrfToken(); // ✅ Hook at top level
+  const { getToken } = useCsrfToken();
   const [signup] = useSignupMutation();
 
   interface FormData {
@@ -21,6 +22,12 @@ const Signup = () => {
     firstName: string;
     lastName: string;
   }
+
+  const handleGoogleLogin = () => {
+    // Your Google OAuth integration logic here
+    console.log("Google login clicked");
+    toast.info("Google login integration pending...");
+  };
 
   // ------------------------- States -------------------------
   const [formData, setFormData] = useState<FormData>({
@@ -60,9 +67,12 @@ const Signup = () => {
       if (!value) errors.password.push("Password is required.");
       else {
         const val = value as string;
-        if (!/[A-Z]/.test(val)) errors.password.push("Include at least one uppercase letter.");
-        if (!/[0-9]/.test(val)) errors.password.push("Include at least one number.");
-        if (!/[!@#$%^&*(),.?\":{}|<>]/.test(val)) errors.password.push("Include one special character.");
+        if (!/[A-Z]/.test(val))
+          errors.password.push("Include at least one uppercase letter.");
+        if (!/[0-9]/.test(val))
+          errors.password.push("Include at least one number.");
+        if (!/[!@#$%^&*(),.?\":{}|<>]/.test(val))
+          errors.password.push("Include one special character.");
         if (val.length < 6) errors.password.push("Minimum 6 characters.");
       }
     }
@@ -125,7 +135,13 @@ const Signup = () => {
     setIsLoading(true);
 
     // Validate all fields
-    const fields = ["email", "password", "confirmPassword", "firstName", "lastName"];
+    const fields = [
+      "email",
+      "password",
+      "confirmPassword",
+      "firstName",
+      "lastName",
+    ];
     let allErrors: { [key: string]: string[] } = {};
     let hasErrors = false;
 
@@ -169,7 +185,8 @@ const Signup = () => {
       // Optionally navigate to verification page
       // navigate(`/signup/verification?email=${encodeURIComponent(formData.email)}`);
     } catch (error: any) {
-      if (error.response?.data?.message) toast.error(error.response.data.message);
+      if (error.response?.data?.message)
+        toast.error(error.response.data.message);
       else toast.error("Something went wrong. Please try again later");
     } finally {
       setIsLoading(false);
@@ -186,10 +203,16 @@ const Signup = () => {
         >
           {/* Logo */}
           <Link to="/" className="flex justify-center items-center relative">
-            <img src="/images/Logo.svg" alt="Logo" className="absolute w-25 object-cover top-4" />
+            <img
+              src="/images/Logo.svg"
+              alt="Logo"
+              className="absolute w-25 object-cover top-4"
+            />
           </Link>
 
-          <h1 className="text-2xl md:text-3xl font-bold text-[#022F40] mt-20">Sign Up</h1>
+          <h1 className="text-2xl md:text-3xl font-bold text-[#022F40] mt-20">
+            Sign Up
+          </h1>
 
           {/* Name Fields */}
           <div className="flex gap-5">
@@ -207,7 +230,9 @@ const Signup = () => {
                   onChange={handleChange}
                   onFocus={handleFocus}
                   onBlur={handleBlur}
-                  placeholder={field === "firstName" ? "First name" : "Last name"}
+                  placeholder={
+                    field === "firstName" ? "First name" : "Last name"
+                  }
                   className="w-full bg-transparent outline-none text-md"
                 />
               </div>
@@ -218,7 +243,10 @@ const Signup = () => {
           <div className="flex w-[90%] mx-auto justify-start text-start">
             {["firstName", "lastName"].map((field) =>
               formErrors[field]?.length ? (
-                <ul key={field} className="text-left mt-4 text-sm text-red-600 w-[50%] space-y-1">
+                <ul
+                  key={field}
+                  className="text-left mt-4 text-sm text-red-600 w-[50%] space-y-1"
+                >
                   {formErrors[field].map((err, idx) => (
                     <li key={idx}>{err}</li>
                   ))}
@@ -265,13 +293,23 @@ const Signup = () => {
             >
               <IoIosLock className="text-[#022F40] w-5 h-5 mr-2" />
               <input
-                type={field === "password" ? (showPassword ? "text" : "password") : showConfirmPassword ? "text" : "password"}
+                type={
+                  field === "password"
+                    ? showPassword
+                      ? "text"
+                      : "password"
+                    : showConfirmPassword
+                    ? "text"
+                    : "password"
+                }
                 name={field}
                 value={formData[field as keyof FormData]}
                 onChange={handleChange}
                 onFocus={handleFocus}
                 onBlur={handleBlur}
-                placeholder={field === "password" ? "Password" : "Confirm password"}
+                placeholder={
+                  field === "password" ? "Password" : "Confirm password"
+                }
                 className="w-full bg-transparent outline-none text-md"
               />
               <button
@@ -283,13 +321,17 @@ const Signup = () => {
                 }
                 className="absolute right-3"
               >
-                {field === "password"
-                  ? showPassword
-                    ? <FaEyeSlash />
-                    : <FaEye />
-                  : showConfirmPassword
-                  ? <FaEyeSlash />
-                  : <FaEye />}
+                {field === "password" ? (
+                  showPassword ? (
+                    <FaEyeSlash />
+                  ) : (
+                    <FaEye />
+                  )
+                ) : showConfirmPassword ? (
+                  <FaEyeSlash />
+                ) : (
+                  <FaEye />
+                )}
               </button>
             </div>
           ))}
@@ -298,7 +340,10 @@ const Signup = () => {
           {["password", "confirmPassword"].map(
             (field) =>
               formErrors[field]?.length > 0 && (
-                <ul key={field} className="text-left items-center ml-5 mt-4 text-sm text-red-600 list-disc pl-5">
+                <ul
+                  key={field}
+                  className="text-left items-center ml-5 mt-4 text-sm text-red-600 list-disc pl-5"
+                >
                   {formErrors[field].map((err, i) => (
                     <li key={i}>{err}</li>
                   ))}
@@ -309,7 +354,10 @@ const Signup = () => {
           {/* Already have account */}
           <div className="flex gap-2 justify-center mt-3">
             <p>Already have an account?</p>
-            <Link to="/login" className="text-blue-900 underline hover:text-blue-700">
+            <Link
+              to="/login"
+              className="text-blue-900 underline hover:text-blue-700"
+            >
               Login
             </Link>
           </div>
@@ -322,8 +370,10 @@ const Signup = () => {
               className={clsx(
                 "w-[100%] cursor-pointer flex justify-center items-center gap-2 p-2 rounded-md shadow transition-all duration-300 border",
                 {
-                  "text-white bg-[#022F40] border-white hover:bg-white hover:text-[#022F40]": !isLoading,
-                  "bg-white text-[#022F40] border-[#022F40] hover:bg-[#022F40] hover:text-white": isLoading,
+                  "text-white bg-[#022F40] border-white hover:bg-white hover:text-[#022F40]":
+                    !isLoading,
+                  "bg-white text-[#022F40] border-[#022F40] hover:bg-[#022F40] hover:text-white":
+                    isLoading,
                   "disabled:opacity-50 disabled:cursor-not-allowed": true,
                 }
               )}
@@ -343,19 +393,28 @@ const Signup = () => {
             <div className="flex-grow h-px bg-[#022F40]"></div>
           </div>
 
-          {/* Google Signin */}
-          <div className="flex mb-10 justify-center">
-            <div className="flex items-center justify-center cursor-pointer gap-4 w-[90%] px-2 py-2 border border-[#022F40] rounded-md hover:bg-[#022F40] hover:text-white transition-all duration-300">
-              <img src="/images/Google.png" alt="Google" className="w-6" />
-              <p>Continue With Google</p>
-            </div>
+          {/* Continue with Google Section */}
+          <div className="w-[90%] mx-auto mb-9 space-y-3">
+           
+            <button
+              type="button"
+              onClick={handleGoogleLogin}
+              className="w-full flex items-center justify-center gap-3 p-2.5 cursor-pointer text-[#022F40] bg-white border border-[#022F40] rounded-md shadow hover:bg-[#022F40] hover:text-white transition-all duration-300 group"
+            >
+              <FcGoogle className="w-5 h-5" />
+              <span className="font-medium">Continue with Google</span>
+            </button>
           </div>
         </form>
       </div>
 
       {/* Illustration */}
       <div className="hidden lg:flex sticky top-0 right-0 bg-[#022F40] w-[680px] h-screen items-center justify-center">
-        <img src="/images/Login.png" alt="Login Illustration" className="w-full h-full object-cover" />
+        <img
+          src="/images/Login.png"
+          alt="Login Illustration"
+          className="w-full h-full object-cover"
+        />
       </div>
     </div>
   );

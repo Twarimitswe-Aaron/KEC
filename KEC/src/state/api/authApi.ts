@@ -49,6 +49,41 @@ export const authApi = apiSlice.injectEndpoints({
       }),
       invalidatesTags: ["User"],
     }),
+    requestPasswordReset: builder.mutation<
+      {message:string},
+      { email: string; csrfToken: string }
+    >({
+      query: ({ email, csrfToken }) => ({
+        url: "auth/requestCode",
+        method: "POST",
+        headers: { "X-CSRF-Token": csrfToken },
+        body: { email },
+      }),
+    }),
+    verifyReset: builder.mutation<{email:string},{ email: string; token: string; csrfToken: string }>({
+      query: ({ email, token, csrfToken }) => ({
+        url: "auth/verifyResetCode",
+        method: "POST",
+        headers: { "X-CSRF-Token": csrfToken },
+        body: { email, token },
+      }),
+    }),
+    resetPassword: builder.mutation<
+      {message:string},
+      {
+        email: string;
+        password: string;
+        confirmPassword: string;
+        csrfToken: string;
+      }
+    >({
+      query: ({ email, password, confirmPassword, csrfToken }) => ({
+        url: "auth/resetPassword",
+        method: "POST",
+        headers: { "X-CSRF-Token": csrfToken },
+        body: { email, password, confirmPassword },
+      }),
+    }),
   }),
 });
 
@@ -57,4 +92,7 @@ export const {
   useLoginMutation,
   useLogoutMutation,
   useSignupMutation,
+  useRequestPasswordResetMutation,
+  useVerifyResetMutation,
+  useResetPasswordMutation,
 } = authApi;

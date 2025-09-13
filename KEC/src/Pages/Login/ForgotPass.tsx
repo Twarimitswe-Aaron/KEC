@@ -1,15 +1,24 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useReducer } from 'react';
 import { FaEye, FaEyeSlash } from 'react-icons/fa6';
 import { IoIosLock } from 'react-icons/io';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import { useCsrfToken } from '../../hooks/useCsrfToken';
+import { useRequestPasswordResetMutation, useResetPasswordMutation, useVerifyResetMutation } from '../../state/api/authApi';
 
-const PassReset = () => {
+const ForgotPass = () => {
   const [step, setStep] = useState<'email' | 'code' | 'reset'>('email');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const navigate=useNavigate();
+  const {getToken}=useCsrfToken()
+  const [requestReset]=useRequestPasswordResetMutation()
+  const [verifyCode]=useVerifyResetMutation()
+  const [resetPassword]=useResetPasswordMutation()
+
+  
+
 
   // Refs for code inputs
   const codeRefs = useRef<(HTMLInputElement | null)[]>([]);
@@ -25,6 +34,29 @@ const PassReset = () => {
   const [touched, setTouched] = useState<{ [key: string]: boolean }>({});
   const [isFocused, setIsFocused] = useState<{ [key: string]: boolean }>({});
 
+   const handleForgotPassword= async(email:string)=>{
+    const csrfToken=await getToken()
+    const message= await requestReset({email, csrfToken:csrfToken!})
+    if(!message){
+      return 
+    }
+    return message;
+
+  }
+  
+  const handleVerify=async(email:string, code:string)=>{
+    const csrfToken=await getToken()
+    const res = await verifyCode({email, token:code, csrfToken:csrfToken!})
+    return res.data?.email
+
+  }
+
+  const handleResetPassword=async(email:string, password:string, confirmPassword:string)=>{
+    const csrfToken=await getToken()
+     const message= await resetPassword({email, password:password, confirmPassword,csrfToken:csrfToken!})
+     return message?.data?.message
+  }
+
   const validate = (
     name: string,
     value: string | string[],
@@ -36,7 +68,7 @@ const PassReset = () => {
       errors.email = [];
       if (!value) {
         errors.email.push('Email is required');
-        if (showToast) toast.success('Email is required');
+        if (showToast) toast.error('Email is required');
       } else if (!/\S+@\S+\.\S+/.test(value as string)) {
         errors.email.push('Please enter a valid email address');
         if (showToast) toast.success('Please enter a valid email address');
@@ -49,10 +81,10 @@ const PassReset = () => {
       const codeString = codeArray.join('');
       if (codeString.length !== 6) {
         errors.code.push('Please enter the complete 6-digit code');
-        if (showToast) toast.success('Please enter the complete 6-digit code');
+        if (showToast) toast.error('Please enter the complete 6-digit code');
       } else if (!/^\d{6}$/.test(codeString)) {
         errors.code.push('Code must contain only numbers');
-        if (showToast) toast.success('Code must contain only numbers');
+        if (showToast) toast.error('Code must contain only numbers');
       }
     }
 
@@ -60,23 +92,23 @@ const PassReset = () => {
       errors.password = [];
       if (!value) {
         errors.password.push('Password is required');
-        if (showToast) toast.success('Password is required');
+        if (showToast) toast.error('Password is required');
       } else {
         if (!/[A-Z]/.test(value as string)) {
           errors.password.push('Include at least one uppercase letter');
-          if (showToast) toast.success('Password must include at least one uppercase letter');
+          if (showToast) toast.error('Password must include at least one uppercase letter');
         }
         if (!/[0-9]/.test(value as string)) {
           errors.password.push('Include at least one number');
-          if (showToast) toast.success('Password must include at least one number');
+          if (showToast) toast.error('Password must include at least one number');
         }
         if (!/[!@#$%^&*(),.?":{}|<>]/.test(value as string)) {
           errors.password.push('Include one special character');
-          if (showToast) toast.success('Password must include one special character');
+          if (showToast) toast.error('Password must include one special character');
         }
         if ((value as string).length < 6) {
           errors.password.push('Minimum 6 characters');
-          if (showToast) toast.success('Password must be at least 6 characters');
+          if (showToast) toast.error('Password must be at least 6 characters');
         }
       }
     }
@@ -190,8 +222,11 @@ const PassReset = () => {
         return;
       }
       // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      toast.success('Reset code sent to your email');
+      const message=await handleForgotPassword(formData.email)
+  if(message){
+    
+    toast.success(`Reset code sent to ${message}`);
+  }
       setStep('code');
     } else if (step === 'code') {
       const codeErrors = validate('code', formData.code, true);
@@ -199,10 +234,14 @@ const PassReset = () => {
         setIsLoading(false);
         return;
       }
+      const code=(formData.code).toString();
+     
       // Simulate API call to verify code
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      toast.success('Code verified successfully');
-      setStep('reset');
+      const email=await handleVerify(formData.email,code)
+      if(email === formData.email){
+        toast.success('Code verified successfully');
+        setStep('reset');
+      }
     } else {
       const passErrors = validate('password', formData.password, true);
       const confirmPassErrors = validate('confirmPassword', formData.confirmPassword, true);
@@ -213,9 +252,12 @@ const PassReset = () => {
       }
 
       // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      toast.success('Password reset successful');
-      setStep('email'); // Reset to first step for demo
+      const message=await handleResetPassword(formData.email, formData.password, formData.confirmPassword)
+      if(message){
+
+        toast.success('Password reset successful');
+        setStep('email'); // Reset to first step for demo
+      }
     }
     setIsLoading(false);
   };
@@ -341,7 +383,7 @@ const PassReset = () => {
           ) : (
             <>
               <div
-                className={`relative w-full flex items-center bg-white border rounded-md p-3 mb-3 ${getBorderColor(
+                className={`relative w-[90%] mt-10 flex items-center bg-white border mx-auto rounded-md p-2 transition-colors duration-200 ${getBorderColor(
                   'password'
                 )}`}
               >
@@ -377,7 +419,7 @@ const PassReset = () => {
               )}
 
               <div
-                className={`relative w-full flex items-center bg-white border rounded-md p-3 mb-3 ${getBorderColor(
+                className={`relative w-[90%] mt-5 flex items-center bg-white border mx-auto rounded-md p-2 transition-colors duration-200 ${getBorderColor(
                   'confirmPassword'
                 )}`}
               >
@@ -460,4 +502,4 @@ const PassReset = () => {
   );
 };
 
-export default PassReset;
+export default ForgotPass;
