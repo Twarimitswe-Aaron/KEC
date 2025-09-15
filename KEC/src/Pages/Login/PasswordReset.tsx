@@ -3,7 +3,7 @@ import { FaEye, FaEyeSlash, FaArrowLeft } from "react-icons/fa6";
 import { IoIosLock } from "react-icons/io";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import { useResetKnownPassMutation } from "../../state/api/authApi";
+import { useLoginMutation, useResetKnownPassMutation } from "../../state/api/authApi";
 
 const PasswordReset = () => {
   const [currentStep, setCurrentStep] = useState(1); // Step 1: Email & Current Password, Step 2: New Password & Confirm
@@ -44,7 +44,8 @@ const PasswordReset = () => {
     confirmPassword: false,
   });
 
-  const [resetKnownPass] = useResetKnownPassMutation();
+  const [resetKnownPass] = useLoginMutation();
+  const [resetPass]=useResetKnownPassMutation()
 
   const validate = (
     name: keyof typeof formData,
@@ -169,7 +170,7 @@ const PasswordReset = () => {
       const res = await resetKnownPass({
         email: formData.email,
         password: formData.currentPassword,
-        confirmPassword: formData.currentPassword, // Use currentPassword as confirmPassword for verification
+       
       }).unwrap();
 
       if (res) {
@@ -201,10 +202,11 @@ const PasswordReset = () => {
       toast.error("Passwords do not match");
       return;
     }
-    const message = await resetKnownPass({
+    const message = await resetPass({
       email,
       password,
       confirmPassword,
+     
     }).unwrap();
     return message;
   };
