@@ -14,6 +14,11 @@ export class CreateStudentDto{
     @MinLength(6)
     password:string;
 
+    @IsNotEmpty()
+    confirmPassword:string;
+
+  
+
     
 
 }

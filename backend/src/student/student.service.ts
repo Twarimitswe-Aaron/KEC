@@ -18,18 +18,24 @@ export class StudentService {
   ) {}
 
   async createStudent(dto: CreateStudentDto) {
-    const { firstName, lastName, email, password } = dto;
+    const { firstName, lastName, email, password, confirmPassword } = dto;
 
     try {
+      const existingUser = await this.prisma.user.findUnique({
+        where: { email },
+      });
       if (password.length < 6) {
         throw new BadRequestException(
           'Password must be at least 6 characters long',
         );
       }
 
-      const existingUser = await this.prisma.user.findUnique({
-        where: { email },
-      });
+      if(password !== confirmPassword){
+        throw new BadRequestException("Password doesn't match")
+      }
+    
+      
+
 
       if (existingUser) {
         if (!existingUser.isEmailVerified) {
@@ -78,7 +84,7 @@ export class StudentService {
       return {
         status: 'success',
         message:
-          'Registration successful! Please check your email to verify your account.',
+          `Registration successful! Please check ${email} to verify your account.`,
         student: {
           id: student.id,
           email: student.user.email,
@@ -102,6 +108,7 @@ export class StudentService {
   }
 
   async sendVerificationEmail(email: string, token: string) {
+   
     const backendUrl = this.configService.get('BACKEND_URL');
     const verificationLink = `${backendUrl}/auth/verify?token=${token}`;
 

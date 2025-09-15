@@ -4,6 +4,6 @@ export class VerifyToken{
     @IsEmail()
     email:string;
     @IsString()
-    token:string;
+    code:string;
 
 }

@@ -1,7 +1,9 @@
-import React, { ChangeEvent, useState } from 'react';
-import { FaEye, FaEyeSlash, FaArrowLeft } from 'react-icons/fa6';
-import { IoIosLock } from 'react-icons/io';
-import { useNavigate } from 'react-router-dom';
+import React, { ChangeEvent, useState } from "react";
+import { FaEye, FaEyeSlash, FaArrowLeft } from "react-icons/fa6";
+import { IoIosLock } from "react-icons/io";
+import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
+import { useResetKnownPassMutation } from "../../state/api/authApi";
 
 const PasswordReset = () => {
   const [currentStep, setCurrentStep] = useState(1); // Step 1: Email & Current Password, Step 2: New Password & Confirm
@@ -10,12 +12,12 @@ const PasswordReset = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
- const navigate=useNavigate()
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
-    email: '',
-    currentPassword: '',
-    newPassword: '',
-    confirmPassword: '',
+    email: "",
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
   });
 
   const [formErrors, setFormErrors] = useState<{
@@ -27,20 +29,22 @@ const PasswordReset = () => {
     email: [],
     currentPassword: [],
     newPassword: [],
-    confirmPassword: []
+    confirmPassword: [],
   });
   const [touched, setTouched] = useState({
     email: false,
     currentPassword: false,
     newPassword: false,
-    confirmPassword: false
+    confirmPassword: false,
   });
   const [isFocused, setIsFocused] = useState({
     email: false,
     currentPassword: false,
     newPassword: false,
-    confirmPassword: false
+    confirmPassword: false,
   });
+
+  const [resetKnownPass] = useResetKnownPassMutation();
 
   const validate = (
     name: keyof typeof formData,
@@ -54,51 +58,48 @@ const PasswordReset = () => {
       confirmPassword?: string[];
     } = {};
 
-    if (name === 'email') {
+    if (name === "email") {
       errors.email = [];
       if (!value) {
-        errors.email.push('Email is required');
+        errors.email.push("Email is required");
       } else if (!/\S+@\S+\.\S+/.test(value)) {
-        errors.email.push('Please enter a valid email address');
+        errors.email.push("Please enter a valid email address");
       }
     }
 
-    if (name === 'currentPassword') {
+    if (name === "currentPassword") {
       errors.currentPassword = [];
       if (!value) {
-        errors.currentPassword.push('Current password is required');
+        errors.currentPassword.push("Current password is required");
       }
     }
 
-    if (name === 'newPassword') {
+    if (name === "newPassword") {
       errors.newPassword = [];
       if (!value) {
-        errors.newPassword.push('New password is required');
+        errors.newPassword.push("New password is required");
       } else {
         if (!/[A-Z]/.test(value)) {
-          errors.newPassword.push('Include at least one uppercase letter');
+          errors.newPassword.push("Include at least one uppercase letter");
         }
         if (!/[0-9]/.test(value)) {
-          errors.newPassword.push('Include at least one number');
+          errors.newPassword.push("Include at least one number");
         }
         if (!/[!@#$%^&*(),.?":{}|<>]/.test(value)) {
-          errors.newPassword.push('Include one special character');
+          errors.newPassword.push("Include one special character");
         }
         if (value.length < 6) {
-          errors.newPassword.push('Minimum 6 characters');
-        }
-        if (value === formData.currentPassword) {
-          errors.newPassword.push('New password must be different from current password');
+          errors.newPassword.push("Minimum 6 characters");
         }
       }
     }
 
-    if (name === 'confirmPassword') {
+    if (name === "confirmPassword") {
       errors.confirmPassword = [];
       if (!value) {
-        errors.confirmPassword.push('Please confirm your new password');
+        errors.confirmPassword.push("Please confirm your new password");
       } else if (value !== formData.newPassword) {
-        errors.confirmPassword.push('Passwords do not match');
+        errors.confirmPassword.push("Passwords do not match");
       }
     }
 
@@ -107,56 +108,57 @@ const PasswordReset = () => {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
 
     const errors = validate(name as keyof typeof formData, value, false);
-    setFormErrors(prev => ({
+    setFormErrors((prev) => ({
       ...prev,
-      [name]: errors[name as keyof typeof errors] || []
+      [name]: errors[name as keyof typeof errors] || [],
     }));
   };
 
-  const handleFocus = (e:ChangeEvent<HTMLInputElement>) => {
+  const handleFocus = (e: ChangeEvent<HTMLInputElement>) => {
     const { name } = e.target;
-    setIsFocused(prev => ({ ...prev, [name]: true }));
-    setTouched(prev => ({ ...prev, [name]: true }));
+    setIsFocused((prev) => ({ ...prev, [name]: true }));
+    setTouched((prev) => ({ ...prev, [name]: true }));
   };
 
-  const handleBlur = (e:ChangeEvent<HTMLInputElement>) => {
+  const handleBlur = (e: ChangeEvent<HTMLInputElement>) => {
     const { name } = e.target;
-    setIsFocused(prev => ({ ...prev, [name]: false }));
+    setIsFocused((prev) => ({ ...prev, [name]: false }));
   };
 
   const getBorderColor = (field: keyof typeof formErrors) => {
     if (!touched[field] || isFocused[field]) {
-      return 'border-[#022F40]';
+      return "border-[#022F40]";
     }
     return formErrors[field]?.length
-      ? 'border-red-500 placeholder-red-500'
-      : 'border-green-500 placeholder-green-500';
+      ? "border-red-500 placeholder-red-500"
+      : "border-green-500 placeholder-green-500";
   };
 
   const handleContinue = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
-    // Validate step 1 fields
-    const emailErrors = validate('email', formData.email, true);
-    const currentPassErrors = validate('currentPassword', formData.currentPassword, true);
+    const emailErrors = validate("email", formData.email, true);
+    const currentPassErrors = validate("currentPassword", formData.currentPassword, true);
 
     const step1Errors = {
       email: emailErrors.email || [],
       currentPassword: currentPassErrors.currentPassword || [],
       newPassword: [],
-      confirmPassword: []
+      confirmPassword: [],
     };
 
     setFormErrors(step1Errors);
 
-    const hasErrors = Object.values(step1Errors).some(errorArray => errorArray.length > 0);
+    const hasErrors = Object.values(step1Errors).some(
+      (errorArray) => errorArray.length > 0
+    );
 
     if (hasErrors) {
       setIsLoading(false);
@@ -164,43 +166,68 @@ const PasswordReset = () => {
     }
 
     try {
-      // Simulate API call to verify current credentials
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Start transition
-      setIsTransitioning(true);
-      
-      // Wait for fade out
-      setTimeout(() => {
-        setCurrentStep(2);
-        setIsTransitioning(false);
-      }, 300);
-      
-    } catch (error) {
-      alert('Failed to verify credentials. Please try again.');
+      const res = await resetKnownPass({
+        email: formData.email,
+        password: formData.currentPassword,
+        confirmPassword: formData.currentPassword, // Use currentPassword as confirmPassword for verification
+      }).unwrap();
+
+      if (res) {
+        setIsTransitioning(true);
+        setTimeout(() => {
+          setCurrentStep(2);
+          setIsTransitioning(false);
+          setFormErrors({
+            email: [],
+            currentPassword: [],
+            newPassword: [],
+            confirmPassword: [],
+          });
+        }, 100);
+      }
+    } catch (error: any) {
+      toast.error(error?.data?.message || "Failed to verify credentials");
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleResetPassword = async (
+    email: string,
+    password: string,
+    confirmPassword: string
+  ) => {
+    if (password !== confirmPassword) {
+      toast.error("Passwords do not match");
+      return;
+    }
+    const message = await resetKnownPass({
+      email,
+      password,
+      confirmPassword,
+    }).unwrap();
+    return message;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
-    // Validate step 2 fields
-    const newPassErrors = validate('newPassword', formData.newPassword, true);
-    const confirmPassErrors = validate('confirmPassword', formData.confirmPassword, true);
+    const newPassErrors = validate("newPassword", formData.newPassword, true);
+    const confirmPassErrors = validate("confirmPassword", formData.confirmPassword, true);
 
     const step2Errors = {
       email: [],
       currentPassword: [],
       newPassword: newPassErrors.newPassword || [],
-      confirmPassword: confirmPassErrors.confirmPassword || []
+      confirmPassword: confirmPassErrors.confirmPassword || [],
     };
 
     setFormErrors(step2Errors);
 
-    const hasErrors = Object.values(step2Errors).some(errorArray => errorArray.length > 0);
+    const hasErrors = Object.values(step2Errors).some(
+      (errorArray) => errorArray.length > 0
+    );
 
     if (hasErrors) {
       setIsLoading(false);
@@ -208,35 +235,38 @@ const PasswordReset = () => {
     }
 
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Show success message
-      alert('Password reset successful!');
-      
-      // Reset form and go back to step 1
+      const message = await handleResetPassword(
+        formData.email,
+        formData.newPassword,
+        formData.confirmPassword
+      );
+
+      if (message) {
+        toast.success("Password reset successful");
+        navigate("/login");
+      }
+
       setFormData({
-        email: '',
-        currentPassword: '',
-        newPassword: '',
-        confirmPassword: '',
+        email: "",
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: "",
       });
       setFormErrors({
         email: [],
         currentPassword: [],
         newPassword: [],
-        confirmPassword: []
+        confirmPassword: [],
       });
       setTouched({
         email: false,
         currentPassword: false,
         newPassword: false,
-        confirmPassword: false
+        confirmPassword: false,
       });
-      setCurrentStep(1);
-      
     } catch (error) {
-      alert('Failed to reset password. Please try again.');
+      toast.error("Failed to reset password. Please try again.");
+      setCurrentStep(1);
     } finally {
       setIsLoading(false);
     }
@@ -251,14 +281,9 @@ const PasswordReset = () => {
         email: [],
         currentPassword: [],
         newPassword: [],
-        confirmPassword: []
-      }); // Clear step 2 errors when going back
+        confirmPassword: [],
+      });
     }, 300);
-  };
-
-  const handleLoginNavigation = () => {
-    console.log('Navigate to login');
-    // In your actual app, replace with: navigate('/login')
   };
 
   return (
@@ -274,43 +299,66 @@ const PasswordReset = () => {
             Reset Password
           </h1>
 
-          <p className="text-sm text-gray-600 mb-8">
-            {currentStep === 1 
-              ? "Verify your current credentials" 
-              : "Set your new password"
-            }
+          <p className="text-sm text-gray-600 mb-4">
+            {currentStep === 1
+              ? "Verify your current credentials"
+              : "Set your new password"}
           </p>
 
           {/* Step indicator */}
-          <div className="flex justify-center mb-6">
+          <div className="flex justify-center mb-6 ">
             <div className="flex items-center space-x-2">
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold ${
-                currentStep === 1 ? 'bg-[#022F40] text-white' : 'bg-green-500 text-white'
-              }`}>
-                {currentStep === 1 ? '1' : '✓'}
+              <div
+                className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold ${
+                  currentStep === 1
+                    ? "bg-[#022F40] text-white"
+                    : "bg-gray-200 text-[#022F40]"
+                }`}
+              >
+                {currentStep === 1 ? "1" : "✓"}
               </div>
               <div className="w-12 h-1 bg-gray-300">
-                <div className={`h-full bg-[#022F40] transition-all duration-500 ${
-                  currentStep === 2 ? 'w-full' : 'w-0'
-                }`}></div>
+                <div
+                  className={`h-full bg-[#022F40] transition-all duration-500 ${
+                    currentStep === 2 ? "w-full" : "w-0"
+                  }`}
+                ></div>
               </div>
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold ${
-                currentStep === 2 ? 'bg-[#022F40] text-white' : 'bg-gray-300 text-gray-500'
-              }`}>
+              <div
+                className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold ${
+                  currentStep === 2
+                    ? "bg-[#022F40] text-white"
+                    : "bg-gray-300 text-gray-500"
+                }`}
+              >
                 2
               </div>
             </div>
           </div>
 
-          <div className={`transition-all duration-300 ${isTransitioning ? 'opacity-0 transform translate-x-4' : 'opacity-100 transform translate-x-0'}`}>
+          <div
+            className={`transition-all duration-300 ${
+              isTransitioning
+                ? "opacity-0 transform translate-x-4"
+                : "opacity-100 transform translate-x-0"
+            }`}
+          >
             {currentStep === 1 ? (
               // Step 1: Email and Current Password
               <>
                 {/* Email Input */}
-                <div className={`w-[90%] mx-auto mb-3 flex items-center bg-white border rounded-md p-2 transition-colors duration-200 ${getBorderColor('email')}`}>
-                  <svg className="w-5 h-5 mr-3 text-[#022F40]" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"/>
-                    <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"/>
+                <div
+                  className={`w-[90%] mx-auto mb-3 flex items-center bg-white border rounded-md p-2 transition-colors duration-200 ${getBorderColor(
+                    "email"
+                  )}`}
+                >
+                  <svg
+                    className="w-5 h-5 mr-3 text-[#022F40]"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
+                    <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
                   </svg>
                   <input
                     type="email"
@@ -332,10 +380,14 @@ const PasswordReset = () => {
                 )}
 
                 {/* Current Password Input */}
-                <div className={`relative w-[90%] flex items-center bg-white border mx-auto rounded-md p-2 transition-colors duration-200 ${getBorderColor('currentPassword')}`}>
+                <div
+                  className={`relative w-[90%] flex items-center bg-white border mx-auto rounded-md p-2 transition-colors duration-200 ${getBorderColor(
+                    "currentPassword"
+                  )}`}
+                >
                   <IoIosLock className="text-[#022F40] w-5 h-5 mr-2" />
                   <input
-                    type={showCurrentPassword ? 'text' : 'password'}
+                    type={showCurrentPassword ? "text" : "password"}
                     name="currentPassword"
                     value={formData.currentPassword}
                     onChange={handleChange}
@@ -346,19 +398,20 @@ const PasswordReset = () => {
                   />
                   <button
                     type="button"
-                    onClick={() => setShowCurrentPassword(prev => !prev)}
+                    onClick={() => setShowCurrentPassword((prev) => !prev)}
                     className="absolute right-3 text-[#022F40] focus:outline-none hover:text-slate-500"
                   >
                     {showCurrentPassword ? <FaEyeSlash /> : <FaEye />}
                   </button>
                 </div>
-                {formErrors.currentPassword && formErrors.currentPassword.length > 0 && (
-                  <ul className="text-left mt-2 mb-3 text-sm text-red-600 list-disc pl-9 space-y-1">
-                    {formErrors.currentPassword.map((err, i) => (
-                      <li key={i}>{err}</li>
-                    ))}
-                  </ul>
-                )}
+                {formErrors.currentPassword &&
+                  formErrors.currentPassword.length > 0 && (
+                    <ul className="text-left mt-2 mb-3 text-sm text-red-600 list-disc pl-9 space-y-1">
+                      {formErrors.currentPassword.map((err, i) => (
+                        <li key={i}>{err}</li>
+                      ))}
+                    </ul>
+                  )}
 
                 {/* Continue Button */}
                 <div className="w-[90%] mx-auto mt-6">
@@ -367,15 +420,15 @@ const PasswordReset = () => {
                     onClick={handleContinue}
                     disabled={isLoading}
                     className={`w-full p-2 cursor-pointer text-white bg-[#022F40] rounded-md shadow hover:bg-white hover:text-[#022F40] transition-all duration-300 border border-[#022F40] hover:border-[#022F40] ${
-                      isLoading 
-                        ? 'bg-white text-[#022F40] border border-[#022F40] cursor-not-allowed opacity-50'
-                        : 'bg-[#022F40] border border-white hover:bg-white hover:text-[#022F40]'
+                      isLoading
+                        ? "bg-white text-[#022F40] border border-[#022F40] cursor-not-allowed opacity-50"
+                        : "bg-[#022F40] border border-white hover:bg-white hover:text-[#022F40]"
                     }`}
                   >
                     {isLoading ? (
                       <span className="w-5 h-5 border-2 border-dashed border-current border-t-transparent rounded-full animate-spin inline-block"></span>
                     ) : (
-                      'Continue'
+                      "Continue"
                     )}
                   </button>
                 </div>
@@ -384,10 +437,14 @@ const PasswordReset = () => {
               // Step 2: New Password and Confirm Password
               <>
                 {/* New Password Input */}
-                <div className={`relative w-[90%] mx-auto mb-3 flex items-center bg-white border rounded-md p-2 ${getBorderColor('newPassword')}`}>
+                <div
+                  className={`relative w-[90%] mx-auto mb-3 flex items-center bg-white border rounded-md p-2 ${getBorderColor(
+                    "newPassword"
+                  )}`}
+                >
                   <IoIosLock className="text-[#022F40] w-5 h-5 mr-2" />
                   <input
-                    type={showNewPassword ? 'text' : 'password'}
+                    type={showNewPassword ? "text" : "password"}
                     name="newPassword"
                     value={formData.newPassword}
                     onChange={handleChange}
@@ -398,25 +455,30 @@ const PasswordReset = () => {
                   />
                   <button
                     type="button"
-                    onClick={() => setShowNewPassword(prev => !prev)}
+                    onClick={() => setShowNewPassword((prev) => !prev)}
                     className="absolute right-3 text-[#022F40] focus:outline-none hover:text-slate-500"
                   >
                     {showNewPassword ? <FaEyeSlash /> : <FaEye />}
                   </button>
                 </div>
-                {formErrors.newPassword && formErrors.newPassword.length > 0 && (
-                  <ul className="text-left mt-2 mb-3 text-sm text-red-600 list-disc pl-9 space-y-1">
-                    {formErrors.newPassword.map((err, i) => (
-                      <li key={i}>{err}</li>
-                    ))}
-                  </ul>
-                )}
+                {formErrors.newPassword &&
+                  formErrors.newPassword.length > 0 && (
+                    <ul className="text-left mt-2 mb-3 text-sm text-red-600 list-disc pl-9 space-y-1">
+                      {formErrors.newPassword.map((err, i) => (
+                        <li key={i}>{err}</li>
+                      ))}
+                    </ul>
+                  )}
 
                 {/* Confirm Password Input */}
-                <div className={`relative w-[90%] mx-auto mb-3 flex items-center bg-white border rounded-md p-2 ${getBorderColor('confirmPassword')}`}>
+                <div
+                  className={`relative w-[90%] mx-auto mb-3 flex items-center bg-white border rounded-md p-2 ${getBorderColor(
+                    "confirmPassword"
+                  )}`}
+                >
                   <IoIosLock className="text-[#022F40] w-5 h-5 mr-2" />
                   <input
-                    type={showConfirmPassword ? 'text' : 'password'}
+                    type={showConfirmPassword ? "text" : "password"}
                     name="confirmPassword"
                     value={formData.confirmPassword}
                     onChange={handleChange}
@@ -427,23 +489,24 @@ const PasswordReset = () => {
                   />
                   <button
                     type="button"
-                    onClick={() => setShowConfirmPassword(prev => !prev)}
+                    onClick={() => setShowConfirmPassword((prev) => !prev)}
                     className="absolute right-3 text-[#022F40] focus:outline-none hover:text-slate-500"
                   >
                     {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
                   </button>
                 </div>
-                {formErrors.confirmPassword && formErrors.confirmPassword.length > 0 && (
-                  <ul className="text-left ml-5 mt-2 mb-3 text-sm text-red-600 list-disc pl-5 space-y-1">
-                    {formErrors.confirmPassword.map((err, i) => (
-                      <li key={i}>{err}</li>
-                    ))}
-                  </ul>
-                )}
+                {formErrors.confirmPassword &&
+                  formErrors.confirmPassword.length > 0 && (
+                    <ul className="text-left ml-5 mt-2 mb-3 text-sm text-red-600 list-disc pl-5 space-y-1">
+                      {formErrors.confirmPassword.map((err, i) => (
+                        <li key={i}>{err}</li>
+                      ))}
+                    </ul>
+                  )}
 
                 {/* Action Buttons */}
                 <div className="w-[90%] h-10 mx-auto flex gap-2 mt-6 space-y-3">
-                <button
+                  <button
                     type="button"
                     onClick={handleBack}
                     disabled={isLoading}
@@ -453,24 +516,22 @@ const PasswordReset = () => {
                     <FaArrowLeft className="w-4 h-4" />
                     Back
                   </button>
-                  <button 
+                  <button
                     type="button"
                     onClick={handleSubmit}
                     disabled={isLoading}
                     className={`w-[50%]  h-full  cursor-pointer text-white bg-[#022F40] rounded-md shadow hover:bg-white hover:text-[#022F40] transition-all duration-300 border border-[#022F40] hover:border-[#022F40] ${
-                      isLoading 
-                        ? 'bg-white text-[#022F40] border border-[#022F40] cursor-not-allowed opacity-50'
-                        : 'bg-[#022F40] border border-white hover:bg-white hover:text-[#022F40]'
+                      isLoading
+                        ? "bg-white text-[#022F40] border border-[#022F40] cursor-not-allowed opacity-50"
+                        : "bg-[#022F40] border border-white hover:bg-white hover:text-[#022F40]"
                     }`}
                   >
                     {isLoading ? (
                       <span className=" border-2 border-dashed border-current border-t-transparent rounded-full animate-spin inline-block"></span>
                     ) : (
-                      'Update'
+                      "Update"
                     )}
                   </button>
-                  
-                
                 </div>
               </>
             )}
@@ -478,7 +539,10 @@ const PasswordReset = () => {
 
           <div className="flex gap-2 justify-center mt-6 text-sm">
             <p className="text-gray-600">Remember your password?</p>
-            <button onClick={()=>navigate('/login')} className="text-[#022F40] cursor-pointer hover:underline">
+            <button
+              onClick={() => navigate("/login")}
+              className="text-[#022F40] cursor-pointer hover:underline"
+            >
               Back to Login
             </button>
           </div>

@@ -1,13 +1,12 @@
 import { IsEmail, IsString } from "class-validator";
 
-export class ResetPassword{
+export class ResetKnownPassDto{
     @IsEmail()
     email:string;
+
     @IsString()
     password:string;
 
     @IsString()
-    confirmPassword:string;
-
-   
+    confirmPassword:string
 }

@@ -292,7 +292,7 @@ const Login = () => {
           </div>
 
           {/* Divider */}
-          <div className="flex items-center w-[90%] mx-auto mt-6 mb-4">
+          <div className="flex items-center w-[90%] mx-auto mt-3">
             <div className="flex-grow border-t border-gray-300"></div>
             <span className="px-3 text-sm text-gray-500">or</span>
             <div className="flex-grow border-t border-gray-300"></div>

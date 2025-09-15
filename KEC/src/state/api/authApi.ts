@@ -1,86 +1,100 @@
-import { apiSlice } from "./apiSlice";
+// src/state/api/authApi.ts
+import * as apiCore from './apiSlice';
 
 interface UserState {
   id: string;
   name: string;
   email: string;
   isVerified: boolean;
-  role: "user" | "admin";
+  role: 'user' | 'admin';
 }
+
 export interface SignUpRequest {
   firstName: string;
   lastName: string;
   email: string;
   password: string;
-  csrfToken: string;
 }
 
-export const authApi = apiSlice.injectEndpoints({
+export const authApi = apiCore.apiSlice.injectEndpoints({
   endpoints: (builder) => ({
     getUser: builder.query<UserState, void>({
-      query: () => "auth/me",
-      providesTags: ["User"],
+      query: () => 'auth/me',
+      providesTags: ['User'],
     }),
-    signup: builder.mutation<any, SignUpRequest>({
-      query: ({ csrfToken, ...body }) => ({
-        url: "student/create",
-        method: "POST",
-        headers: { "X-CSRF-TOKEN": csrfToken },
+    signup: builder.mutation<
+      { message: string; student: { id: number; email: string; firstName: string; lastName: string } },
+      SignUpRequest
+    >({
+      query: (body) => ({
+        url: 'student/create',
+        method: 'POST',
         body,
       }),
     }),
-
     login: builder.mutation<
       any,
-      { email: string; password: string; csrfToken: string }
+      { email: string; password: string }
     >({
-      query: ({ email, password, csrfToken }) => ({
-        url: "auth/login",
-        method: "POST",
-        headers: { "X-CSRF-Token": csrfToken },
+      query: ({ email, password }) => ({
+        url: 'auth/login',
+        method: 'POST',
         body: { email, password },
       }),
-      invalidatesTags: ["User"],
+      invalidatesTags: ['User'],
     }),
     logout: builder.mutation<void, void>({
       query: () => ({
-        url: "auth/logout",
-        method: "POST",
+        url: 'auth/logout',
+        method: 'POST',
       }),
-      invalidatesTags: ["User"],
+      invalidatesTags: ['User'],
+      async onQueryStarted(_, { queryFulfilled }) {
+        try {
+          await queryFulfilled;
+          apiCore.resetCsrfToken(); // Reset cached CSRF token on logout
+        } catch (error) {
+          console.error('Logout failed:', error);
+        }
+      },
     }),
     requestPasswordReset: builder.mutation<
-      {message:string},
-      { email: string; csrfToken: string }
+      { message: string },
+      { email: string }
     >({
-      query: ({ email, csrfToken }) => ({
-        url: "auth/requestCode",
-        method: "POST",
-        headers: { "X-CSRF-Token": csrfToken },
+      query: ({ email }) => ({
+        url: 'auth/requestCode',
+        method: 'POST',
         body: { email },
       }),
     }),
-    verifyReset: builder.mutation<{email:string},{ email: string; token: string; csrfToken: string }>({
-      query: ({ email, token, csrfToken }) => ({
-        url: "auth/verifyResetCode",
-        method: "POST",
-        headers: { "X-CSRF-Token": csrfToken },
-        body: { email, token },
+    verifyReset: builder.mutation<
+      { email: string },
+      { email: string; code: string }
+    >({
+      query: ({ email, code }) => ({
+        url: 'auth/verifyResetCode',
+        method: 'POST',
+        body: { email, code },
       }),
     }),
     resetPassword: builder.mutation<
-      {message:string},
-      {
-        email: string;
-        password: string;
-        confirmPassword: string;
-        csrfToken: string;
-      }
+      { message: string },
+      { email: string; password: string; confirmPassword: string }
     >({
-      query: ({ email, password, confirmPassword, csrfToken }) => ({
-        url: "auth/resetPassword",
-        method: "POST",
-        headers: { "X-CSRF-Token": csrfToken },
+      query: ({ email, password, confirmPassword }) => ({
+        url: 'auth/resetPassword',
+        method: 'POST',
+        body: { email, password, confirmPassword },
+      }),
+    }),
+    resetKnownPass: builder.mutation<
+      { message: string },
+      { email: string; password: string; confirmPassword: string }
+    >({
+      query: ({ email, password, confirmPassword }) => ({
+        url: 'auth/resetKnownPassword',
+        method: 'POST',
         body: { email, password, confirmPassword },
       }),
     }),
@@ -95,4 +109,5 @@ export const {
   useRequestPasswordResetMutation,
   useVerifyResetMutation,
   useResetPasswordMutation,
+  useResetKnownPassMutation,
 } = authApi;
