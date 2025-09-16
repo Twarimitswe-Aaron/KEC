@@ -70,7 +70,7 @@ const Dashboard = () => {
   };
 
   if (state.isLoading) {
-    return <div className="flex justify-center items-center h-screen">Loading...</div>;
+    return <div className="flex  justify-center items-center h-screen">Loading...</div>;
   }
 
   if (state.error) {
@@ -79,8 +79,8 @@ const Dashboard = () => {
 
   return (
     <div className="p-6">
-      <DashboardStats />
-      
+      {/* <DashboardStats />
+       */}
       {(userRole === "admin" || userRole === "teacher") && (
         <>
           <GrapshSection />

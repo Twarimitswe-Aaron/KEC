@@ -123,7 +123,7 @@ const Login = () => {
       await login({
         email: formData.email,
         password: formData.password,
-        csrfToken,
+      
       }).unwrap();
       toast.success("Login successful!");
       navigate("/dashboard");

@@ -34,7 +34,7 @@ export class AuthService {
     const correctPassword = await bcrypt.compare(password, user.password);
     if (!correctPassword) {
 
-      console.log("Incorrect password");
+
       throw new UnauthorizedException('Invalid credentials');
     }
   

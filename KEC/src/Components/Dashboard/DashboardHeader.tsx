@@ -1,13 +1,38 @@
 import { FiSearch } from "react-icons/fi";
 import { IoMdNotificationsOutline } from "react-icons/io";
 import { FaBars } from "react-icons/fa6";
+import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
 
 
 interface DashboardHeaderProps {
   onHamburgerClick?: () => void; // This toggles sidebar open state
+  searchQuery: string;
+  setSearchQuery: Dispatch<SetStateAction<string>>;
 }
 
-const DashboardHeader = ({ onHamburgerClick }: DashboardHeaderProps) => {
+
+const DashboardHeader = ({ onHamburgerClick, searchQuery, setSearchQuery }: DashboardHeaderProps) => {
+  const searchRef=useRef<HTMLDivElement | null>(null);
+  const [searchActive,setSearchActive]=useState(false);
+
+  useEffect(()=>{
+   const handleClickOutside=(event: MouseEvent)=>{
+    if(searchRef.current && !searchRef.current.contains(event.target as Node)){
+      setSearchActive(false)
+
+    }
+
+    if(searchActive){
+      document.addEventListener("mousedown",handleClickOutside)
+    }else{
+      document.removeEventListener("mousedown",handleClickOutside)
+    }
+
+    return ()=> document.removeEventListener("mousedown",handleClickOutside) 
+   }
+
+
+  })
   return (
     <header className="flex z-20 flex-row  md:flex-row !w-full items-center justify-between  gap-2 p-4 bg-white shadow rounded-xl ">
       {/* Hamburger for mobile - only change is using onHamburgerClick */}
@@ -26,9 +51,11 @@ const DashboardHeader = ({ onHamburgerClick }: DashboardHeaderProps) => {
       </div>
 
       {/* Middle: Search */}
-      <div className="relative w-full md:flex-1 items-center min-w-[180px] sm:block hidden max-w-md">
+      <div ref={searchRef} className="relative w-full md:flex-1 items-center min-w-[180px] sm:block hidden max-w-md">
         <input
           type="text"
+          value={searchQuery}
+          onChange={(e)=>setSearchQuery(e.target.value)}
           placeholder="Search anything here..."
           className="w-full pl-4 pr-10 py-2 text-sm rounded-md border border-gray-200 shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
         />

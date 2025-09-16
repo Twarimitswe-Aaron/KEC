@@ -106,7 +106,7 @@ const Sidebar = ({ isMobileOpen, onClose }: SidebarProps) => {
 
   return (
     <div
-      className={`h-screen sticky top-0 lg:w-full flex  flex-col transition-all  duration-300 shadow-lg bg-[#F5FAFF] p-5
+      className={`h-screen  sticky top-0 lg:w-full flex  flex-col transition-all  duration-300 shadow-lg bg-[#F5FAFF] p-5
         ${sidebarWidth}  top-0 left-0 rounded-r-xl z-30
         ${isMobileOpen ? " top-0 left-0 z-50" : ""}
        

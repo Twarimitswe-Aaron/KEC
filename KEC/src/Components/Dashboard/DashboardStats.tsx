@@ -79,7 +79,7 @@ const DashboardStats = () => {
   // Show skeleton loader while stats are loading
   if (!stats && userRole !== "student") {
     return (
-      <div className="flex space-x-3 px-6 py-8 overflow-x-auto">
+      <div className="flex space-x-3 px-6 py-8 overflow-x-hidden">
         {Array.from({ length: 4 }).map((_, i) => (
           <div
             key={i}
@@ -152,9 +152,9 @@ const DashboardStats = () => {
   }
 
   return (
-    <div className="z-1 w-full overflow-x-auto hide-scrollbar">
+    <div className="z-1 w-[full] overflow-x-hidden hide-scrollbar">
       {userRole === "admin" && (
-        <div className="keen-slider max-w-screen-xl" ref={sliderRef}>
+        <div className="keen-slider max-w-screen-md" ref={sliderRef}>
           {statCards.map((card, index) => ( 
             <div
               key={index}
