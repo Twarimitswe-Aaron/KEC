@@ -11,6 +11,9 @@ import { CleanupService } from './cleanup/cleanup.service';
 import { UserModule } from './user/user.module';
 import { CsrfController } from './csrf/csrf.controller';
 import { CsrfModule } from './csrf/csrf.module';
+import { DashboardModule } from './dashboard/dashboard.module';
+import { PaymentModule } from './payment/payment.module';
+import { UserManagementModule } from './user-management/user-management.module';
 
 @Module({
   imports: [
@@ -23,6 +26,9 @@ import { CsrfModule } from './csrf/csrf.module';
     ScheduleModule.forRoot(),
     UserModule,
     CsrfModule,
+    DashboardModule,
+    PaymentModule,
+    UserManagementModule,
   ],
   controllers: [AppController, CsrfController],
   providers: [AppService, PrismaService, CleanupService],
