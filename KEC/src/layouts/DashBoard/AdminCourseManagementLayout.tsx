@@ -459,7 +459,7 @@ const AdminCourseManagementLayout: React.FC = () => {
         <div className="flex justify-around gap-4 items-center max-w-6xl mx-auto">
           <div onClick={()=>navigate("/course-management/requestedCourses")} className="flex text-center items-center gap-3 px-4 py-3 border-[#004e64]/20 shadow-lg rounded-md hover:shadow-xl transition-all duration-300 cursor-pointer group">
             <GitPullRequest className="text-[#004e64] text-sm group-hover:scale-110 transition-transform" />
-            <span className="text-[#004e64] hidden sm:inline">
+            <span className="text-[#004e64] hidden sm:inline ">
               Requested 
             </span>
           </div>
@@ -469,21 +469,21 @@ const AdminCourseManagementLayout: React.FC = () => {
             className="flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-[#004e64] via-[#025d75] to-[#022F40] text-white font-semibold rounded-md shadow-lg cursor-pointer hover:shadow-xl transition-all duration-300 transform hover:scale-105 hover:-translate-y-1"
           >
             <Plus className="text-lg" />
-            <span className="hidden sm:inline">Course</span>
+            <span className="hidden sm:inline ">Course</span>
           </button>
 
           <div onClick={()=>{
             navigate("/course-management");
           }} className="flex items-center gap-3 px-6 py-3 shadow-lg rounded-md hover:shadow-xl transition-all duration-300 cursor-pointer group">
             <Upload className="text-[#004e64] text-xl group-hover:scale-110 transition-transform" />
-            <span className="text-[#004e64] hidden sm:inline">
+            <span className="text-[#004e64] hidden sm:inline ">
               Uploaded 
             </span>
           </div>
 
           <div onClick={() => navigate("/course-management/students")} className="flex items-center gap-3 px-6 py-3 shadow-lg rounded-md hover:shadow-xl transition-all duration-300 cursor-pointer group">
             <FaUserGraduate className="text-[#004e64] text-xl group-hover:scale-110 transition-transform" />
-            <span className="text-[#004e64] hidden sm:inline">
+            <span className="text-[#004e64] hidden  lg:hidden md:inline">
               Students <span className="font-bold text-md"></span>
             </span>
           </div>

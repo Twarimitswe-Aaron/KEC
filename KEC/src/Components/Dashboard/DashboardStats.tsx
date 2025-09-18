@@ -237,20 +237,7 @@ const DashboardStats = () => {
         ))}
       </div>
 
-      {/* dots (optional) */}
-      <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex gap-2">
-        {slides.map((_, idx) => (
-          <button
-            key={idx}
-            onClick={() => {
-              setCurrentIndex(idx);
-              setIsTransitioning(true);
-            }}
-            className={`w-3 h-3 rounded-full ${idx === currentIndex % slides.length ? "bg-blue-600" : "bg-gray-300"}`}
-            aria-label={`Go to slide ${idx + 1}`}
-          />
-        ))}
-      </div>
+    
     </div>
   );
 };
