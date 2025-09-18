@@ -79,8 +79,8 @@ const Dashboard = () => {
 
   return (
     <div className="p-6">
-      {/* <DashboardStats />
-       */}
+      <DashboardStats />
+      
       {(userRole === "admin" || userRole === "teacher") && (
         <>
           <GrapshSection />

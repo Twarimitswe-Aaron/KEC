@@ -17,7 +17,7 @@ const DashboardLayout = () => {
 
 
   return (
-    <UserRoleContext.Provider value="admin">
+    <UserRoleContext.Provider value="student">
       <SearchContext.Provider value={{searchQuery,setSearchQuery}}>
       <div className="w-full  min-h-screen flex">
         {/* Left Sidebar for md+ */}
