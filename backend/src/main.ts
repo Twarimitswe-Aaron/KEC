@@ -1,84 +1,142 @@
 import { NestFactory } from '@nestjs/core';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app.module';
+import { PrismaService } from './prisma/prisma.service';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
-import { doubleCsrf, type CsrfRequestMethod } from 'csrf-csrf';
-import type { Request, Response, NextFunction } from 'express';
 import { doubleCsrfProtection } from './csrf/csrf.config';
-import crypto from 'crypto';
+import * as crypto from 'crypto';
 import session from 'express-session';
+import Redis from 'ioredis';
+import { RedisStore } from 'connect-redis';
+import * as path from 'path';
+
+// Fix for crypto module - add this at the top
+if (typeof globalThis.crypto === 'undefined') {
+  globalThis.crypto = crypto as any;
+}
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, { abortOnError: false });
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
+    abortOnError: false,
+    logger: ['error', 'warn', 'log', 'debug']
+  });
 
-  // 1. CORS first
+
+
+  if (process.env.NODE_ENV === 'production') {
+    app.set('trust proxy', 1); // Important for security in production
+  }
+
+  // CORS configuration
   app.enableCors({
     origin: process.env.FRONTEND_URL ?? 'http://localhost:3000',
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
+    allowedHeaders: ['Content-Type', 'X-CSRF-Token', 'Authorization'],
   });
 
-  // 2. Parse cookies
+  // Cookie parsing
   app.use(cookieParser());
 
+  // Redis setup
+  const redisClient = new Redis({
+    host: '127.0.0.1', // Docker container name (use 'redis' instead of localhost)
+    port: 6379,
+    retryStrategy: (times) => Math.min(times * 50, 2000),
+    enableOfflineQueue: false,
+  });
 
+  redisClient.on('connect', () => console.log('✅ Connected to Redis'));
+  redisClient.on('error', (err) => console.error('❌ Redis error:', err));
+  redisClient.on('ready', () => console.log('✅ Redis ready'));
 
-
-
-
-  // 3. Session
-// Enable session middleware
-app.use(
-  session({
-    secret: process.env.SESSION_SECRET || 'fallback-session-secret-minimum-32-chars',
-    resave: false,
-    saveUninitialized: false, // Changed to true for initial testing
-    cookie: {
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      httpOnly: true,
-      maxAge: 24 * 60 * 60 * 1000,
-    },
-    name: 'sid',
-    genid: (req) => {
-      return crypto.randomBytes(16).toString('hex'); // Generate secure session IDs
-    }
-  }),
-);
-
-
-
-  // 5. CSRF AFTER cookies + session
-  app.use(doubleCsrfProtection);
-
-    // 4. Security headers
-    app.use(
-      helmet({
-        contentSecurityPolicy: {
-          directives: {
-            defaultSrc: ["'self"],
-            scriptSrc: ["'self"],
-          },
-        },
-      }),
-    );
-
-  // 6. Swagger
-  const config = new DocumentBuilder()
-    .setTitle('KEC API Documentation')
-    .setDescription('The KEC API description')
-    .setVersion('1.0')
-    .addTag('KEC')
-    .build();
-
-  const documentFactory = SwaggerModule.createDocument(app, config);
-  if (process.env.NODE_ENV !== 'production') {
-    SwaggerModule.setup('api', app, documentFactory);
+  // Test Redis connection
+  try {
+    const pingResult = await redisClient.ping();
+    console.log('✅ Redis ping successful:', pingResult);
+  } catch (error) {
+    console.error('❌ Redis ping failed:', error);
+    console.log('🔄 Falling back to memory store...');
+    await setupMemoryStore(app);
+    await startApp(app);
+    return;
   }
 
-  await app.listen(process.env.PORT ?? 4000);
+  const redisStoreInstance = new RedisStore({
+    client: redisClient,
+    prefix: 'sess:',
+    ttl: 86400,
+    disableTouch: false,
+  });
+
+  // Session configuration
+  app.use(
+    session({
+      store: redisStoreInstance,
+      secret: process.env.SESSION_SECRET || crypto.randomBytes(32).toString('hex'),
+      resave: false,
+      saveUninitialized: true,
+      cookie: {
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        httpOnly: true,
+        maxAge: 24 * 60 * 60 * 1000,
+      },
+      name: 'sid',
+      genid: (req) => crypto.randomBytes(16).toString('hex'),
+    }),
+  );
+
+  // CSRF Protection Middleware
+  app.use(doubleCsrfProtection()); // Add CSRF protection globally
+
+  await startApp(app);
 }
 
-bootstrap()
+// Start app after all middleware is set up
+async function startApp(app: NestExpressApplication) {
+  // Swagger setup (if needed)
+  const options = new DocumentBuilder()
+    .setTitle('Your API')
+    .setDescription('API documentation')
+    .setVersion('1.0')
+    .addTag('app')
+    .build();
+  const document = SwaggerModule.createDocument(app, options);
+  SwaggerModule.setup('swagger', app, document);
 
+  // Security
+  app.use(helmet());
+
+  await app.listen(4000, () => {
+    console.log('✅ Application is running on http://localhost:4000');
+  });
+}
+
+// Fallback to memory store in case Redis is unavailable
+async function setupMemoryStore(app: NestExpressApplication) {
+  const memoryStore = new session.MemoryStore();
+  app.use(
+    session({
+      store: memoryStore,
+      secret: process.env.SESSION_SECRET || crypto.randomBytes(32).toString('hex'),
+      resave: false,
+      saveUninitialized: true,
+      cookie: {
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        httpOnly: true,
+        maxAge: 24 * 60 * 60 * 1000,
+      },
+      name: 'sid',
+      genid: (req) => crypto.randomBytes(16).toString('hex'),
+    }),
+  );
+}
+
+bootstrap().catch((error) => {
+  console.error('❌ Bootstrap failed:', error);
+  process.exit(1);
+});

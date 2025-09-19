@@ -14,7 +14,9 @@ import { CsrfModule } from './csrf/csrf.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { PaymentModule } from './payment/payment.module';
 import { UserManagementModule } from './user-management/user-management.module';
-
+import { AnnouncementModule } from './announcement/announcement.module';
+import { APP_FILTER } from '@nestjs/core';
+import { CsrfExceptionFilter } from './filters/csrf-exception.filter';
 @Module({
   imports: [
     StudentModule,
@@ -29,8 +31,12 @@ import { UserManagementModule } from './user-management/user-management.module';
     DashboardModule,
     PaymentModule,
     UserManagementModule,
+    AnnouncementModule,
   ],
   controllers: [AppController, CsrfController],
-  providers: [AppService, PrismaService, CleanupService],
+  providers: [AppService, PrismaService, CleanupService,{
+    provide: APP_FILTER,
+    useClass: CsrfExceptionFilter,
+  },],
 })
 export class AppModule {}
