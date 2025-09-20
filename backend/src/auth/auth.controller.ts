@@ -238,4 +238,12 @@ export class AuthController {
   return {message:"Password reset successfull"}
 
   }
+
+  @Post('logout')
+  async logout(@Res({ passthrough: true }) res: Response) {
+    res.clearCookie('jwt_access', { path: '/' });
+    res.clearCookie('jwt_refresh', { path: '/' });
+    
+    return { message: 'Logged out successfully' };
+  }
 }

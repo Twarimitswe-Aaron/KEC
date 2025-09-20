@@ -5,6 +5,7 @@ import DashboardHeader from "../../Components/Dashboard/DashboardHeader";
 import RightSidebar from "../../Components/Dashboard/RightSidebar";
 import { UserRoleContext } from "../../UserRoleContext";
 import {SearchContext} from "../../SearchContext";
+import { useGetUserQuery, useLogoutMutation } from "../../state/api/authApi";
 
 const DashboardLayout = () => {
   const [logout, setLogout]=useState(false);
@@ -12,12 +13,22 @@ const DashboardLayout = () => {
   const toggleSidebar = () => setSidebarOpen((open) => !open);
   const closeSidebar = () => setSidebarOpen(false);
   const [searchQuery, setSearchQuery]=useState("");
-
-
+  const {data, isLoading} = useGetUserQuery ();
+  const [logoutUser] = useLogoutMutation();
+  
+  if (isLoading) return <div>Loading...</div>;
+  if (!data) {
+    if (!logout) {
+      logoutUser()
+      window.location.href = '/login';
+    }
+    return <div>Redirecting to login...</div>;
+  }
+  const {firstName,lastName,role,email} = data || {};
 
 
   return (
-    <UserRoleContext.Provider value="admin">
+    <UserRoleContext.Provider value={role}>
       <SearchContext.Provider value={{searchQuery,setSearchQuery}}>
       <div className="w-full  min-h-screen flex">
         {/* Left Sidebar for md+ */}

@@ -1,12 +1,13 @@
 // src/state/api/authApi.ts
 import * as apiCore from './apiSlice';
 
-interface UserState {
+export interface UserState {
   id: string;
-  name: string;
+  firstName: string;
+  lastName: string;
   email: string;
   isVerified: boolean;
-  role: 'user' | 'admin';
+  role: 'student' | 'admin' | 'teacher';
 }
 
 export interface SignUpRequest {
@@ -14,6 +15,7 @@ export interface SignUpRequest {
   lastName: string;
   email: string;
   password: string;
+
 }
 
 export const authApi = apiCore.apiSlice.injectEndpoints({
