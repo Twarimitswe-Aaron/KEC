@@ -72,6 +72,7 @@ export class AuthController {
         lastName: user.lastName,
         email: user.email,
         role: user.role,
+        isEmailVerified: user.isEmailVerified,
       };
     } catch (error) {
       throw new BadRequestException('Login failed');
@@ -243,7 +244,7 @@ export class AuthController {
   async logout(@Res({ passthrough: true }) res: Response) {
     res.clearCookie('jwt_access', { path: '/' });
     res.clearCookie('jwt_refresh', { path: '/' });
-    
+
     return { message: 'Logged out successfully' };
   }
 }

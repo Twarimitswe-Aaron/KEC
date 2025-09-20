@@ -6,7 +6,7 @@ export interface UserState {
   firstName: string;
   lastName: string;
   email: string;
-  isVerified: boolean;
+  isEmailVerified: boolean;
   role: 'student' | 'admin' | 'teacher';
 }
 
