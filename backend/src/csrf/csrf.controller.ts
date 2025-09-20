@@ -15,10 +15,10 @@ export class CsrfController {
       console.log('Generating CSRF token for session:', req.sessionID);
       console.log('Current session data:', req.session);
       
-      const token = generateCsrfToken(req, res); // Ensure your CSRF token generation is correct
-      console.log("✅ CSRF token generated");
+      const token = generateCsrfToken(req, res); 
+     
 
-      // Force session save to ensure persistence
+    
       req.session.save((err) => {
         if (err) {
           console.error('Session save error:', err);
@@ -31,7 +31,7 @@ export class CsrfController {
         });
       });
     } catch (error) {
-      console.error('❌ CSRF token generation failed:', error);
+ 
       return res.status(500).json({ 
         message: 'Failed to generate CSRF token',
         error: error.message 

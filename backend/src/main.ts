@@ -12,7 +12,7 @@ import Redis from 'ioredis';
 import { RedisStore } from 'connect-redis';
 import * as path from 'path';
 
-// Fix for crypto module - add this at the top
+
 if (typeof globalThis.crypto === 'undefined') {
   globalThis.crypto = crypto as any;
 }
@@ -23,13 +23,11 @@ async function bootstrap() {
     logger: ['error', 'warn', 'log', 'debug']
   });
 
-
-
   if (process.env.NODE_ENV === 'production') {
-    app.set('trust proxy', 1); // Important for security in production
+    app.set('trust proxy', 1); 
   }
 
-  // CORS configuration
+ 
   app.enableCors({
     origin: process.env.FRONTEND_URL ?? 'http://localhost:3000',
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
@@ -37,50 +35,53 @@ async function bootstrap() {
     allowedHeaders: ['Content-Type', 'X-CSRF-Token', 'Authorization'],
   });
 
-  // Cookie parsing
+ 
   app.use(cookieParser());
 
-  // Redis setup
+
+  app.use(helmet());
+
+
   const redisClient = new Redis({
-    host: '127.0.0.1', // Docker container name (use 'redis' instead of localhost)
-    port: 6379,
+    host: process.env.REDIS_HOST || '127.0.0.1',
+    port: parseInt(process.env.REDIS_PORT || '6379'),
     retryStrategy: (times) => Math.min(times * 50, 2000),
     enableOfflineQueue: false,
   });
 
-  redisClient.on('connect', () => console.log('✅ Connected to Redis'));
-  redisClient.on('error', (err) => console.error('❌ Redis error:', err));
-  redisClient.on('ready', () => console.log('✅ Redis ready'));
+  redisClient.on('connect', () => console.log('Connected to Redis'));
+  redisClient.on('error', (err) => console.error('Redis error:', err));
+  redisClient.on('ready', () => console.log('Redis ready'));
 
-  // Test Redis connection
+  let sessionStore;
+  
+
   try {
     const pingResult = await redisClient.ping();
-    console.log('✅ Redis ping successful:', pingResult);
+    console.log('Redis ping successful:', pingResult);
+    
+    sessionStore = new RedisStore({
+      client: redisClient,
+      prefix: 'sess:',
+      ttl: 86400,
+      disableTouch: false,
+    });
   } catch (error) {
-    console.error('❌ Redis ping failed:', error);
-    console.log('🔄 Falling back to memory store...');
-    await setupMemoryStore(app);
-    await startApp(app);
-    return;
+    console.error('Redis ping failed:', error);
+    console.log('Falling back to memory store...');
+    sessionStore = new session.MemoryStore();
   }
 
-  const redisStoreInstance = new RedisStore({
-    client: redisClient,
-    prefix: 'sess:',
-    ttl: 86400,
-    disableTouch: false,
-  });
 
-  // Session configuration
   app.use(
     session({
-      store: redisStoreInstance,
+      store: sessionStore,
       secret: process.env.SESSION_SECRET || crypto.randomBytes(32).toString('hex'),
       resave: false,
-      saveUninitialized: true,
+      saveUninitialized: false, 
       cookie: {
         secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
         httpOnly: true,
         maxAge: 24 * 60 * 60 * 1000,
       },
@@ -89,15 +90,15 @@ async function bootstrap() {
     }),
   );
 
-  // CSRF Protection Middleware
-  app.use(doubleCsrfProtection()); // Add CSRF protection globally
+  
+  app.use(doubleCsrfProtection());
 
   await startApp(app);
 }
 
-// Start app after all middleware is set up
+
 async function startApp(app: NestExpressApplication) {
-  // Swagger setup (if needed)
+
   const options = new DocumentBuilder()
     .setTitle('Your API')
     .setDescription('API documentation')
@@ -107,36 +108,12 @@ async function startApp(app: NestExpressApplication) {
   const document = SwaggerModule.createDocument(app, options);
   SwaggerModule.setup('swagger', app, document);
 
-  // Security
-  app.use(helmet());
-
   await app.listen(4000, () => {
-    console.log('✅ Application is running on http://localhost:4000');
+    console.log('Application is running on http://localhost:4000');
   });
 }
 
-// Fallback to memory store in case Redis is unavailable
-async function setupMemoryStore(app: NestExpressApplication) {
-  const memoryStore = new session.MemoryStore();
-  app.use(
-    session({
-      store: memoryStore,
-      secret: process.env.SESSION_SECRET || crypto.randomBytes(32).toString('hex'),
-      resave: false,
-      saveUninitialized: true,
-      cookie: {
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        httpOnly: true,
-        maxAge: 24 * 60 * 60 * 1000,
-      },
-      name: 'sid',
-      genid: (req) => crypto.randomBytes(16).toString('hex'),
-    }),
-  );
-}
-
 bootstrap().catch((error) => {
-  console.error('❌ Bootstrap failed:', error);
+  console.error('Bootstrap failed:', error);
   process.exit(1);
 });
