@@ -2,6 +2,7 @@ import React, { useContext } from "react";
 import { FaPeopleRoof } from "react-icons/fa6";
 import Rating from "./Rating";
 import { UserRoleContext, UserRole } from "../../UserRoleContext";
+import { Link } from "react-router-dom";
 
 const RightSidebar = () => {
   const userRole = useContext(UserRoleContext) as UserRole;
@@ -38,19 +39,21 @@ const RightSidebar = () => {
   ];
 
   return (
-    <aside className=" hidden md:block md:w-full top-0 sticky z-10  p-4 bg-white shadow-xl  rounded-xl space-y-6
+    <aside
+      className=" hidden md:block md:w-full top-0 sticky z-10  p-4 bg-white shadow-xl  rounded-xl space-y-6
     max-h-screen overflow-y-auto hover:overflow-y-scroll scroll-hide"
-  
-  >
+    >
       {/* Profile Section */}
       <div className="text-center flex justify-center items-center">
         <h2 className="text-lg font-semibold mb-2 capitalize">{userRole}</h2>
         <div className="mx-auto items-center flex gap-4">
-          <img
-            src="/images/user.png"
-            alt="Profile"
-            className="w-16 h-16 rounded-full object-cover mb-1"
-          />
+          <Link to="/my-account">
+            <img
+              src="/images/user.png"
+              alt="Profile"
+              className="w-16 h-16 rounded-full object-cover mb-1"
+            />
+          </Link>
           <div className="block">
             <h3 className="font-medium">Aaron</h3>
             <p className="text-sm text-gray-500"></p>
@@ -96,7 +99,9 @@ const RightSidebar = () => {
                       <span className="text-xs ml-auto">{loc.students}</span>
                     </div>
                   )}
-                  <span className="text-xs text-gray-500 ml-2">{loc.percent}</span>
+                  <span className="text-xs text-gray-500 ml-2">
+                    {loc.percent}
+                  </span>
                 </div>
               </li>
             ))}
@@ -120,9 +125,9 @@ const RightSidebar = () => {
               <img
                 src={ws.image}
                 alt={ws.name}
-                className="w-10 h-10 rounded-md object-cover"
+                className="w-10 h-10 rounded-md cursor-pointer object-cover"
               />
-              <span className="text-sm font-medium text-gray-700">
+              <span className="text-sm  font-medium text-gray-700">
                 {ws.name}
               </span>
             </li>

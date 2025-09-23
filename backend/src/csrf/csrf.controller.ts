@@ -1,12 +1,13 @@
 // src/csrf/csrf.controller.ts
 import { Controller, Get, Req, Res } from '@nestjs/common';
 import type { Request, Response } from 'express';
-import { generateCsrfToken } from './csrf.config'; // Make sure this function is correct
+import { generateCsrfToken } from './csrf.config'; 
 
 @Controller('csrf')
 export class CsrfController {
   @Get('token')
   async getCsrfToken(@Req() req: Request, @Res() res: Response) {
+    console.log('Received request for CSRF token');
     try {
       if (!req.session) {
         throw new Error('Session not initialized');
@@ -26,11 +27,11 @@ export class CsrfController {
         }
 
         return res.json({ 
-          csrfToken: token,
-          sessionId: req.sessionID 
+          csrfToken: token
         });
       });
     } catch (error) {
+      console.error(error)
  
       return res.status(500).json({ 
         message: 'Failed to generate CSRF token',

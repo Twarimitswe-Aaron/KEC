@@ -12,7 +12,7 @@ import { FcGoogle } from "react-icons/fc";
 
 const Signup = () => {
   const navigate = useNavigate();
-  const { getToken } = useCsrfToken();
+  // const { getToken } = useCsrfToken();
   const [signup] = useSignupMutation();
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -196,16 +196,18 @@ const Signup = () => {
     }
 
     // Fetch CSRF token
-    const csrfToken = await getToken();
-    if (!csrfToken) {
-      toast.error("Could not fetch CSRF token. Please try again.");
-      setIsLoading(false);
-      shakeForm();
-      return;
-    }
+    // const csrfToken = await getToken();
+    // if (!csrfToken) {
+    //   toast.error("Could not fetch CSRF token. Please try again.");
+    //   setIsLoading(false);
+    //   shakeForm();
+    //   return;
+    // }
 
     try {
-      const res = await signup({ ...formData, csrfToken }).unwrap();
+      const res = await signup({ ...formData,
+        //  csrfToken 
+        }).unwrap();
 
       // Success animation
       animateSuccess();

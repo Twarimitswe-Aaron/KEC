@@ -1,6 +1,5 @@
-import React, { useContext, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
-  FaHome,
   FaMapMarkerAlt,
   FaBriefcase,
   FaGraduationCap,
@@ -8,292 +7,443 @@ import {
   FaPhone,
   FaEnvelope,
   FaCamera,
-  FaPlus,
-  FaCheck,
-  FaTimes,
 } from "react-icons/fa";
-import { MdClose, MdEdit, MdDelete } from "react-icons/md";
-import { IconType } from "react-icons";
+import { MdClose, MdEdit } from "react-icons/md";
+import {
+  useGetUserQuery,
+  useLogoutMutation,
+  useUpdateProfileMutation,
+} from "../state/api/authApi";
+import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
 
 // Types
-type SectionKey = "work" | "education" | "currentCity" | "hometown";
-
 interface UserProfile {
   id: number;
-  name: string;
-  role: string;
-  avatar: string;
-  joinDate: string;
+  firstName: string;
+  lastName: string;
   email: string;
-  phone: string;
-  work: string[];
-  education: string[];
-  currentCity: string[];
-  hometown: string[];
+  role: string;
+  isEmailVerified: boolean;
+  profile: {
+    avatar?: string;
+    Work?: string;
+    Education?: string;
+    resident?: string;
+    phone?: string;
+    createdAt?: string;
+  } | null;
 }
 
-interface SectionConfig {
-  title: string;
-  icon: IconType;
-  data: string[];
-  setData: (newData: string[]) => void;
-  placeholder: string;
-  color: string;
+// Interface that matches what your backend expects
+interface UpdateProfileRequest {
+  firstName?: string;
+  lastName?: string;
+  profile?: {
+    Work?: string;
+    Education?: string;
+    resident?: string;
+    phone?: string;
+    createdAt?: string;
+    avatar?: string;
+  };
 }
-
-// Context (mock for demo)
-const UserRoleContext = React.createContext("admin");
 
 const ProfileComponent = () => {
-  const userRole = useContext(UserRoleContext);
-  
-  // Unified user state
-  const [user, setUser] = useState<UserProfile>({
-    id: 1,
-    name: "Twarimitswe Aaron",
-    role: userRole,
-    avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&fit=crop&crop=face",
-    joinDate: "Joined June 27, 2007",
-    email: "aarontwarimitswe@gmail.com",
-    phone: "+250 784 156 865",
-    work: ["Work in the new Technology Company"],
-    education: ["Studied in Kigali Secondary Education"],
-    currentCity: ["Lives in Gasabo, Rwanda"],
-    hometown: ["From Kigali, Gasabo, Rwanda"],
+  const [updateProfile] = useUpdateProfileMutation();
+  const [logout, setLogout] = useState(false);
+  const { data, isLoading, refetch } = useGetUserQuery();
+  const [logoutUser] = useLogoutMutation();
+  const navigate = useNavigate();
+
+  // Initialize formData with the structure your backend expects
+  const [formData, setFormData] = useState<UpdateProfileRequest>({
+    firstName: "",
+    lastName: "",
+    profile: {
+      Work: "",
+      Education: "",
+      resident: "",
+      phone: "",
+      createdAt: "",
+    }
   });
+  
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [avatarBase64, setAvatarBase64] = useState<string | null>(null);
 
-  // UI State
+  // Use local state to track the current user data for real-time updates
+  const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
+
+  // Update currentUser when data changes
+  useEffect(() => {
+    if (data) {
+      const userData: UserProfile = {
+        id: data.id || 0,
+        firstName: data.firstName || "",
+        lastName: data.lastName || "",
+        role: data.role || "",
+        email: data.email || "",
+        isEmailVerified: data.isEmailVerified || false,
+        profile: data.profile ? {
+          avatar: data.profile.avatar,
+          Work: data.profile.Work || data.profile.Work, // Handle both cases
+          Education: data.profile.Education || data.profile.Education,
+          resident: data.profile.resident,
+          phone: data.profile.phone,
+          createdAt: data.profile.createdAt,
+        } : null,
+      };
+      setCurrentUser(userData);
+
+      // Initialize form data
+      const initialFormData: UpdateProfileRequest = {
+        firstName: data.firstName || "",
+        lastName: data.lastName || "",
+        profile: {
+          Work: data.profile?.Work || data.profile?.Work || "",
+          Education: data.profile?.Education || data.profile?.Education || "",
+          resident: data.profile?.resident || "",
+          phone: data.profile?.phone || "",
+          createdAt: data.profile?.createdAt || "",
+        }
+      };
+      setFormData(initialFormData);
+      
+      if (data.profile?.avatar) {
+        setAvatarPreview(data.profile.avatar);
+      }
+    }
+  }, [data]);
+
+  // Handle unauthorized
+  useEffect(() => {
+    if (!isLoading && !data && !logout) {
+      logoutUser();
+      setLogout(true);
+      window.location.href = "/login";
+    }
+  }, [isLoading, data, logout, logoutUser]);
+
+  // Handle email not verified
+  useEffect(() => {
+    if (data && !data.isEmailVerified) {
+      setTimeout(() => {
+        toast.error("Your email is not verified. Please check your email!", {
+          autoClose: 5000,
+        });
+      }, 1500);
+    }
+  }, [data, navigate]);
+
+  const [imageError, setImageError] = useState(false);
   const [showModal, setShowModal] = useState(false);
-  const [activeSection, setActiveSection] = useState<SectionKey | null>(null);
-  const [editingIndex, setEditingIndex] = useState(-1);
-  const [tempValue, setTempValue] = useState("");
-
-  // Section configurations
-  const sections: Record<SectionKey, SectionConfig> = {
-    work: {
-      title: "Work",
-      icon: FaBriefcase,
-      data: user.work,
-      setData: (newData) => setUser({ ...user, work: newData }),
-      placeholder: "Add workplace...",
-      color: "from-blue-500 to-indigo-600"
-    },
-    education: {
-      title: "Education",
-      icon: FaGraduationCap,
-      data: user.education,
-      setData: (newData) => setUser({ ...user, education: newData }),
-      placeholder: "Add education...",
-      color: "from-emerald-500 to-teal-600"
-    },
-    currentCity: {
-      title: "Current City",
-      icon: FaHome,
-      data: user.currentCity,
-      setData: (newData) => setUser({ ...user, currentCity: newData }),
-      placeholder: "Add current city...",
-      color: "from-purple-500 to-pink-600"
-    },
-    hometown: {
-      title: "Hometown",
-      icon: FaMapMarkerAlt,
-      data: user.hometown,
-      setData: (newData) => setUser({ ...user, hometown: newData }),
-      placeholder: "Add hometown...",
-      color: "from-orange-500 to-red-600"
-    }
-  };
-
-  // Handlers
-  const handleAddItem = (sectionKey: SectionKey) => {
-    if (tempValue.trim()) {
-      sections[sectionKey].setData([...sections[sectionKey].data, tempValue.trim()]);
-      setTempValue("");
-      setActiveSection(null);
-    }
-  };
-
-  const handleEditItem = (sectionKey: SectionKey, index: number) => {
-    if (tempValue.trim()) {
-      const newData = [...sections[sectionKey].data];
-      newData[index] = tempValue.trim();
-      sections[sectionKey].setData(newData);
-    }
-    setEditingIndex(-1);
-    setTempValue("");
-  };
-
-  const handleDeleteItem = (sectionKey: SectionKey, index: number) => {
-    sections[sectionKey].setData(
-      sections[sectionKey].data.filter((_, i) => i !== index)
-    );
-  };
-
-  const startEditing = (sectionKey: SectionKey, index: number, currentValue: string) => {
-    setEditingIndex(index);
-    setActiveSection(sectionKey);
-    setTempValue(currentValue);
-  };
-
-  const cancelEditing = () => {
-    setEditingIndex(-1);
-    setActiveSection(null);
-    setTempValue("");
-  };
 
   const handleModalClose = () => {
     setShowModal(false);
-    cancelEditing();
+    if (data) {
+      const resetFormData: UpdateProfileRequest = {
+        firstName: data.firstName || "",
+        lastName: data.lastName || "",
+        profile: {
+          Work: data.profile?.Work || data.profile?.Work || "",
+          Education: data.profile?.Education || data.profile?.Education || "",
+          resident: data.profile?.resident || "",
+          phone: data.profile?.phone || "",
+          createdAt: data.profile?.createdAt || "",
+        }
+      };
+      setFormData(resetFormData);
+      
+      if (data.profile?.avatar) {
+        setAvatarPreview(data.profile.avatar);
+        setAvatarBase64(null);
+      } else {
+        setAvatarPreview(null);
+        setAvatarBase64(null);
+      }
+    }
+    setAvatarFile(null);
   };
 
-  const saveProfile = () => {
-    console.log("Saving profile:", user);
-    // API call would go here
-    handleModalClose();
+  const handleChange = (field: string, value: string, isProfileField: boolean = true) => {
+    if (isProfileField) {
+      setFormData(prev => ({
+        ...prev,
+        profile: {
+          ...prev.profile!,
+          [field]: value,
+        }
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [field]: value,
+      }));
+    }
   };
 
-  // Render a section in edit modal
+  const sections = {
+    personal: {
+      title: "Personal Information",
+      fields: [
+        { key: "firstName", label: "First Name", isProfileField: false },
+        { key: "lastName", label: "Last Name", isProfileField: false }
+      ],
+    },
+    Work: { 
+      title: "Work Information", 
+      fields: [
+        { key: "Work", label: "Work", isProfileField: true },
+        { key: "Education", label: "Education", isProfileField: true }
+      ] 
+    },
+    contact: { 
+      title: "Contact Information", 
+      fields: [
+        { key: "phone", label: "Phone", isProfileField: true },
+        { key: "resident", label: "Resident", isProfileField: true }
+      ] 
+    },
+    basic: { 
+      title: "Basic Information", 
+      fields: [
+        { key: "createdAt", label: "Date of Birth", isProfileField: true }
+      ] 
+    },
+  };
+
+  type SectionKey = keyof typeof sections;
+
   const renderProfileSection = (sectionKey: SectionKey) => {
-    const { title, icon: Icon, data, placeholder, color } = sections[sectionKey];
-    
+    const section = sections[sectionKey];
     return (
-      <div key={sectionKey} className="space-y-3 ">
-   
-
-        <div className="space-y-2">
-          {data.map((item, index) => (
-            <div key={index} className="group">
-              {editingIndex === index && activeSection === sectionKey ? (
-                <div className="flex items-center gap-2 p-3 bg-white rounded-md border-2 border-blue-200 shadow-sm">
-                  <Icon className="text-gray-400 flex-shrink-0" />
-                  <input
-                    type="text"
-                    value={tempValue}
-                    onChange={(e) => setTempValue(e.target.value)}
-                    className="flex-1 outline-none text-gray-700"
-                    placeholder={placeholder}
-                    autoFocus
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') handleEditItem(sectionKey, index);
-                      if (e.key === 'Escape') cancelEditing();
-                    }}
-                  />
-                  <div className="flex gap-1">
-                    <button
-                      onClick={() => handleEditItem(sectionKey, index)}
-                      className="p-1 text-green-500 hover:bg-green-50 rounded-md transition-colors"
-                    >
-                      <FaCheck size={12} />
-                    </button>
-                    <button
-                      onClick={cancelEditing}
-                      className="p-1 text-red-500 hover:bg-red-50 rounded-md transition-colors"
-                    >
-                      <FaTimes size={12} />
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-gray-50 to-white rounded-md border border-gray-100 hover:shadow-md transition-all duration-300 group-hover:border-gray-200">
-                  <Icon className="text-gray-500 flex-shrink-0" />
-                  <span className="flex-1 text-gray-700">{item}</span>
-                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                    <button
-                      onClick={() => startEditing(sectionKey, index, item)}
-                      className="p-1 text-blue-500 hover:bg-blue-50 rounded-md transition-colors"
-                    >
-                      <MdEdit size={14} />
-                    </button>
-                    <button
-                      onClick={() => handleDeleteItem(sectionKey, index)}
-                      className="p-1 text-red-500 hover:bg-red-50 rounded-md transition-colors"
-                    >
-                      <MdDelete size={14} />
-                    </button>
-                  </div>
-                </div>
-              )}
+      <div key={sectionKey} className="border border-gray-200 rounded-lg p-4">
+        <h4 className="font-semibold text-gray-800 mb-3">{section.title}</h4>
+        <div className="space-y-3">
+          {section.fields.map((field) => (
+            <div key={field.key}>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                {field.label}
+              </label>
+              <input
+                type={field.key === "createdAt" ? "date" : "text"}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                value={
+                  field.isProfileField 
+                    ? formData.profile?.[field.key as keyof typeof formData.profile] || ""
+                    : formData[field.key as keyof Omit<UpdateProfileRequest, 'profile'>] || ""
+                }
+                onChange={(e) => handleChange(field.key, e.target.value, field.isProfileField)}
+              />
             </div>
           ))}
         </div>
-
-        {activeSection === sectionKey && editingIndex === -1 && (
-          <div className="animate-fadeInUp">
-            <div className="flex items-center gap-2 p-3 bg-gradient-to-r from-white to-gray-50 rounded-xl border-2 border-dashed border-gray-300 hover:border-gray-400 transition-colors">
-              <Icon className="text-gray-400 flex-shrink-0" />
-              <input
-                type="text"
-                value={tempValue}
-                onChange={(e) => setTempValue(e.target.value)}
-                className="flex-1 outline-none text-gray-700 bg-transparent placeholder-gray-400"
-                placeholder={placeholder}
-                autoFocus
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') handleAddItem(sectionKey);
-                  if (e.key === 'Escape') cancelEditing();
-                }}
-              />
-              <div className="flex gap-1">
-                <button
-                  onClick={() => handleAddItem(sectionKey)}
-                  className="p-1 text-green-500 hover:bg-green-50 rounded-md transition-colors"
-                  disabled={!tempValue.trim()}
-                >
-                  <FaCheck size={12} />
-                </button>
-                <button
-                  onClick={cancelEditing}
-                  className="p-1 text-red-500 hover:bg-red-50 rounded-md transition-colors"
-                >
-                  <FaTimes size={12} />
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     );
   };
 
+  // Image Upload with Preview and Base64 conversion
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      
+      if (!file.type.startsWith('image/')) {
+        toast.error("Please select a valid image file");
+        return;
+      }
+      
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error("Image size should be less than 5MB");
+        return;
+      }
+      
+      setAvatarFile(file);
+      setImageError(false);
+      
+      // Create preview URL
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const result = e.target?.result as string;
+        setAvatarPreview(result);
+        setAvatarBase64(result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setAvatarFile(null);
+    setAvatarBase64(null);
+    if (data?.profile?.avatar) {
+      setAvatarPreview(data.profile.avatar);
+    } else {
+      setAvatarPreview(null);
+    }
+  };
+
+  // Save Profile - Using regular object instead of FormData
+  const saveProfile = async () => {
+    try {
+      // Prepare the data object that matches your backend expectations
+      const requestData: UpdateProfileRequest = {
+        firstName: formData.firstName || undefined,
+        lastName: formData.lastName || undefined,
+        profile: {
+          Work: formData.profile?.Work || undefined,
+          Education: formData.profile?.Education || undefined,
+          resident: formData.profile?.resident || undefined,
+          phone: formData.profile?.phone || undefined,
+          createdAt: formData.profile?.createdAt || undefined,
+          avatar: avatarBase64 || undefined,
+        }
+      };
+
+      // Remove empty fields to avoid sending undefined
+      Object.keys(requestData).forEach(key => {
+        if (requestData[key as keyof UpdateProfileRequest] === undefined) {
+          delete requestData[key as keyof UpdateProfileRequest];
+        }
+      });
+
+      if (requestData.profile) {
+        Object.keys(requestData.profile).forEach(key => {
+          if (requestData.profile![key as keyof typeof requestData.profile] === undefined) {
+            delete requestData.profile![key as keyof typeof requestData.profile];
+          }
+        });
+      }
+
+      // If profile object is empty, remove it
+      if (requestData.profile && Object.keys(requestData.profile).length === 0) {
+        delete requestData.profile;
+      }
+
+      console.log("Sending data to backend:", requestData);
+
+      // Send to backend as regular JSON object
+      const result = await updateProfile(requestData).unwrap();
+
+      toast.success("Profile updated successfully!");
+      
+      // Force a refetch and wait for it to complete
+      await refetch();
+      
+      // Update local state immediately with the new data
+      if (data) {
+        const updatedUser: UserProfile = {
+          ...currentUser!,
+          firstName: formData.firstName || currentUser?.firstName || "",
+          lastName: formData.lastName || currentUser?.lastName || "",
+          profile: {
+            ...currentUser?.profile,
+            Work: formData.profile?.Work || currentUser?.profile?.Work || "",
+            Education: formData.profile?.Education || currentUser?.profile?.Education || "",
+            resident: formData.profile?.resident || currentUser?.profile?.resident || "",
+            phone: formData.profile?.phone || currentUser?.profile?.phone || "",
+            createdAt: formData.profile?.createdAt || currentUser?.profile?.createdAt || "",
+            avatar: avatarBase64 ? avatarBase64 : currentUser?.profile?.avatar,
+          }
+        };
+        setCurrentUser(updatedUser);
+      }
+      
+      setShowModal(false);
+      setAvatarFile(null);
+      setAvatarBase64(null);
+      
+    } catch (err: any) {
+      console.error("Update error:", err);
+      
+      if (err?.data?.message?.includes('CSRF') || err?.status === 403) {
+        toast.error("Security token expired. Please refresh the page and try again.");
+      } else {
+        toast.error(err?.data?.message || "Failed to update profile");
+      }
+    }
+  };
+
+  // Use currentUser instead of creating user object from data each time
+  const user = currentUser || {
+    id: 0,
+    firstName: "",
+    lastName: "",
+    role: "",
+    email: "",
+    isEmailVerified: false,
+    profile: null,
+  };
+
+  if (isLoading) {
+    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+  }
+
   return (
-    <div className=" min-h-screen">
+    <div className="min-h-screen">
       {/* Profile Header */}
       <div className="relative overflow-hidden rounded-md">
-        <div className="absolute inset-0 bg-gradient-to-br from-indigo-50 via-white to-purple-50">
-
-        </div>
-        
+        <div className="absolute inset-0 bg-gradient-to-br from-indigo-50 via-white to-purple-50" />
         <div className="relative flex flex-col items-center gap-6 justify-center py-16 px-8">
+          {/* Avatar */}
           <div className="relative group">
-            <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 to-pink-300 rounded-full blur opacity-25 group-hover:opacity-40 transition-opacity"></div>
             <div className="relative">
-              <img
-                src={user.avatar}
-                alt="Profile"
-                className="w-40 h-40 rounded-full border-4 border-white shadow-xl"
-              />
-              <button className="absolute cursor-pointer bottom-2 right-2 bg-white p-3 rounded-full shadow-lg hover:shadow-xl transform hover:scale-110 transition-all duration-300 border border-gray-100">
+              {avatarPreview ? (
+                <img
+                  src={avatarPreview}
+                  alt={`${user.firstName} ${user.lastName}`}
+                  className="w-40 h-40 rounded-full border-4 border-white shadow-xl object-cover"
+                />
+              ) : !imageError && user.profile?.avatar ? (
+                <img
+                  src={user.profile.avatar}
+                  alt={`${user.firstName} ${user.lastName}`}
+                  onError={() => setImageError(true)}
+                  className="w-40 h-40 rounded-full border-4 border-white shadow-xl object-cover"
+                />
+              ) : (
+                <div className="w-40 h-40 rounded-full bg-gray-200 flex items-center justify-center border-4 border-white shadow-xl text-4xl font-semibold text-gray-600">
+                  {user.firstName.charAt(0)}
+                  {user.lastName.charAt(0)}
+                </div>
+              )}
+              <label
+                htmlFor="avatar-upload"
+                className="absolute bottom-2 right-2 bg-white p-3 rounded-full shadow-lg cursor-pointer hover:bg-gray-100 transition-colors"
+              >
                 <FaCamera className="text-gray-700" />
-              </button>
+              </label>
+              <input
+                type="file"
+                id="avatar-upload"
+                accept="image/*"
+                className="hidden"
+                onChange={handleImageUpload}
+              />
             </div>
           </div>
-          
+
+          {/* User Info */}
           <div className="text-center space-y-2">
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
-              {user.name}
+            <h1 className="text-2xl font-bold text-gray-800">
+              {user.firstName} {user.lastName}
             </h1>
-            <div className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-medium ${
-              user.role === 'admin' ? 'bg-yellow-100 text-yellow-800' :
-              user.role === 'teacher' ? 'bg-blue-100 text-blue-800' :
-              'bg-green-100 text-green-800'
-            }`}>
-              {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
+            <div
+              className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-medium ${
+                user.role === "admin"
+                  ? "bg-yellow-100 text-yellow-800"
+                  : user.role === "teacher"
+                  ? "bg-blue-100 text-blue-800"
+                  : "bg-green-100 text-green-800"
+              }`}
+            >
+              {user.role}
             </div>
           </div>
-          
+
           <button
             onClick={() => setShowModal(true)}
-            className="bg-[#034153] cursor-pointer text-white px-4 py-2 rounded-md hover:from-indigo-700 hover:to-purple-700 flex items-center gap-3 shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300"
+            className="bg-[#034153] text-white px-4 py-2 rounded-md hover:bg-[#052f40] flex items-center gap-3 shadow-lg transition-all"
           >
             <MdEdit className="text-md" />
             Edit Profile
@@ -302,84 +452,76 @@ const ProfileComponent = () => {
       </div>
 
       {/* Profile Content */}
-      <div className="max-w-6xl mx-auto px-8 ">
+      <div className="max-w-6xl mx-auto px-8 mt-8">
         <div className="bg-white rounded-3xl shadow-xl p-8">
-          <h2 className="text-3xl font-bold mb-8 bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
-            About {user.name.split(" ")[0]}
+          <h2 className="text-3xl font-bold mb-8 text-gray-800">
+            About {user.lastName}
           </h2>
-          
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* Left Column */}
             <div className="space-y-8">
-              {/* Work */}
               <div>
                 <h3 className="text-xl font-bold mb-4 text-gray-800">Work</h3>
-                <div className="space-y-3">
-                  {user.work.map((place, index) => (
-                    <div key={index} className="flex items-center gap-3 p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl">
-                      <FaBriefcase className="text-blue-600" />
-                      <span className="text-gray-700">{place}</span>
-                    </div>
-                  ))}
+                <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-xl">
+                  <FaBriefcase className="text-blue-600" />
+                  <span className="text-gray-700">
+                    {user.profile?.Work || "--"}
+                  </span>
                 </div>
               </div>
-
-              {/* Education */}
               <div>
-                <h3 className="text-xl font-bold mb-4 text-gray-800">Education</h3>
-                <div className="space-y-3">
-                  {user.education.map((place, index) => (
-                    <div key={index} className="flex items-center gap-3 p-3 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-xl">
-                      <FaGraduationCap className="text-emerald-600" />
-                      <span className="text-gray-700">{place}</span>
-                    </div>
-                  ))}
+                <h3 className="text-xl font-bold mb-4 text-gray-800">
+                  Education
+                </h3>
+                <div className="flex items-center gap-3 p-3 bg-emerald-50 rounded-xl">
+                  <FaGraduationCap className="text-emerald-600" />
+                  <span className="text-gray-700">
+                    {user.profile?.Education || "--"}
+                  </span>
                 </div>
               </div>
             </div>
-
             {/* Right Column */}
             <div className="space-y-8">
-              {/* Places Lived */}
               <div>
-                <h3 className="text-xl font-bold mb-4 text-gray-800">Places Lived</h3>
-                <div className="space-y-3">
-                  {user.currentCity.map((city, index) => (
-                    <div key={index} className="flex items-center gap-3 p-3 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl">
-                      <FaHome className="text-purple-600" />
-                      <span className="text-gray-700">{city}</span>
-                    </div>
-                  ))}
-                  {user.hometown.map((town, index) => (
-                    <div key={index} className="flex items-center gap-3 p-3 bg-gradient-to-r from-orange-50 to-red-50 rounded-xl">
-                      <FaMapMarkerAlt className="text-orange-600" />
-                      <span className="text-gray-700">{town}</span>
-                    </div>
-                  ))}
+                <h3 className="text-xl font-bold mb-4 text-gray-800">
+                  Places Lived
+                </h3>
+                <div className="flex items-center gap-3 p-3 bg-orange-50 rounded-xl">
+                  <FaMapMarkerAlt className="text-orange-600" />
+                  <span className="text-gray-700">
+                    {user.profile?.resident || "--"}
+                  </span>
                 </div>
               </div>
-
-              {/* Contact Info */}
               <div>
-                <h3 className="text-xl font-bold mb-4 text-gray-800">Contact Info</h3>
-                <div className="space-y-3">
-                  <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl">
-                    <FaEnvelope className="text-gray-600" />
-                    <span className="text-indigo-600 font-medium">{user.email}</span>
-                  </div>
-                  <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl">
-                    <FaPhone className="text-gray-600" />
-                    <span className="text-gray-700">{user.phone}</span>
-                  </div>
+                <h3 className="text-xl font-bold mb-4 text-gray-800">
+                  Contact Info
+                </h3>
+                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
+                  <FaEnvelope className="text-gray-600" />
+                  <span className="text-indigo-600 font-medium">
+                    {user.email}
+                  </span>
+                </div>
+                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
+                  <FaPhone className="text-gray-600" />
+                  <span className="text-gray-700">
+                    {user.profile?.phone || "--"}
+                  </span>
                 </div>
               </div>
-
-              {/* Basic Info */}
               <div>
-                <h3 className="text-xl font-bold mb-4 text-gray-800">Basic Info</h3>
-                <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl">
+                <h3 className="text-xl font-bold mb-4 text-gray-800">
+                  Basic Info
+                </h3>
+                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
                   <FaCalendarAlt className="text-gray-600" />
-                  <span className="text-gray-700">{user.joinDate}</span>
+                  <span className="text-gray-700">
+                    {user.profile?.createdAt
+                      ? new Date(user.profile.createdAt).toLocaleDateString()
+                      : "--"}
+                  </span>
                 </div>
               </div>
             </div>
@@ -402,12 +544,68 @@ const ProfileComponent = () => {
                   <MdClose className="text-2xl cursor-pointer" />
                 </button>
               </div>
-              <p className="text-black mt-2">Update your information and showcase your achievements</p>
+              <p className="text-black mt-2">
+                Update your information and showcase your achievements
+              </p>
             </div>
 
             {/* Modal Content */}
             <div className="p-6 max-h-[calc(90vh-200px)] overflow-y-auto space-y-4">
-              {Object.keys(sections).map(sectionKey => 
+              {/* Avatar Upload Section in Modal */}
+              <div className="border border-gray-200 rounded-lg p-4">
+                <h4 className="font-semibold text-gray-800 mb-3">Profile Photo</h4>
+                <div className="flex items-center gap-6">
+                  <div className="relative">
+                    {avatarPreview ? (
+                      <img
+                        src={avatarPreview}
+                        alt="Preview"
+                        className="w-20 h-20 rounded-full object-cover border-2 border-gray-300"
+                      />
+                    ) : user.profile?.avatar ? (
+                      <img
+                        src={user.profile.avatar}
+                        alt="Current"
+                        className="w-20 h-20 rounded-full object-cover border-2 border-gray-300"
+                      />
+                    ) : (
+                      <div className="w-20 h-20 rounded-full bg-gray-200 flex items-center justify-center border-2 border-gray-300 text-lg font-semibold text-gray-600">
+                        {user.firstName.charAt(0)}
+                        {user.lastName.charAt(0)}
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex gap-3">
+                    <label
+                      htmlFor="modal-avatar-upload"
+                      className="bg-[#034153] text-white px-4 py-2 rounded-md cursor-pointer hover:bg-[#052f40] transition-colors"
+                    >
+                      Change Photo
+                    </label>
+                    <input
+                      type="file"
+                      id="modal-avatar-upload"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleImageUpload}
+                    />
+                    {(avatarFile || avatarPreview !== user.profile?.avatar) && (
+                      <button
+                        onClick={handleRemoveImage}
+                        className="bg-gray-200 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-300 transition-colors"
+                      >
+                        Remove
+                      </button>
+                    )}
+                  </div>
+                </div>
+                <p className="text-sm text-gray-500 mt-2">
+                  Recommended: Square image, at least 200x200 pixels, max 5MB
+                </p>
+              </div>
+
+              {/* Other sections */}
+              {Object.keys(sections).map((sectionKey) =>
                 renderProfileSection(sectionKey as SectionKey)
               )}
             </div>
@@ -423,7 +621,7 @@ const ProfileComponent = () => {
                 </button>
                 <button
                   onClick={saveProfile}
-                  className="px-6 py-3 bg-[#034153]  text-white rounded-md cursor-pointer transition-all duration-300 font-medium shadow-lg"
+                  className="px-6 py-3 bg-[#034153] text-white rounded-md cursor-pointer transition-all duration-300 font-medium shadow-lg"
                 >
                   Save Changes
                 </button>
@@ -432,8 +630,6 @@ const ProfileComponent = () => {
           </div>
         </div>
       )}
-
-
     </div>
   );
 };

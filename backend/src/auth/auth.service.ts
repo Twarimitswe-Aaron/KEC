@@ -30,7 +30,7 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
   
-    // Correct password comparison
+ 
     const correctPassword = await bcrypt.compare(password, user.password);
     if (!correctPassword) {
 
@@ -46,7 +46,7 @@ export class AuthService {
     const payload = {
       sub: user.id,
       email: user.email,
-      role: user.role,
+     
       firstName: user.firstName,
       lastName: user.lastName,
     };

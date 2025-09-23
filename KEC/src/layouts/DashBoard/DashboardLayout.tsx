@@ -3,7 +3,7 @@ import { Outlet, useNavigate } from "react-router-dom";
 import Sidebar from "../../Components/Dashboard/Sidebar";
 import DashboardHeader from "../../Components/Dashboard/DashboardHeader";
 import RightSidebar from "../../Components/Dashboard/RightSidebar";
-import { UserRoleContext } from "../../UserRoleContext";
+import { UserRoleContext, UserRole } from "../../UserRoleContext";
 import { SearchContext } from "../../SearchContext";
 import { useGetUserQuery, useLogoutMutation } from "../../state/api/authApi";
 import { DashboardSkeleton, LoadingRedirect } from "./Skeleton/DashboardSkeleton"; 
@@ -31,11 +31,14 @@ const DashboardLayout = () => {
   useEffect(() => {
     if (data && !data.isEmailVerified) {
       setTimeout(() => {
+     
         toast.error('Your email is not verified. Please check your email!', { autoClose: 5000 });
        
       }, 1500);
     }
   }, [data, navigate]);
+
+
   
   
   // Show skeleton while loading
@@ -52,10 +55,10 @@ const DashboardLayout = () => {
     return <LoadingRedirect />;
   }
  
-  const { firstName, lastName, role, email,isEmailVerified } = data || {};
+ 
 
   return (
-    <UserRoleContext.Provider value={role}>
+    <UserRoleContext.Provider value={data?.role as UserRole}>
       <SearchContext.Provider value={{ searchQuery, setSearchQuery }}>
         <div className="w-full min-h-screen flex">
           {/* Left Sidebar for md+ */}

@@ -1,14 +1,23 @@
 // src/state/api/authApi.ts
 import * as apiCore from './apiSlice';
 
-export interface UserState {
-  id: string;
-  firstName: string;
-  lastName: string;
+interface UserState {
+  id: number;
+  firstName?: string;
+  lastName?: string;
+  isEmailVerified?: boolean;
   email: string;
-  isEmailVerified: boolean;
-  role: 'student' | 'admin' | 'teacher';
+  role: 'admin' | 'teacher' | 'student';
+  profile?: {
+    Work?: string;
+    Education?: string;
+    resident?: string;
+    phone?: string;
+    createdAt?: string;
+    avatar?: string; 
+  };
 }
+
 
 export interface SignUpRequest {
   firstName: string;
@@ -33,6 +42,15 @@ export const authApi = apiCore.apiSlice.injectEndpoints({
         method: 'POST',
         body,
       }),
+    }),
+    updateProfile: builder.mutation<{message:string}, Partial<UserState>>({
+      query: (profileData) => ({
+        url: "/auth/update-profile",
+        method: "PUT",
+        body: profileData,
+        credentials: "include",
+      }),
+      invalidatesTags: ["User"],
     }),
     login: builder.mutation<
       any,
@@ -112,4 +130,5 @@ export const {
   useVerifyResetMutation,
   useResetPasswordMutation,
   useResetKnownPassMutation,
+  useUpdateProfileMutation 
 } = authApi;

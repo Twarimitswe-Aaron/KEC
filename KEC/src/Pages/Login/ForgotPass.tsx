@@ -17,7 +17,7 @@ const ForgotPass = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const navigate = useNavigate();
-  const { getToken } = useCsrfToken();
+  // const { getToken } = useCsrfToken();
   const [requestReset] = useRequestPasswordResetMutation();
   const [verifyCode] = useVerifyResetMutation();
   const [resetPassword] = useResetPasswordMutation();
@@ -68,10 +68,10 @@ const ForgotPass = () => {
   };
 
   const handleForgotPassword = async (email: string) => {
-    const csrfToken = await getToken();
+    // const csrfToken = await getToken();
     const message = await requestReset({
       email,
-      csrfToken: csrfToken!,
+      // csrfToken: csrfToken!,
     }).unwrap();
     if (!message) {
       return;
@@ -80,8 +80,10 @@ const ForgotPass = () => {
   };
 
   const handleVerify = async (email: string, code: string) => {
-    const csrfToken = await getToken();
-    const res = await verifyCode({ email, code, csrfToken: csrfToken! });
+    // const csrfToken = await getToken();
+    const res = await verifyCode({ email, code,
+      //  csrfToken: csrfToken! 
+      });
     return res.data?.email;
   };
 
@@ -90,12 +92,12 @@ const ForgotPass = () => {
     password: string,
     confirmPassword: string
   ) => {
-    const csrfToken = await getToken();
+    // const csrfToken = await getToken();
     const message = await resetPassword({
       email,
       password: password,
       confirmPassword,
-      csrfToken: csrfToken!,
+      // csrfToken: csrfToken!,
     });
     return message?.data?.message;
   };

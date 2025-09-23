@@ -32,7 +32,7 @@ async function bootstrap() {
     origin: process.env.FRONTEND_URL ?? 'http://localhost:3000',
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
-    allowedHeaders: ['Content-Type', 'X-CSRF-Token', 'Authorization'],
+    allowedHeaders: ['Content-Type', 'x-csrf-token', 'Authorization'],
   });
 
  

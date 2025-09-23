@@ -11,7 +11,7 @@ import { useLoginMutation } from "../../state/api/authApi";
 
 const Login = () => {
   const navigate = useNavigate();
-  const { getToken } = useCsrfToken();
+  // const { getToken } = useCsrfToken();
   const [login] = useLoginMutation();
 
   interface FormData {
@@ -112,12 +112,12 @@ const Login = () => {
     }
 
     // Fetch CSRF token
-    const csrfToken = await getToken();
-    if (!csrfToken) {
-      toast.error("CSRF token not found. Please try again.");
-      setIsLoading(false);
-      return;
-    }
+    // const csrfToken = await getToken();
+    // if (!csrfToken) {
+    //   toast.error("CSRF token not found. Please try again.");
+    //   setIsLoading(false);
+    //   return;
+    // }
 
     try {
       await login({

@@ -10,6 +10,10 @@ import {
   HttpCode,
   UseGuards,
   Request,
+  Put,
+  Req,
+  NotFoundException,
+  InternalServerErrorException,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { ConfigService } from '@nestjs/config';
@@ -17,6 +21,7 @@ import type { Response } from 'express';
 import type { Request as ExpressRequest } from 'express';
 import { AuthGuard } from './auth.guard';
 import { LoginDto } from './dto/login.dto';
+import { UpdateUserDto } from './dto/updateUser.dto';
 
 import { JwtService } from '@nestjs/jwt';
 import { PrismaClient } from '@prisma/client';
@@ -92,9 +97,29 @@ export class AuthController {
 
       const user = await this.prisma.user.findUnique({
         where: { id: decoded.sub },
+        include: { profile: true },
       });
-
-      return user;
+      if (!user) {
+        throw new BadRequestException('User not found');
+      }
+      return {
+        id: user.id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        role: user.role,
+        isEmailVerified: user.isEmailVerified,
+        profile: user.profile
+          ? {
+              avatar: user.profile.avatar,
+              work: user.profile.Work,
+              education: user.profile.Education,
+              resident: user.profile.resident,
+              phone: user.profile.phone,
+              createdAt: user.profile.dateOfBirth,
+            }
+          : null,
+      };
     } catch (error) {
       throw new BadRequestException('Invalid token');
     }
@@ -105,6 +130,75 @@ export class AuthController {
   getDashboard(@Request() req) {
     return req.user;
   }
+
+  @UseGuards(AuthGuard)
+  @Put("update-profile")
+  async updateProfile(@Req() req, @Body() body: UpdateUserDto) {
+    if (!body || !body.profile) {
+console.log("body is missing", body)
+      throw new Error('Profile data missing');
+    }
+    console.log(body);
+    const email = req.user?.email;
+  
+    console.log(email)
+    if (!email) {
+      throw new BadRequestException("User not found");
+    }
+  
+    console.log('UpdateProfile called with body:', body);
+  
+    try {
+      const updatedUser = await this.prisma.user.update({
+        where: { email },
+        data: {
+          firstName: body.firstName ?? undefined,
+          lastName: body.lastName ?? undefined,
+          profile: {
+            upsert: {
+              create: {
+                Work: body.profile?.Work ?? undefined,
+                Education: body.profile?.Education ?? undefined,
+                resident: body.profile?.resident ?? undefined,
+                phone: body.profile?.phone ?? undefined,
+                dateOfBirth: body.profile?.createdAt
+                  ? new Date(body.profile.createdAt)
+                  : undefined,
+                avatar: body.profile?.avatar ?? undefined,
+              },
+              update: {
+                Work: body.profile?.Work ?? undefined,
+                Education: body.profile?.Education ?? undefined,
+                resident: body.profile?.resident ?? undefined,
+                phone: body.profile?.phone ?? undefined,
+                dateOfBirth: body.profile?.createdAt
+                  ? new Date(body.profile.createdAt)
+                  : undefined,
+                avatar: body.profile?.avatar ?? undefined,
+              },
+            },
+          },
+        },
+        include: { profile: true },
+      });
+
+      console.log('Profile updated:', updatedUser);
+
+      return { message: "Profile updated successfully" };
+  
+    } catch (error) {
+      // Prisma error code P2025 means "Record to update not found."
+      if (error.code === 'P2025') {
+        console.error('Profile update failed: No record found for email:', email);
+        throw new NotFoundException('Profile not found for the given user');
+      }
+  
+      console.error('Unexpected error during profile update:', error);
+  
+      throw new InternalServerErrorException('Failed to update profile');
+    }
+  }
+  
 
   @Post('refresh')
   async refresh(
