@@ -9,8 +9,8 @@ interface UserState {
   email: string;
   role: 'admin' | 'teacher' | 'student';
   profile?: {
-    Work?: string;
-    Education?: string;
+    work?: string;
+    education?: string;
     resident?: string;
     phone?: string;
     createdAt?: string;
@@ -43,7 +43,7 @@ export const authApi = apiCore.apiSlice.injectEndpoints({
         body,
       }),
     }),
-    updateProfile: builder.mutation<{message:string}, Partial<UserState>>({
+    updateProfile: builder.mutation<{message:string,user:UserState}, Partial<UserState>>({
       query: (profileData) => ({
         url: "/auth/update-profile",
         method: "PUT",

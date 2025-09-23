@@ -5,6 +5,9 @@ import App from './App';
 import { ErrorBoundary } from './ErrorBoundary';
 import { store } from './state/store';
 import { Provider } from 'react-redux';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+
+const queryClient = new QueryClient();
 
 const rootElement = document.getElementById('root');
 
@@ -17,11 +20,13 @@ const root = ReactDOM.createRoot(rootElement);
 root.render(
   <React.StrictMode>
     <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
       <BrowserRouter>
       <Provider store={store}>
       <App />
       </Provider>
       </BrowserRouter>
+      </QueryClientProvider>
     </ErrorBoundary>
   </React.StrictMode>
 );
