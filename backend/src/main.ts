@@ -11,6 +11,7 @@ import session from 'express-session';
 import Redis from 'ioredis';
 import { RedisStore } from 'connect-redis';
 import * as path from 'path';
+import * as express from 'express';
 
 
 if (typeof globalThis.crypto === 'undefined') {
@@ -22,6 +23,7 @@ async function bootstrap() {
     abortOnError: false,
     logger: ['error', 'warn', 'log', 'debug']
   });
+  app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
 
   if (process.env.NODE_ENV === 'production') {
     app.set('trust proxy', 1); 

@@ -14,6 +14,8 @@ import {
   Req,
   NotFoundException,
   InternalServerErrorException,
+  UseInterceptors,
+  UploadedFile,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { ConfigService } from '@nestjs/config';
@@ -29,6 +31,8 @@ import { ForgotPass } from './dto/forgotPass.dto';
 import { VerifyToken } from './dto/verifyToken';
 import { ResetPassword } from './dto/resetPassword.dto';
 import { ResetKnownPassDto } from './dto/resetKnownPass.dto';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
 
 @Controller('auth')
 export class AuthController {
@@ -133,12 +137,24 @@ export class AuthController {
 
   @UseGuards(AuthGuard)
   @Put("update-profile")
-  async updateProfile(@Req() req, @Body() body: UpdateUserDto) {
+  @UseInterceptors(FileInterceptor('avatar',{
+    storage:diskStorage({
+      destination:'./uploads/avatars',
+      filename:(req,file,cb)=>{
+        const uniqueSuffix=Date.now()+"-"+Math.round(Math.random()*1e9);
+        const ext=file.originalname.split('.').pop();
+        cb(null,`${file.fieldname}-${uniqueSuffix}.${ext}`);
+      }
+    })
+}))
+  async updateProfile(@Req() req,@UploadedFile() avatar:Express.Multer.File, @Body() body: UpdateUserDto) {
     if (!body || !body.profile) {
 console.log("body is missing", body)
       throw new Error('Profile data missing');
     }
+    
     console.log(body);
+    console.log(avatar);
     const email = req.user?.email;
   
     console.log(email)
@@ -147,6 +163,7 @@ console.log("body is missing", body)
     }
   
     console.log('UpdateProfile called with body:', body);
+    const avatarUrl=avatar?`${this.configService.get('BACKEND_URL')}/uploads/avatars/${avatar.filename}`:undefined;
   
     try {
       const updatedUser = await this.prisma.user.update({
@@ -157,26 +174,26 @@ console.log("body is missing", body)
           profile: {
             upsert: {
               create: {
-                Work: body.profile?.Work ?? undefined,
-                Education: body.profile?.Education ?? undefined,
+                Work: body.profile?.work ?? undefined,
+                Education: body.profile?.education ?? undefined,
                 resident: body.profile?.resident ?? undefined,
                 phone: body.profile?.phone ?? undefined,
                 dateOfBirth: body.profile?.createdAt
                   ? new Date(body.profile.createdAt)
                   : undefined,
-                avatar: body.profile?.avatar ?? undefined,
+                avatar: avatarUrl ?? undefined,
               },
               update: {
-                Work: body.profile?.Work ?? undefined,
-                Education: body.profile?.Education ?? undefined,
+                Work: body.profile?.work ?? undefined,
+                Education: body.profile?.education ?? undefined,
                 resident: body.profile?.resident ?? undefined,
                 phone: body.profile?.phone ?? undefined,
                 dateOfBirth: body.profile?.createdAt
                   ? new Date(body.profile.createdAt)
                   : undefined,
-                avatar: body.profile?.avatar ?? undefined,
+                avatar: avatarUrl ?? undefined,
               },
-            },
+            },  
           },
         },
         include: { profile: true },

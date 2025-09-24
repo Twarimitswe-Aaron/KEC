@@ -14,28 +14,10 @@ import {
   useLogoutMutation,
   useUpdateProfileMutation,
 } from "../state/api/authApi";
-import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 
-
-interface UserProfile {
-  id: number;
-  firstName: string;
-  lastName: string;
-  email: string;
-  role: string;
-  isEmailVerified: boolean;
-  profile: {
-    avatar?: string;
-    Work?: string;
-    Education?: string;
-    resident?: string;
-    phone?: string;
-    createdAt?: string;
-  } | null;
-}
-
+// Types
 interface UpdateProfileRequest {
   firstName?: string;
   lastName?: string;
@@ -44,8 +26,8 @@ interface UpdateProfileRequest {
     education?: string;
     resident?: string;
     phone?: string;
-    createdAt?: string;
-    avatar?: string;
+    dateOfBirth?: string;
+    avatar?: File;
   };
 }
 
@@ -139,11 +121,10 @@ const ShimmerSkeletonLoader = () => {
 };
 
 const ProfileComponent = () => {
-  const queryClient = useQueryClient();
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [updateProfile] = useUpdateProfileMutation();
   const [logout, setLogout] = useState(false);
-  const { data, isLoading, refetch } = useGetUserQuery();
+  const { data, isLoading } = useGetUserQuery();
   const [logoutUser] = useLogoutMutation();
   const navigate = useNavigate();
 
@@ -155,33 +136,30 @@ const ProfileComponent = () => {
       education: "",
       resident: "",
       phone: "",
-      createdAt: "",
+      dateOfBirth: "",
     },
   });
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
-  const [avatarBase64, setAvatarBase64] = useState<string | null>(null);
   const [imageError, setImageError] = useState(false);
   const [showModal, setShowModal] = useState(false);
 
   // Sync formData and avatarPreview with data
   useEffect(() => {
     if (data) {
-   
       setFormData({
-        firstName: data?.firstName,
-        lastName: data?.lastName,
+        firstName: data.firstName || "",
+        lastName: data.lastName || "",
         profile: {
-          work: data?.profile?.work,
-          education: data?.profile?.education,
-          resident: data?.profile?.resident,
-          phone: data?.profile?.phone,
-          createdAt: data?.profile?.createdAt,
+          work: data.profile?.work || "",
+          education: data.profile?.education || "",
+          resident: data.profile?.resident || "",
+          phone: data.profile?.phone || "",
+          dateOfBirth: data.profile?.createdAt || "",
         },
       });
       setAvatarPreview(data.profile?.avatar || null);
     }
-  
   }, [data]);
 
   // Handle unauthorized
@@ -208,18 +186,17 @@ const ProfileComponent = () => {
     setShowModal(false);
     if (data) {
       setFormData({
-        firstName: data.firstName ,
-        lastName: data.lastName ,
+        firstName: data.firstName || "",
+        lastName: data.lastName || "",
         profile: {
-          work: data.profile?.work ,
-          education: data.profile?.education ,
-          resident: data.profile?.resident ,
-          phone: data.profile?.phone ,
-          createdAt: data.profile?.createdAt ,
+          work: data.profile?.work || "",
+          education: data.profile?.education || "",
+          resident: data.profile?.resident || "",
+          phone: data.profile?.phone || "",
+          dateOfBirth: data.profile?.createdAt || "",
         },
       });
       setAvatarPreview(data.profile?.avatar || null);
-      setAvatarBase64(null);
       setAvatarFile(null);
     }
   };
@@ -250,10 +227,10 @@ const ProfileComponent = () => {
       ],
     },
     work: {
-      title: "Work Information",
+      title: "work Information",
       fields: [
-        { key: "Work", label: "Work", isProfileField: true },
-        { key: "Education", label: "Education", isProfileField: true },
+        { key: "work", label: "work", isProfileField: true },
+        { key: "education", label: "education", isProfileField: true },
       ],
     },
     contact: {
@@ -265,7 +242,7 @@ const ProfileComponent = () => {
     },
     basic: {
       title: "Basic Information",
-      fields: [{ key: "createdAt", label: "Date of Birth", isProfileField: true }],
+      fields: [{ key: "dateOfBirth", label: "Date of Birth", isProfileField: true }],
     },
   };
 
@@ -279,10 +256,10 @@ const ProfileComponent = () => {
         <div className="space-y-3">
           {section.fields.map((field) => {
             const rawValue = field.isProfileField
-              ? formData.profile?.[field.key as keyof typeof formData.profile] || ""
-              : formData[field.key as keyof Omit<UpdateProfileRequest, "profile">] || "";
+              ? (formData.profile?.[field.key as 'work' | 'education' | 'resident' | 'phone' | 'dateOfBirth'] ?? '')
+              : (formData[field.key as 'firstName' | 'lastName'] ?? '');
             const value =
-              field.key === "createdAt" && rawValue
+              field.key === "dateOfBirth" && rawValue
                 ? String(rawValue).slice(0, 10)
                 : rawValue;
             return (
@@ -291,7 +268,7 @@ const ProfileComponent = () => {
                   {field.label}
                 </label>
                 <input
-                  type={field.key === "createdAt" ? "date" : "text"}
+                  type={field.key === "dateOfBirth" ? "date" : "text"}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   value={value}
                   onChange={(e) => handleChange(field.key, e.target.value, field.isProfileField)}
@@ -311,8 +288,8 @@ const ProfileComponent = () => {
         toast.error("Please select a valid image file");
         return;
       }
-      if (file.size > 5 * 1024 * 1024) {
-        toast.error("Image size should be less than 5MB");
+      if (file.size > 2 * 1024 * 1024) {
+        toast.error("Image size should be less than 2MB");
         return;
       }
       setAvatarFile(file);
@@ -321,7 +298,6 @@ const ProfileComponent = () => {
       reader.onload = (e) => {
         const result = e.target?.result as string;
         setAvatarPreview(result);
-        setAvatarBase64(result);
       };
       reader.readAsDataURL(file);
     }
@@ -329,54 +305,43 @@ const ProfileComponent = () => {
 
   const handleRemoveImage = () => {
     setAvatarFile(null);
-    setAvatarBase64(null);
     setAvatarPreview(data?.profile?.avatar || null);
   };
 
   const saveProfile = async () => {
     try {
-      const requestData: UpdateProfileRequest = {
-        firstName: formData.firstName || undefined,
-        lastName: formData.lastName || undefined,
-        profile: {
-          work: formData.profile?.work || undefined,
-          education: formData.profile?.education || undefined,
-          resident: formData.profile?.resident || undefined,
-          phone: formData.profile?.phone || undefined,
-          createdAt: formData.profile?.createdAt || undefined,
-          avatar: avatarBase64 || undefined,
-        },
-      };
-
-      Object.keys(requestData).forEach((key) => {
-        if (requestData[key as keyof UpdateProfileRequest] === undefined) {
-          delete requestData[key as keyof UpdateProfileRequest];
-        }
-      });
-      if (requestData.profile) {
-        Object.keys(requestData.profile).forEach((key) => {
-          if (requestData.profile![key as keyof typeof requestData.profile] === undefined) {
-            delete requestData.profile![key as keyof typeof requestData.profile];
-          }
-        });
-        if (Object.keys(requestData.profile).length === 0) {
-          delete requestData.profile;
-        }
+      setIsRefreshing(true);
+      const formDataToSend = new FormData();
+      
+      // Append top-level fields
+      if (formData.firstName) formDataToSend.append("firstName", formData.firstName);
+      if (formData.lastName) formDataToSend.append("lastName", formData.lastName);
+      
+      // Append profile fields as a JSON string
+      const profileData: { [key: string]: string } = {};
+      if (formData.profile?.work) profileData.work = formData.profile.work;
+      if (formData.profile?.education) profileData.education = formData.profile.education;
+      if (formData.profile?.resident) profileData.resident = formData.profile.resident;
+      if (formData.profile?.phone) profileData.phone = formData.profile.phone;
+      if (formData.profile?.dateOfBirth) profileData.dateOfBirth = formData.profile.dateOfBirth;
+      if (Object.keys(profileData).length > 0) {
+        formDataToSend.append("profile", JSON.stringify(profileData));
       }
 
-      const updated=await updateProfile(requestData).unwrap();
-     
-      toast.success("Profile updated successfully!");
-      setIsRefreshing(true);
+      // Append avatar file
+      if (avatarFile) {
+        formDataToSend.append("avatar", avatarFile);
+      }
+      console.log(avatarFile)
+      console.log(formData)
 
-      await queryClient.invalidateQueries({ queryKey: ["getUser"] });
-      const data=await refetch();
-     
-
-      setShowModal(false);
-      setAvatarFile(null);
-      setAvatarBase64(null);
-      setIsRefreshing(false);
+      const response = await updateProfile(formDataToSend).unwrap();
+      if (response) {
+        toast.success("Profile updated successfully!");
+        setShowModal(false);
+        setAvatarFile(null);
+        setAvatarPreview(data?.profile?.avatar || null);
+      }
     } catch (err: any) {
       console.error("Update error:", err);
       setIsRefreshing(false);
@@ -385,6 +350,8 @@ const ProfileComponent = () => {
       } else {
         toast.error(err?.data?.message || "Failed to update profile");
       }
+    } finally {
+      setIsRefreshing(false);
     }
   };
 
@@ -397,7 +364,6 @@ const ProfileComponent = () => {
     isEmailVerified: false,
     profile: null,
   };
- 
 
   if (isLoading || isRefreshing) {
     return <ShimmerSkeletonLoader />;
@@ -450,7 +416,7 @@ const ProfileComponent = () => {
               {user.firstName} {user.lastName}
             </h1>
             <div
-              className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-medium ${
+              className={`inline-flex border-[1px] border-slate-200 items-center px-4 py-2 rounded-full text-sm font-medium ${
                 user.role === "admin"
                   ? "bg-yellow-100 text-yellow-800"
                   : user.role === "teacher"
@@ -480,7 +446,7 @@ const ProfileComponent = () => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <div className="space-y-8">
               <div>
-                <h3 className="text-xl font-bold mb-4 text-gray-800">Work</h3>
+                <h3 className="text-xl font-bold mb-4 text-gray-800">work</h3>
                 <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-xl">
                   <FaBriefcase className="text-blue-600" />
                   <span className="text-gray-700">
@@ -490,7 +456,7 @@ const ProfileComponent = () => {
               </div>
               <div>
                 <h3 className="text-xl font-bold mb-4 text-gray-800">
-                  Education
+                  education
                 </h3>
                 <div className="flex items-center gap-3 p-3 bg-emerald-50 rounded-xl">
                   <FaGraduationCap className="text-emerald-600" />
@@ -516,9 +482,9 @@ const ProfileComponent = () => {
                 <h3 className="text-xl font-bold mb-4 text-gray-800">
                   Contact Info
                 </h3>
-                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
+                <div className="flex items-center mb-5 p-3 bg-gray-50 rounded-xl">
                   <FaEnvelope className="text-gray-600" />
-                  <span className="text-indigo-600 font-medium">
+                  <span className="text-indigo-600 ml-3 font-medium">
                     {user.email}
                   </span>
                 </div>
@@ -614,7 +580,7 @@ const ProfileComponent = () => {
                   </div>
                 </div>
                 <p className="text-sm text-gray-500 mt-2">
-                  Recommended: Square image, at least 200x200 pixels, max 5MB
+                  Recommended: Square image, at least 200x200 pixels, max 2MB
                 </p>
               </div>
 

@@ -2,8 +2,8 @@ export class UpdateUserDto {
   firstName?: string;
   lastName?: string;
   profile?: {
-    Work?: string;
-    Education?: string;
+    work?: string;
+    education?: string;
     resident?: string;
     phone?: string;
     createdAt?: string;

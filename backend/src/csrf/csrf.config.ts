@@ -7,7 +7,7 @@ export function generateCsrfToken(req: Request, res: Response): string {
   const csrfToken = crypto.randomBytes(32).toString('hex');
  
   req.session.csrfToken = csrfToken;
-  console.log(req.session.csrfToken)
+
   return csrfToken;
 }
 
@@ -22,10 +22,7 @@ export function doubleCsrfProtection() {
     
   
     if (!req.session || !req.session.csrfToken) {
-      // console.log(csrfToken)
-      // console.log('Session data:', req.session);
-      // console.log('CSRF Token in session:', req.session ? req.session.csrfToken : 'No session');
-      // console.error('CSRF Error: No session or CSRF token in session');
+     
       return res.status(403).json({ message: 'CSRF token not found in session' });
     }
 

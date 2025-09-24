@@ -43,7 +43,7 @@ export const authApi = apiCore.apiSlice.injectEndpoints({
         body,
       }),
     }),
-    updateProfile: builder.mutation<{message:string,user:UserState}, Partial<UserState>>({
+    updateProfile: builder.mutation<{message:string,user:UserState}, FormData>({
       query: (profileData) => ({
         url: "/auth/update-profile",
         method: "PUT",
