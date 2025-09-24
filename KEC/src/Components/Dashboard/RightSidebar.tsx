@@ -3,10 +3,17 @@ import { FaPeopleRoof } from "react-icons/fa6";
 import Rating from "./Rating";
 import { UserRoleContext, UserRole } from "../../UserRoleContext";
 import { Link } from "react-router-dom";
+import { useUser } from "../../hooks/useUser";
+import RightSidebarSkeleton from "./RightSidebarSkeleton";
 
 const RightSidebar = () => {
+  const { userData, isLoading, refetchUser } = useUser();
   const userRole = useContext(UserRoleContext) as UserRole;
-  console.log(userRole);
+
+  // Show skeleton while loading
+  if (isLoading) {
+    return <RightSidebarSkeleton />;
+  }
 
   const isStudent = (role: UserRole): role is "student" => role === "student";
 
@@ -49,22 +56,20 @@ const RightSidebar = () => {
         <div className="mx-auto items-center flex gap-4">
           <Link to="/my-account">
             <img
-              src="/images/user.png"
+              src={userData?.profile?.avatar}
               alt="Profile"
               className="w-16 h-16 rounded-full object-cover mb-1"
             />
           </Link>
           <div className="block">
-            <h3 className="font-medium">Aaron</h3>
+            <h3 className="font-medium"> {userData?.lastName}</h3>
             <p className="text-sm text-gray-500"></p>
           </div>
         </div>
       </div>
 
-      {/* Rating Section - only for non-admin/non-teacher */}
       {isStudent(userRole) && <Rating />}
 
-      {/* Top Student Locations - only for admin/teacher */}
       {!isStudent(userRole) && (
         <div>
           <h3 className="text-sm font-semibold text-gray-700 mb-2">

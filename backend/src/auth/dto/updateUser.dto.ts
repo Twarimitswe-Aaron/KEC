@@ -6,7 +6,7 @@ export class UpdateUserDto {
     education?: string;
     resident?: string;
     phone?: string;
-    createdAt?: string;
+    dateOfBirth?: string;
     avatar?: string;
   };
 }

@@ -36,7 +36,7 @@ model User {
   admin             Admin?
   teacher           Teacher?
   student           Student?
-  announcement      Announcement?
+  announcement      Announcement[]
 }
 
 model Admin {
@@ -126,7 +126,7 @@ model Announcement {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  posterId  Int  @unique
+  posterId  Int  
   poster    User @relation(fields: [posterId], references: [id], onDelete: Cascade)
 }
 
@@ -142,8 +142,8 @@ model Feedback {
 model Profile {
   id          Int      @id @default(autoincrement())
   avatar      String?
-  Work        String?
-  Education   String?
+  work        String?
+  education   String?
   resident    String?
   phone    String?
   dateOfBirth DateTime?

@@ -15,8 +15,10 @@ import { DashboardModule } from './dashboard/dashboard.module';
 import { PaymentModule } from './payment/payment.module';
 import { UserManagementModule } from './user-management/user-management.module';
 import { AnnouncementModule } from './announcement/announcement.module';
-import { APP_FILTER } from '@nestjs/core';
+import { APP_FILTER, APP_GUARD } from '@nestjs/core';
 import { CsrfExceptionFilter } from './filters/csrf-exception.filter';
+import { AuthGuard } from './auth/auth.guard';
+import { RolesGuard } from './auth/roles.guard';
 @Module({
   imports: [
     StudentModule,
@@ -34,9 +36,22 @@ import { CsrfExceptionFilter } from './filters/csrf-exception.filter';
     AnnouncementModule,
   ],
   controllers: [AppController, CsrfController],
-  providers: [AppService, PrismaService, CleanupService,{
-    provide: APP_FILTER,
-    useClass: CsrfExceptionFilter,
-  },],
+  providers: [
+    AppService,
+    PrismaService,
+    CleanupService,
+    {
+      provide: APP_FILTER,
+      useClass: CsrfExceptionFilter,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: AuthGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: RolesGuard,
+    },
+  ],
 })
 export class AppModule {}

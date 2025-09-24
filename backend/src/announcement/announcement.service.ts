@@ -2,10 +2,30 @@ import { Injectable } from '@nestjs/common';
 import { CreateAnnouncementDto } from './dto/create-announcement.dto';
 import { UpdateAnnouncementDto } from './dto/update-announcement.dto';
 
+import { PrismaService } from 'src/prisma/prisma.service';
+import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
+
 @Injectable()
 export class AnnouncementService {
-  create(createAnnouncementDto: CreateAnnouncementDto) {
-    return 'This action adds a new announcement';
+  constructor(
+    private readonly prismaService: PrismaService,
+    private readonly jwtService: JwtService,
+    private readonly configService: ConfigService,
+  ) {}
+ async create(createAnnouncementDto: CreateAnnouncementDto) {
+    const { content, poster } = createAnnouncementDto;
+    const { posterId } = poster;
+    const newAnnouncement = await this.prismaService.announcement.create({
+      data:{
+        content,
+        poster:{
+          connect:{id:+posterId}
+        },
+        
+      },
+      include:{poster:true}
+    })
   }
 
   findAll() {

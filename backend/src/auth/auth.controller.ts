@@ -116,11 +116,12 @@ export class AuthController {
         profile: user.profile
           ? {
               avatar: user.profile.avatar,
-              work: user.profile.Work,
-              education: user.profile.Education,
+              work: user.profile.work,
+              education: user.profile.education,
               resident: user.profile.resident,
               phone: user.profile.phone,
-              createdAt: user.profile.dateOfBirth,
+              dateOfBirth: user.profile.dateOfBirth,
+              updatedAt: user.profile.updatedAt,
             }
           : null,
       };
@@ -147,74 +148,80 @@ export class AuthController {
       }
     })
 }))
-  async updateProfile(@Req() req,@UploadedFile() avatar:Express.Multer.File, @Body() body: UpdateUserDto) {
-    if (!body || !body.profile) {
-console.log("body is missing", body)
-      throw new Error('Profile data missing');
-    }
-    
-    console.log(body);
-    console.log(avatar);
-    const email = req.user?.email;
-  
-    console.log(email)
-    if (!email) {
-      throw new BadRequestException("User not found");
-    }
-  
-    console.log('UpdateProfile called with body:', body);
-    const avatarUrl=avatar?`${this.configService.get('BACKEND_URL')}/uploads/avatars/${avatar.filename}`:undefined;
-  
-    try {
-      const updatedUser = await this.prisma.user.update({
-        where: { email },
-        data: {
-          firstName: body.firstName ?? undefined,
-          lastName: body.lastName ?? undefined,
-          profile: {
-            upsert: {
-              create: {
-                Work: body.profile?.work ?? undefined,
-                Education: body.profile?.education ?? undefined,
-                resident: body.profile?.resident ?? undefined,
-                phone: body.profile?.phone ?? undefined,
-                dateOfBirth: body.profile?.createdAt
-                  ? new Date(body.profile.createdAt)
-                  : undefined,
-                avatar: avatarUrl ?? undefined,
-              },
-              update: {
-                Work: body.profile?.work ?? undefined,
-                Education: body.profile?.education ?? undefined,
-                resident: body.profile?.resident ?? undefined,
-                phone: body.profile?.phone ?? undefined,
-                dateOfBirth: body.profile?.createdAt
-                  ? new Date(body.profile.createdAt)
-                  : undefined,
-                avatar: avatarUrl ?? undefined,
-              },
-            },  
+async updateProfile(
+  @Req() req,
+  @UploadedFile() avatar: Express.Multer.File,
+  @Body() body: UpdateUserDto,
+) {
+  if (!body || !body.profile) {
+    console.log("body is missing", body);
+    throw new Error('Profile data missing');
+  }
+
+  // Ensure profile is parsed into an object
+  let parsedProfile: any;
+  try {
+    parsedProfile =
+      typeof body.profile === "string"
+        ? JSON.parse(body.profile)
+        : body.profile;
+  } catch (err) {
+    throw new BadRequestException("Invalid profile JSON format");
+  }
+
+  const email = req.user?.email;
+  if (!email) {
+    throw new BadRequestException("User not found");
+  }
+
+  const avatarUrl = avatar
+    ? `${this.configService.get("BACKEND_URL")}/uploads/avatars/${avatar.filename}`
+    : undefined;
+
+  try {
+    const updatedUser = await this.prisma.user.update({
+      where: { email },
+      data: {
+        firstName: body.firstName ?? undefined,
+        lastName: body.lastName ?? undefined,
+        profile: {
+          upsert: {
+            create: {
+              work: parsedProfile?.work ?? undefined,
+              education: parsedProfile?.education ?? undefined,
+              resident: parsedProfile?.resident ?? undefined,
+              phone: parsedProfile?.phone ?? undefined,
+              dateOfBirth: parsedProfile?.dateOfBirth
+                ? new Date(parsedProfile.dateOfBirth)
+                : undefined,
+              avatar: avatarUrl ?? undefined,
+            },
+            update: {
+              work: parsedProfile?.work ?? undefined,
+              education: parsedProfile?.education ?? undefined,
+              resident: parsedProfile?.resident ?? undefined,
+              phone: parsedProfile?.phone ?? undefined,
+              dateOfBirth: parsedProfile?.dateOfBirth
+                ? new Date(parsedProfile.dateOfBirth)
+                : undefined,
+              avatar: avatarUrl ?? undefined,
+            },
           },
         },
-        include: { profile: true },
-      });
+      },
+      include: { profile: true },
+    });
 
-      console.log('Profile updated:', updatedUser);
-
-      return { message: "Profile updated successfully" };
-  
-    } catch (error) {
-      // Prisma error code P2025 means "Record to update not found."
-      if (error.code === 'P2025') {
-        console.error('Profile update failed: No record found for email:', email);
-        throw new NotFoundException('Profile not found for the given user');
-      }
-  
-      console.error('Unexpected error during profile update:', error);
-  
-      throw new InternalServerErrorException('Failed to update profile');
+    console.log("Profile updated:", updatedUser);
+    return { message: "Profile updated successfully" };
+  } catch (error) {
+    if (error.code === "P2025") {
+      throw new NotFoundException("Profile not found for the given user");
     }
+    throw new InternalServerErrorException("Failed to update profile");
   }
+}
+
   
 
   @Post('refresh')

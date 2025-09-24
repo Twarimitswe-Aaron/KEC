@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "public"."Profile" ALTER COLUMN "createdAt" SET DEFAULT CURRENT_TIMESTAMP;

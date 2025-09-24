@@ -1,7 +1,7 @@
 // src/state/api/authApi.ts
 import * as apiCore from './apiSlice';
 
-interface UserState {
+export interface UserState {
   id: number;
   firstName?: string;
   lastName?: string;
@@ -13,7 +13,8 @@ interface UserState {
     education?: string;
     resident?: string;
     phone?: string;
-    createdAt?: string;
+    dateOfBirth?: string;
+    updatedAt?:string;
     avatar?: string; 
   };
 }

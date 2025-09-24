@@ -9,13 +9,9 @@ import {
   FaCamera,
 } from "react-icons/fa";
 import { MdClose, MdEdit } from "react-icons/md";
-import {
-  useGetUserQuery,
-  useLogoutMutation,
-  useUpdateProfileMutation,
-} from "../state/api/authApi";
-import { useNavigate } from "react-router-dom";
+import { useUpdateProfileMutation } from "../state/api/authApi";
 import { toast } from "react-toastify";
+import { useUser } from "../hooks/useUser";
 
 // Types
 interface UpdateProfileRequest {
@@ -123,10 +119,7 @@ const ShimmerSkeletonLoader = () => {
 const ProfileComponent = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [updateProfile] = useUpdateProfileMutation();
-  const [logout, setLogout] = useState(false);
-  const { data, isLoading } = useGetUserQuery();
-  const [logoutUser] = useLogoutMutation();
-  const navigate = useNavigate();
+  const { userData, isLoading } = useUser();
 
   const [formData, setFormData] = useState<UpdateProfileRequest>({
     firstName: "",
@@ -141,62 +134,41 @@ const ProfileComponent = () => {
   });
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
-  const [imageError, setImageError] = useState(false);
   const [showModal, setShowModal] = useState(false);
 
-  // Sync formData and avatarPreview with data
+  // Sync formData and avatarPreview with userData
   useEffect(() => {
-    if (data) {
+    if (userData) {
       setFormData({
-        firstName: data.firstName || "",
-        lastName: data.lastName || "",
+        firstName: userData.firstName || "",
+        lastName: userData.lastName || "",
         profile: {
-          work: data.profile?.work || "",
-          education: data.profile?.education || "",
-          resident: data.profile?.resident || "",
-          phone: data.profile?.phone || "",
-          dateOfBirth: data.profile?.createdAt || "",
+          work: userData.profile?.work || "",
+          education: userData.profile?.education || "",
+          resident: userData.profile?.resident || "",
+          phone: userData.profile?.phone || "",
+          dateOfBirth: userData.profile?.dateOfBirth || "",
         },
       });
-      setAvatarPreview(data.profile?.avatar || null);
+      setAvatarPreview(userData.profile?.avatar || null);
     }
-  }, [data]);
-
-  // Handle unauthorized
-  useEffect(() => {
-    if (!isLoading && !data && !logout) {
-      logoutUser();
-      setLogout(true);
-      window.location.href = "/login";
-    }
-  }, [isLoading, data, logout, logoutUser]);
-
-  // Handle email not verified
-  useEffect(() => {
-    if (data && !data.isEmailVerified) {
-      setTimeout(() => {
-        toast.error("Your email is not verified. Please check your email!", {
-          autoClose: 5000,
-        });
-      }, 1500);
-    }
-  }, [data, navigate]);
+  }, [userData]);
 
   const handleModalClose = () => {
     setShowModal(false);
-    if (data) {
+    if (userData) {
       setFormData({
-        firstName: data.firstName || "",
-        lastName: data.lastName || "",
+        firstName: userData.firstName || "",
+        lastName: userData.lastName || "",
         profile: {
-          work: data.profile?.work || "",
-          education: data.profile?.education || "",
-          resident: data.profile?.resident || "",
-          phone: data.profile?.phone || "",
-          dateOfBirth: data.profile?.createdAt || "",
+          work: userData.profile?.work || "",
+          education: userData.profile?.education || "",
+          resident: userData.profile?.resident || "",
+          phone: userData.profile?.phone || "",
+          dateOfBirth: userData.profile?.dateOfBirth || "",
         },
       });
-      setAvatarPreview(data.profile?.avatar || null);
+      setAvatarPreview(userData.profile?.avatar || null);
       setAvatarFile(null);
     }
   };
@@ -227,10 +199,10 @@ const ProfileComponent = () => {
       ],
     },
     work: {
-      title: "work Information",
+      title: "Work Information",
       fields: [
-        { key: "work", label: "work", isProfileField: true },
-        { key: "education", label: "education", isProfileField: true },
+        { key: "work", label: "Work", isProfileField: true },
+        { key: "education", label: "Education", isProfileField: true },
       ],
     },
     contact: {
@@ -256,8 +228,8 @@ const ProfileComponent = () => {
         <div className="space-y-3">
           {section.fields.map((field) => {
             const rawValue = field.isProfileField
-              ? (formData.profile?.[field.key as 'work' | 'education' | 'resident' | 'phone' | 'dateOfBirth'] ?? '')
-              : (formData[field.key as 'firstName' | 'lastName'] ?? '');
+              ? (formData.profile?.[field.key as keyof UpdateProfileRequest['profile']] ?? '')
+              : (formData[field.key as keyof Omit<UpdateProfileRequest, 'profile'>] ?? '');
             const value =
               field.key === "dateOfBirth" && rawValue
                 ? String(rawValue).slice(0, 10)
@@ -293,7 +265,6 @@ const ProfileComponent = () => {
         return;
       }
       setAvatarFile(file);
-      setImageError(false);
       const reader = new FileReader();
       reader.onload = (e) => {
         const result = e.target?.result as string;
@@ -305,7 +276,7 @@ const ProfileComponent = () => {
 
   const handleRemoveImage = () => {
     setAvatarFile(null);
-    setAvatarPreview(data?.profile?.avatar || null);
+    setAvatarPreview(userData?.profile?.avatar || null);
   };
 
   const saveProfile = async () => {
@@ -324,27 +295,27 @@ const ProfileComponent = () => {
       if (formData.profile?.resident) profileData.resident = formData.profile.resident;
       if (formData.profile?.phone) profileData.phone = formData.profile.phone;
       if (formData.profile?.dateOfBirth) profileData.dateOfBirth = formData.profile.dateOfBirth;
+      
       if (Object.keys(profileData).length > 0) {
         formDataToSend.append("profile", JSON.stringify(profileData));
+        if (profileData.dateOfBirth) {
+          profileData.dateOfBirth = new Date(profileData.dateOfBirth).toISOString();
+        }
       }
 
       // Append avatar file
       if (avatarFile) {
         formDataToSend.append("avatar", avatarFile);
       }
-      console.log(avatarFile)
-      console.log(formData)
 
       const response = await updateProfile(formDataToSend).unwrap();
       if (response) {
         toast.success("Profile updated successfully!");
         setShowModal(false);
         setAvatarFile(null);
-        setAvatarPreview(data?.profile?.avatar || null);
       }
     } catch (err: any) {
       console.error("Update error:", err);
-      setIsRefreshing(false);
       if (err?.data?.message?.includes("CSRF") || err?.status === 403) {
         toast.error("Security token expired. Please refresh the page and try again.");
       } else {
@@ -355,7 +326,7 @@ const ProfileComponent = () => {
     }
   };
 
-  const user = data || {
+  const user = userData || {
     id: 0,
     firstName: "",
     lastName: "",
@@ -382,11 +353,10 @@ const ProfileComponent = () => {
                   alt={`${user.firstName} ${user.lastName}`}
                   className="w-40 h-40 rounded-full border-4 border-white shadow-xl object-cover"
                 />
-              ) : !imageError && user.profile?.avatar ? (
+              ) : user.profile?.avatar ? (
                 <img
                   src={user.profile.avatar}
                   alt={`${user.firstName} ${user.lastName}`}
-                  onError={() => setImageError(true)}
                   className="w-40 h-40 rounded-full border-4 border-white shadow-xl object-cover"
                 />
               ) : (
@@ -446,7 +416,7 @@ const ProfileComponent = () => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <div className="space-y-8">
               <div>
-                <h3 className="text-xl font-bold mb-4 text-gray-800">work</h3>
+                <h3 className="text-xl font-bold mb-4 text-gray-800">Work</h3>
                 <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-xl">
                   <FaBriefcase className="text-blue-600" />
                   <span className="text-gray-700">
@@ -456,7 +426,7 @@ const ProfileComponent = () => {
               </div>
               <div>
                 <h3 className="text-xl font-bold mb-4 text-gray-800">
-                  education
+                  Education
                 </h3>
                 <div className="flex items-center gap-3 p-3 bg-emerald-50 rounded-xl">
                   <FaGraduationCap className="text-emerald-600" />
@@ -502,8 +472,8 @@ const ProfileComponent = () => {
                 <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
                   <FaCalendarAlt className="text-gray-600" />
                   <span className="text-gray-700">
-                    {user.profile?.createdAt
-                      ? new Date(user.profile.createdAt).toLocaleDateString()
+                    {user.profile?.dateOfBirth
+                      ? new Date(user.profile.dateOfBirth).toLocaleDateString()
                       : "--"}
                   </span>
                 </div>
@@ -521,12 +491,12 @@ const ProfileComponent = () => {
                 <h3 className="text-2xl font-bold">Edit Your Profile</h3>
                 <button
                   onClick={handleModalClose}
-                  className="p-2 hover:bg-white hover:bg-opacity-20 rounded-full transition-colors"
+                  className="p-2 hover:bg-gray-100 rounded-full transition-colors"
                 >
                   <MdClose className="text-2xl cursor-pointer" />
                 </button>
               </div>
-              <p className="text-black mt-2">
+              <p className="text-gray-600 mt-2">
                 Update your information and showcase your achievements
               </p>
             </div>
@@ -589,18 +559,18 @@ const ProfileComponent = () => {
               )}
             </div>
 
-            <div className="border-t border-gray-100 p-2 bg-gray-50">
+            <div className="border-t border-gray-200 p-6 bg-gray-50">
               <div className="flex justify-end gap-4">
                 <button
                   onClick={handleModalClose}
-                  className="px-6 py-3 bg-gray-200 text-gray-700 rounded-md cursor-pointer hover:bg-gray-300 transition-colors font-medium"
+                  className="px-6 py-3 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors font-medium"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={saveProfile}
                   disabled={isRefreshing}
-                  className="px-6 py-3 bg-[#034153] text-white rounded-md cursor-pointer transition-all duration-300 font-medium shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  className="px-6 py-3 bg-[#034153] text-white rounded-md transition-all duration-300 font-medium shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                 >
                   {isRefreshing ? (
                     <>
