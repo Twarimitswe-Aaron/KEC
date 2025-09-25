@@ -27,76 +27,65 @@ interface UpdateProfileRequest {
   };
 }
 
-// Shimmer Skeleton Loader
+
 const ShimmerSkeletonLoader = () => {
   return (
     <div className="min-h-screen relative overflow-hidden">
-      <div className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-white/60 to-transparent z-10"></div>
-      
+      {/* Shimmer overlay */}
+      <div className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-white/50 to-transparent z-10"></div>
+
+      {/* Profile Header */}
       <div className="relative overflow-hidden rounded-md mx-4 mt-4">
-        <div className="bg-gradient-to-br from-gray-200 to-gray-300 h-80 relative">
-          <div className="flex flex-col items-center gap-6 justify-center py-16 px-8">
-            <div className="relative">
-              <div className="w-40 h-40 rounded-full bg-gradient-to-r from-gray-300 via-gray-200 to-gray-300 border-4 border-white shadow-xl"></div>
-              <div className="absolute bottom-2 right-2 w-12 h-12 bg-gradient-to-r from-gray-300 via-gray-200 to-gray-300 rounded-full"></div>
-            </div>
-            <div className="text-center space-y-4">
-              <div className="h-8 bg-gradient-to-r from-gray-300 via-gray-200 to-gray-300 rounded w-48 mx-auto"></div>
-              <div className="h-6 bg-gradient-to-r from-gray-300 via-gray-200 to-gray-300 rounded-full w-20 mx-auto"></div>
-            </div>
-            <div className="h-12 bg-gradient-to-r from-gray-300 via-gray-200 to-gray-300 rounded-md w-32"></div>
+        <div className="bg-gradient-to-br from-gray-200 to-gray-300 h-64 relative flex flex-col items-center justify-center gap-4">
+          <div className="relative">
+            <div className="w-40 h-40 rounded-full bg-gray-300 border-4 border-white shadow-xl"></div>
+            <div className="absolute bottom-2 right-2 w-10 h-10 rounded-full bg-gray-300"></div>
           </div>
+          <div className="text-center space-y-2 w-full">
+            <div className="h-6 bg-gray-300 rounded w-36 mx-auto"></div>
+            <div className="h-4 bg-gray-300 rounded w-20 mx-auto"></div>
+          </div>
+          <div className="h-10 bg-gray-300 rounded w-28 mx-auto"></div>
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto px-8 mt-8">
-        <div className="bg-white rounded-3xl shadow-xl p-8 relative">
-          <div className="h-9 bg-gradient-to-r from-gray-300 via-gray-200 to-gray-300 rounded w-48 mb-8"></div>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <div className="space-y-8">
-              <div className="space-y-4">
-                <div className="h-6 bg-gradient-to-r from-gray-300 via-gray-200 to-gray-300 rounded w-16"></div>
-                <div className="flex items-center gap-3 p-4 bg-blue-50 rounded-xl">
-                  <div className="w-6 h-6 bg-gradient-to-r from-blue-300 via-blue-200 to-blue-300 rounded"></div>
-                  <div className="h-5 bg-gradient-to-r from-gray-300 via-gray-200 to-gray-300 rounded flex-1"></div>
+      {/* About Section */}
+      <div className="max-w-4xl mx-auto px-4 mt-4">
+        <div className="bg-white rounded-2xl shadow-lg p-4">
+          <div className="h-7 bg-gray-300 rounded w-40 mb-4"></div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {/* Left Column */}
+            <div className="space-y-4">
+              {["Work", "Education"].map((_, i) => (
+                <div key={i} className="space-y-2">
+                  <div className="h-5 bg-gray-300 rounded w-20"></div>
+                  <div className="flex items-center gap-2 p-2 bg-gray-100 rounded-lg">
+                    <div className="w-5 h-5 bg-gray-300 rounded"></div>
+                    <div className="h-4 bg-gray-300 rounded flex-1"></div>
+                  </div>
                 </div>
-              </div>
-              <div className="space-y-4">
-                <div className="h-6 bg-gradient-to-r from-gray-300 via-gray-200 to-gray-300 rounded w-20"></div>
-                <div className="flex items-center gap-3 p-4 bg-emerald-50 rounded-xl">
-                  <div className="w-6 h-6 bg-gradient-to-r from-emerald-300 via-emerald-200 to-emerald-300 rounded"></div>
-                  <div className="h-5 bg-gradient-to-r from-gray-300 via-gray-200 to-gray-300 rounded flex-1"></div>
-                </div>
-              </div>
+              ))}
             </div>
-            <div className="space-y-8">
-              <div className="space-y-4">
-                <div className="h-6 bg-gradient-to-r from-gray-300 via-gray-200 to-gray-300 rounded w-24"></div>
-                <div className="flex items-center gap-3 p-4 bg-orange-50 rounded-xl">
-                  <div className="w-6 h-6 bg-gradient-to-r from-orange-300 via-orange-200 to-orange-300 rounded"></div>
-                  <div className="h-5 bg-gradient-to-r from-gray-300 via-gray-200 to-gray-300 rounded flex-1"></div>
-                </div>
-              </div>
-              <div className="space-y-4">
-                <div className="h-6 bg-gradient-to-r from-gray-300 via-gray-200 to-gray-300 rounded w-24"></div>
-                <div className="space-y-3">
-                  <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl">
-                    <div className="w-6 h-6 bg-gradient-to-r from-gray-400 via-gray-300 to-gray-400 rounded"></div>
-                    <div className="h-5 bg-gradient-to-r from-gray-300 via-gray-200 to-gray-300 rounded flex-1"></div>
+
+            {/* Right Column */}
+            <div className="space-y-4">
+              {["Places Lived", "Contact Info", "Basic Info"].map((_, i) => (
+                <div key={i} className="space-y-2">
+                  <div className="h-5 bg-gray-300 rounded w-24"></div>
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center gap-2 p-2 bg-gray-100 rounded-lg">
+                      <div className="w-5 h-5 bg-gray-300 rounded"></div>
+                      <div className="h-4 bg-gray-300 rounded flex-1"></div>
+                    </div>
+                    {i === 1 && (
+                      <div className="flex items-center gap-2 p-2 bg-gray-100 rounded-lg">
+                        <div className="w-5 h-5 bg-gray-300 rounded"></div>
+                        <div className="h-4 bg-gray-300 rounded flex-1"></div>
+                      </div>
+                    )}
                   </div>
-                  <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl">
-                    <div className="w-6 h-6 bg-gradient-to-r from-gray-400 via-gray-300 to-gray-400 rounded"></div>
-                    <div className="h-5 bg-gradient-to-r from-gray-300 via-gray-200 to-gray-300 rounded flex-1"></div>
-                  </div>
                 </div>
-              </div>
-              <div className="space-y-4">
-                <div className="h-6 bg-gradient-to-r from-gray-300 via-gray-200 to-gray-300 rounded w-20"></div>
-                <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl">
-                  <div className="w-6 h-6 bg-gradient-to-r from-gray-400 via-gray-300 to-gray-400 rounded"></div>
-                  <div className="h-5 bg-gradient-to-r from-gray-300 via-gray-200 to-gray-300 rounded flex-1"></div>
-                </div>
-              </div>
+              ))}
             </div>
           </div>
         </div>
@@ -104,17 +93,15 @@ const ShimmerSkeletonLoader = () => {
 
       <style>{`
         @keyframes shimmer {
-          0% {
-            transform: translateX(-100%);
-          }
-          100% {
-            transform: translateX(100%);
-          }
+          0% { transform: translateX(-100%); }
+          100% { transform: translateX(100%); }
         }
       `}</style>
     </div>
   );
 };
+
+
 
 const ProfileComponent = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -223,9 +210,9 @@ const ProfileComponent = () => {
   const renderProfileSection = (sectionKey: SectionKey) => {
     const section = sections[sectionKey];
     return (
-      <div key={sectionKey} className="border border-gray-200 rounded-lg p-4">
-        <h4 className="font-semibold text-gray-800 mb-3">{section.title}</h4>
-        <div className="space-y-3">
+      <div key={sectionKey} className="border border-gray-200 rounded-md p-3">
+        <h4 className="font-semibold text-gray-700 text-sm mb-2">{section.title}</h4>
+        <div className="space-y-2">
           {section.fields.map((field) => {
             const rawValue = field.isProfileField
               ? (formData.profile?.[field.key as keyof UpdateProfileRequest['profile']] ?? '')
@@ -236,14 +223,16 @@ const ProfileComponent = () => {
                 : rawValue;
             return (
               <div key={field.key}>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-xs font-medium text-gray-600 mb-1">
                   {field.label}
                 </label>
                 <input
                   type={field.key === "dateOfBirth" ? "date" : "text"}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-2 py-1.5 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-400"
                   value={value}
-                  onChange={(e) => handleChange(field.key, e.target.value, field.isProfileField)}
+                  onChange={(e) =>
+                    handleChange(field.key, e.target.value, field.isProfileField)
+                  }
                 />
               </div>
             );
@@ -252,6 +241,7 @@ const ProfileComponent = () => {
       </div>
     );
   };
+  
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -343,7 +333,7 @@ const ProfileComponent = () => {
   return (
     <div className="min-h-screen">
       <div className="relative overflow-hidden rounded-md">
-        <div className="absolute inset-0 bg-gradient-to-br from-indigo-50 via-white to-purple-50" />
+        <div className="absolute inset-0 " />
         <div className="relative flex flex-col items-center gap-6 justify-center py-16 px-8">
           <div className="relative group">
             <div className="relative">
@@ -408,183 +398,173 @@ const ProfileComponent = () => {
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto px-8 mt-8">
-        <div className="bg-white rounded-3xl shadow-xl p-8">
-          <h2 className="text-3xl font-bold mb-8 text-gray-800">
-            About {user.lastName}
-          </h2>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <div className="space-y-8">
-              <div>
-                <h3 className="text-xl font-bold mb-4 text-gray-800">Work</h3>
-                <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-xl">
-                  <FaBriefcase className="text-blue-600" />
-                  <span className="text-gray-700">
-                    {user.profile?.work || "--"}
-                  </span>
-                </div>
-              </div>
-              <div>
-                <h3 className="text-xl font-bold mb-4 text-gray-800">
-                  Education
-                </h3>
-                <div className="flex items-center gap-3 p-3 bg-emerald-50 rounded-xl">
-                  <FaGraduationCap className="text-emerald-600" />
-                  <span className="text-gray-700">
-                    {user.profile?.education || "--"}
-                  </span>
-                </div>
-              </div>
-            </div>
-            <div className="space-y-8">
-              <div>
-                <h3 className="text-xl font-bold mb-4 text-gray-800">
-                  Places Lived
-                </h3>
-                <div className="flex items-center gap-3 p-3 bg-orange-50 rounded-xl">
-                  <FaMapMarkerAlt className="text-orange-600" />
-                  <span className="text-gray-700">
-                    {user.profile?.resident || "--"}
-                  </span>
-                </div>
-              </div>
-              <div>
-                <h3 className="text-xl font-bold mb-4 text-gray-800">
-                  Contact Info
-                </h3>
-                <div className="flex items-center mb-5 p-3 bg-gray-50 rounded-xl">
-                  <FaEnvelope className="text-gray-600" />
-                  <span className="text-indigo-600 ml-3 font-medium">
-                    {user.email}
-                  </span>
-                </div>
-                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
-                  <FaPhone className="text-gray-600" />
-                  <span className="text-gray-700">
-                    {user.profile?.phone || "--"}
-                  </span>
-                </div>
-              </div>
-              <div>
-                <h3 className="text-xl font-bold mb-4 text-gray-800">
-                  Basic Info
-                </h3>
-                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
-                  <FaCalendarAlt className="text-gray-600" />
-                  <span className="text-gray-700">
-                    {user.profile?.dateOfBirth
-                      ? new Date(user.profile.dateOfBirth).toLocaleDateString()
-                      : "--"}
-                  </span>
-                </div>
-              </div>
-            </div>
+      <div className="max-w-4xl mx-auto px-4 mt-4">
+  <div className="bg-white rounded-2xl shadow-lg p-4">
+    <h2 className="text-2xl font-bold mb-4 text-gray-800">
+      About {user.lastName}
+    </h2>
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="space-y-4">
+        <div>
+          <h3 className="text-lg font-bold mb-2 text-gray-800">Work</h3>
+          <div className="flex items-center gap-2 p-2 bg-blue-50 rounded-lg">
+            <FaBriefcase className="text-blue-600 text-sm" />
+            <span className="text-gray-700 text-sm">{user.profile?.work || "--"}</span>
+          </div>
+        </div>
+        <div>
+          <h3 className="text-lg font-bold mb-2 text-gray-800">Education</h3>
+          <div className="flex items-center gap-2 p-2 bg-emerald-50 rounded-lg">
+            <FaGraduationCap className="text-emerald-600 text-sm" />
+            <span className="text-gray-700 text-sm">{user.profile?.education || "--"}</span>
           </div>
         </div>
       </div>
 
-      {showModal && (
-        <div className="fixed inset-0 bg-[#00000090] bg-opacity-60 flex justify-center items-center z-50 p-4">
-          <div className="bg-white rounded-md w-full max-w-2xl max-h-[90vh] shadow-2xl overflow-hidden">
-            <div className="text-black p-6">
-              <div className="flex justify-between items-center">
-                <h3 className="text-2xl font-bold">Edit Your Profile</h3>
-                <button
-                  onClick={handleModalClose}
-                  className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-                >
-                  <MdClose className="text-2xl cursor-pointer" />
-                </button>
-              </div>
-              <p className="text-gray-600 mt-2">
-                Update your information and showcase your achievements
-              </p>
-            </div>
-
-            <div className="p-6 max-h-[calc(90vh-200px)] overflow-y-auto space-y-4">
-              <div className="border border-gray-200 rounded-lg p-4">
-                <h4 className="font-semibold text-gray-800 mb-3">Profile Photo</h4>
-                <div className="flex items-center gap-6">
-                  <div className="relative">
-                    {avatarPreview ? (
-                      <img
-                        src={avatarPreview}
-                        alt="Preview"
-                        className="w-20 h-20 rounded-full object-cover border-2 border-gray-300"
-                      />
-                    ) : user.profile?.avatar ? (
-                      <img
-                        src={user.profile.avatar}
-                        alt="Current"
-                        className="w-20 h-20 rounded-full object-cover border-2 border-gray-300"
-                      />
-                    ) : (
-                      <div className="w-20 h-20 rounded-full bg-gray-200 flex items-center justify-center border-2 border-gray-300 text-lg font-semibold text-gray-600">
-                        {(user.firstName ?? "").charAt(0)}
-                        {(user.lastName ?? "").charAt(0)}
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex gap-3">
-                    <label
-                      htmlFor="modal-avatar-upload"
-                      className="bg-[#034153] text-white px-4 py-2 rounded-md cursor-pointer hover:bg-[#052f40] transition-colors"
-                    >
-                      Change Photo
-                    </label>
-                    <input
-                      type="file"
-                      id="modal-avatar-upload"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={handleImageUpload}
-                    />
-                    {(avatarFile || avatarPreview !== user.profile?.avatar) && (
-                      <button
-                        onClick={handleRemoveImage}
-                        className="bg-gray-200 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-300 transition-colors"
-                      >
-                        Remove
-                      </button>
-                    )}
-                  </div>
-                </div>
-                <p className="text-sm text-gray-500 mt-2">
-                  Recommended: Square image, at least 200x200 pixels, max 2MB
-                </p>
-              </div>
-
-              {Object.keys(sections).map((sectionKey) =>
-                renderProfileSection(sectionKey as SectionKey)
-              )}
-            </div>
-
-            <div className="border-t border-gray-200 p-6 bg-gray-50">
-              <div className="flex justify-end gap-4">
-                <button
-                  onClick={handleModalClose}
-                  className="px-6 py-3 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors font-medium"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={saveProfile}
-                  disabled={isRefreshing}
-                  className="px-6 py-3 bg-[#034153] text-white rounded-md transition-all duration-300 font-medium shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                >
-                  {isRefreshing ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                      Saving...
-                    </>
-                  ) : (
-                    "Save Changes"
-                  )}
-                </button>
-              </div>
-            </div>
+      <div className="space-y-4">
+        <div>
+          <h3 className="text-lg font-bold mb-2 text-gray-800">Places Lived</h3>
+          <div className="flex items-center gap-2 p-2 bg-orange-50 rounded-lg">
+            <FaMapMarkerAlt className="text-orange-600 text-sm" />
+            <span className="text-gray-700 text-sm">{user.profile?.resident || "--"}</span>
           </div>
         </div>
+        <div>
+          <h3 className="text-lg font-bold mb-2 text-gray-800">Contact Info</h3>
+          <div className="flex items-center mb-2 p-2 bg-gray-50 rounded-lg">
+            <FaEnvelope className="text-gray-600 text-sm" />
+            <span className="text-indigo-600 ml-2 font-medium text-sm">{user.email}</span>
+          </div>
+          <div className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
+            <FaPhone className="text-gray-600 text-sm" />
+            <span className="text-gray-700 text-sm">{user.profile?.phone || "--"}</span>
+          </div>
+        </div>
+        <div>
+          <h3 className="text-lg font-bold mb-2 text-gray-800">Basic Info</h3>
+          <div className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
+            <FaCalendarAlt className="text-gray-600 text-sm" />
+            <span className="text-gray-700 text-sm">
+              {user.profile?.dateOfBirth
+                ? new Date(user.profile.dateOfBirth).toLocaleDateString()
+                : "--"}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+      {showModal && (
+       <div className="fixed inset-0 bg-[#00000090] flex justify-center items-center z-50 p-2">
+       <div className="bg-white rounded-md w-full max-w-xl max-h-[85vh] shadow-xl overflow-hidden">
+         {/* Header */}
+         <div className="text-black p-4">
+           <div className="flex justify-between items-center">
+             <h3 className="text-xl font-bold">Edit Your Profile</h3>
+             <button
+               onClick={handleModalClose}
+               className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+             >
+               <MdClose className="text-xl cursor-pointer" />
+             </button>
+           </div>
+           <p className="text-gray-600 mt-1 text-sm">
+             Update your information and showcase your achievements
+           </p>
+         </div>
+     
+         {/* Body */}
+         <div className="p-4 max-h-[calc(85vh-160px)] overflow-y-auto scroll-hide space-y-3">
+           {/* Profile Photo */}
+           <div className="border border-gray-200 rounded-md p-3">
+             <h4 className="font-semibold text-gray-800 text-sm mb-2">Profile Photo</h4>
+             <div className="flex items-center gap-4">
+               <div className="relative">
+                 {avatarPreview ? (
+                   <img
+                     src={avatarPreview}
+                     alt="Preview"
+                     className="w-16 h-16 rounded-full object-cover border-2 border-gray-300"
+                   />
+                 ) : user.profile?.avatar ? (
+                   <img
+                     src={user.profile.avatar}
+                     alt="Current"
+                     className="w-16 h-16 rounded-full object-cover border-2 border-gray-300"
+                   />
+                 ) : (
+                   <div className="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center border-2 border-gray-300 text-base font-semibold text-gray-600">
+                     {(user.firstName ?? "").charAt(0)}
+                     {(user.lastName ?? "").charAt(0)}
+                   </div>
+                 )}
+               </div>
+               <div className="flex gap-2">
+                 <label
+                   htmlFor="modal-avatar-upload"
+                   className="bg-[#034153] text-white px-3 py-1.5 rounded-md cursor-pointer text-sm hover:bg-[#052f40] transition-colors"
+                 >
+                   Change
+                 </label>
+                 <input
+                   type="file"
+                   id="modal-avatar-upload"
+                   accept="image/*"
+                   className="hidden"
+                   onChange={handleImageUpload}
+                 />
+                 {(avatarFile || avatarPreview !== user.profile?.avatar) && (
+                   <button
+                     onClick={handleRemoveImage}
+                     className="bg-gray-200 cursor-pointer text-gray-700 px-3 py-1.5 rounded-md hover:bg-gray-300 text-sm transition-colors"
+                   >
+                     Remove
+                   </button>
+                 )}
+               </div>
+             </div>
+             <p className="text-xs text-gray-500 mt-1">
+               Recommended: Square image, at least 200x200 pixels, max 2MB
+             </p>
+           </div>
+     
+           
+           {Object.keys(sections).map((sectionKey) =>
+             renderProfileSection(sectionKey as SectionKey)
+           )}
+         </div>
+     
+         {/* Footer */}
+         <div className="border-t border-gray-200 p-4 bg-gray-50">
+           <div className="flex justify-end gap-2">
+             <button
+               onClick={handleModalClose}
+               className="px-4 py-2 cursor-pointer bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors text-sm font-medium"
+             >
+               Cancel
+             </button>
+             <button
+               onClick={saveProfile}
+               disabled={isRefreshing}
+               className="px-4 cursor-pointer py-2 bg-[#034153] text-white rounded-md transition-all duration-300 font-medium shadow flex items-center gap-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+             >
+               {isRefreshing ? (
+                 <>
+                   <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                   Saving...
+                 </>
+               ) : (
+                 "Save"
+               )}
+             </button>
+           </div>
+         </div>
+       </div>
+     </div>
+     
       )}
     </div>
   );

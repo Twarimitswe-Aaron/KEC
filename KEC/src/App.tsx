@@ -21,6 +21,7 @@ import CourseManagement from "./routes/courseManagement";
 import AdminCourseManagement from "./routes/AdminCourseManagement";
 import Announcements from "./routes/Announcements";
 import MyProfile from "./routes/MyProfile";
+import ProfilePage from "./routes/ProfilePage"
 import Feedback from "./routes/Feedback";
 import Logout from "./routes/Logout";
 import PaymentManagement from "./routes/PaymentManagement";
@@ -78,6 +79,8 @@ function App() {
           </Route>
           <Route path="/announcements" element={<Announcements />} />
           <Route path="/my-account" element={<MyProfile />} />
+          <Route path="/profile/:id" element={<ProfilePage />} />
+
           <Route path="/feedback" element={<Feedback />} />
           <Route path="/payment-management" element={<PaymentManagement />} />
           <Route path="/certificate-creation" element={<Certificates />} />

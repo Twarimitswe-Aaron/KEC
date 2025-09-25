@@ -1,6 +1,7 @@
 import React, { useState, useContext } from "react";
 import { UserRoleContext as UserRoleContextImport } from "../UserRoleContext";
 import { useUser } from "../hooks/useUser";
+import { Link } from "react-router-dom";
 import {
   useAnnounceMutation,
   useGetAnnounceQuery,
@@ -12,6 +13,7 @@ type AnnouncementCardProps = {
   message: string;
   date: string;
   avatar?: string | null;
+  announcerId:number
 };
 
 const Announcements = () => {
@@ -69,7 +71,7 @@ const Announcements = () => {
     }
   };
 
-  const AnnouncementCard = ({ name, message, date, avatar }: AnnouncementCardProps) => {
+  const AnnouncementCard = ({ name, message, date, avatar,announcerId }: AnnouncementCardProps) => {
   
     const fallbackUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(
       name
@@ -78,11 +80,13 @@ const Announcements = () => {
     return (
       <div className="bg-white/60 backdrop-blur-md rounded-lg shadow-md border border-gray-200 p-3 mb-3 hover:shadow-lg transition duration-300">
         <div className="flex items-center gap-2 mb-2">
-          <img
+        <Link to={`/profile/${announcerId}`} className="flex items-center gap-2">
+         <img
             src={avatar || fallbackUrl}
             alt={`${name} avatar`}
-            className="w-8 h-8 rounded-full border-none shadow-sm"
+            className="w-8 h-8 rounded-full border-none shadow-sm object-cover"
           />
+         </Link>
           <div className="flex justify-between w-full items-center gap-2">
             <div className="inline-block">
               <h3 className="font-semibold text-[#022F40] text-sm tracking-wide">
@@ -174,6 +178,7 @@ const Announcements = () => {
                 message={announcement.content}
                 date={new Date(announcement.createdAt).toLocaleDateString()}
                 avatar={announcement.poster?.profile?.avatar || null}
+                announcerId={announcement.poster?.id}
               />
             );
           })

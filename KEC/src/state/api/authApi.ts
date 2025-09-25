@@ -19,6 +19,24 @@ export interface UserState {
   };
 }
 
+export interface UserProfileResponse {
+  id: number;
+  firstName: string;
+  lastName: string;
+  email: string;
+  role: string;
+  profile: {
+    id: number;
+    avatar: string | null;
+    work: string | null;
+    education: string | null;
+    phone: string | null;
+    dateOfBirth: Date | null;
+    resident:string| null
+  } | null; // profile may not exist
+}
+
+
 
 export interface SignUpRequest {
   firstName: string;
@@ -43,6 +61,10 @@ export const authApi = apiCore.apiSlice.injectEndpoints({
         method: 'POST',
         body,
       }),
+    }),
+    getSpecificProfile: builder.query<UserProfileResponse, number>({
+      query: (id) => `/auth/profile/${id}`,
+      providesTags: ["User"],
     }),
     updateProfile: builder.mutation<{message:string,user:UserState}, FormData>({
       query: (profileData) => ({
@@ -131,5 +153,6 @@ export const {
   useVerifyResetMutation,
   useResetPasswordMutation,
   useResetKnownPassMutation,
-  useUpdateProfileMutation 
+  useUpdateProfileMutation ,
+  useGetSpecificProfileQuery 
 } = authApi;

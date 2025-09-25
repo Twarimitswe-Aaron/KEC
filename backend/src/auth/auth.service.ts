@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   Injectable,
+  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
@@ -143,4 +144,36 @@ export class AuthService {
       text:`Your password reset code is ${code}.`
     })
   }
+
+  async findUserProfile(userId: number) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        role: true,
+        profile: {
+          select: {
+            id: true,
+            avatar: true,
+            work: true,
+            resident:true,
+            education: true,
+            phone: true,
+            dateOfBirth: true,
+          },
+        },
+      },
+    });
+  
+    if (!user) {
+      throw new NotFoundException(`User with ID ${userId} not found`);
+    }
+    console.log(user)
+  
+    return user; 
+  }
+  
 }

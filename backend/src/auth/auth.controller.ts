@@ -16,6 +16,7 @@ import {
   InternalServerErrorException,
   UseInterceptors,
   UploadedFile,
+  Param,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { ConfigService } from '@nestjs/config';
@@ -220,6 +221,17 @@ async updateProfile(
     throw new InternalServerErrorException("Failed to update profile");
   }
 }
+
+
+@UseGuards(AuthGuard)
+@Get("profile/:id")
+async getUser(@Param("id") id: string) {
+  const userId = Number(id);
+  if (isNaN(userId)) throw new NotFoundException("Invalid user ID");
+
+  return this.authService.findUserProfile(userId);
+}
+
 
   
 
