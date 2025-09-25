@@ -14,23 +14,51 @@ export class AnnouncementService {
     private readonly configService: ConfigService,
   ) {}
  async create(createAnnouncementDto: CreateAnnouncementDto) {
-    const { content, poster } = createAnnouncementDto;
-    const { posterId } = poster;
+
+    const { body } = createAnnouncementDto;
+   
+
+
+    const id=Number(body.posterId)
+    if (!id || isNaN(id)) {
+      throw new Error("Invalid posterId");
+    }
+  
+    if (!body.content?.trim()) {
+      throw new Error("Content is required");
+    }
+    const poster = await this.prismaService.user.findUnique({
+      where: { id: id },
+    });
+    
+    if (!poster) {
+      throw new Error(`User with ID ${id} does not exist`);
+    }
+    
+  
+
     const newAnnouncement = await this.prismaService.announcement.create({
-      data:{
-        content,
-        poster:{
-          connect:{id:+posterId}
-        },
-        
+      data: {
+        content: body.content,
+        posterId: id, // safer than connect
       },
-      include:{poster:true}
-    })
+      include: { poster: true },
+    });
+    
+    return {message:"Announcement is posted successully"};
   }
 
-  findAll() {
-    return `This action returns all announcement`;
+  async findAll() {
+    const allAnnouncements = await this.prismaService.announcement.findMany({
+      include: { 
+        poster: true 
+      },
+      orderBy: { createdAt: 'desc' } // optional: newest first
+    });
+  
+    return allAnnouncements;
   }
+  
 
   findOne(id: number) {
     return `This action returns a #${id} announcement`;

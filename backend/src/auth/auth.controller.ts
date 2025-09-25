@@ -158,7 +158,6 @@ async updateProfile(
     throw new Error('Profile data missing');
   }
 
-  // Ensure profile is parsed into an object
   let parsedProfile: any;
   try {
     parsedProfile =

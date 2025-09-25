@@ -1,20 +1,17 @@
-import { IsEmail, IsNotEmpty, IsString, ValidateNested } from "class-validator";
-import { Type } from "class-transformer";
+import { IsInt, IsNotEmpty, IsString } from "class-validator";
 
-class PosterDto {
-    @IsNotEmpty()
-    posterId:string;
-   
-   
-}
+
 
 export class CreateAnnouncementDto {
+    body:body
+}
+
+class body{
     @IsString()
     @IsNotEmpty()
     content: string;
 
-    @ValidateNested()
-    @Type(() => PosterDto)
-    @IsNotEmpty()
-    poster: PosterDto;
+    @IsInt()
+    posterId: number;
+
 }
