@@ -70,7 +70,7 @@ const Announcements = () => {
   };
 
   const AnnouncementCard = ({ name, message, date, avatar }: AnnouncementCardProps) => {
-    console.log(name,avatar)
+  
     const fallbackUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(
       name
     )}&background=022F40&color=ffffff&rounded=true&size=32`;
@@ -165,6 +165,7 @@ const Announcements = () => {
           announcementsData.map((announcement: any, index: number) => {
             const isCurrentUser = announcement.poster?.id === userData?.id;
             const nameToShow = isCurrentUser ? "You" : `${announcement.poster?.firstName ?? ""} ${announcement.poster?.lastName ?? ""}`.trim() || "Unknown";
+           
 
             return (
               <AnnouncementCard

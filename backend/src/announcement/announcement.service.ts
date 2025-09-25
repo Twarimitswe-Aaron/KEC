@@ -50,14 +50,29 @@ export class AnnouncementService {
 
   async findAll() {
     const allAnnouncements = await this.prismaService.announcement.findMany({
-      include: { 
-        poster: true 
+      select: {
+        id: true,
+        content: true,
+        createdAt: true,
+        poster: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            profile: {
+              select: {
+                avatar: true,
+              },
+            },
+          },
+        },
       },
-      orderBy: { createdAt: 'desc' } // optional: newest first
+      orderBy: { createdAt: 'desc' },
     });
   
     return allAnnouncements;
   }
+  
   
 
   findOne(id: number) {
