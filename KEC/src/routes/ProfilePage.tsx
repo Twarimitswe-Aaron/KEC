@@ -10,7 +10,7 @@ import {
 import { useParams } from "react-router-dom";
 import { useGetSpecificProfileQuery } from "../state/api/authApi";
 
-// 🎨 Skeleton Loader Component
+
 const ProfileSkeleton: React.FC = () => {
   return (
     <div className="min-h-screen animate-pulse">

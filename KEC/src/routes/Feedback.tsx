@@ -1,5 +1,8 @@
 import React, { useState, useContext } from "react";
 import { UserRoleContext } from "../UserRoleContext";
+import { feedBackPost, feedBackRes, useGetFeedBackQuery, usePostFeedBackMutation } from "../state/api/announcementsApi";
+import { useUser } from "../hooks/useUser";
+import { toast } from "react-toastify";
 
 type FeedbackCardProps = {
   name: string;
@@ -7,6 +10,8 @@ type FeedbackCardProps = {
   message: string;
   date: string;
 };
+
+
 
 // Sub-component for individual feedback cards
 const FeedbackCard = ({ name, role, message, date }: FeedbackCardProps) => {
@@ -41,56 +46,47 @@ const FeedbackCard = ({ name, role, message, date }: FeedbackCardProps) => {
 const Feedback = () => {
   const UserRole = useContext(UserRoleContext);
   const [feedback, setFeedback] = useState("");
-  const [userData, setUserData] = useState({
-    profileImage: "./images/user.png",
-    name: "Aart",
-    placeholderText: "Type your Feedback here...",
-  });
+  const [sendFeedBack]=usePostFeedBackMutation()
+  const { data, refetch, isLoading, isFetching } = useGetFeedBackQuery()
 
-  const handleSubmit = () => {
-    console.log("Feedback submitted:", feedback);
-    setFeedback("");
+  const {userData}=useUser()
+  const [formData,setFormData]=useState<feedBackPost>({
+    content:"",
+    posterId:userData?.id ?? 0
+  })
+
+  const handleSubmit = async () => {
+    if(!formData.content.trim() || formData.posterId==null)return;
+    try {
+      const {data}=await sendFeedBack({
+        content:formData.content,
+        posterId:formData.posterId,
+      })
+      toast.success(data && data.message);
+      refetch();
+    } catch (error:unknown) {
+      const message=
+      (error as {data?:{message?:string}})?.data?.message ?? "Failed to send Feedback";
+      toast.error(message);
+    }
   };
 
-  const feedbacks = [
-    {
-      name: "Izere Cassie",
-      role: "Student",
-      date: "2025-06-25",
-      message:
-        "The interactive tools and resources on this website have made learning so much more engaging. I find it easier to grasp difficult concepts thanks to the well-organized materials and helpful videos.",
-    },
-    {
-      name: "Cyusa Arnold",
-      role: "Teacher",
-      date: "2025-06-26",
-      message:
-        "I love how user-friendly this website is! The clean layout and easy navigation ensure I can quickly find what I need. The live chat support is also a great feature whenever I have questions.",
-    },
-    {
-      name: "Muhire Prince",
-      role: "Teacher",
-      date: "2025-06-26",
-      message:
-        "This platform has been a game-changer for my studies. The timely notifications about assignments and exams keep me on track, and the availability of previous lecture recordings helps me revisit topics I need more time with.",
-    },
-  ];
 
   return (
     <div className="">
       {(UserRole === "student" || UserRole === "teacher") && (
         <div className="flex items-top p-2.5">
           <img
-            src={userData.profileImage}
-            alt={userData.name}
+            src={userData?.profile?.avatar}
+            alt={userData?.firstName}
             className="w-10 h-10 rounded-full mr-2.5"
           />
           <div className="flex-1 bg-gray-100 rounded-lg p-2.5">
             <div className="flex flex-col h-full">
               <textarea
-                placeholder={userData.placeholderText}
-                value={feedback}
-                onChange={(e) => setFeedback(e.target.value)}
+                placeholder="Write your feedback here.."
+                value={formData.content}
+                onChange={(e) => setFormData(prev => ({...prev, content: e.target.value}))}
                 className="w-full min-h-[140px] p-2.5 scroll-hide rounded-lg border-none resize-none bg-gray-100 focus:outline-none"
               />
               <div className="flex justify-end mt-1">
@@ -110,14 +106,14 @@ const Feedback = () => {
         <h2 className="text-3xl font-bold text-[#022F40] mb-6 tracking-tight">
           Feedback
         </h2>
-        {feedbacks.length > 0 ? (
-          feedbacks.map((feedback, index) => (
+        {(data ?? []).length > 0 ? (
+          (data ?? []).map((fb, index) => (
             <FeedbackCard
               key={index}
-              name={feedback.name}
-              role={feedback.role}
-              message={feedback.message}
-              date={feedback.date}
+              name={`${fb.poster.firstName} ${fb.poster.lastName}`}
+              role={fb.poster.email}
+              message={fb.content}
+              date={fb.createdAt}
             />
           ))
         ) : (

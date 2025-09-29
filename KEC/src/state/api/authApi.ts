@@ -35,9 +35,6 @@ export interface UserProfileResponse {
     resident:string| null
   } | null; // profile may not exist
 }
-
-
-
 export interface SignUpRequest {
   firstName: string;
   lastName: string;
@@ -45,7 +42,6 @@ export interface SignUpRequest {
   password: string;
 
 }
-
 export const authApi = apiCore.apiSlice.injectEndpoints({
   endpoints: (builder) => ({
     getUser: builder.query<UserState, void>({

@@ -5,6 +5,22 @@ export interface announcementPost{
     posterId:number,
 }
 
+export interface feedBackPost{
+    content:string,
+    posterId:number,
+}
+
+export interface feedBackRes{
+    content:string,
+    createdAt:string,
+    poster:{
+        firstName:string,
+        lastName:string,
+        avatar:string,
+        email:string,
+    }
+}
+
 export interface announcementRes{
     content:string,
     createdAt:string,
@@ -27,11 +43,24 @@ export const announcementApi=apiCore.apiSlice.injectEndpoints({
         getAnnounce:builder.query<announcementRes[],void>({
             query:()=>'/announcement',
             providesTags:["Announcement"]
+        }),
+        getFeedBack:builder.query<feedBackRes[],void>({
+            query: ()=>'/feedBack',
+            providesTags:["Announcement"]
+        }),
+        postFeedBack:builder.mutation<{message:string},feedBackPost>({
+            query:(body)=>({
+                url:'/feedBack',
+                method:"POST",
+                body
+            })
         })
     })
 })
 
 export const {
     useAnnounceMutation,
-    useGetAnnounceQuery
+    useGetAnnounceQuery,
+    useGetFeedBackQuery,
+    usePostFeedBackMutation
 }=announcementApi
