@@ -60,8 +60,7 @@ async function bootstrap() {
 
   try {
     const pingResult = await redisClient.ping();
-    console.log('Redis ping successful:', pingResult);
-    
+   
     sessionStore = new RedisStore({
       client: redisClient,
       prefix: 'sess:',

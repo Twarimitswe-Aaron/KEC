@@ -16,7 +16,7 @@ export class AuthGuard implements CanActivate {
     const request = context.switchToHttp().getRequest<Request>();
 
     let token = request.cookies?.["jwt_access"];
-    console.log(token)
+ 
 
     if (!token && request.headers["authorization"]) {
       const authHeader = request.headers["authorization"];
@@ -24,7 +24,7 @@ export class AuthGuard implements CanActivate {
         token = authHeader.split(" ")[1]; 
       }
     }
-    console.log(token)
+  
 
     if (!token) {
       throw new UnauthorizedException("No token provided");

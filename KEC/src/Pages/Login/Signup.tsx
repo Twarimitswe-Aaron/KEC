@@ -11,7 +11,7 @@ import { useSignupMutation } from "../../state/api/authApi";
 import { FcGoogle } from "react-icons/fc";
 
 const Signup = () => {
-  const navigate = useNavigate();
+  // const navigate = useNavigate();
   // const { getToken } = useCsrfToken();
   const [signup] = useSignupMutation();
   const formRef = useRef<HTMLFormElement>(null);

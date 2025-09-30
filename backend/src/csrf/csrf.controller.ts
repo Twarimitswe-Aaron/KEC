@@ -13,8 +13,6 @@ export class CsrfController {
         throw new Error('Session not initialized');
       }
 
-      console.log('Generating CSRF token for session:', req.sessionID);
-      console.log('Current session data:', req.session);
       
       const token = generateCsrfToken(req, res); 
      
