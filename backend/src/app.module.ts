@@ -19,6 +19,7 @@ import { APP_FILTER, APP_GUARD } from '@nestjs/core';
 import { CsrfExceptionFilter } from './filters/csrf-exception.filter';
 import { AuthGuard } from './auth/auth.guard';
 import { RolesGuard } from './auth/roles.guard';
+import { FeedbackModule } from './feedback/feedback.module';
 @Module({
   imports: [
     StudentModule,
@@ -34,6 +35,7 @@ import { RolesGuard } from './auth/roles.guard';
     PaymentModule,
     UserManagementModule,
     AnnouncementModule,
+    FeedbackModule,
   ],
   controllers: [AppController, CsrfController],
   providers: [

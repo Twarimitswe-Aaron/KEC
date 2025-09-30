@@ -45,12 +45,12 @@ export const announcementApi=apiCore.apiSlice.injectEndpoints({
             providesTags:["Announcement"]
         }),
         getFeedBack:builder.query<feedBackRes[],void>({
-            query: ()=>'/feedBack',
+            query: ()=>'/feedback',
             providesTags:["Announcement"]
         }),
         postFeedBack:builder.mutation<{message:string},feedBackPost>({
             query:(body)=>({
-                url:'/feedBack',
+                url:'/feedback/add',
                 method:"POST",
                 body
             })

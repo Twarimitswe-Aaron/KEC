@@ -44,6 +44,10 @@ const RightSidebar = () => {
     { name: "IPRC Kicukiro", image: "/images/kicukiro.png" },
     { name: "Gisozi TSS", image: "/images/gisozi.png" },
   ];
+  const truncateName = (name: string, maxLength: number) => {
+    if (!name) return "";
+    return name.length > maxLength ? name.slice(0, maxLength) + "..." : name;
+  };
 
   return (
     <aside
@@ -62,7 +66,10 @@ const RightSidebar = () => {
             />
           </Link>
           <div className="block">
-            <h3 className="font-medium"> {userData?.lastName}</h3>
+            <h3 className="font-medium" title={userData?.lastName}>
+              {" "}
+              {truncateName(userData?.lastName ?? "", 6)}
+            </h3>
             <p className="text-sm text-gray-500"></p>
           </div>
         </div>

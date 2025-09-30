@@ -40,7 +40,7 @@ export class AnnouncementService {
     const newAnnouncement = await this.prismaService.announcement.create({
       data: {
         content: body.content,
-        posterId: id, // safer than connect
+        posterId: id, 
       },
       include: { poster: true },
     });
