@@ -1,66 +1,75 @@
-import * as apiCore from './apiSlice'
+import * as apiCore from "./apiSlice";
 
-export interface announcementPost{
-    content:string,
-    posterId:number,
+export interface announcementPost {
+  content: string;
+  posterId: number;
 }
 
-export interface feedBackPost{
-    content:string,
-    posterId:number,
+export interface feedBackPost {
+  content: string;
+  posterId: number;
 }
 
-export interface feedBackRes{
-    content:string,
-    createdAt:string,
-    poster:{
-        firstName:string,
-        lastName:string,
-        avatar:string,
-        email:string,
-    }
+export interface feedBackRes {
+  content: string;
+  createdAt: string;
+  poster: {
+    firstName: string;
+    lastName: string;
+    avatar: string;
+    email: string;
+  };
 }
 
-export interface announcementRes{
-    content:string,
-    createdAt:string,
-    poster:{
-        firstName:string,
-        lastName:string,
-        avatar:string,
-        email:string
-    }
+export interface announcementRes {
+  content: string;
+  createdAt: string;
+  poster: {
+    firstName: string;
+    lastName: string;
+    avatar: string;
+    email: string;
+  };
 }
-export const announcementApi=apiCore.apiSlice.injectEndpoints({
-    endpoints:(builder)=>({
-        announce:builder.mutation<{message:string},{body:announcementPost}>({
-            query:(body)=>({
-                url:'/announcement',
-                method:'POST',
-                body,
-            })
+export const announcementApi = apiCore.apiSlice.injectEndpoints({
+  endpoints: (builder) => ({
+    announce: builder.mutation<{ message: string }, { body: announcementPost }>(
+      {
+        query: (body) => ({
+          url: "/announcement",
+          method: "POST",
+          body,
         }),
-        getAnnounce:builder.query<announcementRes[],void>({
-            query:()=>'/announcement',
-            providesTags:["Announcement"]
-        }),
-        getFeedBack:builder.query<feedBackRes[],void>({
-            query: ()=>'/feedback',
-            providesTags:["Announcement"]
-        }),
-        postFeedBack:builder.mutation<{message:string},feedBackPost>({
-            query:(body)=>({
-                url:'/feedback/add',
-                method:"POST",
-                body
-            })
-        })
-    })
-})
+      }
+    ),
+    getAnnounce: builder.query<announcementRes[], void>({
+      query: () => "/announcement",
+      providesTags: ["Announcement"],
+    }),
+    DeleteAnnounce: builder.mutation<{ message: string }, {id:number}>({
+      query: ({id}) => ({
+        url: `/announcement/${id}`,
+        method: "DELETE",
+      }),
+    }),
+    getFeedBack: builder.query<feedBackRes[], void>({
+      query: () => "/feedback",
+      providesTags: ["Announcement"],
+    }),
+    postFeedBack: builder.mutation<{ message: string }, feedBackPost>({
+      query: (body) => ({
+        url: "/feedback/add",
+        method: "POST",
+        body,
+      }),
+    }),
+  }),
+});
 
 export const {
-    useAnnounceMutation,
-    useGetAnnounceQuery,
-    useGetFeedBackQuery,
-    usePostFeedBackMutation
-}=announcementApi
+  useAnnounceMutation,
+  useGetAnnounceQuery,
+  useGetFeedBackQuery,
+  usePostFeedBackMutation,
+  useDeleteAnnounceMutation,
+} = announcementApi;

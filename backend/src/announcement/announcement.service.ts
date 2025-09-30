@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { CreateAnnouncementDto } from './dto/create-announcement.dto';
 import { UpdateAnnouncementDto } from './dto/update-announcement.dto';
 
@@ -83,7 +83,29 @@ export class AnnouncementService {
     return `This action updates a #${id} announcement`;
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} announcement`;
+  async remove(id: number, userId: number) {
+  
+    const deletedAnnounce = await this.prismaService.announcement.findUnique({
+      where: { id },
+    });
+
+    if (!deletedAnnounce) {
+      throw new NotFoundException('Announcement not found');
+    }
+    const role=await this.prismaService.user.findUnique({
+      where:{id:userId}
+    })
+
+
+ 
+    if (deletedAnnounce.posterId !== userId || role?.role !== 'teacher' && role?.role !== 'admin') {
+      throw new ForbiddenException("You are not allowed to delete this announcement");
+    }
+
+    await this.prismaService.announcement.delete({
+      where: { id },
+    });
+
+    return { message: 'Announcement deleted successfully' };
   }
 }

@@ -7,6 +7,7 @@ import {
   Param,
   Delete,
   UseGuards,
+  Req,
 } from '@nestjs/common';
 import { AnnouncementService } from './announcement.service';
 import { CreateAnnouncementDto } from './dto/create-announcement.dto';
@@ -48,7 +49,9 @@ export class AnnouncementController {
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.announcementService.remove(+id);
+  remove(@Param('id') id: number, @Req() req) {
+    const userId=req.sub;
+    
+    return this.announcementService.remove(id,userId);
   }
 }

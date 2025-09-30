@@ -20,49 +20,42 @@ export class StudentService {
 
   async createStudent(dto: CreateStudentDto) {
     const { firstName, lastName, email, password, confirmPassword } = dto;
-
+  
     try {
-      const existingUser = await this.prisma.user.findUnique({
-        where: { email },
-      });
+      const existingUser = await this.prisma.user.findUnique({ where: { email } });
+  
       if (password.length < 6) {
-        throw new BadRequestException(
-          'Password must be at least 6 characters long',
-        );
+        throw new BadRequestException('Password must be at least 6 characters long');
       }
-
-      if(password !== confirmPassword){
-        throw new BadRequestException("Password doesn't match")
+  
+      if (password !== confirmPassword) {
+        throw new BadRequestException("Password doesn't match");
       }
-    
-      
-
-
+  
       if (existingUser) {
         if (!existingUser.isEmailVerified) {
-          if (
-            existingUser.tokenExpiresAt &&
-            existingUser.tokenExpiresAt > new Date()
-          ) {
-            throw new BadRequestException(
-              'A verification email has already been sent. Please check your email to activate your account.',
-            );
+          if (existingUser.tokenExpiresAt && existingUser.tokenExpiresAt > new Date()) {
+            throw new BadRequestException('A verification email has already been sent. Please check your email to activate your account.');
           } else {
-            throw new BadRequestException(
-              'Your previous verification link expired. Please register again.',
-            );
+            throw new BadRequestException('Your previous verification link expired. Please register again.');
           }
         } else {
-          throw new BadRequestException(
-            'Account already exists. Please log in.',
-          );
+          throw new BadRequestException('Account already exists. Please log in.');
         }
       }
-
+  
       const hashedPassword = await bcrypt.hash(password, 10);
       const verificationToken = crypto.randomBytes(32).toString('hex');
       const tokenExpiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 min
-
+  
+      // Generate avatar URL based on name
+      const getAvatarUrl = (firstName: string, lastName: string, size: number = 64) => {
+        const initials = `${firstName.charAt(0)}${lastName.charAt(0)}`;
+        const backgroundColor = Math.floor(Math.random() * 16777215).toString(16); // Random hex color
+        return `https://ui-avatars.com/api/?name=${encodeURIComponent(initials)}&background=${backgroundColor}&color=fff&size=${size}&font-size=0.5&length=2&rounded=true&bold=true`;
+      };
+      const avatarUrl = getAvatarUrl(firstName,lastName);
+  
       const student = await this.prisma.student.create({
         data: {
           user: {
@@ -74,39 +67,45 @@ export class StudentService {
               role: Role.student,
               verificationToken,
               tokenExpiresAt,
+              profile:{
+                create:{
+                  avatar: avatarUrl
+                }
+              }
             },
           },
         },
-        include: { user: true },
+        include: { user: { include: { profile: true } } },
       });
-
+  
       await this.sendVerificationEmail(email, verificationToken);
-
+  
       return {
         status: 'success',
-        message:
-          `Registration successful! Please check ${email} to verify your account.`,
+        message: `Registration successful! Please check ${email} to verify your account.`,
         student: {
           id: student.id,
           email: student.user.email,
           firstName: student.user.firstName,
           lastName: student.user.lastName,
+          avatar: student?.user?.profile?.avatar || "",
+
         },
+      
       };
     } catch (error: any) {
       if (error.code === 'P2002') {
         throw new BadRequestException('Email already exists.');
       }
-
+  
       if (error instanceof BadRequestException) {
         throw error;
       }
-
-      throw new InternalServerErrorException(
-        error.message || 'Something went wrong. Please try again.',
-      );
+  
+      throw new InternalServerErrorException(error.message || 'Something went wrong. Please try again.');
     }
   }
+  
 
   async sendVerificationEmail(email: string, token: string) {
    

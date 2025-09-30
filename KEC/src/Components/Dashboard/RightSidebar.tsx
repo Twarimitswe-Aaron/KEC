@@ -56,24 +56,30 @@ const RightSidebar = () => {
     >
       {/* Profile Section */}
       <div className="text-center flex justify-center items-center">
-        <h2 className="text-lg font-semibold mb-2 capitalize">{userRole}</h2>
-        <div className="mx-auto items-center flex gap-4">
-          <Link to="/my-account">
-            <img
-              src={userData?.profile?.avatar}
-              alt="Profile"
-              className="w-16 h-16 rounded-full object-cover mb-1"
-            />
-          </Link>
-          <div className="block">
-            <h3 className="font-medium" title={userData?.lastName}>
-              {" "}
-              {truncateName(userData?.lastName ?? "", 6)}
-            </h3>
-            <p className="text-sm text-gray-500"></p>
-          </div>
-        </div>
-      </div>
+  <h2 className="text-lg font-semibold mb-2 capitalize">{userRole}</h2>
+  <div className="mx-auto items-center flex gap-4">
+    <Link to="/my-account">
+      <img
+        src={
+          userData?.profile?.avatar
+            ? userData.profile.avatar
+            : `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                userData?.firstName ?? ""
+              )}&background=022F40&color=ffffff&rounded=true&size=64`
+        }
+        alt="Profile"
+        className="w-16 h-16 rounded-full object-cover mb-1"
+      />
+    </Link>
+    <div className="block">
+      <h3 className="font-medium" title={userData?.lastName}>
+        {truncateName(userData?.lastName ?? "", 6)}
+      </h3>
+      <p className="text-sm text-gray-500"></p>
+    </div>
+  </div>
+</div>
+
 
       {isStudent(userRole) && <Rating />}
 

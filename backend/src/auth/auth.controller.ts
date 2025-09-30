@@ -139,88 +139,87 @@ export class AuthController {
 
   @UseGuards(AuthGuard)
   @Put("update-profile")
-  @UseInterceptors(FileInterceptor('avatar',{
-    storage:diskStorage({
-      destination:'./uploads/avatars',
-      filename:(req,file,cb)=>{
-        const uniqueSuffix=Date.now()+"-"+Math.round(Math.random()*1e9);
-        const ext=file.originalname.split('.').pop();
-        cb(null,`${file.fieldname}-${uniqueSuffix}.${ext}`);
-      }
+  @UseInterceptors(
+    FileInterceptor("avatar", {
+      storage: diskStorage({
+        destination: "./uploads/avatars",
+        filename: (req, file, cb) => {
+          const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+          const ext = file.originalname.split(".").pop();
+          cb(null, `${file.fieldname}-${uniqueSuffix}.${ext}`);
+        },
+      }),
     })
-}))
-async updateProfile(
-  @Req() req,
-  @UploadedFile() avatar: Express.Multer.File,
-  @Body() body: UpdateUserDto,
-) {
-  if (!body || !body.profile) {
-    console.log("body is missing", body);
-    throw new Error('Profile data missing');
-  }
-
-  let parsedProfile: any;
-  try {
-    parsedProfile =
-      typeof body.profile === "string"
-        ? JSON.parse(body.profile)
-        : body.profile;
-  } catch (err) {
-    throw new BadRequestException("Invalid profile JSON format");
-  }
-
-  const email = req.user?.email;
-  if (!email) {
-    throw new BadRequestException("User not found");
-  }
-
-  const avatarUrl = avatar
-    ? `${this.configService.get("BACKEND_URL")}/uploads/avatars/${avatar.filename}`
-    : undefined;
-
-  try {
-    const updatedUser = await this.prisma.user.update({
-      where: { email },
-      data: {
-        firstName: body.firstName ?? undefined,
-        lastName: body.lastName ?? undefined,
-        profile: {
-          upsert: {
-            create: {
-              work: parsedProfile?.work ?? undefined,
-              education: parsedProfile?.education ?? undefined,
-              resident: parsedProfile?.resident ?? undefined,
-              phone: parsedProfile?.phone ?? undefined,
-              dateOfBirth: parsedProfile?.dateOfBirth
-                ? new Date(parsedProfile.dateOfBirth)
-                : undefined,
-              avatar: avatarUrl ?? undefined,
-            },
-            update: {
-              work: parsedProfile?.work ?? undefined,
-              education: parsedProfile?.education ?? undefined,
-              resident: parsedProfile?.resident ?? undefined,
-              phone: parsedProfile?.phone ?? undefined,
-              dateOfBirth: parsedProfile?.dateOfBirth
-                ? new Date(parsedProfile.dateOfBirth)
-                : undefined,
-              avatar: avatarUrl ?? undefined,
+  )
+  async updateProfile(
+    @Req() req,
+    @UploadedFile() avatar: Express.Multer.File,
+    @Body() body?: UpdateUserDto
+  ) {
+    const email = req.user?.email;
+    if (!email) {
+      throw new BadRequestException("User not found");
+    }
+  
+    // Parse profile if body is sent
+    let parsedProfile: any = {};
+    if (body?.profile) {
+      try {
+        parsedProfile =
+          typeof body.profile === "string" ? JSON.parse(body.profile) : body.profile;
+      } catch (err) {
+        throw new BadRequestException("Invalid profile JSON format");
+      }
+    }
+  
+    const avatarUrl = avatar
+      ? `${this.configService.get("BACKEND_URL")}/uploads/avatars/${avatar.filename}`
+      : undefined;
+  
+    try {
+      const updatedUser = await this.prisma.user.update({
+        where: { email },
+        data: {
+          firstName: body?.firstName ?? undefined,
+          lastName: body?.lastName ?? undefined,
+          profile: {
+            upsert: {
+              create: {
+                work: parsedProfile?.work ?? undefined,
+                education: parsedProfile?.education ?? undefined,
+                resident: parsedProfile?.resident ?? undefined,
+                phone: parsedProfile?.phone ?? undefined,
+                dateOfBirth: parsedProfile?.dateOfBirth
+                  ? new Date(parsedProfile.dateOfBirth)
+                  : undefined,
+                avatar: avatarUrl ?? undefined,
+              },
+              update: {
+                work: parsedProfile?.work ?? undefined,
+                education: parsedProfile?.education ?? undefined,
+                resident: parsedProfile?.resident ?? undefined,
+                phone: parsedProfile?.phone ?? undefined,
+                dateOfBirth: parsedProfile?.dateOfBirth
+                  ? new Date(parsedProfile.dateOfBirth)
+                  : undefined,
+                avatar: avatarUrl ?? undefined,
+              },
             },
           },
         },
-      },
-      include: { profile: true },
-    });
-
-    console.log("Profile updated:", updatedUser);
-    return { message: "Profile updated successfully" };
-  } catch (error) {
-    if (error.code === "P2025") {
-      throw new NotFoundException("Profile not found for the given user");
+        include: { profile: true },
+      });
+  
+      console.log("Profile updated:", updatedUser);
+      return { message: "Profile updated successfully" };
+    } catch (error: any) {
+      if (error.code === "P2025") {
+        throw new NotFoundException("Profile not found for the given user");
+      }
+      throw new InternalServerErrorException("Failed to update profile");
     }
-    throw new InternalServerErrorException("Failed to update profile");
   }
-}
+  
 
 
 @UseGuards(AuthGuard)
