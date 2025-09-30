@@ -47,11 +47,13 @@ export class AnnouncementController {
   ) {
     return this.announcementService.update(+id, updateAnnouncementDto);
   }
-
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles('admin', 'teacher')
   @Delete(':id')
-  remove(@Param('id') id: number, @Req() req) {
-    const userId=req.sub;
-    
-    return this.announcementService.remove(id,userId);
+  remove(@Param('id') id: string, @Req() req) {
+    const userId = req.user.id;
+    const announcementId = Number(id);
+    const userIdNum = Number(userId);
+    return this.announcementService.remove(announcementId, userIdNum);
   }
 }

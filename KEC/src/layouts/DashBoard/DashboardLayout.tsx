@@ -62,7 +62,7 @@ const DashboardLayout = () => {
       <SearchContext.Provider value={{ searchQuery, setSearchQuery }}>
         <div className="w-full min-h-screen flex">
           {/* Left Sidebar for md+ */}
-          <aside className="hidden md:block z-100 w-[10%] lg:w-[20%] h-screen sticky left-0 top-0">
+          <aside className="hidden md:block z-100 w-[10%] cu h-screen sticky left-0 top-0">
             <Sidebar />
           </aside>
 
@@ -75,7 +75,7 @@ const DashboardLayout = () => {
                 onClick={closeSidebar}
               ></div>
               {/* Sidebar Drawer */}
-              <div className="relative w-20 h-full bg-[#F5FAFF] shadow-lg z-50">
+              <div className="relative w-20 h-full bg-[#black] shadow-lg z-50">
                 <Sidebar onClose={closeSidebar} isMobileOpen />
               </div>
             </div>
@@ -96,7 +96,7 @@ const DashboardLayout = () => {
           </div>
 
           {/* Right Sidebar */}
-          <aside className="hidden lg:block w-[20%] h-screen sticky right-0 top-0">
+          <aside className="hidden  lg:block w-[20%] h-screen sticky right-0 top-0">
             <RightSidebar />
           </aside>
         </div>

@@ -29,6 +29,8 @@ export class FeedbackController {
 
   @Delete(':id')
   remove(@Param('id') id: string) {
-    return this.feedbackService.remove(+id);
+    const numericId = parseInt(id, 10); 
+    console.log(numericId, "i am called right now")
+    return this.feedbackService.remove(numericId);
   }
 }

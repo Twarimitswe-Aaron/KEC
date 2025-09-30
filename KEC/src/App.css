@@ -44,3 +44,13 @@ html{
   z-index: 99999 !important;
   position: fixed !important;
 }
+
+@media (min-width: 1194px) {
+  .cu {
+    width: 19% !important;
+  }
+  .left-side{
+    display: none !important;
+  }
+
+}

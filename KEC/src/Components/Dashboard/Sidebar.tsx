@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from "react";
-import { NavLink, useNavigate } from "react-router-dom";
+import { Link, NavLink, useNavigate } from "react-router-dom";
 
 import { FiHome, FiSettings } from "react-icons/fi";
 import { FaChevronLeft, FaChevronRight, FaRegUser } from "react-icons/fa6";
@@ -76,7 +76,7 @@ const Sidebar = ({ isMobileOpen, onClose }: SidebarProps) => {
   // Handle resize for collapsed sidebar
   useEffect(() => {
     const handleResize = () => {
-      if (window.innerWidth < 1024) {
+      if (window.innerWidth > 1194) {
         setCollapsed(false);
       } else {
         setCollapsed(true);
@@ -88,7 +88,8 @@ const Sidebar = ({ isMobileOpen, onClose }: SidebarProps) => {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  const sidebarWidth = collapsed ? "w-64" : "w-20";
+  const sidebarWidth = collapsed ?  "w-20":"w-64";
+
 
   // Handle logout click
   const handleLogout = async () => {
@@ -103,7 +104,7 @@ const Sidebar = ({ isMobileOpen, onClose }: SidebarProps) => {
 
   return (
     <div
-      className={`h-screen sticky top-0 flex flex-col transition-all duration-300 shadow-lg bg-[#F5FAFF] p-5
+      className={`h-screen sticky  top-0 flex flex-col transition-all duration-300 shadow-lg bg-[#F5FAFF] p-5
       ${sidebarWidth} rounded-r-xl z-30 ${isMobileOpen ? "top-0 left-0 z-50" : ""}`}
     >
       {/* Mobile Close Button */}
@@ -121,12 +122,12 @@ const Sidebar = ({ isMobileOpen, onClose }: SidebarProps) => {
 
       {/* Logo & Collapse Toggle */}
       <div className="flex justify-between items-center">
-        {collapsed && <img src="/images/Logo.svg" alt="logo" className="w-20 h-20" />}
+        {!collapsed && <Link to="/"><img src="/images/Logo.svg" alt="logo" className="w-20 h-20" /></Link>}
         <button
           onClick={() => setCollapsed(!collapsed)}
-          className="text-[#034153] lg:hidden block"
+          className="text-[#034153]  left-side block"
         >
-          {collapsed ? <FaChevronLeft /> : <FaChevronRight />}
+          {!collapsed ? <FaChevronLeft /> : <FaChevronRight />}
         </button>
       </div>
 
@@ -138,7 +139,7 @@ const Sidebar = ({ isMobileOpen, onClose }: SidebarProps) => {
           return (
             <NavLink
               key={item.path}
-              to={isLogout ? "#" : item.path} // prevent actual navigation for logout
+              to={isLogout ? "/logout" : item.path} 
               className={({ isActive }) =>
                 `flex items-center p-3 rounded-md cursor-pointer transition-all gap-3
                 ${
@@ -159,7 +160,7 @@ const Sidebar = ({ isMobileOpen, onClose }: SidebarProps) => {
               }}
             >
               {item.icon}
-              {collapsed && <span className="whitespace-nowrap">{item.label}</span>}
+              {!collapsed && <span className="whitespace-nowrap hidden lg:block">{item.label}</span>}
             </NavLink>
           );
         })}

@@ -1,18 +1,18 @@
-import { Config } from 'tailwindcss';
-
+import { Config } from "tailwindcss";
 
 const config: Config = {
   theme: {
+    screens: {
+      sm: "640px",
+      md: "768px",
+      lg: "1024px",
+      cu: "1194px", 
+      xl: "1280px",
+      "2xl": "1536px",
+    },
     extend: {
-      screens: {
-        sm: '640px', // Small screens
-        md: '768px', // Medium screens
-        lg: '1024px', // Large screens
-        '1027px': '1027px', // Custom breakpoint for minimum width
-        '1067px': { max: '1067px' }, // Custom breakpoint for maximum width
-      },
       fontFamily: {
-        roboto: ['Roboto', 'sans-serif'],
+        roboto: ["Roboto", "sans-serif"],
       },
     },
   },
