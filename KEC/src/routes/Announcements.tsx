@@ -9,7 +9,7 @@ import {
   useDeleteAnnounceMutation,
 } from "../state/api/announcementsApi";
 import { toast } from "react-toastify";
-import ConfirmDialog from "./ConfirmDialog"; // make sure path is correct
+import ConfirmDialog from "./ConfirmDialog";
 
 type AnnouncementCardProps = {
   id: number;
@@ -19,7 +19,7 @@ type AnnouncementCardProps = {
   avatar?: string | null;
   posterId: number;
   currentUserId: number | null;
-  handleDelete: (id: number) => void;
+  onDeleteClick: (id: number, userData: { avatar: string; name: string; role: string }) => void;
 };
 
 const Announcements = () => {
@@ -35,6 +35,15 @@ const Announcements = () => {
     content: "",
     posterId: userData?.id ?? null,
   });
+
+  // State for the confirmation dialog
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [announcementToDelete, setAnnouncementToDelete] = useState<{
+    id: number;
+    avatar: string;
+    name: string;
+    role: string;
+  } | null>(null);
 
   const [announce] = useAnnounceMutation();
   const [deleteAnnouncement] = useDeleteAnnounceMutation();
@@ -84,7 +93,20 @@ const Announcements = () => {
         "Failed to delete announcement";
       toast.error(message);
       console.error("Delete failed:", error);
+    } finally {
+      setShowConfirm(false);
+      setAnnouncementToDelete(null);
     }
+  };
+
+  const handleDeleteClick = (id: number, userData: { avatar: string; name: string; role: string }) => {
+    setAnnouncementToDelete({ id, ...userData });
+    setShowConfirm(true);
+  };
+
+  const handleCancelDelete = () => {
+    setShowConfirm(false);
+    setAnnouncementToDelete(null);
   };
 
   const AnnouncementCard: React.FC<AnnouncementCardProps> = ({
@@ -95,10 +117,9 @@ const Announcements = () => {
     avatar,
     posterId,
     currentUserId,
-    handleDelete,
+    onDeleteClick,
   }) => {
     const [menuOpen, setMenuOpen] = useState(false);
-    const [showConfirm, setShowConfirm] = useState(false);
 
     const isOwner = posterId === currentUserId;
 
@@ -106,8 +127,28 @@ const Announcements = () => {
       name
     )}&background=022F40&color=ffffff&rounded=true&size=32`;
 
+    // Prepare user data for the confirmation dialog
+    const getUserDataForDialog = () => {
+      if (isOwner) {
+        return {
+          avatar: userData?.profile?.avatar || fallbackUrl,
+          name: "You",
+          role: UserRole || "User"
+        };
+      }
+      
+      // For other users' announcements
+      return {
+        avatar: avatar || fallbackUrl,
+        name: name,
+        role: "User"
+      };
+    };
+
+    const userDialogData = getUserDataForDialog();
+
     return (
-      <div className="bg-white/60 backdrop-blur-md rounded-lg shadow-md border border-gray-200 p-3 mb-3 hover:shadow-lg transition duration-300">
+      <div className="bg-white/60 backdrop-blur-md rounded-lg shadow-md border border-gray-200 p-3 mb-3 hover:shadow-lg transition duration-300 relative">
         <div className="flex items-center gap-2 mb-2">
           <Link to={`/profile/${posterId}`} className="flex items-center gap-2">
             <img
@@ -130,14 +171,14 @@ const Announcements = () => {
                 </button>
 
                 {menuOpen && (
-                  <div className="absolute right-0 mt-1 w-28 bg-white border border-gray-200 rounded-lg shadow-lg z-20">
+                  <div className="absolute right-0 top-full mt-1 w-28 bg-white border border-gray-200 rounded-lg shadow-lg z-30">
                     <button
                       onClick={() => {
                         setMenuOpen(false);
-                        setShowConfirm(true);
+                        onDeleteClick(id, userDialogData);
                       }}
                       className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg"
-                    >
+                    >Del
                       Delete
                     </button>
                   </div>
@@ -148,23 +189,24 @@ const Announcements = () => {
         </div>
 
         <p className="text-gray-800 text-sm leading-relaxed tracking-wide ml-10">{message}</p>
-
-        {/* Confirmation Dialog */}
-        <ConfirmDialog
-          isOpen={showConfirm}
-          message="Are you sure you want to delete this announcement?"
-          onConfirm={() => {
-            handleDelete(id);
-            setShowConfirm(false);
-          }}
-          onCancel={() => setShowConfirm(false)}
-        />
       </div>
     );
   };
 
   return (
-    <div>
+    <div className="relative">
+      {/* Global Confirmation Dialog - Rendered at the root level */}
+      <ConfirmDialog
+        isOpen={showConfirm}
+        title="Delete Announcement"
+        message="Are you sure you want to delete this announcement? This action cannot be undone."
+        avatar={announcementToDelete?.avatar}
+        name={announcementToDelete?.name}
+        role={announcementToDelete?.role}
+        onConfirm={() => announcementToDelete && handleDelete(announcementToDelete.id)}
+        onCancel={handleCancelDelete}
+      />
+
       {(UserRole === "admin" || UserRole === "teacher") && (
         <div className="flex items-top p-2">
           <img
@@ -226,7 +268,7 @@ const Announcements = () => {
                 avatar={announcement.poster?.profile?.avatar || null}
                 posterId={announcement.poster?.id}
                 currentUserId={userData?.id ?? null}
-                handleDelete={handleDelete}
+                onDeleteClick={handleDeleteClick}
               />
             );
           })

@@ -14,7 +14,7 @@ type ConfirmDialogProps = {
 
 const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
   isOpen,
-  title = "Confirm Action",
+  title = "Delete User",
   message,
   avatar,
   name,
@@ -25,44 +25,48 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-black/40 z-100">
-      <div className="bg-white rounded-lg shadow-lg p-4 w-72 max-w-xs">
-        <div className="flex justify-between items-center mb-3">
-          <h2 className="text-lg font-semibold text-red-600">{title}</h2>
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+      <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md mx-4 animate-fadeIn">
+        {/* Header */}
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-lg font-bold text-red-600">{title}</h2>
           <button
             onClick={onCancel}
-            className="text-gray-500 cursor-pointer hover:text-gray-700"
+            className="text-gray-500 hover:text-gray-700 cursor-pointer"
           >
-            <IoClose size={20} />
+            <IoClose size={24} />
           </button>
         </div>
 
+        {/* User Info */}
         {avatar && name && role && (
-          <div className="flex items-center gap-3 mb-4">
+          <div className="flex items-center gap-4 mb-6">
             <img
               src={avatar}
               alt={`${name}'s avatar`}
-              className="w-12 h-12 rounded-full"
+              className="w-16 h-16 object-cover rounded-full shadow-md"
             />
             <div>
-              <h3 className="text-sm font-semibold">{name}</h3>
-              <p className="text-gray-500 text-xs">{role}</p>
+              <h3 className="text-base font-semibold">{name}</h3>
+              <p className="text-gray-600 text-sm">{role}</p>
             </div>
           </div>
         )}
 
-        <p className="text-gray-600 text-sm mb-4">{message}</p>
+        {/* Message */}
+        <p className="text-gray-700 text-sm mb-6">{message}</p>
 
-        <div className="flex justify-end gap-2">
+        {/* Actions */}
+        <div className="flex justify-end gap-4">
           <button
             onClick={onCancel}
-            className="px-3 py-1 text-gray-600 cursor-pointer bg-gray-100 rounded-md hover:bg-gray-200 text-sm"
+            className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 cursor-pointer text-sm font-medium"
           >
             Cancel
           </button>
           <button
             onClick={onConfirm}
-            className="px-3 py-1 text-white bg-red-600 cursor-pointer rounded-md hover:bg-red-700 text-sm"
+            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 cursor-pointer text-sm font-medium shadow"
           >
             Delete
           </button>

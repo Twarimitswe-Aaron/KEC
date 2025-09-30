@@ -62,7 +62,7 @@ const DashboardLayout = () => {
       <SearchContext.Provider value={{ searchQuery, setSearchQuery }}>
         <div className="w-full min-h-screen flex">
           {/* Left Sidebar for md+ */}
-          <aside className="hidden md:block z-100 w-[10%] cu h-screen sticky left-0 top-0">
+          <aside className="hidden md:block  w-[10%] cu h-screen sticky left-0 top-0">
             <Sidebar />
           </aside>
 

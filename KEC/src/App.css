@@ -38,7 +38,7 @@ html{
   -ms-overflow-style: none; /* IE and Edge */
 }
 .scroll-hide::-webkit-scrollbar {
-  display: none; /* Chrome, Safari, Opera */
+  display: none; 
 }
 .menu-overlay {
   z-index: 99999 !important;
@@ -51,6 +51,9 @@ html{
   }
   .left-side{
     display: none !important;
+  }
+  .left-display{
+    display: block !important;
   }
 
 }

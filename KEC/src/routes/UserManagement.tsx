@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useContext } from "react";
 import { CiUndo, CiRedo } from "react-icons/ci";
-import { FaRegSquare, FaUser, FaEnvelope, FaUserTag, FaLock } from "react-icons/fa";
+import { FaRegSquare, FaUser, FaEnvelope, FaUserTag, FaLock, FaChevronLeft, FaChevronRight } from "react-icons/fa";
 import { FaRegCheckSquare } from "react-icons/fa";
 import { HiOutlineAdjustmentsHorizontal } from "react-icons/hi2";
 import { FaEye, FaTrash } from "react-icons/fa";
@@ -40,9 +40,12 @@ const UserManagement = () => {
     confirmPassword: ''
   });
 
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(5); // You can change this number
+
   // Simulate fetching data from the backend
   useEffect(() => {
-    // Replace this with your actual backend API call
     const fetchData = async () => {
       try {
         // Placeholder data (replace with actual fetch call)
@@ -57,58 +60,74 @@ const UserManagement = () => {
           },
           {
             id: 2,
-            name: "Rukundo Patrick",
+            name: "Alice Johnson",
             role: "Student",
-            lessons: 10,
-            time: "22hr:32min",
+            lessons: 8,
+            time: "18hr:15min",
             avatar: "/images/chat.png",
           },
           {
             id: 3,
-            name: "Rukundo Patrick",
+            name: "Bob Smith",
             role: "Teacher",
-            lessons: 10,
-            time: "22hr:32min",
+            lessons: 15,
+            time: "35hr:42min",
             avatar: "/images/chat.png",
           },
           {
             id: 4,
-            name: "Rukundo Patrick",
+            name: "Carol Davis",
             role: "Student",
-            lessons: 10,
-            time: "22hr:32min",
+            lessons: 5,
+            time: "12hr:20min",
             avatar: "/images/chat.png",
           },
           {
             id: 5,
-            name: "Rukundo Patrick",
+            name: "David Wilson",
             role: "Student",
-            lessons: 10,
-            time: "22hr:32min",
+            lessons: 12,
+            time: "28hr:55min",
             avatar: "/images/chat.png",
           },
           {
             id: 6,
-            name: "Rukundo Patrick",
+            name: "Eva Brown",
             role: "Student",
-            lessons: 10,
-            time: "22hr:32min",
+            lessons: 7,
+            time: "16hr:10min",
             avatar: "/images/chat.png",
           },
           {
             id: 7,
-            name: "Rukundo Patrick",
+            name: "Frank Miller",
             role: "Student",
-            lessons: 10,
-            time: "22hr:32min",
+            lessons: 9,
+            time: "20hr:30min",
             avatar: "/images/chat.png",
           },
           {
             id: 8,
-            name: "Rukundo Patrick",
+            name: "Grace Lee",
             role: "Student",
-            lessons: 10,
-            time: "22hr:32min",
+            lessons: 11,
+            time: "25hr:45min",
+            avatar: "/images/chat.png",
+          },
+          {
+            id: 9,
+            name: "Henry Taylor",
+            role: "Teacher",
+            lessons: 14,
+            time: "32hr:20min",
+            avatar: "/images/chat.png",
+          },
+          {
+            id: 10,
+            name: "Ivy Clark",
+            role: "Student",
+            lessons: 6,
+            time: "14hr:05min",
             avatar: "/images/chat.png",
           },
         ];
@@ -119,6 +138,12 @@ const UserManagement = () => {
     };
     fetchData();
   }, []);
+
+  // Pagination calculations
+  const totalPages = Math.ceil(users.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentUsers = users.slice(startIndex, endIndex);
 
   const toggleUserSelection = (userId: number) => {
     setSelectedUsers((prev) =>
@@ -147,6 +172,11 @@ const UserManagement = () => {
       setUsers(users.filter((user) => user.id !== userToDelete.id));
       setSelectedUsers(selectedUsers.filter((id) => id !== userToDelete.id));
       setUserToDelete(null);
+      
+      // Adjust current page if needed after deletion
+      if (currentUsers.length === 1 && currentPage > 1) {
+        setCurrentPage(currentPage - 1);
+      }
     }
   };
 
@@ -212,6 +242,10 @@ const UserManagement = () => {
       
       setUsers(prev => [...prev, newUserData]);
       closeAddUserModal();
+      
+      // Go to the last page to see the new user
+      const newTotalPages = Math.ceil((users.length + 1) / itemsPerPage);
+      setCurrentPage(newTotalPages);
     } catch (error) {
       console.error('Error adding user:', error);
     } finally {
@@ -219,13 +253,35 @@ const UserManagement = () => {
     }
   };
 
+  // Pagination controls
+  const goToPage = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  const goToPreviousPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+    }
+  };
+
+  const goToNextPage = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage(currentPage + 1);
+    }
+  };
+
+  const handleItemsPerPageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setItemsPerPage(Number(e.target.value));
+    setCurrentPage(1); // Reset to first page when changing items per page
+  };
+
   return (
     <div className="h-screen -mt-4 flex flex-col">
       {userRole === "admin" && (
         <div>
-          <div className="z-10 sticky top-20  flex place-items-start justify-between p-3 rounded-lg bg-white shadow-lg">
+          <div className="z-10 sticky top-20 flex place-items-start justify-between p-3 rounded-lg bg-white shadow-lg">
             <span className="md:text-2xl text-lg font-normal text-gray-800">
-              Users
+              Users ({users.length})
             </span>
             <div className="flex items-center gap-2">
               <button className="w-8 h-8 flex items-center justify-center cursor-pointer rounded-full border border-gray-300 text-gray-600 hover:bg-gray-100">
@@ -243,9 +299,31 @@ const UserManagement = () => {
               </button>
             </div>
           </div>
+          
+          {/* Items per page selector */}
+          <div className="flex justify-between items-center p-4 bg-white border-b">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-600">Show:</span>
+              <select
+                value={itemsPerPage}
+                onChange={handleItemsPerPageChange}
+                className="border border-gray-300 rounded px-2 py-1 text-sm"
+              >
+                <option value={5}>5</option>
+                <option value={10}>10</option>
+                <option value={20}>20</option>
+                <option value={50}>50</option>
+              </select>
+              <span className="text-sm text-gray-600">entries</span>
+            </div>
+            <div className="text-sm text-gray-600">
+              Showing {startIndex + 1} to {Math.min(endIndex, users.length)} of {users.length} entries
+            </div>
+          </div>
+
           <div className="flex-1 overflow-hidden bg-white">
             <div className="h-full overflow-y-auto p-4">
-              {users.map((user) => (
+              {currentUsers.map((user) => (
                 <div
                   key={user.id}
                   className="flex items-center border border-gray-200 justify-between p-2 mb-2 bg-white rounded-lg shadow-sm"
@@ -297,59 +375,116 @@ const UserManagement = () => {
                 </div>
               ))}
             </div>
+
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div className="flex justify-between items-center p-4 border-t bg-white">
+                <div className="text-sm text-gray-600">
+                  Page {currentPage} of {totalPages}
+                </div>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={goToPreviousPage}
+                    disabled={currentPage === 1}
+                    className={`p-2 rounded border ${
+                      currentPage === 1
+                        ? 'text-gray-400 cursor-not-allowed'
+                        : 'text-gray-600 hover:bg-gray-100 cursor-pointer'
+                    }`}
+                  >
+                    <FaChevronLeft size={14} />
+                  </button>
+                  
+                  {/* Page numbers */}
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                    <button
+                      key={page}
+                      onClick={() => goToPage(page)}
+                      className={`px-3 py-1 rounded text-sm ${
+                        currentPage === page
+                          ? 'bg-[#1a3c34] text-white'
+                          : 'text-gray-600 hover:bg-gray-100 border cursor-pointer'
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  ))}
+                  
+                  <button
+                    onClick={goToNextPage}
+                    disabled={currentPage === totalPages}
+                    className={`p-2 rounded border ${
+                      currentPage === totalPages
+                        ? 'text-gray-400 cursor-not-allowed'
+                        : 'text-gray-600 hover:bg-gray-100 cursor-pointer'
+                    }`}
+                  >
+                    <FaChevronRight size={14} />
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Delete Confirmation Modal */}
           {userToDelete && (
-            <div className="fixed inset-0 bg-opacity-10 bg-[#00000040] flex items-center justify-center z-50">
-              <div className="bg-white rounded-lg p-6 w-full max-w-md">
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-xl font-semibold text-red-600">
-                    Delete User
-                  </h2>
-                  <button
-                    onClick={cancelDelete}
-                    className="text-gray-500 hover:text-gray-700"
-                  >
-                    <IoClose size={24} />
-                  </button>
-                </div>
-                <div className="flex items-center gap-4 mb-6">
-                  <img
-                    src={userToDelete.avatar}
-                    alt={`${userToDelete.name}'s avatar`}
-                    className="w-16 h-16 rounded-full"
-                  />
-                  <div>
-                    <h3 className="text-lg font-semibold">
-                      {userToDelete.name}
-                    </h3>
-                    <p className="text-gray-600">{userToDelete.role}</p>
-                  </div>
-                </div>
-                <p className="text-gray-600 mb-6">
-                  Are you sure you want to delete this user? This action cannot
-                  be undone.
-                </p>
-                <div className="flex justify-end gap-3">
-                  <button
-                    onClick={cancelDelete}
-                    className="px-4 py-2 border border-gray-300 rounded-md text-gray-600 hover:bg-gray-50"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={confirmDelete}
-                    className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
-                  >
-                    Delete
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-              {/* Add User Modal */}
-              {showAddUserModal && (
+  <div className="fixed inset-0 bg-opacity-30 bg-black flex items-center justify-center z-50">
+    <div className="bg-white rounded-lg p-4 w-full max-w-sm mx-4 border border-gray-200 shadow-md">
+      {/* Header */}
+      <div className="flex justify-between items-center mb-3">
+        <h2 className="text-lg font-semibold text-red-600">Delete User</h2>
+        <button
+          onClick={cancelDelete}
+          className="text-gray-500 hover:text-gray-700 cursor-pointer"
+        >
+          <IoClose size={20} />
+        </button>
+      </div>
+
+      {/* Avatar + Info */}
+      <div className="flex items-center gap-3 mb-4">
+        <img
+          src={userToDelete.avatar}
+          alt={`${userToDelete.name}'s avatar`}
+          className="w-12 h-12 rounded-full object-cover border border-gray-300"
+        />
+        <div>
+          <h3 className="text-base font-semibold">{userToDelete.name}</h3>
+          <p className="text-gray-600 text-sm">{userToDelete.role}</p>
+        </div>
+      </div>
+
+      {/* Message */}
+      <p className="text-gray-700 text-sm mb-5">
+        Are you sure you want to delete this user?{" "}
+        <span className="font-medium text-red-600">
+          This action cannot be undone.
+        </span>
+      </p>
+
+      {/* Buttons */}
+      <div className="flex justify-end gap-2">
+        <button
+          onClick={cancelDelete}
+          className="px-3 py-1.5 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-100 text-sm cursor-pointer"
+        >
+          Cancel
+        </button>
+        <button
+          onClick={confirmDelete}
+          className="px-3 py-1.5 bg-red-600 text-white rounded-md hover:bg-red-700 text-sm cursor-pointer"
+        >
+          Delete
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
+
+
+          {/* Add User Modal */}
+          {showAddUserModal && (
             <div className="fixed inset-0 bg-[#00000090] bg-opacity-50 flex items-center justify-center z-50">
               <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto">
                 <div className="flex justify-between items-center mb-6">

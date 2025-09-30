@@ -160,7 +160,8 @@ const Sidebar = ({ isMobileOpen, onClose }: SidebarProps) => {
               }}
             >
               {item.icon}
-              {!collapsed && <span className="whitespace-nowrap hidden lg:block">{item.label}</span>}
+              {(!collapsed) && <span className="whitespace-nowrap ">{item.label}</span>}
+              
             </NavLink>
           );
         })}
