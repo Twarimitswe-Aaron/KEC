@@ -12,7 +12,7 @@ export interface Course {
   open:boolean;
   enrolled:boolean;
   no_lessons: string;
-  no_hours: string;
+ 
   uploader: {
     name: string;
     avatar_url: string;
@@ -65,9 +65,7 @@ const CourseCard: React.FC<CourseCardProps> = ({
                 <span className="flex items-center gap-2">
                   <BsCameraVideoFill className="text-blue-500" /> {course.no_lessons} lessons
                 </span>
-                <span className="flex items-center gap-2">
-                  <GoStopwatch className="text-blue-500" /> {course.no_hours}
-                </span>
+                
               </div>
               
               <div className="flex items-center justify-between pt-4 border-t">
@@ -124,9 +122,7 @@ const CourseCard: React.FC<CourseCardProps> = ({
             <span className="flex items-center gap-1">
               <BsCameraVideoFill /> {course.no_lessons} lessons
             </span>
-            <span className="flex items-center gap-1">
-              <GoStopwatch /> {course.no_hours}
-            </span>
+           
           </div>
         </div>
 

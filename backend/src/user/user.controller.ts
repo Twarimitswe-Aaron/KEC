@@ -33,7 +33,7 @@ export class UserController {
   @Get('findAll')
   async getAll() {
     
-    console.log('called to provide all users');
+
     return this.userService.findAll();
   }
 

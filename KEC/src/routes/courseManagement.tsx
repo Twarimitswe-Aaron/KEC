@@ -17,7 +17,7 @@ export interface Course {
   open: boolean;
   enrolled: boolean;
   no_lessons: string;
-  no_hours: string;
+ 
   uploader: {
     name: string;
     avatar_url: string;
@@ -358,7 +358,7 @@ const CourseManagement = () => {
       open: true,
       enrolled: false,
       no_lessons: "1",
-      no_hours: "1",
+     
       uploader: {
         name: "Admin",
         avatar_url: "https://via.placeholder.com/40",

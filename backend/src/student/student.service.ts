@@ -51,8 +51,8 @@ export class StudentService {
       // Generate avatar URL based on name
       const getAvatarUrl = (firstName: string, lastName: string, size: number = 64) => {
         const initials = `${firstName.charAt(0)}${lastName.charAt(0)}`;
-        const backgroundColor = Math.floor(Math.random() * 16777215).toString(16); // Random hex color
-        return `https://ui-avatars.com/api/?name=${encodeURIComponent(initials)}&background=${backgroundColor}&color=fff&size=${size}&font-size=0.5&length=2&rounded=true&bold=true`;
+        const backgroundColor = Math.floor(Math.random() * 16777215).toString(16); 
+        return `https://ui-avatars.com/api/?name=${encodeURIComponent(initials)}&background=${backgroundColor}&color=fff&size=${size}&font-size=0.5&length=2&rounded=false&bold=true`;
       };
       const avatarUrl = getAvatarUrl(firstName,lastName);
   

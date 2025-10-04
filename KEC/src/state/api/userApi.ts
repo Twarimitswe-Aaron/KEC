@@ -14,7 +14,6 @@ export interface MinimalUser {
     name: string;      
     role: string;
     email: string;
-   
     avatar?: string;
 
   }
@@ -42,7 +41,7 @@ export const userApi = apiSlice.injectEndpoints({
       }),
       invalidatesTags: ["User"],
     }),
-    getUser: builder.query<MinimalUser[], void>({
+    getAllUsers: builder.query<MinimalUser[], void>({
       query: () => ({
         url: "/user/findAll",
         method: "GET",
@@ -64,6 +63,6 @@ export const {
   useFetchVerifiedUserQuery,
   useUpdateUserMutation,
   useCreateUserMutation,
-  useGetUserQuery,
+  useGetAllUsersQuery,
   useDeleteUserMutation,
 } = userApi;

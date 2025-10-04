@@ -20,6 +20,8 @@ import { CsrfExceptionFilter } from './filters/csrf-exception.filter';
 import { AuthGuard } from './auth/auth.guard';
 import { RolesGuard } from './auth/roles.guard';
 import { FeedbackModule } from './feedback/feedback.module';
+import { CourseModule } from './course/course.module';
+
 @Module({
   imports: [
     StudentModule,
@@ -36,6 +38,7 @@ import { FeedbackModule } from './feedback/feedback.module';
     UserManagementModule,
     AnnouncementModule,
     FeedbackModule,
+    CourseModule,
   ],
   controllers: [AppController, CsrfController],
   providers: [

@@ -7,6 +7,7 @@ import React, {
   useMemo,
 } from "react";
 
+
 import { CiUndo, CiRedo } from "react-icons/ci";
 import {
   FaRegSquare,
@@ -27,9 +28,11 @@ import { toast } from "react-toastify";
 import {
   useCreateUserMutation,
   useDeleteUserMutation,
-  useGetUserQuery,
+  useGetAllUsersQuery,
 } from "../state/api/userApi";
 import clsx from "clsx";
+import { Link } from "react-router-dom";
+import { SearchContext } from "../SearchContext";
 
 interface User {
   id: number;
@@ -60,11 +63,14 @@ type FormErrors = {
   confirmPassword: string[];
 };
 
+type SortField = 'name' | 'email' | 'role' | null;
+
 const UserManagement = () => {
-  const { data, isLoading, refetch } = useGetUserQuery();
+  const { data, isLoading, refetch } = useGetAllUsersQuery();
+  
   const [createUser, { isLoading: isCreating }] = useCreateUserMutation();
   const [deleteUser] = useDeleteUserMutation();
-
+  const { searchQuery, setSearchQuery } = useContext(SearchContext);
   const userRole = useContext(UserRoleContext);
   const [users, setUsers] = useState<User[]>([]);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
@@ -97,10 +103,16 @@ const UserManagement = () => {
 
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(5);
+  
+  // New state for Sorting
+  const [sortField, setSortField] = useState<SortField>(null);
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [showSortMenu, setShowSortMenu] = useState(false);
+  
 
   useEffect(() => {
     try {
- 
+  
       if (!Array.isArray(data)) {
         console.warn("Invalid or no user data received:", data);
         setUsers([]);
@@ -108,47 +120,19 @@ const UserManagement = () => {
         return;
       }
   
-
-      console.log("Raw API data:", data);
-  
-      const processedUsers = data.map((user: any) => {
-        // Ensure user object exists
-        if (!user || typeof user !== "object") {
-          return {
-            id: 0,
-            name: "Unknown User",
-            email: "",
-            role: "student",
-            lessons: 0,
-            time: "--",
-            avatar: "/images/default-avatar.png",
-            showMenu: false,
-          } as User;
-        }
-
-        const normalizedId = typeof user.id === "number" ? user.id : Number(user.id) || 0;
-        const normalizedRole = String(user.role || "student").toLowerCase();
-
-        return {
-          id: normalizedId,
-          name:
-            user?.name ||
-            `${user?.firstName || ""} ${user?.lastName || ""}`.trim() ||
-            "Unknown User",
-          email: typeof user.email === "string" ? user.email : "",
-          role: (normalizedRole === "teacher" || normalizedRole === "admin" || normalizedRole === "student"
-            ? normalizedRole
-            : "student") as User["role"],
-          lessons: user.lessonsCompleted ?? user.lessons ?? 0,
-          time: user.lastActive ?? user.time ?? "--",
-          avatar:
-            user.profile?.avatar ?? user.avatar ?? "/images/default-avatar.png",
-          showMenu: false,
-        } as User;
-      });
-  
-      console.log("Processed users:", processedUsers);
-  
+      const processedUsers = data.map((user: any) => ({
+        id: user.id,
+        name: user.name || `${user.firstName} ${user.lastName}` || "Unknown User", // Handle name composition
+        email: user.email,
+        role: (user.role === "teacher" || user.role === "admin" || user.role === "student"
+          ? user.role
+          : "student") as User["role"],
+        avatar: user.avatar || "/images/default-avatar.png",
+        lessons: 0,        
+        time: "--",        
+        showMenu: false,  
+      }));
+      
       setUsers(processedUsers);
     } catch (error) {
       console.error("Error processing users:", error);
@@ -183,12 +167,13 @@ const UserManagement = () => {
 
       setTimeout(() => {
         closeAddUserModal();
+        // Since we refetch on success, the useEffect will handle state update. 
+        // We ensure we land on the new page if necessary.
         const newTotalPages = Math.ceil((users.length + 1) / itemsPerPage);
         setCurrentPage(newTotalPages);
       }, 500);
     } catch (error: any) {
       console.error("Error adding user:", error);
-      console.log(error)
       shakeForm();
       const errorMessage =
         error.data?.message ||
@@ -297,7 +282,7 @@ const UserManagement = () => {
     const { name } = e.target;
     setIsFocused((prev) => ({ ...prev, [name]: false }));
 
-    // Validate on blur
+    
     const value = newUser[name as keyof NewUser];
     const errors = validate({ [name]: value });
     setFormErrors((prev) => ({
@@ -313,7 +298,7 @@ const UserManagement = () => {
 
     setNewUser((prev) => ({ ...prev, [name]: value }));
 
-    // Real-time validation for password fields
+
     if (name === "password" || name === "confirmPassword") {
       const errors = validate({ [name]: value, password: newUser.password });
       setFormErrors((prev) => ({
@@ -359,13 +344,61 @@ const UserManagement = () => {
     }
   };
 
-  const totalPages = Math.ceil(users.length / itemsPerPage);
+  // --- Sorting Logic ---
+  const handleSort = (field: SortField) => {
+    if (!field) return;
+
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+    setShowSortMenu(false); 
+    setCurrentPage(1); // Reset to first page after sorting
+  };
+
+  // --- Combined Filter, Sort, and Pagination Logic ---
+  const sortedAndFilteredUsers = useMemo(() => {
+    let list = [...users];
+
+    // 1. Filtering (Search Context)
+    if (searchQuery) {
+      const lowercasedQuery = searchQuery.toLowerCase();
+      list = list.filter(user =>
+        user.name.toLowerCase().includes(lowercasedQuery) ||
+        user.email.toLowerCase().includes(lowercasedQuery) ||
+        user.role.toLowerCase().includes(lowercasedQuery)
+      );
+    }
+
+    // 2. Sorting (Horizontal Adjustments feature)
+    if (sortField) {
+      list.sort((a, b) => {
+        const aValue = a[sortField]?.toString().toLowerCase() || "";
+        const bValue = b[sortField]?.toString().toLowerCase() || "";
+
+        if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
+        if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
+        return 0;
+      });
+    }
+
+    return list;
+  }, [users, searchQuery, sortField, sortDirection]);
+
+  // 3. Pagination calculation
+  const totalItems = sortedAndFilteredUsers.length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
+
   const currentUsers = useMemo(
-    () => users.slice(startIndex, endIndex),
-    [users, startIndex, endIndex]
+    () => sortedAndFilteredUsers.slice(startIndex, endIndex),
+    [sortedAndFilteredUsers, startIndex, endIndex]
   );
+  // --- End Combined Logic ---
+
 
   const handleView = (userId: number) => {
     const user = users.find((u) => u.id === userId);
@@ -385,13 +418,20 @@ const UserManagement = () => {
     if (userToDelete) {
       try {
         await deleteUser(userToDelete.id).unwrap();
-        setUsers(users.filter((user) => user.id !== userToDelete.id));
+        // Optimistic update: filter out the deleted user from the main users state
+        const remainingUsers = users.filter((user) => user.id !== userToDelete.id);
+        setUsers(remainingUsers); // Set the updated list
+
         setUserToDelete(null);
 
-        const newTotalPages = Math.ceil((users.length - 1) / itemsPerPage);
-        if (currentPage > newTotalPages) {
-          setCurrentPage(newTotalPages || 1);
+        // Adjust page if current page is now empty
+        const newTotalPages = Math.ceil((remainingUsers.length) / itemsPerPage);
+        if (currentPage > newTotalPages && newTotalPages > 0) {
+          setCurrentPage(newTotalPages);
+        } else if (remainingUsers.length === 0) {
+          setCurrentPage(1);
         }
+
         toast.success("User deleted successfully");
       } catch (error: any) {
         toast.error(error.data?.message || "Failed to delete user");
@@ -467,20 +507,47 @@ const UserManagement = () => {
               </p>
             </div>
             <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2">
-                <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer">
-                  <CiUndo size={18} className="text-gray-600" />
-                </button>
-                <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer">
-                  <CiRedo size={18} className="text-gray-600" />
-                </button>
-                <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer">
+
+        
+
+              {/* Sorting Menu (Horizontal Adjustments) */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowSortMenu(!showSortMenu)}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
+                >
                   <HiOutlineAdjustmentsHorizontal
                     size={18}
                     className="text-gray-600"
                   />
                 </button>
+                
+                {showSortMenu && (
+                    <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-100 py-2 z-20 animate-in fade-in zoom-in-95 origin-top-right">
+                        <h4 className="px-4 py-1 text-xs font-semibold uppercase text-gray-500">Sort By</h4>
+                        {([
+                            { key: 'name', label: 'Name' },
+                            { key: 'email', label: 'Email' },
+                            { key: 'role', label: 'Role' },
+                        ] as { key: SortField, label: string }[]).map(({ key, label }) => (
+                            <button
+                                key={key}
+                                onClick={() => handleSort(key)}
+                                className="w-full flex justify-between items-center text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                            >
+                                <span>{label}</span>
+                                {sortField === key && (
+                                    <span className="font-semibold text-[#1a3c34] text-lg">
+                                        {sortDirection === 'asc' ? '↓' : '↑'}
+                                    </span>
+                                )}
+                            </button>
+                        ))}
+                    </div>
+                )}
               </div>
+              
+              {/* Add User Button */}
               <button
                 onClick={() => setShowAddUserModal(true)}
                 className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-[#1a3c34] to-[#2e856e] text-white rounded-xl hover:from-[#2e856e] hover:to-[#1a3c34] transition-all duration-200 shadow-sm cursor-pointer"
@@ -500,7 +567,7 @@ const UserManagement = () => {
                 <select
                   value={itemsPerPage}
                   onChange={handleItemsPerPageChange}
-                  className="bg-gray-50 border-0 rounded-lg px-3 py-2 text-sm  focus:outline-none cursor-pointer"
+                  className="bg-gray-50 border-0 rounded-lg px-3 py-2 text-sm focus:outline-none cursor-pointer"
                 >
                   <option value={5}>5 per page</option>
                   <option value={10}>10 per page</option>
@@ -511,11 +578,11 @@ const UserManagement = () => {
               <div className="text-sm text-gray-600 bg-gray-50 px-3 py-2 rounded-lg">
                 Showing{" "}
                 <span className="font-semibold text-gray-800">
-                  {startIndex + 1}-{Math.min(endIndex, users.length)}
+                  {startIndex + 1}-{Math.min(endIndex, totalItems)}
                 </span>{" "}
                 of{" "}
                 <span className="font-semibold text-gray-800">
-                  {users.length}
+                  {totalItems}
                 </span>{" "}
                 users
               </div>
@@ -529,21 +596,26 @@ const UserManagement = () => {
                 </div>
               ) : currentUsers.length === 0 ? (
                 <div className="text-center text-gray-600 py-8">
-                  No users found.
+                  {searchQuery ? (
+                    `No users found matching "${searchQuery}".`
+                  ) : (
+                    "No users found."
+                  )}
                 </div>
               ) : (
                 <div className="space-y-3">
                   {currentUsers.map((user) => (
                     <div
                       key={user.id}
-                      className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 bg-gray-50/50 hover:bg-gray-50 rounded-xl transition-all duration-200 group"
+                      className="flex items-start sm:items-center justify-between p-4 bg-gray-50/50 hover:bg-gray-50 rounded-xl transition-all duration-200 group"
                     >
                       <div className="flex items-center gap-4 mb-3 sm:mb-0">
-                        <img
+                       <Link to={`/profile/${user.id}`}>
+                       <img
                           src={user.avatar}
                           alt={`${user.name}'s avatar`}
-                          className="w-12 h-12 rounded-xl object-cover shadow-sm"
-                        />
+                          className="w-12 h-12 rounded-full object-cover shadow-sm"
+                        /></Link>
                         <div>
                           <p className="font-semibold text-gray-800 group-hover:text-[#1a3c34] transition-colors">
                             {user.name}
@@ -561,12 +633,9 @@ const UserManagement = () => {
                               {user.role}
                             </span>
                             <span className="text-gray-500 text-sm">
-                              {user.lessons} lessons
+                              {user.email} 
                             </span>
-                            <span className="text-gray-500 text-sm flex items-center gap-1">
-                              <FaRegClock size={12} />
-                              {user.time}
-                            </span>
+                          
                           </div>
                         </div>
                       </div>
@@ -864,6 +933,34 @@ const UserManagement = () => {
                     )}
                   </div>
 
+                  {/* Role Field */}
+                  <div>
+                    <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1">
+                        <FaUserTag size={12} />
+                        Role *
+                    </label>
+                    <select
+                        name="role"
+                        value={newUser.role}
+                        onChange={handleChange}
+                        onFocus={handleFocus}
+                        onBlur={handleBlur}
+                        className={getInputClass("role")}
+                        disabled={isSubmitting}
+                    >
+                        <option value="student">Student</option>
+                        <option value="teacher">Teacher</option>
+                        <option value="admin">Admin</option>
+                    </select>
+                    {formErrors.role?.length > 0 && (
+                        <ul className="text-left mt-1 text-xs text-red-600 space-y-0.5">
+                            {formErrors.role.map((err, idx) => (
+                                <li key={idx}>{err}</li>
+                            ))}
+                        </ul>
+                    )}
+                </div>
+
                   {/* Password Field */}
                   <div>
                     <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1">
@@ -951,169 +1048,40 @@ const UserManagement = () => {
                       </ul>
                     )}
                   </div>
-
-                  {/* Role Field */}
-                  <div>
-                    <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1">
-                      <FaUserTag size={12} />
-                      Role *
-                    </label>
-                    <select
-                      name="role"
-                      value={newUser.role}
-                      onChange={handleChange}
-                      onFocus={handleFocus}
-                      onBlur={handleBlur}
-                      className={getInputClass("role") + " cursor-pointer"}
-                      disabled={isSubmitting}
-                    >
-                      <option value="student">student</option>
-                      <option value="student">Student</option>
-                      <option value="teacher">Teacher</option>
-                      <option value="admin">Admin</option>
-                    </select>
-                    {formErrors.role?.length > 0 && (
-                      <ul className="text-left mt-1 text-xs text-red-600 space-y-0.5">
-                        {formErrors.role.map((err, idx) => (
-                          <li key={idx}>{err}</li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
                 </form>
 
-                {/* Footer (pinned) */}
-                <div className="flex justify-end gap-3 p-6 border-t border-gray-100 flex-shrink-0 bg-white">
+                {/* Footer */}
+                <div className="p-6 border-t border-gray-100 flex-shrink-0 flex justify-end gap-3">
                   <button
-                    type="button"
                     onClick={closeAddUserModal}
-                    className="px-5 py-2.5 text-gray-700 hover:bg-gray-100 rounded-xl transition-colors font-medium cursor-pointer"
                     disabled={isSubmitting}
+                    className="px-6 py-2.5 text-gray-700 hover:bg-gray-100 rounded-xl transition-colors text-sm font-medium cursor-pointer disabled:opacity-50"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    onClick={handleAddUser}
-                    disabled={isSubmitting || isFormAnimating}
-                    className={clsx(
-                      "px-6 py-2.5 bg-gradient-to-r from-[#1a3c34] to-[#2e856e] text-white rounded-xl transition-all duration-200 flex items-center gap-2 font-medium",
-                      {
-                        "hover:from-[#2e856e] hover:to-[#1a3c34] transform hover:scale-105 active:scale-95 cursor-pointer":
-                          !isSubmitting && !isFormAnimating,
-                        "opacity-50 cursor-not-allowed":
-                          isSubmitting || isFormAnimating,
-                      }
-                    )}
+                    form={formRef.current?.id} // Use the ref's id for form submission
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handleAddUser();
+                    }}
+                    disabled={isSubmitting}
+                    className="flex items-center justify-center gap-2 px-6 py-2.5 bg-gradient-to-r from-[#1a3c34] to-[#2e856e] text-white rounded-xl hover:from-[#2e856e] hover:to-[#1a3c34] transition-all duration-200 shadow-lg text-sm font-medium disabled:opacity-50 cursor-pointer"
                   >
                     {isSubmitting ? (
-                      <>
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                        Adding...
-                      </>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                     ) : (
-                      <>
-                        <FaUser size={14} />
-                        Add User
-                      </>
+                      <FaRegCheckSquare size={14} />
                     )}
+                    <span>{isSubmitting ? "Creating..." : "Create User"}</span>
                   </button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* User Details Modal */}
-          {selectedUser && (
-            <div
-              className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4"
-              role="dialog"
-              aria-modal="true"
-            >
-              <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6">
-                <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-xl font-semibold text-gray-800">
-                    User Details
-                  </h2>
-                  <button
-                    onClick={closeModal}
-                    className="p-1 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
-                    aria-label="Close user details modal"
-                  >
-                    <IoClose size={24} className="text-gray-500" />
-                  </button>
-                </div>
-                <div className="flex items-center gap-4 mb-6">
-                  <img
-                    src={selectedUser.avatar}
-                    alt={`${selectedUser.name}'s avatar`}
-                    className="w-16 h-16 rounded-xl object-cover shadow-sm"
-                  />
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-800">
-                      {selectedUser.name}
-                    </h3>
-                    <span
-                      className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        selectedUser.role === "teacher"
-                          ? "bg-blue-100 text-blue-700"
-                          : selectedUser.role === "admin"
-                          ? "bg-purple-100 text-purple-700"
-                          : "bg-green-100 text-green-700"
-                      }`}
-                    >
-                      {selectedUser.role}
-                    </span>
-                  </div>
-                </div>
-                <div className="space-y-4 bg-gray-50 rounded-xl p-4">
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600">Lessons Completed</span>
-                    <span className="font-semibold text-gray-800">
-                      {selectedUser.lessons}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600">Last Active</span>
-                    <span className="font-semibold text-gray-800">
-                      {selectedUser.time}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600">User ID</span>
-                    <span className="font-semibold text-gray-800">
-                      #{selectedUser.id}
-                    </span>
-                  </div>
                 </div>
               </div>
             </div>
           )}
         </div>
       )}
-
-      <style>{`
-        @keyframes shake {
-          0%, 100% { transform: translateX(0); }
-          10%, 30%, 50%, 70%, 90% { transform: translateX(-8px); }
-          20%, 40%, 60%, 80% { transform: translateX(8px); }
-        }
-
-        @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-
-        @keyframes zoomIn95 {
-          from { opacity: 0; transform: scale(0.95); }
-          to { opacity: 1; transform: scale(1); }
-        }
-
-        .animate-shake { animation: shake 0.6s ease-in-out; }
-        .animate-in { animation-duration: 0.3s; animation-timing-function: ease-out; }
-        .fade-in { animation-name: fadeIn; }
-        .zoom-in-95 { animation-name: zoomIn95; }
-      `}</style>
     </div>
   );
 };
