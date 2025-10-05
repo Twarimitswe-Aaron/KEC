@@ -21,7 +21,7 @@ export class CsrfExceptionFilter implements ExceptionFilter {
         timestamp: new Date().toISOString()
       });
     } else {
-      // Re-throw other errors
+      
       throw exception;
     }
   }

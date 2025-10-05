@@ -50,7 +50,7 @@ import {
         throw new UnauthorizedException("Only teachers are allowed");
       }
   
-      // Attach user to request (optional, useful in controllers)
+     
       (request as any).user = user;
   
       return true;

@@ -48,7 +48,7 @@ export class StudentService {
       const verificationToken = crypto.randomBytes(32).toString('hex');
       const tokenExpiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 min
   
-      // Generate avatar URL based on name
+
       const getAvatarUrl = (firstName: string, lastName: string, size: number = 64) => {
         const initials = `${firstName.charAt(0)}${lastName.charAt(0)}`;
         const backgroundColor = Math.floor(Math.random() * 16777215).toString(16); 

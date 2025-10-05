@@ -123,7 +123,7 @@ const ProfileComponent = () => {
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
 
-  // Sync formData and avatarPreview with userData
+
   useEffect(() => {
     if (userData) {
       setFormData({
@@ -274,7 +274,7 @@ const ProfileComponent = () => {
       setIsRefreshing(true);
       const formDataToSend = new FormData();
       
-      // Append top-level fields
+    
       if (formData.firstName) formDataToSend.append("firstName", formData.firstName);
       if (formData.lastName) formDataToSend.append("lastName", formData.lastName);
       

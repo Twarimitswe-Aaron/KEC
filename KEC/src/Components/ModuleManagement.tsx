@@ -42,7 +42,7 @@ type ModuleType = {
   resources: ResourceType[];
 };
 
-// Question type for quiz
+
 type Question = {
   id: number;
   type: "multiple" | "checkbox" | "truefalse" | "short";
@@ -51,7 +51,7 @@ type Question = {
   required?: boolean;
 };
 
-// Quiz Response type
+
 type QuizResponse = {
   questionId: number;
   answer: string | string[];

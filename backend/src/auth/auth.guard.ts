@@ -35,7 +35,7 @@ export class AuthGuard implements CanActivate {
         secret: this.configService.get<string>("JWT_SECRET"),
       });
 
-      // Attach user payload to request object
+     
       request["user"] = payload;
     } catch (err) {
       console.error("JWT verification failed:", err.message);

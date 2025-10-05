@@ -7,14 +7,13 @@ import { PrismaService } from 'src/prisma/prisma.service';
 export class CourseService {
   constructor(private readonly prisma: PrismaService) {}
   async create(createCourseDto: CreateCourseDto) {
-    const {id,image_url,title,description,price,
-      uploader
-    }=createCourseDto;
+    const { id, image_url, title, description, price, uploader } = createCourseDto;
+    const uploaderObj = typeof uploader === 'string' ? JSON.parse(uploader) : uploader;
 
     const newCourse=await this.prisma.course.create({
       data:{
         id,
-        uploaderId:uploader.id,
+        uploaderId:uploaderObj.id,
         title,
         image_url,
         description,

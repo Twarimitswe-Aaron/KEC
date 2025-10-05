@@ -161,7 +161,7 @@ export class AuthController {
       throw new BadRequestException("User not found");
     }
   
-    // Parse profile if body is sent
+
     let parsedProfile: any = {};
     if (body?.profile) {
       try {
