@@ -8,7 +8,7 @@ import { Roles } from 'src/auth/decorators/roles.decorator';
 
 @UseGuards(AuthGuard, RolesGuard)
 @Roles('admin', 'teacher')
-@Controller('source')
+
 @Controller('course')
 export class CourseController {
   constructor(private readonly courseService: CourseService) {}

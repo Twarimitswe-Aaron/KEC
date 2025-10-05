@@ -62,10 +62,10 @@ export class FeedbackService {
       content: fb.feedback,         // rename feedback → content
       createdAt: fb.createdAt.toISOString(),
       poster: {
-        firstName: fb.student.user.firstName,
-        lastName: fb.student.user.lastName,
-        avatar: fb.student.user.profile?.avatar ?? '',
-        email: fb.student.user.email,
+        firstName: fb?.student?.user?.firstName ?? '',
+        lastName: fb?.student?.user?.lastName ?? '',
+        avatar: fb?.student?.user?.profile?.avatar ?? '',
+        email: fb?.student?.user?.email ?? '',
       }
     }));
     

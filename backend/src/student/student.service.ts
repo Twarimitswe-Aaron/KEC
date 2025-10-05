@@ -85,9 +85,9 @@ export class StudentService {
         message: `Registration successful! Please check ${email} to verify your account.`,
         student: {
           id: student.id,
-          email: student.user.email,
-          firstName: student.user.firstName,
-          lastName: student.user.lastName,
+          email: student?.user?.email ,
+          firstName: student?.user?.firstName,
+          lastName: student?.user?.lastName,
           avatar: student?.user?.profile?.avatar || "",
 
         },

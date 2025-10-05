@@ -8,8 +8,23 @@ export class CourseService {
   constructor(private readonly prisma: PrismaService) {}
   async create(createCourseDto: CreateCourseDto) {
     const {id,image_url,title,description,price,
-      open,enrolled,no_lessons,adminId,uploader
+      uploader
     }=createCourseDto;
+
+    const newCourse=await this.prisma.course.create({
+      data:{
+        id,
+        uploaderId:uploader.id,
+        title,
+        image_url,
+        description,
+        coursePrice:price,
+
+
+
+      }
+    })
+
 
 
   }

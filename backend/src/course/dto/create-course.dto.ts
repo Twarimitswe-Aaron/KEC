@@ -12,19 +12,15 @@ export class CreateCourseDto {
     @IsString()
     price:string;
     @IsBoolean()
-    open:boolean;
-    @IsBoolean()
-    enrolled:boolean;
-    @IsString()
-    no_lessons:string;
+
+   
     @IsNumber()
     adminId:number;
   
    
     uploader:{
         id:number;
-        name:string;
-        avatar_url:string;
+    
     }
 
 }

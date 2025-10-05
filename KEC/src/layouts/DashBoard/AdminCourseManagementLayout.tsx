@@ -5,7 +5,10 @@ import { FaUserGraduate } from "react-icons/fa6";
 import { toast } from "react-toastify";
 import { Outlet, useNavigate } from "react-router-dom";
 
-// Mock data and types for demonstration
+import { useCreateCourseMutation } from "../../state/api/courseApi";
+
+import { useGetUserQuery } from "../../state/api/authApi";
+
 const mockData = [
   {
     id: 1,
@@ -35,62 +38,6 @@ const mockData = [
       avatar_url: "https://via.placeholder.com/40",
     },
   },
-  {
-    id: 3,
-    title: "TypeScript Mastery",
-    description: "Type-safe JavaScript development with TypeScript",
-    price: "60,000 RWF",
-    image_url: "/images/courseCard.png",
-    no_lessons: "18",
-    no_hours: "12",
-    open: true,
-    uploader: {
-      name: "Mike Johnson",
-      avatar_url: "https://via.placeholder.com/40",
-    },
-  },
-  {
-    id: 4,
-    title: "Node.js Backend Development",
-    description: "Build scalable backend applications with Node.js",
-    price: "65,000 RWF",
-    image_url: "/images/courseCard.png",
-    no_lessons: "22",
-    open: false,
-    no_hours: "16",
-    uploader: {
-      name: "Sarah Wilson",
-      avatar_url: "https://via.placeholder.com/40",
-    },
-  },
-  {
-    id: 5,
-    title: "UI/UX Design Principles",
-    description: "Learn modern design principles and create beautiful interfaces",
-    price: "45,000 RWF",
-    image_url: "/images/courseCard.png",
-    no_lessons: "12",
-    no_hours: "8",
-    open: false,
-    uploader: {
-      name: "Alex Brown",
-      avatar_url: "https://via.placeholder.com/40",
-    },
-  },
-  {
-    id: 6,
-    title: "Database Design & SQL",
-    description: "Master database design and SQL querying",
-    price: "55,000 RWF",
-    image_url: "/images/courseCard.png",
-    no_lessons: "16",
-    open: false,
-    no_hours: "14",
-    uploader: {
-      name: "Emma Davis",
-      avatar_url: "https://via.placeholder.com/40",
-    },
-  },
 ];
 
 interface Course {
@@ -106,11 +53,14 @@ interface Course {
 }
 
 interface NewCourseFormData {
-  id?: number;
+
   image_url: string;
   title: string;
   description: string;
   price: string;
+  uploader:{
+    id:number
+  }
 }
 
 interface ImageUploadAreaProps {
@@ -123,6 +73,7 @@ interface ImageUploadAreaProps {
     price: string;
   };
 }
+
 
 const ImageUploadArea: React.FC<ImageUploadAreaProps> = ({
   onImageSelect,
@@ -171,29 +122,31 @@ const ImageUploadArea: React.FC<ImageUploadAreaProps> = ({
 
   const handleFileSelect = (file: File) => {
     if (!file || !file.type.startsWith("image/")) {
-      toast("Please select a valid image file (JPG, PNG, GIF)");
+      toast.error("Please select a valid image file (JPG, PNG, GIF)");
       return;
     }
 
     if (file.size > 10 * 1024 * 1024) {
-      toast("File size must be less than 10MB");
+      toast.error("File size must be less than 10MB");
       return;
     }
 
     setIsLoading(true);
 
+
     const reader = new FileReader();
     reader.onload = (e) => {
       const imageUrl = e.target?.result as string;
       setPreviewUrl(imageUrl);
-      onImageSelect(imageUrl);
+      onImageSelect(imageUrl); // This is the image URL sent to the main component
       setIsLoading(false);
     };
     reader.onerror = () => {
-      toast("Error reading file");
+      toast.error("Error reading file");
       setIsLoading(false);
     };
     reader.readAsDataURL(file);
+ 
   };
 
   const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -287,11 +240,7 @@ const ImageUploadArea: React.FC<ImageUploadAreaProps> = ({
                           <div className="w-2 h-2 bg-[#004e64] rounded-full"></div>
                           <span>N/A lessons</span>
                         </div>
-                        <span>•</span>
-                        <div className="flex items-center gap-1">
-                          <div className="w-2 h-2 bg-[#004e64] rounded-full"></div>
-                          <span>N/A hours</span>
-                        </div>
+
                       </div>
                     </div>
 
@@ -370,238 +319,277 @@ const ImageUploadArea: React.FC<ImageUploadAreaProps> = ({
   );
 };
 
+
+
+
 const AdminCourseManagementLayout: React.FC = () => {
-  const [courses, setCourses] = useState<Course[]>([]);
-  const [showModal, setShowModal] = useState(false);
-  const navigate = useNavigate();
-  const [newCourse, setNewCourse] = useState<NewCourseFormData>({
-    id: Date.now(),
-    image_url: "",
-    title: "",
-    description: "",
-    price: "",
-  });
 
-  const resetState = () => {
-    setShowModal(false);
-    setNewCourse({
-      id: Date.now(),
-      image_url: "",
-      title: "",
-      description: "",
-      price: "",
+    const [createCourse, { isLoading }] = useCreateCourseMutation();
+    const {data}=useGetUserQuery()
+    const [showModal, setShowModal] = useState(false);
+    const navigate = useNavigate();
+    const [newCourse, setNewCourse] = useState<NewCourseFormData>({
+        uploader: { id: 0 },
+        image_url: "",
+        title: "",
+        description: "",
+        price: "",
     });
-  };
 
-  useEffect(() => {
-    setCourses(mockData);
-    return () => {
-      resetState();
-    };
-  }, []);
-
-  const handleCloseModal = () => {
-    resetState();
-  };
-
-  const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    const { name, value } = e.target;
-    if (name === "title" && value.length > 50) return;
-    if (name === "description" && value.length > 250) return;
-
-    if (name in newCourse) {
-      setNewCourse((prev) => ({
-        ...prev,
-        [name as keyof NewCourseFormData]: value,
-      }));
-    }
-  };
-
-  const handleImageSelect = (imageUrl: string) => {
-    setNewCourse((prev) => ({
-      ...prev,
-      image_url: imageUrl,
-    }));
-  };
-
-  const handleAddCourse = () => {
-    const { image_url, title, description, price } = newCourse;
-
-    if (!image_url || !title || !description || !price) {
-      alert("Please fill in all required fields including the course image.");
-      return;
-    }
-
-    const courseToAdd: Course = {
-      id: newCourse.id || Date.now(),
-      image_url: image_url,
-      title: title,
-      description: description,
-      price: price,
-      no_lessons: "N/A",
-      no_hours: "N/A",
-      uploader: {
-        name: "Admin User",
-        avatar_url: "https://via.placeholder.com/40",
-      },
+    const resetState = () => {
+        setShowModal(false);
+        setNewCourse({
+            uploader: { id: 0 },
+            image_url: "",
+            title: "",
+            description: "",
+            price: "",
+        });
     };
 
-    setCourses((prev) => [courseToAdd, ...prev]);
-    resetState();
-    navigate("/course-management/view-lessons")
-  };
+    useEffect(() => {
+        return () => {
+            resetState();
+        };
+    }, []);
 
-  return (
-    <div className="flex flex-col h-screen font-sans bg-gradient-to-br from-[#f9fafb] via-white to-[#f0fafa]">
-      <header className="sticky top-20 z-30 bg-white/80 backdrop-blur-md py-6 px-4 shadow-lg border-b rounded-b-md border-[#004e64]/10">
-        <div className="flex justify-around gap-4 items-center max-w-6xl mx-auto">
-          <div onClick={()=>navigate("/course-management/requestedCourses")} className="flex text-center items-center gap-3 px-4 py-3 border-[#004e64]/20 shadow-lg rounded-md hover:shadow-xl transition-all duration-300 cursor-pointer group">
-            <GitPullRequest className="text-[#004e64] text-sm group-hover:scale-110 transition-transform" />
-            <span className="text-[#004e64] hidden sm:inline ">
-              Requested 
-            </span>
-          </div>
+    const handleCloseModal = () => {
+        resetState();
+    };
 
-          <button
-            onClick={() => setShowModal(true)}
-            className="flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-[#004e64] via-[#025d75] to-[#022F40] text-white font-semibold rounded-md shadow-lg cursor-pointer hover:shadow-xl transition-all duration-300 transform hover:scale-105 hover:-translate-y-1"
-          >
-            <Plus className="text-lg" />
-            <span className="hidden sm:inline ">Course</span>
-          </button>
+    useEffect(() => {
+        if (data?.id) {
+            setNewCourse((prev) => ({
+                ...prev,
+                uploader: { id: data.id },
+            }));
+        }
+    }, [data]);
 
-          <div onClick={()=>{
-            navigate("/course-management");
-          }} className="flex items-center gap-3 px-6 py-3 shadow-lg rounded-md hover:shadow-xl transition-all duration-300 cursor-pointer group">
-            <Upload className="text-[#004e64] text-xl group-hover:scale-110 transition-transform" />
-            <span className="text-[#004e64] hidden sm:inline ">
-              Uploaded 
-            </span>
-          </div>
+    const handleInputChange = (
+        e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    ) => {
+        const { name, value } = e.target;
+        if (name === "title" && value.length > 50) return;
+        if (name === "description" && value.length > 250) return;
 
-          <div onClick={() => navigate("/course-management/students")} className="flex items-center gap-3 px-6 py-3 shadow-lg rounded-md hover:shadow-xl transition-all duration-300 cursor-pointer group">
-            <FaUserGraduate className="text-[#004e64] text-xl group-hover:scale-110 transition-transform" />
-            <span className="text-[#004e64] hidden  lg:hidden md:inline">
-              Students <span className="font-bold text-md"></span>
-            </span>
-          </div>
-        </div>
-      </header>
+        if (name in newCourse) {
+            setNewCourse((prev) => ({
+                ...prev,
+                [name as keyof NewCourseFormData]: value,
+            }));
+        }
+    };
 
-      <main className="flex-1 overflow-y-auto scroll-hide py-8 px-4">
-        <div className="w-full max-w-6xl mx-auto">
-          <Outlet />
-        </div>
-      </main>
+    const handleImageSelect = (imageUrl: string) => {
+        setNewCourse((prev) => ({
+            ...prev,
+            image_url: imageUrl,
+        }));
+    };
 
-      {showModal && (
-        <div className="fixed inset-0 scroll-hide bg-black/50 flex justify-center items-center z-50 px-4">
-          <div className="bg-white scroll-hide w-full max-w-3xl p-8 rounded-2xl shadow-2xl overflow-y-auto max-h-[90vh] border border-[#004e64]/10">
-            <div className="flex items-center justify-between mb-8">
-              <h2 className="text-3xl font-bold text-[#004e64] bg-gradient-to-r from-[#004e64] to-[#022F40] bg-clip-text">
-                Create New Course
-              </h2>
-              <button
-                onClick={handleCloseModal}
-                type="button"
-                className="p-2 z-1000 hover:bg-gray-100 rounded-full transition-colors"
-              >
-                <X className="w-5 h-5 text-gray-500" />
-              </button>
-            </div>
 
-            <div className="space-y-6">
-              <ImageUploadArea
-                onImageSelect={handleImageSelect}
-                currentImage={newCourse.image_url}
-                className="col-span-full"
-                courseData={{
-                  title: newCourse.title,
-                  description: newCourse.description,
-                  price: newCourse.price,
-                }}
-              />
+    const handleAddCourse = async () => {
+        const { image_url, title, description, price } = newCourse;
+        console.log(newCourse)
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block mb-2 font-medium text-[#004e64]">
-                    Course Title *
-                  </label>
-                  <input
-                    type="text"
-                    name="title"
-                    value={newCourse.title}
-                    onChange={handleInputChange}
-                    placeholder="Enter course title..."
-                    maxLength={50}
-                    className="w-full rounded-md px-4 py-3 border border-[#004e64]/30 text-[#004e64] focus:outline-none focus:ring-2 focus:ring-[#004e64]/50 focus:border-transparent transition-all duration-300 hover:shadow-md"
-                  />
-                  <div className="flex justify-between items-center mt-1">
-                    <span className="text-xs text-gray-400">
-                      {newCourse.title.length}/50 characters
-                    </span>
-                  </div>
+        if (!image_url || !title || !description || !price) {
+            toast.error("Please fill in all required fields including the course image.");
+            return;
+        }
+        if (!data?.id) {
+            toast.error("Please refresh your page");
+            return;
+        }
+
+
+        const courseDataPayload = {
+            image_url,
+            title,
+            description,
+            price,
+            uploader: { id: data.id }
+
+        }
+
+        try {
+
+            await toast.promise(
+                createCourse(courseDataPayload).unwrap(),
+                {
+                    pending: 'Creating course...',
+                    success: 'Course created successfully!',
+                    error: 'Error creating course',
+                }
+            );
+
+        
+            resetState();
+            // Assuming the navigation below is for the next step (like adding lessons)
+            navigate("/course-management/view-lessons"); 
+
+        } catch (err) {
+            // Error is handled by toast.promise, but you can log it here if needed
+            console.error("Failed to create course:", err);
+            // Optional: Show a more specific error if needed
+            // const errorMessage = (error as any)?.data?.message || 'An unknown error occurred.';
+            // toast.error(`Creation failed: ${errorMessage}`);
+        }
+    };
+
+
+
+    return (
+        <div className="flex flex-col h-screen font-sans bg-gradient-to-br from-[#f9fafb] via-white to-[#f0fafa]">
+            <header className="sticky top-20 z-30 bg-white/80 backdrop-blur-md py-6 px-4 shadow-lg border-b rounded-b-md border-[#004e64]/10">
+                <div className="flex justify-around gap-4 items-center max-w-6xl mx-auto">
+                    <div onClick={()=>navigate("/course-management/requestedCourses")} className="flex text-center items-center gap-3 px-4 py-3 border-[#004e64]/20 shadow-lg rounded-md hover:shadow-xl transition-all duration-300 cursor-pointer group">
+                        <GitPullRequest className="text-[#004e64] text-sm group-hover:scale-110 transition-transform" />
+                        <span className="text-[#004e64] hidden sm:inline ">
+                            Requested 
+                        </span>
+                    </div>
+
+                    <button
+                        onClick={() => setShowModal(true)}
+                        className="flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-[#004e64] via-[#025d75] to-[#022F40] text-white font-semibold rounded-md shadow-lg cursor-pointer hover:shadow-xl transition-all duration-300 transform hover:scale-105 hover:-translate-y-1"
+                    >
+                        <Plus className="text-lg" />
+                        <span className="hidden sm:inline ">Course</span>
+                    </button>
+
+                    <div onClick={()=>{
+                        navigate("/course-management");
+                    }} className="flex items-center gap-3 px-6 py-3 shadow-lg rounded-md hover:shadow-xl transition-all duration-300 cursor-pointer group">
+                        <Upload className="text-[#004e64] text-xl group-hover:scale-110 transition-transform" />
+                        <span className="text-[#004e64] hidden sm:inline ">
+                            Uploaded 
+                        </span>
+                    </div>
+
+                    <div onClick={() => navigate("/course-management/students")} className="flex items-center gap-3 px-6 py-3 shadow-lg rounded-md hover:shadow-xl transition-all duration-300 cursor-pointer group">
+                        <FaUserGraduate className="text-[#004e64] text-xl group-hover:scale-110 transition-transform" />
+                        <span className="text-[#004e64] hidden  lg:hidden md:inline">
+                            Students <span className="font-bold text-md"></span>
+                        </span>
+                    </div>
                 </div>
+            </header>
 
-                <div>
-                  <label className="block mb-2 font-medium text-[#004e64]">
-                    Course Price *
-                  </label>
-                  <input
-                    type="text"
-                    name="price"
-                    value={newCourse.price}
-                    onChange={handleInputChange}
-                    placeholder="e.g., 100,000 RWF"
-                    className="w-full rounded-md px-4 py-3 border border-[#004e64]/30 text-[#004e64] focus:outline-none focus:ring-2 focus:ring-[#004e64]/50 focus:border-transparent transition-all duration-300 hover:shadow-md"
-                  />
+            <main className="flex-1 overflow-y-auto scroll-hide py-8 px-4">
+                <div className="w-full max-w-6xl mx-auto">
+                    <Outlet />
                 </div>
-              </div>
+            </main>
 
-              <div>
-                <label className="block mb-2 font-medium text-[#004e64]">
-                  Course Description *
-                </label>
-                <textarea
-                  name="description"
-                  rows={4}
-                  value={newCourse.description}
-                  onChange={handleInputChange}
-                  maxLength={250}
-                  placeholder="Describe what students will learn in this course..."
-                  className="w-full rounded-md px-4 py-3 border border-[#004e64]/30 text-[#004e64] resize-none focus:outline-none focus:ring-2 focus:ring-[#004e64]/50 focus:border-transparent transition-all duration-300 hover:shadow-md"
-                />
-                <div className="flex justify-between items-center mt-1">
-                  <span className="text-xs text-gray-400">
-                    {newCourse.description.length}/250 characters
-                  </span>
+            {showModal && (
+                <div className="fixed inset-0 scroll-hide bg-black/50 flex justify-center items-center z-50 px-4">
+                    <div className="bg-white scroll-hide w-full max-w-3xl p-8 rounded-2xl shadow-2xl overflow-y-auto max-h-[90vh] border border-[#004e64]/10">
+                        <div className="flex items-center justify-between mb-8">
+                            <h2 className="text-3xl font-bold text-[#004e64] bg-gradient-to-r from-[#004e64] to-[#022F40] bg-clip-text">
+                                Create New Course
+                            </h2>
+                            <button
+                                onClick={handleCloseModal}
+                                type="button"
+                                className="p-2 z-1000 hover:bg-gray-100 rounded-full transition-colors"
+                            >
+                                <X className="w-5 h-5 text-gray-500" />
+                            </button>
+                        </div>
+
+                        <div className="space-y-6">
+                            <ImageUploadArea
+                                onImageSelect={handleImageSelect}
+                                currentImage={newCourse.image_url}
+                                className="col-span-full"
+                                courseData={{
+                                    title: newCourse.title,
+                                    description: newCourse.description,
+                                    price: newCourse.price,
+                                }}
+                            />
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label className="block mb-2 font-medium text-[#004e64]">
+                                        Course Title *
+                                    </label>
+                                    <input
+                                        type="text"
+                                        name="title"
+                                        value={newCourse.title}
+                                        onChange={handleInputChange}
+                                        placeholder="Enter course title..."
+                                        maxLength={50}
+                                        className="w-full rounded-md px-4 py-3 border border-[#004e64]/30 text-[#004e64] focus:outline-none focus:ring-2 focus:ring-[#004e64]/50 focus:border-transparent transition-all duration-300 hover:shadow-md"
+                                    />
+                                    <div className="flex justify-between items-center mt-1">
+                                        <span className="text-xs text-gray-400">
+                                            {newCourse.title.length}/50 characters
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="block mb-2 font-medium text-[#004e64]">
+                                        Course Price *
+                                    </label>
+                                    <input
+                                        type="text"
+                                        name="price"
+                                        value={newCourse.price}
+                                        onChange={handleInputChange}
+                                        placeholder="e.g., 100,000 RWF"
+                                        className="w-full rounded-md px-4 py-3 border border-[#004e64]/30 text-[#004e64] focus:outline-none focus:ring-2 focus:ring-[#004e64]/50 focus:border-transparent transition-all duration-300 hover:shadow-md"
+                                    />
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block mb-2 font-medium text-[#004e64]">
+                                    Course Description *
+                                </label>
+                                <textarea
+                                    name="description"
+                                    rows={4}
+                                    value={newCourse.description}
+                                    onChange={handleInputChange}
+                                    maxLength={250}
+                                    placeholder="Describe what students will learn in this course..."
+                                    className="w-full rounded-md px-4 py-3 border border-[#004e64]/30 text-[#004e64] resize-none focus:outline-none focus:ring-2 focus:ring-[#004e64]/50 focus:border-transparent transition-all duration-300 hover:shadow-md"
+                                />
+                                <div className="flex justify-between items-center mt-1">
+                                    <span className="text-xs text-gray-400">
+                                        {newCourse.description.length}/250 characters
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="flex justify-end gap-4 mt-8 pt-6 border-t border-gray-200">
+                            <button
+                                onClick={handleCloseModal}
+                                type="button"
+                                disabled={isLoading} // Disable while loading
+                                className="px-6 py-3 rounded-md cursor-pointer bg-gradient-to-r from-gray-50 to-gray-100 text-gray-700 font-medium hover:from-gray-100 hover:to-gray-200 transition-all duration-300 border border-gray-300 hover:shadow-md disabled:opacity-50"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleAddCourse}
+                                type="button"
+                                disabled={isLoading} // Disable while loading
+                                className="px-6 py-3 rounded-md cursor-pointer bg-gradient-to-r from-[#004e64] via-[#025d75] to-[#022F40] text-white font-semibold hover:from-[#022F40] hover:to-[#011d2b] transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 disabled:opacity-50 disabled:hover:scale-100"
+                            >
+                                {isLoading ? 'Creating...' : 'Create Course'}
+                            </button>
+                        </div>
+                    </div>
                 </div>
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-4 mt-8 pt-6 border-t border-gray-200">
-              <button
-                onClick={handleCloseModal}
-                type="button"
-                className="px-6 py-3 rounded-md cursor-pointer bg-gradient-to-r from-gray-50 to-gray-100 text-gray-700 font-medium hover:from-gray-100 hover:to-gray-200 transition-all duration-300 border border-gray-300 hover:shadow-md"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleAddCourse}
-                type="button"
-                className="px-6 py-3 rounded-md cursor-pointer bg-gradient-to-r from-[#004e64] via-[#025d75] to-[#022F40] text-white font-semibold hover:from-[#022F40] hover:to-[#011d2b] transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105"
-              >
-                Create Course
-              </button>
-            </div>
-          </div>
+            )}
         </div>
-      )}
-    </div>
-  );
+    );
 };
 
 export default AdminCourseManagementLayout;

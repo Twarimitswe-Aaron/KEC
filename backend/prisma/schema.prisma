@@ -32,6 +32,7 @@ model User {
   admin        Admin?
   teacher      Teacher?
   student      Student?
+  course   Course[]
   announcement Announcement[]
 }
 
@@ -45,7 +46,7 @@ model Teacher {
   id      Int      @id @default(autoincrement())
   userId  Int      @unique
   user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  courses Course[]
+ 
 }
 
 model Student {
@@ -63,8 +64,8 @@ model Student {
 
 model Course {
   id        Int     @id @default(autoincrement())
-  teacherId Int
-  teacher   Teacher @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  uploaderId Int
+  uploader   User @relation(fields: [uploaderId], references: [id], onDelete: Cascade)
 
   title       String
   description String
@@ -73,9 +74,9 @@ model Course {
 
   lesson     Lesson[]
   assignment Assignment[]
-  maximum    Int
-  open       Boolean
-  totalPaid    String
+  maximum    Int?
+  open       Boolean?
+  totalPaid    String?
   
 
   createdAt DateTime @default(now())
