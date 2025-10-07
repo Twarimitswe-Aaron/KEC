@@ -8,6 +8,24 @@ interface createCourseDto{
     uploader:{
         id:number
     }
+
+
+}
+
+interface getAllUploaded{
+    id:number;
+    title:string;
+    description:string;
+    price:string;
+    image_url:string;
+    no_lessons:string;
+    open:boolean;
+    uploader:{
+        name:string;
+        avatar_url:string;
+    }
+
+
 }
 
 export const courseApi=apiSlice.injectEndpoints({
@@ -18,6 +36,11 @@ export const courseApi=apiSlice.injectEndpoints({
                 method:"POST",
                 body
             })
+        }),
+        getUploadedCourses:builder.query<getAllUploaded[],void>({
+            query:()=>"/course/get-uploaded-courses",
+            providesTags:["Course"]
+
         })
 
     })

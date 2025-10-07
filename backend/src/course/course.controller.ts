@@ -45,9 +45,12 @@ export class CourseController {
     return this.courseService.create(createCourseDto);
   }
 
-  @Get()
-  findAll() {
-    return this.courseService.findAll();
+  
+
+  
+  @Get("/get-uploaded-courses")
+  findAllUploaded() {
+    return this.courseService.findAllUploaded();
   }
 
   @Get(':id')

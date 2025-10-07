@@ -28,7 +28,8 @@ export class CourseService {
 
   }
 
-  findAll() {
+  findAllUploaded() {
+    
     return `This action returns all course`;
   }
 
