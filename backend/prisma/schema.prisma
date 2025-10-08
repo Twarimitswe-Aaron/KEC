@@ -64,8 +64,8 @@ model Student {
 
 model Course {
   id        Int     @id @default(autoincrement())
-  uploaderId Int
-  uploader   User @relation(fields: [uploaderId], references: [id], onDelete: Cascade)
+  uploaderId Int?
+  uploader   User? @relation(fields: [uploaderId], references: [id], onDelete: Cascade)
 
   title       String
   description String
@@ -73,6 +73,7 @@ model Course {
   image_url   String
 
   lesson     Lesson[]
+  no_lesson Int @default(0)
   assignment Assignment[]
   maximum    Int?
   open       Boolean?

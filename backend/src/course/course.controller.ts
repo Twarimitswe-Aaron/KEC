@@ -7,13 +7,14 @@ import { AuthGuard } from 'src/auth/auth.guard';
 import { RolesGuard } from 'src/auth/roles.guard';
 import { Roles } from 'src/auth/decorators/roles.decorator';
 import { diskStorage } from 'multer';
+import { ConfigService } from '@nestjs/config';
 
 @UseGuards(AuthGuard, RolesGuard)
 @Roles('admin', 'teacher')
 
 @Controller('course')
 export class CourseController {
-  constructor(private readonly courseService: CourseService) {}
+  constructor(private readonly courseService: CourseService, private readonly configService: ConfigService) {}
 
 
   @Post("/create-course")
@@ -36,10 +37,11 @@ export class CourseController {
    
 
     if (file) {
-
-      createCourseDto.image_url = `/${file.path}`; 
-
+      createCourseDto.image_url = file
+        ? `${this.configService.get("BACKEND_URL")}/uploads/course_url/${file.filename}`
+        : "";
     }
+    console.log(createCourseDto.image_url)
     
   
     return this.courseService.create(createCourseDto);

@@ -7,30 +7,42 @@ import { PrismaService } from 'src/prisma/prisma.service';
 export class CourseService {
   constructor(private readonly prisma: PrismaService) {}
   async create(createCourseDto: CreateCourseDto) {
-    const { id, image_url, title, description, price, uploader } = createCourseDto;
-    const uploaderObj = typeof uploader === 'string' ? JSON.parse(uploader) : uploader;
+    const { id, image_url, title, description, price, uploader } =
+      createCourseDto;
+    const uploaderObj =
+      typeof uploader === 'string' ? JSON.parse(uploader) : uploader;
 
-    const newCourse=await this.prisma.course.create({
-      data:{
-        id,
-        uploaderId:uploaderObj.id,
+    const newCourse = await this.prisma.course.create({
+      data: {
+       
+        uploaderId: uploaderObj.id,
         title,
         image_url,
         description,
-        coursePrice:price,
-
-
-
-      }
-    })
-
-
-
+        coursePrice: price,
+        no_lesson: 0,
+      },
+    });
   }
 
-  findAllUploaded() {
+  async findAllUploaded() {
+    const getAllUploaded = await this.prisma.course.findMany({
+      include:{uploader:{include:{profile:true}}}
+    });
     
-    return `This action returns all course`;
+    return getAllUploaded.map(course => ({
+      id: course.id,
+      title: course.title,
+      description: course.description,
+      price: course.coursePrice,
+      image_url: course.image_url,
+      no_lessons: "0", 
+      open: course.open,
+      uploader: {
+        name: `${course.uploader.firstName} ${course.uploader.lastName}`,
+        avatar_url: course.uploader.profile?.avatar || "",
+      }
+    }));
   }
 
   findOne(id: number) {

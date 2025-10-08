@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import {useGetUploadedCoursesQuery} from "./../state/api/courseApi"
 
 interface Course {
   id: number;
@@ -9,7 +10,7 @@ interface Course {
   price: string;
   open?: boolean;
   no_lessons: string;
-  no_hours: string;
+
   uploader: { name: string; avatar_url: string };
 }
 
@@ -23,8 +24,8 @@ const mockData: Course[] = [
     image_url: "/images/courseCard.png",
     no_lessons: "15",
     open: true,
-    no_hours: "10",
-    uploader: {
+   
+      uploader: {
       name: "John Doe",
       avatar_url: "https://via.placeholder.com/40",
     },
@@ -36,7 +37,7 @@ const mockData: Course[] = [
     price: "75,000 RWF",
     image_url: "/images/courseCard.png",
     no_lessons: "20",
-    no_hours: "15",
+
     open: true,
     uploader: {
       name: "Jane Smith",
@@ -51,7 +52,9 @@ interface DashboardCardProps {
   onCourseAction: (id: number) => void;
 }
 
+
 const DashboardCard: React.FC<DashboardCardProps> = ({ courses, onCourseAction }) => (
+
  <div>
  <div className="flex justify-center text-center -mt-6 mb-8">
           <div className="bg-white px-3 py-2 rounded-lg shadow-sm ">
@@ -115,17 +118,20 @@ const DashboardCard: React.FC<DashboardCardProps> = ({ courses, onCourseAction }
 
 const AdminCourseManagement: React.FC = () => {
   const navigate=useNavigate()
-  const [courses, setCourses] = useState<Course[]>([]);
-
-  useEffect(() => {
-    setCourses(mockData);
-  }, []);
+  const { data: courses = [], isLoading } = useGetUploadedCoursesQuery();
+  useEffect(()=>{
+    console.log(courses)
+  },[courses])
 
   const handleCourseAction = (id: number) => {
     console.log("Course action:", id);
     navigate("/course-management/create-modules")
     // You can implement navigation or other actions here
   };
+
+  if (isLoading) {
+    return <div className="p-4">Loading courses...</div>;
+  }
 
   return (
     <div className="p-4">
