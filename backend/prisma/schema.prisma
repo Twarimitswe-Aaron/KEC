@@ -71,6 +71,7 @@ model Course {
   description String
   coursePrice String
   image_url   String
+  isConfirmed Boolean @default(false)
 
   lesson     Lesson[]
   no_lesson Int @default(0)

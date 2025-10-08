@@ -35,7 +35,8 @@ export const courseApi=apiSlice.injectEndpoints({
                 url:"/course/create-course",
                 method:"POST",
                 body
-            })
+            }),
+            invalidatesTags: ["Course"],
         }),
         getUploadedCourses:builder.query<getAllUploaded[],void>({
             query:()=>"/course/get-uploaded-courses",

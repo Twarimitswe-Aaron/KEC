@@ -27,6 +27,7 @@ export class CourseService {
 
   async findAllUploaded() {
     const getAllUploaded = await this.prisma.course.findMany({
+      where:{isConfirmed:true},
       include:{uploader:{include:{profile:true}}}
     });
     
@@ -39,8 +40,8 @@ export class CourseService {
       no_lessons: "0", 
       open: course.open,
       uploader: {
-        name: `${course.uploader.firstName} ${course.uploader.lastName}`,
-        avatar_url: course.uploader.profile?.avatar || "",
+        name: `${course.uploader?.firstName} ${course.uploader?.lastName}`,
+        avatar_url: course.uploader?.profile?.avatar || "",
       }
     }));
   }
