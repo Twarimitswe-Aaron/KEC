@@ -1,50 +1,71 @@
 import { apiSlice } from "./apiSlice";
-interface createCourseDto{
-    
-    title:string
-    description:string
-    image_url:string
-    price:string
-    uploader:{
-        id:number
-    }
-
-
+interface createCourseDto {
+  title: string;
+  description: string;
+  image_url: string;
+  price: string;
+  uploader: {
+    id: number;
+  };
 }
 
-interface getAllUploaded{
-    id:number;
-    title:string;
-    description:string;
-    price:string;
-    image_url:string;
-    no_lessons:string;
-    open:boolean;
-    uploader:{
-        name:string;
-        avatar_url:string;
-    }
+export interface getAllUploaded {
+  id: number;
+  title: string;
+  description: string;
+  price: string;
+  image_url: string;
+  no_lessons: string;
+  open: boolean;
 
-
+  uploader: {
+    id: number;
+    email: string;
+    name: string;
+    avatar_url: string;
+  };
 }
 
-export const courseApi=apiSlice.injectEndpoints({
-    endpoints:(builder)=>({
-        createCourse:builder.mutation<{message:string},createCourseDto>({
-            query:(body)=>({
-                url:"/course/create-course",
-                method:"POST",
-                body
-            }),
-            invalidatesTags: ["Course"],
-        }),
-        getUploadedCourses:builder.query<getAllUploaded[],void>({
-            query:()=>"/course/get-uploaded-courses",
-            providesTags:["Course"]
+export const courseApi = apiSlice.injectEndpoints({
+  endpoints: (builder) => ({
+    createCourse: builder.mutation<{ message: string }, createCourseDto>({
+      query: (body) => ({
+        url: "/course/create-course",
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: ["Course"],
+    }),
+    getUploadedCourses: builder.query<getAllUploaded[], void>({
+      query: () => "/course/get-uploaded-courses",
+      providesTags: ["Course"],
+    }),
+    getUnconfirmedCourses: builder.query<getAllUploaded[], void>({
+      query: () => "/course/get-unconfirmed-courses",
+      providesTags: ["Course"],
+    }),
+    confirmCourse: builder.mutation<{ message: string }, number>({
+      query: (id) => ({
+        url: "/course/confirm-course",
+        method: "POST",
+        body: { id },
+      }),
+      invalidatesTags: ["Course"],
+    }),
+    deleteCourse: builder.mutation<{ message: String }, number>({
+      query: (id) => ({
+        url: "/course/delete-course",
+        method: "POST",
+        body: { id },
+      }),
+    }),
+  }),
+});
 
-        })
-
-    })
-})
-
-export const { useCreateCourseMutation,useGetUploadedCoursesQuery } = courseApi
+export const {
+  useCreateCourseMutation,
+  useGetUploadedCoursesQuery,
+  useGetUnconfirmedCoursesQuery,
+  useConfirmCourseMutation,
+  useDeleteCourseMutation,
+} = courseApi;

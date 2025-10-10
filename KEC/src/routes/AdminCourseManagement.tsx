@@ -101,7 +101,7 @@ const EmptyDisplay: React.FC<{ onConfirmCourse: () => void }> = ({ onConfirmCour
   const userRole = useContext(UserRoleContext);
   return (
     <div className="flex flex-col items-center justify-center py-24">
-      <div className="bg-[#e6f5f2] p-6 rounded-full mb-6 shadow-sm">
+      <div className="bg-[#e6ebf560] p-6 rounded-full mb-6 shadow-sm">
         <BookOpen className="text-[#004e64]" size={60} />
       </div>
       <h3 className="text-xl font-semibold text-[#004e64] mb-2">
@@ -113,9 +113,9 @@ const EmptyDisplay: React.FC<{ onConfirmCourse: () => void }> = ({ onConfirmCour
       {userRole === "admin" && (
         <button
           onClick={onConfirmCourse}
-          className="bg-[#004e64] hover:bg-[#006b86] text-white py-2 px-5 rounded-md shadow-md transition-all"
+          className="bg-[#004e64] cursor-pointer hover:bg-[#006b86] text-white py-2 px-5 rounded-md shadow-md transition-all"
         >
-          Confirm Course
+        Confirm Course
         </button>
       )}
      
@@ -128,11 +128,11 @@ const AdminCourseManagement: React.FC = () => {
   const { data: courses = [], isLoading, isFetching } = useGetUploadedCoursesQuery();
 
   const handleCourseAction = (id: number) => {
-    navigate(`/course-management/${id}/create-modules`);
+    navigate(`${id}/create-modules`);
   };
 
   const handleConfirmCourse = () => {
-    navigate("/requestedCourses");
+    navigate("requestedCourses");
   };
 
   if (isLoading) {

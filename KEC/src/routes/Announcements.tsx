@@ -36,7 +36,6 @@ const Announcements = () => {
     posterId: userData?.id ?? null,
   });
 
-  // State for the confirmation dialog
   const [showConfirm, setShowConfirm] = useState(false);
   const [announcementToDelete, setAnnouncementToDelete] = useState<{
     id: number;
@@ -123,23 +122,19 @@ const Announcements = () => {
 
     const isOwner = posterId === currentUserId;
 
-    const fallbackUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(
-      name
-    )}&background=022F40&color=ffffff&rounded=true&size=32`;
 
-    // Prepare user data for the confirmation dialog
     const getUserDataForDialog = () => {
       if (isOwner) {
         return {
-          avatar: userData?.profile?.avatar || fallbackUrl,
+          avatar: userData?.profile?.avatar || "",
           name: "You",
           role: UserRole || "User"
         };
       }
       
-      // For other users' announcements
+
       return {
-        avatar: avatar || fallbackUrl,
+        avatar: avatar || "",
         name: name,
         role: "User"
       };
@@ -152,7 +147,7 @@ const Announcements = () => {
         <div className="flex items-center gap-2 mb-2">
           <Link to={`/profile/${posterId}`} className="flex items-center gap-2">
             <img
-              src={avatar || fallbackUrl}
+              src={avatar || ""}
               alt={`${name} avatar`}
               className="w-8 h-8 rounded-full border-none shadow-sm object-cover"
             />

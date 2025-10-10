@@ -2,6 +2,7 @@ import React, { useState,useContext } from "react";
 import { BsCameraVideoFill } from "react-icons/bs";
 
 import { UserRole, UserRoleContext } from "../../UserRoleContext";
+import { Link } from "react-router-dom";
 
 export interface Course {
   id?: number;
@@ -10,10 +11,12 @@ export interface Course {
   description: string;
   price: string;
   open:boolean;
-  enrolled:boolean;
+ 
   no_lessons: string;
  
   uploader: {
+    id:number;
+    email:string;
     name: string;
     avatar_url: string;
   };
@@ -111,7 +114,10 @@ const CourseCard: React.FC<CourseCardProps> = ({
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
                 </svg>
               </button>   
-              <p className="text-sm font-semibold">{course.uploader.name}</p>
+              <Link to={`/profile/${course.uploader.id}`} className="text-sm font-semibold">
+              <img src={course.uploader.avatar_url} alt={course.uploader.name} className="w-6 h-6 object-cover rounded-full" />
+              <span>{course.uploader.name}</span>
+              </Link>
             </div>
           )}
 

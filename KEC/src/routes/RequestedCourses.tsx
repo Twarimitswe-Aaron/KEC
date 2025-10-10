@@ -1,10 +1,10 @@
 import React, { useEffect, useState, useContext } from "react";
-import DashboardCard from "../Components/Dashboard/DashboardCard";
-import { Coursedata } from "../services/mockData";
 import { Course } from "../Components/Dashboard/CourseCard";
 import { UserRoleContext } from "../UserRoleContext";
 import { FaEye, FaTimes, FaCheck, FaTrash } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
+import { useConfirmCourseMutation, useDeleteCourseMutation, useGetUnconfirmedCoursesQuery } from "../state/api/courseApi";
 
 // Confirmation Modal Component
 interface ConfirmationModalProps {
@@ -67,14 +67,20 @@ const ConfirmationModal = ({
 const RequestedCourses = () => {
   const navigate = useNavigate();
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
-  const [enrollingCourse, setEnrollingCourse] = useState<Course | null>(null);
   const [confirmModal, setConfirmModal] = useState({
     isOpen: false,
     type: null as 'confirm' | 'delete' | null,
     course: null as Course | null
   });
-  const [loading, setLoading] = useState<{ [key: number]: { confirm: boolean; delete: boolean } }>({});
+  
   const userRole = useContext(UserRoleContext);
+
+  // RTK Query hooks
+  const { data: coursesData, isLoading, isError, refetch } = useGetUnconfirmedCoursesQuery();
+  const [confirmCourse] = useConfirmCourseMutation();
+  const [deleteCourse] = useDeleteCourseMutation();
+
+  const [loading, setLoading] = useState<{ [key: number]: { confirm: boolean; delete: boolean } }>({});
 
   const handleViewDetails = (course: Course) => {
     setSelectedCourse(course);
@@ -84,114 +90,6 @@ const RequestedCourses = () => {
   const handleCloseDetails = () => {
     setSelectedCourse(null);
   };
-
-  const data: Coursedata[] = [
-    {
-      id: 1,
-      image_url: "/images/courseCard.png",
-      title: "Thermodynamics",
-      description:
-        "Explore energy transfer, heat, and the laws of thermodynamics in detail through real-world applications.",
-      price: "100,000frw",
-      enrolled: false,
-      open: true,
-      no_lessons: "10",
-      no_hours: "22hrs32min",
-      uploader: {
-        name: "Irakoze Rachel",
-        avatar_url: "/images/avatars/rachel.png",
-      },
-    },
-    {
-      id: 2,
-      image_url: "/images/courseCard.png",
-      title: "Advanced Thermodynamics",
-      open: true,
-      description:
-        "Explore energy transfer, heat, and the laws of thermodynamics in detail through real-world applications.",
-      price: "100,000frw",
-      no_lessons: "10",
-      enrolled: true,
-      no_hours: "22hrs32min",
-      uploader: {
-        name: "Irakoze Rachel",
-        avatar_url: "/images/avatars/rachel.png",
-      },
-    },
-    {
-      id: 3,
-      image_url: "/images/courseCard.png",
-      title: "Basic Thermodynamics",
-      description:
-        "Explore energy transfer, heat, and the laws of thermodynamics in detail through real-world applications.",
-      price: "100,000frw",
-      open: false,
-      no_lessons: "10",
-      enrolled: false,
-      no_hours: "22hrs32min",
-      uploader: {
-        name: "Irakoze Rachel",
-        avatar_url: "/images/avatars/rachel.png",
-      },
-    },
-    {
-      id: 4,
-      image_url: "/images/courseCard.png",
-      title: "Thermodynamics Applications",
-      description:
-        "Explore energy transfer, heat, and the laws of thermodynamics in detail through real-world applications.",
-      price: "100,000frw",
-      open: false,
-      enrolled: false,
-      no_lessons: "10",
-      no_hours: "22hrs32min",
-      uploader: {
-        name: "Irakoze Rachel",
-        avatar_url: "/images/avatars/rachel.png",
-      },
-    },
-    {
-      id: 5,
-      image_url: "/images/courseCard.png",
-      title: "Industrial Thermodynamics",
-      description:
-        "Explore energy transfer, heat, and the laws of thermodynamics in detail through real-world applications.",
-      price: "100,000frw",
-      no_lessons: "10",
-      no_hours: "22hrs32min",
-      open: false,
-      enrolled: false,
-      uploader: {
-        name: "Irakoze Rachel",
-        avatar_url: "/images/avatars/rachel.png",
-      },
-    },
-    {
-      id: 6,
-      image_url: "/images/courseCard.png",
-      title: "Fluid Mechanics",
-      description:
-        "Covers fluid statics and dynamics, pressure distributions, and practical system design with flow analysis.",
-      price: "90,000frw",
-      no_lessons: "12",
-      no_hours: "18hrs40min",
-      enrolled: true,
-      open: false,
-      uploader: {
-        name: "Ndayambaje Yves",
-        avatar_url: "/images/avatars/yves.png",
-      },
-    },
-  ];
-
-  const [courses, setCourses] = useState<Course[]>();
-
-  useEffect(() => {
-    const fetchData = async () => {
-      setCourses(data);
-    };
-    fetchData();
-  }, []);
 
   const handleConfirmCourse = (course: Course) => {
     setConfirmModal({
@@ -219,18 +117,16 @@ const RequestedCourses = () => {
     }));
 
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      console.log("Course confirmed:", courseId);
-      
-      // Here you would typically update the course status or remove it from the list
-      // For demo purposes, we'll just log it
-      
-      // You could update the courses state here
-      // setCourses(prevCourses => prevCourses?.filter(c => c.id !== courseId));
-      
-    } catch (error) {
-      console.error("Error confirming course:", error);
+      const { message } = await confirmCourse(courseId).unwrap();
+      toast.success(message);
+      await refetch();
+    } catch (err: unknown) {
+      const message =
+        (err as { data?: { message?: string } })?.data?.message ??
+        (err as Error)?.message ??
+        "Something went wrong";
+      toast.error(message);
+      console.error("Error confirming course:", err);
     } finally {
       setLoading(prev => ({
         ...prev,
@@ -250,15 +146,16 @@ const RequestedCourses = () => {
     }));
 
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      console.log("Course deleted:", courseId);
-      
-      // Here you would typically remove the course from the list
-      // setCourses(prevCourses => prevCourses?.filter(c => c.id !== courseId));
-      
-    } catch (error) {
-      console.error("Error deleting course:", error);
+      const { message } = await deleteCourse(courseId).unwrap();
+      toast.success(message);
+      await refetch();
+    } catch (err: unknown) {
+      const message =
+        (err as { data?: { message?: string } })?.data?.message ??
+        (err as Error)?.message ??
+        "Something went wrong";
+      toast.error(message);
+      console.error("Error deleting course:", err);
     } finally {
       setLoading(prev => ({
         ...prev,
@@ -280,99 +177,108 @@ const RequestedCourses = () => {
     setConfirmModal({ isOpen: false, type: null, course: null });
   };
 
+  if (isLoading) return <div className="min-h-screen p-4 flex justify-center items-center"><p className="text-gray-400">Loading courses...</p></div>;
+  if (isError) return <div className="min-h-screen p-4 flex justify-center items-center"><p className="text-red-500">Failed to load courses.</p></div>;
+
   return (
-    <div className="min-h-screen  p-4">
+    <div className="min-h-screen p-4">
       <div className="max-w-7xl mx-auto">
         <div className="flex justify-center -mt-6 text-center mb-8">
           <div className="bg-white px-3 py-2 rounded-lg shadow-sm ">
             <h4 className="font-bold text-[17px] text-[#004e64]">
-              Requested Courses ({data.length})
+              Requested Courses ({coursesData?.length || 0})
             </h4>
           </div>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2 gap-6">
-          {data.map((course) => (
-            <div
-              key={course.id}
-              className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-all duration-300 border border-gray-200"
-            >
-              <div className="relative">
-                <img
-                  src={course.image_url}
-                  alt={course.title}
-                  className="w-full h-48 object-cover"
-                  onError={(e) => {
-                    e.currentTarget.src = `https://via.placeholder.com/400x200/004e64/white?text=${course.title}`;
-                  }}
-                />
-                <div className="absolute top-3 right-3">
-                  <button
-                    className="bg-white/90 cursor-pointer backdrop-blur-sm text-[#004e64] p-2 rounded-full hover:bg-white hover:text-[#003a4c] transition-all duration-200 shadow-md"
-                    onClick={() => handleViewDetails(course)}
-                    title="View course details"
-                  >
-                    <FaEye className="text-sm" />
-                  </button>
-                </div>
-              </div>
-
-              <div className="p-5">
-                <div className="mb-3">
-                  <h3 className="font-semibold text-[#004e64] text-lg mb-1 line-clamp-1">
-                    {course.title}
-                  </h3>
-                  <p className="text-gray-600 text-sm line-clamp-2 leading-relaxed">
-                    {course.description}
-                  </p>
-                </div>
-
-                <div className="mb-4">
-                  <p className="text-[#004e64] font-semibold text-lg">{course.price}</p>
-                  <div className="flex items-center gap-4 text-xs text-gray-500 mt-1">
-                    <span>{course.no_lessons} lessons</span>
-                    <span>{course.no_hours}</span>
+          {coursesData && coursesData.length > 0 ? (
+            coursesData.map((course: any) => (
+              <div
+                key={course.id}
+                className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-all duration-300 border border-gray-200"
+              >
+                <div className="relative">
+                  <img
+                    src={course.image_url}
+                    alt={course.title}
+                    className="w-full h-48 object-cover"
+                    onError={(e) => {
+                      e.currentTarget.src = `https://via.placeholder.com/400x200/004e64/white?text=${course.title}`;
+                    }}
+                  />
+                  <div className="absolute top-3 right-3">
+                    <button
+                      className="bg-white/90 cursor-pointer backdrop-blur-sm text-[#004e64] p-2 rounded-full hover:bg-white hover:text-[#003a4c] transition-all duration-200 shadow-md"
+                      onClick={() => handleViewDetails(course)}
+                      title="View course details"
+                    >
+                      <FaEye className="text-sm" />
+                    </button>
                   </div>
                 </div>
 
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => handleConfirmCourse(course)}
-                    disabled={course.id ? loading[course.id]?.confirm : false}
-                    className={`flex-1  flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-white font-medium transition-all duration-200 ${
-                      course.id && loading[course.id]?.confirm
-                        ? 'bg-gray-400 cursor-not-allowed'
-                        : 'bg-[#034153] hover:bg-[#025a70] cursor-pointer hover:shadow-md'
-                    }`}
-                  >
-                    {course.id && loading[course.id]?.confirm ? (
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    ) : (
-                      <FaCheck className="text-sm" />
-                    )}
-                    {course.id && loading[course.id]?.confirm ? 'Confirming...' : 'Confirm'}
-                  </button>
+                <div className="p-5">
+                  <div className="mb-3">
+                    <h3 className="font-semibold text-[#004e64] text-lg mb-1 line-clamp-1">
+                      {course.title}
+                    </h3>
+                    <p className="text-gray-600 text-sm line-clamp-2 leading-relaxed">
+                      {course.description}
+                    </p>
+                  </div>
 
-                  <button
-                    onClick={() => handleDeleteCourse(course)}
-                    disabled={course.id ? loading[course.id]?.delete : false}
-                    className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-white font-medium transition-all duration-200 ${
-                      course.id && loading[course.id]?.delete
-                        ? 'bg-gray-400 cursor-not-allowed'
-                        : 'bg-red-500 hover:bg-red-600 cursor-pointer hover:shadow-md'
-                    }`}
-                  >
-                    {course.id && loading[course.id]?.delete ? (
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    ) : (
-                      <FaTrash className="text-sm" />
-                    )}
-                    {course.id && loading[course.id]?.delete ? 'Deleting...' : 'Delete'}
-                  </button>
+                  <div className="mb-4">
+                    <p className="text-[#004e64] font-semibold text-lg">{course.price}</p>
+                    <div className="flex items-center gap-4 text-xs text-gray-500 mt-1">
+                      <span>{course.no_lessons || '0'} lessons</span>
+                      <span>{course.no_hours || '0hrs'}</span>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => handleConfirmCourse(course)}
+                      disabled={course.id ? loading[course.id]?.confirm : false}
+                      className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-white font-medium transition-all duration-200 ${
+                        course.id && loading[course.id]?.confirm
+                          ? 'bg-gray-400 cursor-not-allowed'
+                          : 'bg-[#034153] hover:bg-[#025a70] cursor-pointer hover:shadow-md'
+                      }`}
+                    >
+                      {course.id && loading[course.id]?.confirm ? (
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      ) : (
+                        <FaCheck className="text-sm" />
+                      )}
+                      {course.id && loading[course.id]?.confirm ? 'Confirming...' : 'Confirm'}
+                    </button>
+
+                    <button
+                      onClick={() => handleDeleteCourse(course)}
+                      disabled={course.id ? loading[course.id]?.delete : false}
+                      className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-white font-medium transition-all duration-200 ${
+                        course.id && loading[course.id]?.delete
+                          ? 'bg-gray-400 cursor-not-allowed'
+                          : 'bg-red-500 hover:bg-red-600 cursor-pointer hover:shadow-md'
+                      }`}
+                    >
+                      {course.id && loading[course.id]?.delete ? (
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      ) : (
+                        <FaTrash className="text-sm" />
+                      )}
+                      {course.id && loading[course.id]?.delete ? 'Deleting...' : 'Delete'}
+                    </button>
+                  </div>
                 </div>
               </div>
+            ))
+          ) : (
+            <div className="col-span-full text-center py-12">
+              <p className="text-gray-400">No requested courses found.</p>
             </div>
-          ))}
+          )}
         </div>
 
         {/* Confirmation Modal */}
