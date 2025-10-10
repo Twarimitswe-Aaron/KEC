@@ -1,9 +1,8 @@
-import React,{useContext} from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useContext } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { useGetUploadedCoursesQuery } from "./../state/api/courseApi";
-import { BookOpen } from "lucide-react"; 
+import { BookOpen } from "lucide-react";
 import { UserRoleContext } from "../UserRoleContext";
-
 
 interface Course {
   id: number;
@@ -13,7 +12,7 @@ interface Course {
   price: string;
   open?: boolean;
   no_lessons: string;
-  uploader: { name: string; avatar_url: string };
+  uploader: { id: number; email: string; name: string; avatar_url: string };
 }
 
 interface DashboardCardProps {
@@ -21,9 +20,10 @@ interface DashboardCardProps {
   onCourseAction: (id: number) => void;
 }
 
-
-const DashboardCard: React.FC<DashboardCardProps> = ({ courses, onCourseAction }) => (
-
+const DashboardCard: React.FC<DashboardCardProps> = ({
+  courses,
+  onCourseAction,
+}) => (
   <div>
     <div className="flex justify-center text-center -mt-6 mb-8">
       <div className="bg-white px-3 py-2 rounded-lg shadow-sm">
@@ -46,31 +46,47 @@ const DashboardCard: React.FC<DashboardCardProps> = ({ courses, onCourseAction }
               className="w-full h-48 object-cover"
             />
           </div>
-          <div className="p-4">
-            <div className="flex justify-between">
-              <h3 className="font-semibold text-[#004e64] mb-2">{course.title}</h3>
-              {course.open ? (
-                <span className="text-green-500 text-sm font-medium">Open</span>
-              ) : (
-                <span className="text-red-500 text-sm font-medium">Closed</span>
-              )}
+          <div className="p-5">
+            <div className="mb-3">
+              <h3 className="font-semibold text-[#004e64] text-lg mb-1 line-clamp-1">
+                {course.title}
+              </h3>
+              <p className="text-gray-600 text-sm line-clamp-2 leading-relaxed">
+                {course.description}
+              </p>
             </div>
-            <p className="text-gray-600 text-sm mb-3 line-clamp-2">
-              {course.description}
-            </p>
-            <div className="flex justify-between items-center">
-              <p className="text-[#004e64] font-bold">{course.price}</p>
-              <div className="flex items-center gap-2 text-sm text-gray-500">
-                <span>{course.no_lessons} lessons</span>
+
+            <div className="mb-4">
+              <p className="text-[#004e64] font-semibold text-lg">
+                {course.price}
+              </p>
+              <div className="flex items-center gap-4 text-xs text-gray-500 mt-1">
+                <span>{course.no_lessons || "0"} lessons</span>
               </div>
             </div>
-            <div className="flex items-center mt-4">
+
+            <div className="flex gap-3">
               <button
-                className="bg-[#004e64] cursor-pointer py-2 px-4 text-white rounded-sm"
-                onClick={() => onCourseAction(course.id)}
+                className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-white font-medium transition-all duration-200 
+                       bg-[#034153] hover:bg-[#025a70] cursor-pointer hover:shadow-md
+                      `}
               >
                 View
               </button>
+
+             <div className="flex gap-2 items-center pl-2 rounded-l-lg rounded-r-full shadow-md cursor-pointer" >
+             <p className=" text-gray-500 text-sm">{course.uploader.name.split(" ")[1]}</p>
+             <Link
+                to={`/profile/${course.uploader.id}`}
+                className="flex items-center gap-2"
+              >
+                <img
+                  src={course.uploader.avatar_url}
+                  alt={`${course.uploader.name} avatar`}
+                  className="w-10 h-10 rounded-full border-none shadow-sm object-cover"
+                />
+              </Link>
+             </div>
             </div>
           </div>
         </div>
@@ -78,7 +94,6 @@ const DashboardCard: React.FC<DashboardCardProps> = ({ courses, onCourseAction }
     </div>
   </div>
 );
-
 
 const CourseSkeleton: React.FC = () => (
   <div className="bg-white rounded-md shadow-md overflow-hidden animate-pulse">
@@ -96,8 +111,9 @@ const CourseSkeleton: React.FC = () => (
   </div>
 );
 
-
-const EmptyDisplay: React.FC<{ onConfirmCourse: () => void }> = ({ onConfirmCourse }) => {
+const EmptyDisplay: React.FC<{ onConfirmCourse: () => void }> = ({
+  onConfirmCourse,
+}) => {
   const userRole = useContext(UserRoleContext);
   return (
     <div className="flex flex-col items-center justify-center py-24">
@@ -108,24 +124,28 @@ const EmptyDisplay: React.FC<{ onConfirmCourse: () => void }> = ({ onConfirmCour
         No Courses Uploaded Yet
       </h3>
       <p className="text-gray-500 text-sm mb-6 text-center max-w-sm">
-        Start by creating your first course to share your knowledge with learners.
+        Start by creating your first course to share your knowledge with
+        learners.
       </p>
       {userRole === "admin" && (
         <button
           onClick={onConfirmCourse}
           className="bg-[#004e64] cursor-pointer hover:bg-[#006b86] text-white py-2 px-5 rounded-md shadow-md transition-all"
         >
-        Confirm Course
+          Confirm Course
         </button>
       )}
-     
     </div>
   );
 };
 
 const AdminCourseManagement: React.FC = () => {
   const navigate = useNavigate();
-  const { data: courses = [], isLoading, isFetching } = useGetUploadedCoursesQuery();
+  const {
+    data: courses = [],
+    isLoading,
+    isFetching,
+  } = useGetUploadedCoursesQuery();
 
   const handleCourseAction = (id: number) => {
     navigate(`${id}/create-modules`);

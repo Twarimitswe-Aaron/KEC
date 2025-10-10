@@ -2,7 +2,7 @@ import React, { useEffect, useState, useContext } from "react";
 import { Course } from "../Components/Dashboard/CourseCard";
 import { UserRoleContext } from "../UserRoleContext";
 import { FaEye, FaTimes, FaCheck, FaTrash } from "react-icons/fa";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { useConfirmCourseMutation, useDeleteCourseMutation, useGetUnconfirmedCoursesQuery } from "../state/api/courseApi";
 
@@ -232,9 +232,23 @@ const RequestedCourses = () => {
                     <p className="text-[#004e64] font-semibold text-lg">{course.price}</p>
                     <div className="flex items-center gap-4 text-xs text-gray-500 mt-1">
                       <span>{course.no_lessons || '0'} lessons</span>
-                      <span>{course.no_hours || '0hrs'}</span>
+
                     </div>
                   </div>
+
+                 <div className="flex my-3 gap-1.5">
+                 <Link
+                to={`/profile/${course.uploader.id}`}
+                className="flex items-center gap-2"
+              >
+                <img
+                  src={course.uploader.avatar_url}
+                  alt={`${course.uploader.name} avatar`}
+                  className="w-8 h-8 rounded-full border-none shadow-sm object-cover"
+                />
+                <p className=" text-gray-500 text-sm">{course.uploader.name.split(" ")[1]}</p>
+              </Link>
+                 </div>
 
                   <div className="flex gap-3">
                     <button
