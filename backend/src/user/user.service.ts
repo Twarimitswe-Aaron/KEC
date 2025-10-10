@@ -36,6 +36,7 @@ export class UserService {
         lastName,
         email,
         password: hashedPassword,
+        isEmailVerified: true,
         role,
         profile: {
           create: {

@@ -28,7 +28,6 @@ export class CourseController {
       }
     })
   }))
-
   create(@Body() createCourseDto: CreateCourseDto, @UploadedFile() file: Express.Multer.File) {
 
     let { title, description, price, uploader } = createCourseDto;

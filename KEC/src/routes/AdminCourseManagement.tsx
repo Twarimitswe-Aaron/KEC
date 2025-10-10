@@ -1,9 +1,9 @@
-import React, { useEffect, useState } from "react";
+import React,{useContext} from "react";
 import { useNavigate } from "react-router-dom";
-// Assuming this hook is from RTK Query
-import { useGetUploadedCoursesQuery } from "./../state/api/courseApi" 
-// Import RTK Query's manual refetch functionality
-// 'refetch' is already available from the query hook, so we'll use that.
+import { useGetUploadedCoursesQuery } from "./../state/api/courseApi";
+import { BookOpen } from "lucide-react"; 
+import { UserRoleContext } from "../UserRoleContext";
+
 
 interface Course {
   id: number;
@@ -16,10 +16,6 @@ interface Course {
   uploader: { name: string; avatar_url: string };
 }
 
-// Mock data and DashboardCard component remain the same for brevity.
-// ... (DashboardCard component and mock data are not repeated here)
-// Make sure to include the original DashboardCard, Course interface, etc.
-
 interface DashboardCardProps {
   courses: Course[];
   onCourseAction: (id: number) => void;
@@ -28,70 +24,62 @@ interface DashboardCardProps {
 
 const DashboardCard: React.FC<DashboardCardProps> = ({ courses, onCourseAction }) => (
 
- <div>
- <div className="flex justify-center text-center -mt-6 mb-8">
-       <div className="bg-white px-3 py-2 rounded-lg shadow-sm ">
-         <h4 className="font-bold text-[17px] text-[#004e64]">
-           Requested Courses ({courses.length})
-         </h4>
-       </div>
-     </div>
-  <div className="grid grid-cols-1 sm:grid-cols-2  mt-4 lg:grid-cols-2 gap-6">
-    {courses.map((course) => (
-      <div
-        key={course.id}
-        className="bg-white rounded-md shadow-md overflow-hidden hover:shadow-lg transition-shadow"
-      >
-        <div className="relative">
-          <img
-            src={course.image_url}
-            alt={course.title}
-            className="w-full h-48 object-cover"
-            onError={(e) => {
-              e.currentTarget.src =
-                "https://via.placeholder.com/400x200/004e64/white?text=Course+Image";
-            }}
-          />
-        </div>
-        <div className="p-4">
-          <div className="flex justify-between">
-            <h3 className="font-semibold text-[#004e64] mb-2">
-              {course.title}
-            </h3>
-            {course.open ? (
-              <span className="text-green-500 text-sm font-medium">Open</span>
-            ) : (
-              <span className="text-red-500 text-sm font-medium">Closed</span>
-            )}
+  <div>
+    <div className="flex justify-center text-center -mt-6 mb-8">
+      <div className="bg-white px-3 py-2 rounded-lg shadow-sm">
+        <h4 className="font-bold text-[17px] text-[#004e64]">
+          Uploaded Courses ({courses.length})
+        </h4>
+      </div>
+    </div>
+
+    <div className="grid grid-cols-1 sm:grid-cols-2 mt-4 lg:grid-cols-2 gap-6">
+      {courses.map((course) => (
+        <div
+          key={course.id}
+          className="bg-white rounded-md shadow-md overflow-hidden hover:shadow-lg transition-shadow"
+        >
+          <div className="relative">
+            <img
+              src={course.image_url}
+              alt={course.title}
+              className="w-full h-48 object-cover"
+            />
           </div>
-          <p className="text-gray-600 text-sm mb-3 line-clamp-2">
-            {course.description}
-          </p>
-          <div className="flex justify-between items-center">
-            <p className="text-[#004e64] font-bold">{course.price}</p>
-            <div className="flex items-center gap-2 text-sm text-gray-500">
-              <span>{course.no_lessons} lessons</span>
-            
+          <div className="p-4">
+            <div className="flex justify-between">
+              <h3 className="font-semibold text-[#004e64] mb-2">{course.title}</h3>
+              {course.open ? (
+                <span className="text-green-500 text-sm font-medium">Open</span>
+              ) : (
+                <span className="text-red-500 text-sm font-medium">Closed</span>
+              )}
+            </div>
+            <p className="text-gray-600 text-sm mb-3 line-clamp-2">
+              {course.description}
+            </p>
+            <div className="flex justify-between items-center">
+              <p className="text-[#004e64] font-bold">{course.price}</p>
+              <div className="flex items-center gap-2 text-sm text-gray-500">
+                <span>{course.no_lessons} lessons</span>
+              </div>
+            </div>
+            <div className="flex items-center mt-4">
+              <button
+                className="bg-[#004e64] cursor-pointer py-2 px-4 text-white rounded-sm"
+                onClick={() => onCourseAction(course.id)}
+              >
+                View
+              </button>
             </div>
           </div>
-          <div className="flex items-center mt-4">
-            <button 
-              className="bg-[#004e64] cursor-pointer py-2 px-4 text-white rounded-sm"
-              onClick={() => onCourseAction(course.id)}
-            >
-              View
-            </button>
-          </div>
         </div>
-      </div>
-    ))}
+      ))}
+    </div>
   </div>
- </div>
 );
 
-// ---
 
-// Skeleton Loader Component
 const CourseSkeleton: React.FC = () => (
   <div className="bg-white rounded-md shadow-md overflow-hidden animate-pulse">
     <div className="h-48 bg-gray-300"></div>
@@ -109,12 +97,42 @@ const CourseSkeleton: React.FC = () => (
 );
 
 
+const EmptyDisplay: React.FC<{ onConfirmCourse: () => void }> = ({ onConfirmCourse }) => {
+  const userRole = useContext(UserRoleContext);
+  return (
+    <div className="flex flex-col items-center justify-center py-24">
+      <div className="bg-[#e6f5f2] p-6 rounded-full mb-6 shadow-sm">
+        <BookOpen className="text-[#004e64]" size={60} />
+      </div>
+      <h3 className="text-xl font-semibold text-[#004e64] mb-2">
+        No Courses Uploaded Yet
+      </h3>
+      <p className="text-gray-500 text-sm mb-6 text-center max-w-sm">
+        Start by creating your first course to share your knowledge with learners.
+      </p>
+      {userRole === "admin" && (
+        <button
+          onClick={onConfirmCourse}
+          className="bg-[#004e64] hover:bg-[#006b86] text-white py-2 px-5 rounded-md shadow-md transition-all"
+        >
+          Confirm Course
+        </button>
+      )}
+     
+    </div>
+  );
+};
+
 const AdminCourseManagement: React.FC = () => {
   const navigate = useNavigate();
   const { data: courses = [], isLoading, isFetching } = useGetUploadedCoursesQuery();
 
   const handleCourseAction = (id: number) => {
     navigate(`/course-management/${id}/create-modules`);
+  };
+
+  const handleConfirmCourse = () => {
+    navigate("/requestedCourses");
   };
 
   if (isLoading) {
@@ -143,13 +161,13 @@ const AdminCourseManagement: React.FC = () => {
           Updating course list...
         </div>
       )}
-      <DashboardCard
-        courses={courses}
-        onCourseAction={handleCourseAction}
-      />
+      {courses.length === 0 ? (
+        <EmptyDisplay onConfirmCourse={handleConfirmCourse} />
+      ) : (
+        <DashboardCard courses={courses} onCourseAction={handleCourseAction} />
+      )}
     </div>
   );
 };
-
 
 export default AdminCourseManagement;
