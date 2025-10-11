@@ -2,11 +2,15 @@ import React from 'react'
 import { Lessons } from '../services/mockData'
 import ModuleManagement from '../Components/ModuleManagement'
 import { useParams } from 'react-router-dom'
+import {useGetCourseDataQuery} from '../state/api/courseApi'
+
 
 
 const LessonsView = () => {
   const params=useParams()
   const {id}=params;
+  const {data: courseData, isLoading, error} = useGetCourseDataQuery(Number(id));
+  console.log("Course Data:", courseData);
   console.log("Course Id:",id);
   return (
     <div>
