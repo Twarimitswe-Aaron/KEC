@@ -66,7 +66,7 @@ function App() {
             element={<CreateModule />}
           />
           <Route
-            path="/course-management/view-lessons"
+            path="/course-management/:id"
             element={<LessonsView />}
           />
           <Route

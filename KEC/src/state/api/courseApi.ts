@@ -26,6 +26,29 @@ export interface getAllUploaded {
   };
 }
 
+export interface getSpecificCourseData{
+  id:number;
+  title:string;
+  description:string;
+  price:string;
+  image_url:string;
+  no_lessons:string;
+  open:boolean;
+  isConfirmed:boolean;
+  lesson:{
+    id:number;
+    title:string;
+    content:string;
+    resources:{id:number;url:string;}[]
+  }[],
+  uploader: {
+    id: number;
+    email: string;
+    name: string;
+    avatar_url: string;
+  };
+}
+
 export const courseApi = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
     createCourse: builder.mutation<{ message: string }, createCourseDto>({
@@ -59,6 +82,10 @@ export const courseApi = apiSlice.injectEndpoints({
         body: { id },
       }),
     }),
+    getCourseData:builder.query<getSpecificCourseData, number>({
+      query:(id)=>`/course/${id}`,
+      providesTags: ["Course"]
+    })
   }),
 });
 

@@ -26,6 +26,38 @@ export class CourseService {
     });
   }
 
+  async getCourseById(id: string) {
+
+    const course = await this.prisma.course.findUnique({
+      where: { id: Number(id) },
+      include: { lesson:{include:{resources:true}},uploader:{
+        include:{profile:true}
+      } },
+    });
+
+    if (!course) {
+      return { message: 'Course not found' };
+    }
+
+    return {
+      id: course.id,
+      title: course.title,
+      description: course.description,
+      price: course.coursePrice,
+      image_url: course.image_url,
+      no_lessons: '0',
+      open: course.open,
+      isConfirmed: course.isConfirmed,
+      lesson: course.lesson,
+      uploader: {
+        id: course.uploaderId,
+        name: `${course.uploader?.firstName} ${course.uploader?.lastName}`,
+        email: course.uploader?.email,
+        avatar_url: course.uploader?.profile?.avatar || '',
+      },
+    };
+  }
+
   async findAllUnconfirmed() {
     const getAllUploaded = await this.prisma.course.findMany({
       where:{isConfirmed:false},

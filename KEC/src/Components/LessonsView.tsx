@@ -1,8 +1,13 @@
 import React from 'react'
 import { Lessons } from '../services/mockData'
 import ModuleManagement from '../Components/ModuleManagement'
+import { useParams } from 'react-router-dom'
+
 
 const LessonsView = () => {
+  const params=useParams()
+  const {id}=params;
+  console.log("Course Id:",id);
   return (
     <div>
          {/* Header Section */}

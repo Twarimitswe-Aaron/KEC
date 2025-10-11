@@ -23,8 +23,10 @@ interface DashboardCardProps {
 const DashboardCard: React.FC<DashboardCardProps> = ({
   courses,
   onCourseAction,
-}) => (
-  <div>
+}) => {
+  const navigate = useNavigate();
+  return (
+    <div>
     <div className="flex justify-center text-center -mt-6 mb-8">
       <div className="bg-white px-3 py-2 rounded-lg shadow-sm">
         <h4 className="font-bold text-[17px] text-[#004e64]">
@@ -67,6 +69,7 @@ const DashboardCard: React.FC<DashboardCardProps> = ({
 
             <div className="flex gap-3">
               <button
+              onClick={()=>navigate(`${course.id}`)}
                 className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-white font-medium transition-all duration-200 
                        bg-[#034153] hover:bg-[#025a70] cursor-pointer hover:shadow-md
                       `}
@@ -93,7 +96,9 @@ const DashboardCard: React.FC<DashboardCardProps> = ({
       ))}
     </div>
   </div>
-);
+  );
+};
+
 
 const CourseSkeleton: React.FC = () => (
   <div className="bg-white rounded-md shadow-md overflow-hidden animate-pulse">

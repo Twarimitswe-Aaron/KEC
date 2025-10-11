@@ -20,6 +20,7 @@ import { Roles } from 'src/auth/decorators/roles.decorator';
 import { diskStorage } from 'multer';
 import { ConfigService } from '@nestjs/config';
 import { ConfirmCourseDto } from './dto/confirm-course.dto';
+import { Role } from 'generated/prisma';
 
 @UseGuards(AuthGuard, RolesGuard)
 @Roles('admin', 'teacher')
@@ -29,6 +30,12 @@ export class CourseController {
     private readonly courseService: CourseService,
     private readonly configService: ConfigService,
   ) {}
+
+  @Roles('admin')
+  @Get('/:id')
+  getCourseByIdByAdmin(@Param('id') id: string) {
+    return this.courseService.getCourseById(id);
+  }
 
   @Post('/create-course')
   @UseInterceptors(
@@ -73,6 +80,8 @@ export class CourseController {
   findAllUploaded() {
     return this.courseService.findAllUploaded();
   }
+
+ 
 
   @Roles('admin')
   @Get('/get-unconfirmed-courses')
