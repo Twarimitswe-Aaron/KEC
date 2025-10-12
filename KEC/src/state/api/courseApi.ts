@@ -83,7 +83,7 @@ export const courseApi = apiSlice.injectEndpoints({
       }),
     }),
     getCourseData:builder.query<getSpecificCourseData, number>({
-      query:(id)=>`/course/${id}`,
+      query:(id)=>`/course/course/${id}`,
       providesTags: ["Course"]
     })
   }),

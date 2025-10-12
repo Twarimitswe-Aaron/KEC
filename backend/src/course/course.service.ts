@@ -15,7 +15,6 @@ export class CourseService {
 
     const newCourse = await this.prisma.course.create({
       data: {
-       
         uploaderId: uploaderObj.id,
         title,
         image_url,
@@ -26,13 +25,16 @@ export class CourseService {
     });
   }
 
-  async getCourseById(id: string) {
-
+  async getCourseById(id: number) {
+    console.log("calling id in service", typeof(id)," ",id);
     const course = await this.prisma.course.findUnique({
-      where: { id: Number(id) },
-      include: { lesson:{include:{resources:true}},uploader:{
-        include:{profile:true}
-      } },
+      where: { id: id },
+      include: {
+        lesson: { include: { resources: true } },
+        uploader: {
+          include: { profile: true },
+        },
+      },
     });
 
     if (!course) {
@@ -60,65 +62,65 @@ export class CourseService {
 
   async findAllUnconfirmed() {
     const getAllUploaded = await this.prisma.course.findMany({
-      where:{isConfirmed:false},
-      include:{uploader:{include:{profile:true}}}
+      where: { isConfirmed: false },
+      include: { uploader: { include: { profile: true } } },
     });
-    
-    return getAllUploaded.map(course => ({
+
+    return getAllUploaded.map((course) => ({
       id: course.id,
       title: course.title,
       description: course.description,
       price: course.coursePrice,
       image_url: course.image_url,
-      no_lessons: "0", 
+      no_lessons: '0',
       open: course.open,
-    
+
       uploader: {
         id: course.uploader?.id,
         name: `${course.uploader?.firstName} ${course.uploader?.lastName}`,
         email: course.uploader?.email,
-        avatar_url: course.uploader?.profile?.avatar || "",
-      }
+        avatar_url: course.uploader?.profile?.avatar || '',
+      },
     }));
   }
 
   async confirmCourse(confirmCourseDto: ConfirmCourseDto) {
     const { id } = confirmCourseDto;
     const course = await this.prisma.course.update({
-      where:{id},
-      data:{isConfirmed:true}
+      where: { id },
+      data: { isConfirmed: true },
     });
-    return {message:"Course confirmed successfully"}
+    return { message: 'Course confirmed successfully' };
   }
   async deleteCourse(confirmCourseDto: ConfirmCourseDto) {
     const { id } = confirmCourseDto;
     const course = await this.prisma.course.delete({
-      where:{id}
+      where: { id },
     });
-    return {message:"Course confirmed successfully"}
+    return { message: 'Course confirmed successfully' };
   }
-
 
   async findAllUploaded() {
     const getAllUploaded = await this.prisma.course.findMany({
-      where:{isConfirmed:true},
-      include:{uploader:{include:{profile:true}}}
+      where: { isConfirmed: true },
+      include: { uploader: { include: { profile: true } } },
     });
-    
-    return getAllUploaded.map(course => ({
+    console.log(getAllUploaded);
+
+    return getAllUploaded.map((course) => ({
       id: course.id,
       title: course.title,
       description: course.description,
       price: course.coursePrice,
       image_url: course.image_url,
-      no_lessons: "0", 
+      no_lessons: '0',
       open: course.open,
       uploader: {
         id: course.uploader?.id,
         name: `${course.uploader?.firstName} ${course.uploader?.lastName}`,
         email: course.uploader?.email,
-        avatar_url: course.uploader?.profile?.avatar || "",
-      }
+        avatar_url: course.uploader?.profile?.avatar || '',
+      },
     }));
   }
 

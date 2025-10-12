@@ -32,9 +32,13 @@ export class CourseController {
   ) {}
 
   @Roles('admin')
-  @Get('/:id')
+  @Get('course/:id')
   getCourseByIdByAdmin(@Param('id') id: string) {
-    return this.courseService.getCourseById(id);
+    console.log(typeof(id), "is the issue it is expecting number",id)
+    const newId=Number(id);
+    console.log(typeof(newId), "new Id");
+  
+    return this.courseService.getCourseById(newId);
   }
 
   @Post('/create-course')
@@ -91,6 +95,7 @@ export class CourseController {
 
   @Get(':id')
   findOne(@Param('id') id: string) {
+   
     return this.courseService.findOne(+id);
   }
 
