@@ -32,7 +32,7 @@ model User {
   admin        Admin?
   teacher      Teacher?
   student      Student?
-  course   Course[]
+  course       Course[]
   announcement Announcement[]
 }
 
@@ -43,10 +43,9 @@ model Admin {
 }
 
 model Teacher {
-  id      Int      @id @default(autoincrement())
-  userId  Int      @unique
-  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
- 
+  id     Int   @id @default(autoincrement())
+  userId Int   @unique
+  user   User  @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Student {
@@ -63,23 +62,25 @@ model Student {
 }
 
 model Course {
-  id        Int     @id @default(autoincrement())
-  uploaderId Int?
-  uploader   User? @relation(fields: [uploaderId], references: [id], onDelete: Cascade)
+  id          Int      @id @default(autoincrement())
+  uploaderId  Int?
+  uploader    User?    @relation(fields: [uploaderId], references: [id], onDelete: Cascade)
 
   title       String
   description String
   coursePrice String
   image_url   String
-  isConfirmed Boolean @default(false)
+  isConfirmed Boolean   @default(false)
 
-  lesson     Lesson[]
-  no_lesson Int @default(0)
-  assignment Assignment[]
-  maximum    Int?
-  open       Boolean?
-  totalPaid    String?
-  
+  no_lesson   Int       @default(0)
+  maximum     Int?
+  open        Boolean?
+  totalPaid   String?
+
+  // relations
+  lesson       Lesson[]
+  assignment   Assignment[]
+  modules      Module[]    // NEW: Added module relationship
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -109,26 +110,72 @@ model Lesson {
   resources Resource[]
 }
 
+//
+// UPDATED PART: Added detailed learning module and resource system
+//
+model Module {
+  id          Int        @id @default(autoincrement())
+  title       String
+  description String
+  isUnlocked  Boolean    @default(false)
+  order       Int
+  createdAt   DateTime   @default(now())
+  resources   Resource[]
+  courseId    Int?
+  course      Course?    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+}
+
 model Resource {
-  id    Int    @id @default(autoincrement())
-  word  String
-  pdf   String
-  video String
+  id         Int          @id @default(autoincrement())
+  moduleId   Int?
+  module     Module?      @relation(fields: [moduleId], references: [id], onDelete: Cascade)
 
-  lessonId Int
-  lesson   Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  lessonId   Int?
+  lesson     Lesson?      @relation(fields: [lessonId], references: [id], onDelete: Cascade)
 
-  quiz Quiz[]
+  name       String
+  type       ResourceType
+  size       String?      // human-readable
+  uploadedAt DateTime     @default(now())
+  duration   String?
+  url        String?      // file path or external link
+
+  quizId     Int?         @unique
+  quiz       Quiz?        @relation(fields: [quizId], references: [id])
 }
 
 model Quiz {
-  id          Int     @id @default(autoincrement())
-  title       String
+  id          Int            @id @default(autoincrement())
+  name        String
   description String?
-  quiz        String?
+  questions   QuizQuestion[]
+  resource    Resource?
+  attempts    QuizAttempt[]
+}
 
-  resourceId Int
-  resource   Resource @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+model QuizQuestion {
+  id        Int      @id @default(autoincrement())
+  quizId    Int
+  type      String   // "multiple" | "checkbox" | "truefalse" | "short"
+  question  String
+  options   String?  // JSON stringified array
+  required  Boolean  @default(false)
+  quiz      Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+}
+
+model QuizAttempt {
+  id          Int      @id @default(autoincrement())
+  quizId      Int
+  submittedAt DateTime @default(now())
+  responses   String   // JSON stringified responses
+  quiz        Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+}
+
+enum ResourceType {
+  pdf
+  video
+  quiz
+  word
 }
 
 model Announcement {

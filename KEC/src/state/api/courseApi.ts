@@ -35,6 +35,7 @@ export interface getSpecificCourseData{
   no_lessons:string;
   open:boolean;
   isConfirmed:boolean;
+  maximum:number;
   lesson:{
     id:number;
     title:string;

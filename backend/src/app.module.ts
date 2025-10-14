@@ -21,6 +21,7 @@ import { AuthGuard } from './auth/auth.guard';
 import { RolesGuard } from './auth/roles.guard';
 import { FeedbackModule } from './feedback/feedback.module';
 import { CourseModule } from './course/course.module';
+import { ModuleModule } from './module/module.module';
 
 @Module({
   imports: [
@@ -39,6 +40,7 @@ import { CourseModule } from './course/course.module';
     AnnouncementModule,
     FeedbackModule,
     CourseModule,
+    ModuleModule,
   ],
   controllers: [AppController, CsrfController],
   providers: [

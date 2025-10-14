@@ -50,6 +50,7 @@ export class CourseService {
       no_lessons: '0',
       open: course.open,
       isConfirmed: course.isConfirmed,
+      maximum:course.maximum,
       lesson: course.lesson,
       uploader: {
         id: course.uploaderId,
