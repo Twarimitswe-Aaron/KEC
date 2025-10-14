@@ -80,7 +80,7 @@ const MOCK_MODULES: ModuleType[] = [
 ];
 
 function ModuleManagement(lessons:any) {
-  console.log(lessons, "These are the lessons")
+
   const [showAddModule, setShowAddModule] = useState(false);
   const [showAddResource, setShowAddResource] = useState<number | null>(null);
   const [resourceType, setResourceType] = useState<"pdf" | "video" | "word" | "quiz" | null>(null);

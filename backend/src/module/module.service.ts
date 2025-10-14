@@ -40,14 +40,17 @@ export class ModuleService {
       where: { courseId },
     });
     const order = dto.order ?? (lessonCount + 1);
+    console.log("is triggered to create a lesson")
 
-    return this.prisma.lesson.create({
+    const newLesson= this.prisma.lesson.create({
       data: {
         title: dto.title,
         description: dto.description ?? '',
         courseId,
       },
     });
+
+    return {message:"Course Created Successfully"} 
   }
 
   /**

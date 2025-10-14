@@ -1,5 +1,16 @@
 import {
-  Controller, Get, Post, Body, Param, Delete, Patch, UseInterceptors, UploadedFile, ParseIntPipe, BadRequestException
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  Delete,
+  Patch,
+  UseInterceptors,
+  UploadedFile,
+  ParseIntPipe,
+  BadRequestException,
+  UseGuards,
 } from '@nestjs/common';
 import { ModuleService } from './module.service';
 import { CreateModuleDto } from './dto/create-module.dto';
@@ -11,15 +22,20 @@ import { diskStorage } from 'multer';
 import { extname, join } from 'path';
 import { randomUUID } from 'crypto';
 import { existsSync, mkdirSync } from 'fs';
+import { AuthGuard } from 'src/auth/auth.guard';
+import { Roles } from 'src/auth/decorators/roles.decorator';
+import { RolesGuard } from 'src/auth/roles.guard';
 
+@UseGuards(AuthGuard, RolesGuard)
+@Roles('admin', 'teacher')
 @Controller('modules')
 export class ModuleController {
   constructor(private readonly svc: ModuleService) {}
 
+  @Post(':id')
+  create(@Body() dto: CreateModuleDto, @Param('id') id: string) {
 
-  @Post()
-  create(@Body() dto: CreateModuleDto,id:number) {
-    return this.svc.createModule(id,dto);
+    return this.svc.createModule(+id, dto);
   }
 
   // @Patch(':id/toggle-lock')

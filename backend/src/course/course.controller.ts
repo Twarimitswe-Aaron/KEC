@@ -34,9 +34,9 @@ export class CourseController {
   @Roles('admin')
   @Get('course/:id')
   getCourseByIdByAdmin(@Param('id') id: string) {
-    console.log(typeof(id), "is the issue it is expecting number",id)
+
     const newId=Number(id);
-    console.log(typeof(newId), "new Id");
+
   
     return this.courseService.getCourseById(newId);
   }

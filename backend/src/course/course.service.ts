@@ -26,7 +26,7 @@ export class CourseService {
   }
 
   async getCourseById(id: number) {
-    console.log("calling id in service", typeof(id)," ",id);
+
     const course = await this.prisma.course.findUnique({
       where: { id: id },
       include: {
@@ -106,7 +106,7 @@ export class CourseService {
       where: { isConfirmed: true },
       include: { uploader: { include: { profile: true } } },
     });
-    console.log(getAllUploaded);
+
 
     return getAllUploaded.map((course) => ({
       id: course.id,
