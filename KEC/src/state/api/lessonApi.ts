@@ -1,5 +1,51 @@
 import { apiSlice } from "./apiSlice";
 
+// Quiz related stuffs
+
+// Backend Quiz Schema
+interface Quiz {
+  id: number;
+  name: string;
+  description?: string;
+  questions: QuizQuestion[];
+  settings: QuizSettings;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface QuizQuestion {
+  id: number;
+  type: 'multiple' | 'checkbox' | 'truefalse' | 'short' | 'long' | 'number';
+  question: string;
+  description?: string;
+  options?: string[]; // For multiple choice, checkbox, true/false
+  correctAnswers?: string[]; // For validation
+  points: number;
+  required: boolean;
+  order: number;
+}
+
+interface QuizSettings {
+  shuffleQuestions: boolean;
+  timeLimit: number; // in minutes, 0 = no limit
+  showResults: boolean;
+  allowRetakes: boolean;
+  passingScore: number; // 0-100 percentage
+  maxAttempts: number; // 0 = unlimited
+}
+
+// API Response Structure
+interface QuizResponse {
+  success: boolean;
+  message: string;
+  data: {
+    quiz: Quiz;
+    totalPoints: number;
+    questionCount: number;
+  };
+}
+
+
 // Types
 export interface Lesson {
   id: number;

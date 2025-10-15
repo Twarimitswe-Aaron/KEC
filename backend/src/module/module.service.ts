@@ -91,8 +91,6 @@ export class ModuleService {
       courseId: lesson.courseId,
       isUnlocked: lesson.isUnlocked,
       order: lesson.id,
-      createdAt: lesson.createdAt.toISOString(),
-
       resources: lesson.resources.map(resource => ({
         id: resource.id,
         url: resource.url,

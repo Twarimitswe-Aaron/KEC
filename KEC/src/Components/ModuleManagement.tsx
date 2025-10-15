@@ -1,5 +1,4 @@
 import React, { useEffect, useRef, useState } from "react";
-
 import {
   FaPlus,
   FaLock,
@@ -18,6 +17,12 @@ import {
   FaLink,
   FaSave,
   FaEye,
+  FaEdit,
+  FaList,
+  FaCheckCircle,
+  FaRegCircle,
+  FaRegCheckSquare,
+  FaRegSquare,
 } from "react-icons/fa";
 import { toast } from "react-toastify";
 import { 
@@ -26,10 +31,11 @@ import {
   useAddResourceMutation,
   useDeleteResourceMutation
 } from "../state/api/lessonApi";
-import { Trash2 } from "lucide-react";
+import { Trash2, X } from "lucide-react";
+import QuizEditor from './QuizEditor'
 
 // Types
-interface ResourceType {
+export interface ResourceType {
   id: number;
   uploadedAt: string;
   name: string;
@@ -37,10 +43,11 @@ interface ResourceType {
   url: string;
   size?: string;
   duration?: string;
+  description?: string;
   quiz?: any;
 }
 
-type ModuleType = {
+export type ModuleType = {
   id: number;
   title: string;
   description: string;
@@ -50,20 +57,22 @@ type ModuleType = {
   resources: ResourceType[];
 };
 
-type Question = {
+export type Question = {
   id: number;
-  type: "multiple" | "checkbox" | "truefalse" | "short";
+  type: "multiple" | "checkbox" | "truefalse" | "short" | "long" | "number";
   question: string;
+  description?: string;
   options?: string[];
   required?: boolean;
+  points?: number;
 };
 
-type QuizResponse = {
+export type QuizResponse = {
   questionId: number;
   answer: string | string[];
 };
 
-type IncomingResource = {
+export type IncomingResource = {
   id: number;
   url: string;
   title?: string;
@@ -71,9 +80,10 @@ type IncomingResource = {
   size?: string;
   duration?: string;
   uploadedAt?: string;
+  quiz?: any;
 };
 
-interface Lesson {
+export  interface Lesson {
   id: number;
   title: string;
   content: string;
@@ -86,14 +96,12 @@ interface Lesson {
   order?: number;
 }
 
-interface ModuleManagementProps {
+export interface ModuleManagementProps {
   lessons: Lesson[];
   courseId: number;
 }
 
-
-
-interface ConfirmDeleteModalProps {
+export interface ConfirmDeleteModalProps {
   visible: boolean;
   title: string;
   description?: string;
@@ -111,23 +119,23 @@ export const ConfirmDeleteModal = ({
   if (!visible) return null;
 
   return (
-    <div className="fixed inset-0 bg-gradient-to-br from-black/70 via-black/60 to-black/70 z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 animate-in zoom-in-95 duration-200">
-        <div className="flex items-center justify-center w-16 h-16 bg-red-100 rounded-full mx-auto mb-4">
-          <Trash2 className="w-8 h-8 text-red-600" />
+    <div className="fixed inset-0 bg-gradient-to-br from-black/70 via-black/60 to-black/70 z-50 flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-200">
+      <div className="bg-white rounded-xl sm:rounded-2xl shadow-2xl w-full max-w-md p-4 sm:p-6 animate-in zoom-in-95 duration-200">
+        <div className="flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16 bg-red-100 rounded-full mx-auto mb-3 sm:mb-4">
+          <Trash2 className="w-6 h-6 sm:w-8 sm:h-8 text-red-600" />
         </div>
-        <h2 className="text-2xl font-bold mb-3 text-center text-gray-900">{title}</h2>
-        <p className="text-gray-600 mb-6 text-center">{description}</p>
-        <div className="flex gap-3">
+        <h2 className="text-xl sm:text-2xl font-bold mb-2 sm:mb-3 text-center text-gray-900">{title}</h2>
+        <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6 text-center px-2">{description}</p>
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
           <button
             onClick={onConfirm}
-            className="flex-1 bg-gradient-to-r from-red-500 to-red-600 text-white px-4 py-3.5 cursor-pointer rounded-xl hover:shadow-lg transition-all font-bold"
+            className="flex-1 bg-gradient-to-r from-red-500 to-red-600 text-white px-4 py-2.5 sm:py-3.5 cursor-pointer rounded-lg sm:rounded-xl hover:shadow-lg transition-all font-bold text-sm sm:text-base"
           >
             Delete
           </button>
           <button
             onClick={onCancel}
-            className="flex-1 bg-white border-2 border-gray-200 text-gray-700 px-4 py-3.5 cursor-pointer rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all font-bold"
+            className="flex-1 bg-white border-2 border-gray-200 text-gray-700 px-4 py-2.5 sm:py-3.5 cursor-pointer rounded-lg sm:rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all font-bold text-sm sm:text-base"
           >
             Cancel
           </button>
@@ -136,7 +144,6 @@ export const ConfirmDeleteModal = ({
     </div>
   );
 };
-
 
 // Constants
 const SAMPLE_QUIZ: Question[] = [
@@ -156,12 +163,12 @@ const SAMPLE_QUIZ: Question[] = [
 
 const getResourceIcon = (type: string) => {
   const icons = {
-    pdf: <FaFilePdf className="text-red-500" />,
-    video: <FaPlay className="text-purple-500" />,
-    word: <FaFileWord className="text-blue-500" />,
-    quiz: <FaQuestionCircle className="text-green-500" />,
+    pdf: <FaFilePdf className="text-red-500 text-lg sm:text-xl" />,
+    video: <FaPlay className="text-purple-500 text-lg sm:text-xl" />,
+    word: <FaFileWord className="text-blue-500 text-lg sm:text-xl" />,
+    quiz: <FaQuestionCircle className="text-green-500 text-lg sm:text-xl" />,
   };
-  return icons[type as keyof typeof icons] || <FaFile />;
+  return icons[type as keyof typeof icons] || <FaFile className="text-lg sm:text-xl" />;
 };
 
 // Convert Lesson to ModuleType
@@ -181,6 +188,7 @@ const lessonToModule = (lesson: Lesson): ModuleType => ({
       uploadedAt: resource.uploadedAt || new Date().toISOString().split("T")[0],
       size: resource.size,
       duration: resource.duration,
+      quiz: resource.quiz || SAMPLE_QUIZ,
     })) || [],
 });
 
@@ -202,15 +210,13 @@ function ModuleManagement({ lessons, courseId }: ModuleManagementProps) {
   const [addResource] = useAddResourceMutation();
   const [deleteResource] = useDeleteResourceMutation();
   const [openMenu, setOpenMenu] = useState<number | null>(null);
-const [modals, setModals] = useState({
-  showDeleteConfirm: false,
-  showResourceDeleteConfirm: false,
-});
+  const [modals, setModals] = useState({
+    showDeleteConfirm: false,
+    showResourceDeleteConfirm: false,
+  });
 
-const [lessonToDelete, setLessonToDelete] = useState<number | null>(null);
-const [resourceToDelete, setResourceToDelete] = useState<{ lessonId: number; resourceId: number } | null>(null);
-
-
+  const [lessonToDelete, setLessonToDelete] = useState<number | null>(null);
+  const [resourceToDelete, setResourceToDelete] = useState<{ lessonId: number; resourceId: number } | null>(null);
 
   // Refs
   const menuWrapperRefs = useRef<Record<number, HTMLDivElement | null>>({});
@@ -254,10 +260,7 @@ const [resourceToDelete, setResourceToDelete] = useState<{ lessonId: number; res
     };
   }, [menuOpenId]);
 
-
-
   const handleVideoLinkSubmit = async (moduleId: number) => {
-    console.log(moduleId,"module stuffs")
     if (!videoLink.trim()) {
       toast.error("Please enter a valid video URL");
       return;
@@ -279,7 +282,7 @@ const [resourceToDelete, setResourceToDelete] = useState<{ lessonId: number; res
         title: videoName,
         type: "video",
         description: "",
-        url: videoLink // Removed to match mutation type
+        url: videoLink
       }).unwrap();
 
       setModules(prev => prev.map(m => 
@@ -308,7 +311,6 @@ const [resourceToDelete, setResourceToDelete] = useState<{ lessonId: number; res
     }
   };
 
-    // Resource Management Functions
   const handleFileUpload = async (moduleId: number, file: File, type: "pdf" | "word") => {
     try {
       const response = await addResource({
@@ -318,7 +320,6 @@ const [resourceToDelete, setResourceToDelete] = useState<{ lessonId: number; res
         type
       }).unwrap();
 
-      // Update local state with the new resource
       setModules(prev => prev.map(m => 
         m.id === moduleId 
           ? { 
@@ -343,44 +344,39 @@ const [resourceToDelete, setResourceToDelete] = useState<{ lessonId: number; res
     }
   };
 
-
   const requestDeleteResource = (lessonId: number, resourceId: number) => {
-  setResourceToDelete({ lessonId, resourceId });
-  setModals(prev => ({ ...prev, showResourceDeleteConfirm: true }));
-};
-const confirmDeleteResource = async () => {
-  if (!resourceToDelete) return;
+    setResourceToDelete({ lessonId, resourceId });
+    setModals(prev => ({ ...prev, showResourceDeleteConfirm: true }));
+  };
 
-  const { lessonId, resourceId } = resourceToDelete;
+  const confirmDeleteResource = async () => {
+    if (!resourceToDelete) return;
 
-  try {
-    await deleteResource({ lessonId, resourceId }).unwrap();
+    const { lessonId, resourceId } = resourceToDelete;
 
-    setModules(prev =>
-      prev.map(module =>
-        module.id === lessonId
-          ? {
-              ...module,
-              resources: module.resources.filter(r => r.id !== resourceId),
-            }
-          : module
-      )
-    );
+    try {
+      await deleteResource({ lessonId, resourceId }).unwrap();
 
-    toast.success("Resource deleted successfully!");
-  } catch (error: any) {
-    toast.error(error?.data?.message || "Failed to delete resource");
-  } finally {
-    setResourceToDelete(null);
-    setModals(prev => ({ ...prev, showResourceDeleteConfirm: false }));
-  }
-};
+      setModules(prev =>
+        prev.map(module =>
+          module.id === lessonId
+            ? {
+                ...module,
+                resources: module.resources.filter(r => r.id !== resourceId),
+              }
+            : module
+        )
+      );
 
+      toast.success("Resource deleted successfully!");
+    } catch (error: any) {
+      toast.error(error?.data?.message || "Failed to delete resource");
+    } finally {
+      setResourceToDelete(null);
+      setModals(prev => ({ ...prev, showResourceDeleteConfirm: false }));
+    }
+  };
 
-
-
-
-  
   const handleQuizCreation = async (moduleId: number) => {
     if (!quizName.trim()) {
       toast.error("Please enter a quiz name");
@@ -420,6 +416,7 @@ const confirmDeleteResource = async () => {
       toast.error(error?.data?.message || "Failed to create quiz");
     }
   };
+
   const handleFileSelect = (moduleId: number, type: "pdf" | "word") => {
     if (fileInputRef.current) {
       fileInputRef.current.accept = type === "pdf" ? ".pdf" : ".doc,.docx";
@@ -433,7 +430,6 @@ const confirmDeleteResource = async () => {
     }
   };
 
-  // Lesson Management Functions
   const toggleModuleUnlock = async (moduleId: number) => {
     try {
       const module = modules.find(m => m.id === moduleId);
@@ -455,39 +451,46 @@ const confirmDeleteResource = async () => {
     }
   };
 
-const requestDeleteLesson = (lessonId: number) => {
-  setLessonToDelete(lessonId);
-  setModals({ showDeleteConfirm: true, showResourceDeleteConfirm: false });
-};
+  const requestDeleteLesson = (lessonId: number) => {
+    setLessonToDelete(lessonId);
+    setModals({ showDeleteConfirm: true, showResourceDeleteConfirm: false });
+  };
 
+  const confirmDeleteLesson = async () => {
+    if (!lessonToDelete) return;
 
- const confirmDeleteLesson = async () => {
-  if (!lessonToDelete) return;
+    try {
+      await deleteLesson({ id: lessonToDelete, courseId }).unwrap();
+      setModules(prev => prev.filter(m => m.id !== lessonToDelete));
+      toast.success("Lesson deleted successfully!");
+    } catch (error: any) {
+      toast.error(error?.data?.message || "Failed to delete lesson");
+    } finally {
+      setLessonToDelete(null);
+      setModals({ showDeleteConfirm: false, showResourceDeleteConfirm: false });
+    }
+  };
 
-  try {
-    await deleteLesson({ id: lessonToDelete, courseId }).unwrap();
-    setModules(prev => prev.filter(m => m.id !== lessonToDelete));
-    toast.success("Lesson deleted successfully!");
-  } catch (error: any) {
-    toast.error(error?.data?.message || "Failed to delete lesson");
-  } finally {
+  const cancelDelete = () => {
     setLessonToDelete(null);
+    setResourceToDelete(null);
     setModals({ showDeleteConfirm: false, showResourceDeleteConfirm: false });
-  }
-};
+  };
 
-const cancelDelete = () => {
-  setLessonToDelete(null);
-  setResourceToDelete(null);
-  setModals({ showDeleteConfirm: false, showResourceDeleteConfirm: false });
-};
-
-
-  
+  const handleQuizUpdate = (resourceId: number, updatedQuiz: any) => {
+    setModules(prev => prev.map(module => ({
+      ...module,
+      resources: module.resources.map(resource =>
+        resource.id === resourceId
+          ? { ...resource, quiz: updatedQuiz }
+          : resource
+      )
+    })));
+  };
 
   // UI Components
   const ResourceTypeSelector = ({ onSelect }: { onSelect: (type: "pdf" | "video" | "word" | "quiz") => void }) => (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
       {[
         { type: "pdf" as const, icon: FaFilePdf, color: "red", label: "PDF Document", desc: "Upload PDF file" },
         { type: "video" as const, icon: FaPlay, color: "purple", label: "Video", desc: "Add video link" },
@@ -497,60 +500,60 @@ const cancelDelete = () => {
         <button
           key={type}
           onClick={() => onSelect(type)}
-          className="flex flex-col items-center justify-center p-5 bg-white rounded-xl border border-gray-200 hover:border-blue-300 hover:shadow-md transition-all duration-200 group"
+          className="flex flex-col items-center justify-center p-3 sm:p-5 bg-white rounded-lg sm:rounded-xl border border-gray-200 hover:border-blue-300 hover:shadow-md transition-all duration-200 group"
         >
-          <div className={`w-12 h-12 rounded-full bg-${color}-100 flex items-center justify-center mb-3 group-hover:bg-${color}-200 transition-colors`}>
-            <Icon className={`text-2xl text-${color}-600`} />
+          <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-${color}-100 flex items-center justify-center mb-2 sm:mb-3 group-hover:bg-${color}-200 transition-colors`}>
+            <Icon className={`text-lg sm:text-2xl text-${color}-600`} />
           </div>
-          <span className="font-medium text-gray-800">{label}</span>
-          <span className="text-xs text-gray-500 mt-1">{desc}</span>
+          <span className="font-medium text-gray-800 text-xs sm:text-base text-center">{label}</span>
+          <span className="text-xs text-gray-500 mt-1 hidden sm:block text-center">{desc}</span>
         </button>
       ))}
     </div>
   );
 
   const VideoLinkForm = ({ moduleId }: { moduleId: number }) => (
-    <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
-      <div className="flex items-center gap-3 mb-4">
-        <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">
-          <FaLink className="text-purple-600" />
+    <div className="bg-white p-4 sm:p-5 rounded-lg sm:rounded-xl border border-gray-200 shadow-sm">
+      <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
+        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0">
+          <FaLink className="text-purple-600 text-sm sm:text-base" />
         </div>
-        <div>
-          <h4 className="font-medium text-gray-800">Add Video Link</h4>
-          <p className="text-sm text-gray-600">Paste the URL of your video resource</p>
+        <div className="min-w-0">
+          <h4 className="font-medium text-gray-800 text-sm sm:text-base">Add Video Link</h4>
+          <p className="text-xs sm:text-sm text-gray-600 truncate">Paste the URL of your video resource</p>
         </div>
       </div>
 
-      <div className="space-y-4">
+      <div className="space-y-3 sm:space-y-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Video Title</label>
+          <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Video Title</label>
           <input
             type="text"
             value={videoName}
             onChange={(e) => setVideoName(e.target.value)}
             placeholder="Enter video title"
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+            className="w-full px-3 sm:px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-sm sm:text-base"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Video URL</label>
+          <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Video URL</label>
           <input
             type="url"
             value={videoLink}
             onChange={(e) => setVideoLink(e.target.value)}
             placeholder="https://example.com/video.mp4"
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+            className="w-full px-3 sm:px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-sm sm:text-base"
           />
         </div>
       </div>
 
-      <div className="flex gap-2 mt-4">
+      <div className="flex flex-col sm:flex-row gap-2 mt-3 sm:mt-4">
         <button
           onClick={() => handleVideoLinkSubmit(moduleId)}
-          className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2 whitespace-nowrap"
+          className="bg-purple-600 hover:bg-purple-700 text-white px-3 sm:px-4 py-2 rounded-lg transition-colors flex items-center justify-center gap-2 text-sm sm:text-base whitespace-nowrap"
         >
-          <FaCheck className="text-sm" /> Add Video
+          <FaCheck className="text-xs sm:text-sm" /> Add Video
         </button>
         <button
           onClick={() => {
@@ -558,7 +561,7 @@ const cancelDelete = () => {
             setVideoLink("");
             setVideoName("");
           }}
-          className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
+          className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 sm:px-4 py-2 rounded-lg transition-colors flex items-center justify-center gap-2 text-sm sm:text-base"
         >
           <FaTimes /> Cancel
         </button>
@@ -567,74 +570,74 @@ const cancelDelete = () => {
   );
 
   const FileUploadForm = ({ moduleId, type }: { moduleId: number; type: "pdf" | "word" }) => (
-    <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
-      <div className="flex items-center gap-3 mb-4">
-        <div className={`w-10 h-10 rounded-full ${type === "pdf" ? "bg-red-100" : "bg-blue-100"} flex items-center justify-center`}>
-          {type === "pdf" ? <FaFilePdf className="text-red-600 text-xl" /> : <FaFileWord className="text-blue-800 text-xl" />}
+    <div className="bg-white p-4 sm:p-5 rounded-lg sm:rounded-xl border border-gray-200 shadow-sm">
+      <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
+        <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full ${type === "pdf" ? "bg-red-100" : "bg-blue-100"} flex items-center justify-center flex-shrink-0`}>
+          {type === "pdf" ? <FaFilePdf className="text-red-600 text-base sm:text-xl" /> : <FaFileWord className="text-blue-800 text-base sm:text-xl" />}
         </div>
-        <div>
-          <h4 className="font-medium text-gray-800">Upload {type === "pdf" ? "PDF" : "Word"} Document</h4>
-          <p className="text-sm text-gray-600">Select a file from your device</p>
+        <div className="min-w-0">
+          <h4 className="font-medium text-gray-800 text-sm sm:text-base">Upload {type === "pdf" ? "PDF" : "Word"} Document</h4>
+          <p className="text-xs sm:text-sm text-gray-600 truncate">Select a file from your device</p>
         </div>
       </div>
-      <div className="flex gap-3 items-center">
+      <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 items-stretch sm:items-center">
         <button
           onClick={() => handleFileSelect(moduleId, type)}
-          className="bg-blue-800 hover:bg-blue-700 text-white px-4 py-3 rounded-lg transition-colors flex items-center gap-2"
+          className="bg-blue-800 hover:bg-blue-700 text-white px-3 sm:px-4 py-2 sm:py-3 rounded-lg transition-colors flex items-center justify-center gap-2 text-sm sm:text-base"
         >
-          <FaFile className="text-sm" /> Choose File
+          <FaFile className="text-xs sm:text-sm" /> Choose File
         </button>
         <button
           onClick={() => setResourceType(null)}
-          className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-3 rounded-lg transition-colors flex items-center gap-2"
+          className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 sm:px-4 py-2 sm:py-3 rounded-lg transition-colors flex items-center justify-center gap-2 text-sm sm:text-base"
         >
           <FaTimes /> Cancel
         </button>
       </div>
-      <p className="text-xs text-gray-500 mt-3">
+      <p className="text-xs text-gray-500 mt-2 sm:mt-3">
         {type === "pdf" ? "Supported format: .pdf (Max size: 10MB)" : "Supported formats: .doc, .docx (Max size: 10MB)"}
       </p>
     </div>
   );
 
   const QuizForm = ({ moduleId }: { moduleId: number }) => (
-    <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
-      <div className="flex items-center gap-3 mb-4">
-        <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
-          <FaQuestionCircle className="text-green-600" />
+    <div className="bg-white p-4 sm:p-5 rounded-lg sm:rounded-xl border border-gray-200 shadow-sm">
+      <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
+        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+          <FaQuestionCircle className="text-green-600 text-sm sm:text-base" />
         </div>
-        <div>
-          <h4 className="font-medium text-gray-800">Create New Quiz</h4>
-          <p className="text-sm text-gray-600">Set up your quiz with questions and answers</p>
+        <div className="min-w-0">
+          <h4 className="font-medium text-gray-800 text-sm sm:text-base">Create New Quiz</h4>
+          <p className="text-xs sm:text-sm text-gray-600 truncate">Set up your quiz with questions and answers</p>
         </div>
       </div>
-      <div className="space-y-4">
+      <div className="space-y-3 sm:space-y-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Quiz Name</label>
+          <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Quiz Name</label>
           <input
             type="text"
             value={quizName}
             onChange={(e) => setQuizName(e.target.value)}
             placeholder="Enter quiz name"
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
+            className="w-full px-3 sm:px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all text-sm sm:text-base"
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Quiz Description (Optional)</label>
+          <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Quiz Description (Optional)</label>
           <textarea
             value={quizDescription}
             onChange={(e) => setQuizDescription(e.target.value)}
             placeholder="Describe what this quiz covers"
             rows={2}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
+            className="w-full px-3 sm:px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all text-sm sm:text-base"
           />
         </div>
-        <div className="flex gap-3 pt-2">
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-2">
           <button
             onClick={() => handleQuizCreation(moduleId)}
-            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
+            className="bg-green-600 hover:bg-green-700 text-white px-3 sm:px-4 py-2 rounded-lg transition-colors flex items-center justify-center gap-2 text-sm sm:text-base"
           >
-            <FaCheck className="text-sm" /> Create Quiz
+            <FaCheck className="text-xs sm:text-sm" /> Create Quiz
           </button>
           <button
             onClick={() => {
@@ -642,7 +645,7 @@ const cancelDelete = () => {
               setQuizName("");
               setQuizDescription("");
             }}
-            className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
+            className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 sm:px-4 py-2 rounded-lg transition-colors flex items-center justify-center gap-2 text-sm sm:text-base"
           >
             <FaTimes /> Cancel
           </button>
@@ -655,23 +658,37 @@ const cancelDelete = () => {
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
 
+  // Find the currently open quiz resource
+  const currentQuizResource = openQuiz 
+    ? modules.flatMap(m => m.resources).find(r => r.id === openQuiz)
+    : null;
+
   return (
-    <div>
+    <div className="px-2 sm:px-0">
       <input type="file" ref={fileInputRef} style={{ display: "none" }} />
+
+      {/* Quiz Editor Modal */}
+      {openQuiz && currentQuizResource && (
+        <QuizEditor
+          resource={currentQuizResource}
+          onClose={() => setOpenQuiz(null)}
+          onUpdate={handleQuizUpdate}
+        />
+      )}
 
       <div className="space-y-3">
         {sortedModules.map((module) => (
-          <div key={module.id} className="group bg-white border border-gray-200 rounded-xl shadow-lg transition-all hover:shadow-xl">
-            {/* Header */}
-            <div className="p-6 flex justify-between items-center">
-              <div>
-                <h2 className="text-xl font-bold text-gray-900 mb-2">
+          <div key={module.id} className="group bg-white border border-gray-200 rounded-lg sm:rounded-xl shadow-lg transition-all hover:shadow-xl">
+            {/* Header - Responsive */}
+            <div className="p-4 sm:p-6 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-0">
+              <div className="flex-1 min-w-0">
+                <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-1 sm:mb-2 break-words">
                   {module.order}. {module.title}
                 </h2>
-                <p className="text-gray-600">{module.description}</p>
+                <p className="text-sm sm:text-base text-gray-600 break-words">{module.description}</p>
               </div>
-              <div className="flex items-center gap-3">
-                <span className={`px-3 py-1 rounded-full text-sm font-medium ${module.isUnlocked ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
+              <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+                <span className={`px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium whitespace-nowrap ${module.isUnlocked ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
                   {module.isUnlocked ? "Unlocked" : "Locked"}
                 </span>
                 <div
@@ -684,18 +701,18 @@ const cancelDelete = () => {
                     onClick={() => setMenuOpenId(menuOpenId === module.id ? null : module.id)}
                     className="p-2 rounded-full cursor-pointer hover:bg-gray-100 transition-colors"
                   >
-                    <FaEllipsisV className="text-gray-600" />
+                    <FaEllipsisV className="text-gray-600 text-sm sm:text-base" />
                   </button>
                   {menuOpenId === module.id && (
-                    <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-500 rounded-lg shadow-lg z-10">
-                      <ul className="py-2 text-sm text-gray-700">
+                    <div className="absolute right-0 mt-2 w-44 sm:w-48 bg-white border border-gray-500 rounded-lg shadow-lg z-10">
+                      <ul className="py-2 text-xs sm:text-sm text-gray-700">
                         <li>
                           <button
                             onClick={() => toggleModuleUnlock(module.id)}
-                            className="w-full cursor-pointer px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-3"
+                            className="w-full cursor-pointer px-3 sm:px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-2 sm:gap-3"
                           >
-                            {module.isUnlocked ? <FaLock /> : <FaUnlock />}
-                            {module.isUnlocked ? "Lock Lesson" : "Unlock Lesson"}
+                            {module.isUnlocked ? <FaLock className="flex-shrink-0" /> : <FaUnlock className="flex-shrink-0" />}
+                            <span>{module.isUnlocked ? "Lock Lesson" : "Unlock Lesson"}</span>
                           </button>
                         </li>
                         <li>
@@ -704,17 +721,17 @@ const cancelDelete = () => {
                               setShowAddResource(showAddResource === module.id ? null : module.id);
                               setResourceType(null);
                             }}
-                            className="w-full cursor-pointer px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-3"
+                            className="w-full cursor-pointer px-3 sm:px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-2 sm:gap-3"
                           >
-                            <FaPlus /> Add Resource
+                            <FaPlus className="flex-shrink-0" /> <span>Add Resource</span>
                           </button>
                         </li>
                         <li>
                           <button
                             onClick={() => requestDeleteLesson(module.id)}
-                            className="w-full cursor-pointer px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-3 text-red-600"
+                            className="w-full cursor-pointer px-3 sm:px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-2 sm:gap-3 text-red-600"
                           >
-                            <FaTrash /> Delete Lesson
+                            <FaTrash className="flex-shrink-0" /> <span>Delete Lesson</span>
                           </button>
                         </li>
                       </ul>
@@ -724,18 +741,18 @@ const cancelDelete = () => {
               </div>
             </div>
 
-            {/* Add Resource */}
+            {/* Add Resource - Responsive */}
             {showAddResource === module.id && (
-              <div className="px-6 pb-6 mx-2 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-b-xl relative">
-                <div className="pt-4">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">Add New Resource</h3>
+              <div className="px-3 sm:px-6 pb-4 sm:pb-6 mx-2 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-b-lg sm:rounded-b-xl relative">
+                <div className="pt-3 sm:pt-4">
+                  <div className="flex items-center justify-between mb-3 sm:mb-4">
+                    <h3 className="text-base sm:text-lg font-semibold text-gray-800 flex items-center gap-2">Add New Resource</h3>
                   </div>
 
                   {resourceType !== null && resourceType !== "quiz" && (
                     <button
                       onClick={() => setResourceType(null)}
-                      className="text-gray-500 hover:text-gray-700 transition-colors flex items-center gap-1 text-sm mb-4"
+                      className="text-gray-500 hover:text-gray-700 transition-colors flex items-center gap-1 text-xs sm:text-sm mb-3 sm:mb-4"
                     >
                       <FaChevronUp className="text-xs" /> Back to options
                     </button>
@@ -754,68 +771,91 @@ const cancelDelete = () => {
               </div>
             )}
 
-            {/* Resources */}
+            {/* Resources - Responsive */}
             {module.resources.length > 0 && (
-              <div className="px-6 pb-6 mt-4">
-                <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                  <FaFile className="text-gray-600" /> Resources ({module.resources.length})
+              <div className="px-4 sm:px-6 pb-4 sm:pb-6 mt-3 sm:mt-4">
+                <h3 className="font-semibold text-gray-900 mb-3 sm:mb-4 flex items-center gap-2 text-sm sm:text-base">
+                  <FaFile className="text-gray-600 flex-shrink-0" /> Resources ({module.resources.length})
                 </h3>
-                <div className="space-y-3">
+                <div className="space-y-2 sm:space-y-3">
                   {module.resources.map((resource) => (
                     <div
                       key={resource.id}
-                      className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:border-gray-300 hover:shadow-sm transition-all"
+                      className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 sm:p-4 border border-gray-200 rounded-lg hover:border-gray-300 hover:shadow-sm transition-all"
                     >
-                      <div className="flex items-center gap-4">
-                        <div className="text-xl">{getResourceIcon(resource.type)}</div>
-                        <div>
-                          <h4 className="font-medium text-gray-900">{resource.name}</h4>
-                          <div className="flex items-center gap-4 text-sm text-gray-600">
-                            <span>Uploaded: {resource.uploadedAt}</span>
-                            {resource.size && <span>Size: {resource.size}</span>}
-                            {resource.duration && <span>Duration: {resource.duration}</span>}
+                      <div className="flex items-start sm:items-center gap-3 sm:gap-4 min-w-0 flex-1">
+                        <div className="text-base sm:text-xl flex-shrink-0 mt-0.5 sm:mt-0">{getResourceIcon(resource.type)}</div>
+                        <div className="min-w-0 flex-1">
+                          <h4 className="font-medium text-gray-900 text-sm sm:text-base break-words">{resource.name}</h4>
+                          <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm text-gray-600 mt-1">
+                            <span className="whitespace-nowrap">Uploaded: {resource.uploadedAt}</span>
+                            {resource.size && <span className="whitespace-nowrap">Size: {resource.size}</span>}
+                            {resource.duration && <span className="whitespace-nowrap">Duration: {resource.duration}</span>}
+                            {resource.type === "quiz" && (
+                              <span className="bg-green-100 text-green-800 px-2 py-0.5 sm:py-1 rounded-full text-xs font-medium whitespace-nowrap">
+                                {resource.quiz?.length || 0} questions
+                              </span>
+                            )}
                           </div>
                         </div>
                       </div>
-                      <div className="flex items-center gap-3 relative">
+                      <div className="flex items-center justify-end gap-2 sm:gap-3 relative flex-shrink-0">
                         <div className="relative">
                           <button
                             onClick={() => setOpenMenu(openMenu === resource.id ? null : resource.id)}
-                            className="text-gray-600 hover:text-gray-800 p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                            className="text-gray-600 hover:text-gray-800 p-1.5 sm:p-2 rounded-lg hover:bg-gray-100 transition-colors"
                           >
-                            <FaEllipsisV />
+                            <FaEllipsisV className="text-xs sm:text-sm" />
                           </button>
                           {openMenu === resource.id && (
-                            <div className="absolute right-0 mt-2 w-40 bg-white shadow-md border border-gray-200 rounded-lg z-10">
-                              <ul className="text-sm text-gray-700">
+                            <div className="absolute right-0 mt-2 w-36 sm:w-40 bg-white shadow-md border border-gray-200 rounded-lg z-10">
+                              <ul className="text-xs sm:text-sm text-gray-700">
                                 {resource.type === "quiz" ? (
-                                  <li>
-                                    <button
-                                      onClick={() => setOpenQuiz(resource.id)}
-                                      className="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center gap-2"
-                                    >
-                                      <FaQuestionCircle /> Take Quiz
-                                    </button>
-                                  </li>
+                                  <>
+                                    <li>
+                                      <button
+                                        onClick={() => {
+                                          setOpenQuiz(resource.id);
+                                          setOpenMenu(null);
+                                        }}
+                                        className="w-full text-left px-3 sm:px-4 py-2 hover:bg-gray-100 flex items-center gap-2"
+                                      >
+                                        <FaEdit className="flex-shrink-0" /> <span>Edit Quiz</span>
+                                      </button>
+                                    </li>
+                                    <li>
+                                      <button
+                                        onClick={() => {
+                                          setOpenMenu(null);
+                                        }}
+                                        className="w-full text-left px-3 sm:px-4 py-2 hover:bg-gray-100 flex items-center gap-2"
+                                      >
+                                        <FaQuestionCircle className="flex-shrink-0" /> <span>Take Quiz</span>
+                                      </button>
+                                    </li>
+                                  </>
                                 ) : (
                                   <li>
                                     <a
                                       href={resource.url}
                                       target="_blank"
                                       rel="noopener noreferrer"
-                                      className="flex items-center gap-2 px-4 py-2 hover:bg-gray-100"
+                                      className="flex items-center gap-2 px-3 sm:px-4 py-2 hover:bg-gray-100"
                                     >
-                                      {resource.type === "video" ? <FaPlay /> : <FaExternalLinkAlt />}
-                                      {resource.type === "video" ? "Watch" : "Open"}
+                                      {resource.type === "video" ? <FaPlay className="flex-shrink-0" /> : <FaExternalLinkAlt className="flex-shrink-0" />}
+                                      <span>{resource.type === "video" ? "Watch" : "Open"}</span>
                                     </a>
                                   </li>
                                 )}
                                 <li>
                                   <button
-                                    onClick={() => requestDeleteResource(module.id, resource.id)}
-                                    className="w-full text-left px-4 py-2 text-red-600 hover:bg-red-50 flex items-center gap-2"
+                                    onClick={() => {
+                                      requestDeleteResource(module.id, resource.id);
+                                      setOpenMenu(null);
+                                    }}
+                                    className="w-full text-left px-3 sm:px-4 py-2 text-red-600 hover:bg-red-50 flex items-center gap-2"
                                   >
-                                    <FaTrash /> Delete
+                                    <FaTrash className="flex-shrink-0" /> <span>Delete</span>
                                   </button>
                                 </li>
                               </ul>
@@ -833,35 +873,32 @@ const cancelDelete = () => {
       </div>
 
       {modules.length === 0 && (
-        <div className="text-center py-12">
+        <div className="text-center py-8 sm:py-12 px-4">
           <div className="max-w-md mx-auto">
-            <FaFile className="text-6xl text-gray-300 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">No lessons yet</h3>
-            <p className="text-gray-600 mb-6">
+            <FaFile className="text-4xl sm:text-6xl text-gray-300 mx-auto mb-3 sm:mb-4" />
+            <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">No lessons yet</h3>
+            <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6">
               Create your first lesson to start organizing your course content.
             </p>
           </div>
         </div>
       )}
 
-     
-        <ConfirmDeleteModal
-  visible={modals.showDeleteConfirm}
-  title="Delete Lesson?"
-  description="Are you sure you want to delete this lesson? This action cannot be undone."
-  onConfirm={confirmDeleteLesson}
-  onCancel={cancelDelete}
-/>
+      <ConfirmDeleteModal
+        visible={modals.showDeleteConfirm}
+        title="Delete Lesson?"
+        description="Are you sure you want to delete this lesson? This action cannot be undone."
+        onConfirm={confirmDeleteLesson}
+        onCancel={cancelDelete}
+      />
 
-<ConfirmDeleteModal
-  visible={modals.showResourceDeleteConfirm}
-  title="Delete Resource?"
-  description="Are you sure you want to delete this resource? This action cannot be undone."
-  onConfirm={confirmDeleteResource}
-  onCancel={cancelDelete}
-/>
-
-      
+      <ConfirmDeleteModal
+        visible={modals.showResourceDeleteConfirm}
+        title="Delete Resource?"
+        description="Are you sure you want to delete this resource? This action cannot be undone."
+        onConfirm={confirmDeleteResource}
+        onCancel={cancelDelete}
+      />
     </div>
   );
 }
