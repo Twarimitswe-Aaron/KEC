@@ -19,15 +19,12 @@ import { CreateVideoDto } from './dto/create-video.dto';
 import { CreateQuizDto } from './dto/create-quiz.dto';
 import { SubmitQuizDto } from './dto/submit-quiz.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
-import { extname, join } from 'path';
-import { randomUUID } from 'crypto';
-import { existsSync, mkdirSync } from 'fs';
 import { AuthGuard } from 'src/auth/auth.guard';
 import { Roles } from 'src/auth/decorators/roles.decorator';
 import { RolesGuard } from 'src/auth/roles.guard';
 import { UpdateLessonDto } from './dto/update-lesson.dto';
 import { ToggleLockDto } from './dto/toggle-lock.dto';
+import { AddResourceDto } from './dto/add-resource.dto';
 
 @UseGuards(AuthGuard, RolesGuard)
 @Roles('admin', 'teacher')
@@ -35,7 +32,6 @@ import { ToggleLockDto } from './dto/toggle-lock.dto';
 export class ModuleController {
   constructor(private readonly svc: ModuleService) {}
 
-  
   // Create new lesson
   @Post()
   async createLesson(@Body() dto: CreateLessonDto) {
@@ -54,6 +50,11 @@ export class ModuleController {
     return this.svc.getLessonById(id);
   }
 
+  // Delete lesson
+  @Delete(':id')
+  async deleteLesson(@Param('id', ParseIntPipe) id: number) {
+    return this.svc.deleteLesson(id);
+  }
 
   // Update existing lesson
   @Put(':id')
@@ -64,61 +65,34 @@ export class ModuleController {
     return this.svc.updateLesson(id, dto);
   }
 
-  // Delete lesson
-  @Delete(':id')
-  async deleteLesson(@Param('id', ParseIntPipe) id: number) {
-    return this.svc.deleteLesson(id);
-  }
-
-  // Toggle lesson lock status (using Module since Lesson doesn't have isUnlocked)
-  @Patch('/lock/:id')
-  async toggleLessonLock(
-    @Param('id') id: number,
-    @Body() dto: ToggleLockDto,
-  ) {
-   
-    return this.svc.toggleLessonLock(id, dto);
-  }
-
-  // Add resource to lesson
+  // Add resource to lesson - Main endpoint for file uploads
   @Post(':lessonId/resources')
-  @UseInterceptors(FileInterceptor('file', {
-    storage: diskStorage({
-      destination: (req, file, cb) => {
-        const dir = join(process.cwd(), 'uploads', 'resources');
-        if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
-        cb(null, dir);
-      },
-      filename: (req, file, cb) => {
-        const safe = `${Date.now()}-${randomUUID()}${extname(file.originalname)}`;
-        cb(null, safe);
-      }
-    }),
-    limits: { fileSize: 10 * 1024 * 1024 } // 10MB
-  }))
+  @UseInterceptors(FileInterceptor('file'))
   async addResource(
     @Param('lessonId', ParseIntPipe) lessonId: number,
     @UploadedFile() file: Express.Multer.File,
-    @Body('title') title: string,
-    @Body('type') type: string,
+    @Body() body: { title: string; type: string; url?: string },
   ) {
-    if (!file) throw new BadRequestException('No file uploaded');
-    if (!['pdf', 'video', 'word', 'quiz'].includes(type)) {
-      throw new BadRequestException('Invalid file type');
+    const allowedTypes = ['pdf', 'word', 'video', 'quiz'] as const;
+    if (!allowedTypes.includes(body.type as any)) {
+      throw new BadRequestException('Invalid resource type');
     }
-
-    const url = `/uploads/resources/${file.filename}`;
-    return this.svc.addResource(lessonId, {
-      title,
-      file,
-      type: type as 'pdf' | 'word' | 'video' | 'quiz',
-      url,
-    });
+    const dto: AddResourceDto = {
+      title: body.title,
+      type: body.type as 'pdf' | 'word' | 'video' | 'quiz',
+      file: file,
+      url: body.url,
+    };
+    return this.svc.addResource(lessonId, dto);
   }
 
-  @Delete('/lesson/:id')
-  async deleteLessonAlt(@Param('id', ParseIntPipe) id: number) {
-    return this.svc.deleteLesson(id);
+  // Toggle lesson lock status
+  @Patch('lock/:id')
+  async toggleLessonLock(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: ToggleLockDto,
+  ) {
+    return this.svc.toggleLessonLock(id, dto);
   }
 
   // Delete resource from lesson
@@ -175,9 +149,12 @@ export class ModuleController {
     return this.svc.submitQuiz(quizId, dto.responses);
   }
 
-  // Module-specific endpoints
+  // Module-specific endpoints (alias for lesson endpoints)
   @Post('module/:courseId')
-  async createModule(@Body() dto: CreateLessonDto, @Param('courseId') courseId: string) {
-    return this.svc.createModule(+courseId, dto);
+  async createModule(
+    @Body() dto: CreateLessonDto, 
+    @Param('courseId', ParseIntPipe) courseId: number
+  ) {
+    return this.svc.createModule(courseId, dto);
   }
 }

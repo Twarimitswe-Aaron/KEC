@@ -22,6 +22,7 @@ export interface Resource {
   size?: string;
   duration?: string;
   uploadedAt?: string;
+  quiz?: any;
 }
 
 export interface CreateLessonRequest {
@@ -56,8 +57,10 @@ export interface ToggleLessonLockRequest {
 export interface AddResourceRequest {
   lessonId: number;
   title: string;
-  file: File;
+  file?: File;
   type: string;
+  url?: string;
+  description?: string;
 }
 
 export interface DeleteResourceRequest {
@@ -73,7 +76,7 @@ export interface ApiResponse<T = any> {
 
 export const lessonApi = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
-       // Create new lesson
+    // Create new lesson
     createLesson: builder.mutation<ApiResponse<Lesson>, CreateLessonRequest>({
       query: ({ courseId, title, description, content, isUnlocked, order }) => ({
         url: `/lesson`,
@@ -93,6 +96,7 @@ export const lessonApi = apiSlice.injectEndpoints({
         { type: "Course", id: courseId },
       ],
     }),
+
     // Get all lessons by course ID
     getLessonByCourseId: builder.query<Lesson[], number>({
       query: (courseId) => ({
@@ -100,9 +104,12 @@ export const lessonApi = apiSlice.injectEndpoints({
         method: "GET",
       }),
       providesTags: (result, error, courseId) => [
-        { type: "Lesson" as const, id: "LIST" },
-        { type: "Lesson" as const, id: courseId },
+        { type: "Lesson", id: "LIST" },
+        { type: "Lesson", id: courseId },
       ],
+      transformResponse: (response: any) => {
+        return response || [];
+      },
     }),
 
     // Get single lesson by ID
@@ -111,13 +118,13 @@ export const lessonApi = apiSlice.injectEndpoints({
         url: `/lesson/${id}`,
         method: "GET",
       }),
-      providesTags: (result, error, id) => [{ type: "Lesson" as const, id }],
+      providesTags: (result, error, id) => [{ type: "Lesson", id }],
     }),
 
-     // Delete lesson
+    // Delete lesson
     deleteLesson: builder.mutation<ApiResponse, DeleteLessonRequest>({
-      query: ({ id }) => ({
-        url: `/lesson/lesson/${id}`,
+      query: ({ id, courseId }) => ({
+        url: `/lesson/${id}`,
         method: "DELETE",
       }),
       invalidatesTags: (result, error, { id, courseId }) => [
@@ -128,21 +135,19 @@ export const lessonApi = apiSlice.injectEndpoints({
       ],
     }),
 
-        // Toggle lesson lock status
+    // Toggle lesson lock status
     toggleLessonLock: builder.mutation<ApiResponse<Lesson>, ToggleLessonLockRequest>({
-      query: ({ id, isUnlocked,courseId }) => ({
+      query: ({ id, isUnlocked, courseId }) => ({
         url: `/lesson/lock/${id}`,
         method: "PATCH",
-        body: { isUnlocked ,courseId},
-
+        body: { isUnlocked, courseId },
       }),
-      invalidatesTags: (result, error, { id }) => [
+      invalidatesTags: (result, error, { id, courseId }) => [
         { type: "Lesson", id },
         { type: "Lesson", id: "LIST" },
+        { type: "Lesson", id: courseId },
       ],
     }),
-
- 
 
     // Update existing lesson
     updateLesson: builder.mutation<ApiResponse<Lesson>, UpdateLessonRequest>({
@@ -157,24 +162,58 @@ export const lessonApi = apiSlice.injectEndpoints({
       ],
     }),
 
-   
-
-
-
     // Add resource to lesson
-    addResource: builder.mutation<ApiResponse<Resource>, AddResourceRequest>({
-      query: ({ lessonId, title, file, type }) => {
-        const formData = new FormData();
-        formData.append('lessonId', lessonId.toString());
-        formData.append('title', title);
-        formData.append('file', file);
-        formData.append('type', type);
-        
-        return {
-          url: `/lesson/${lessonId}/resources`,
-          method: "POST",
-          body: formData,
-        };
+    addResource: builder.mutation<
+      ApiResponse<Resource>,
+      AddResourceRequest
+    >({
+      query: ({ lessonId, title, file, type, description,url }) => {
+        if (file) {
+          // File upload (PDF, Word)
+          const formData = new FormData();
+          formData.append("lessonId", lessonId.toString());
+          formData.append("title", title);
+          formData.append("file", file);
+          formData.append("type", type);
+
+          return {
+            url: `/lesson/${lessonId}/resources`,
+            method: "POST",
+            body: formData,
+          };
+        } else if (type === "video" && url) {
+          // Video link
+          return {
+            url: `/lesson/${lessonId}/video`,
+            method: "POST",
+            body: {
+              name: title,
+              url: url,
+              type: "video"
+            },
+          };
+        } else if (type === "quiz") {
+          // Quiz creation
+          return {
+            url: `/lesson/${lessonId}/quiz`,
+            method: "POST",
+            body: {
+              name: title,
+              description: description || "",
+              questions: [
+                {
+                  id: 1,
+                  type: "multiple",
+                  question: "Sample question - edit this quiz to add your questions",
+                  options: ["Option 1", "Option 2", "Option 3", "Option 4"],
+                  required: true,
+                }
+              ]
+            },
+          };
+        } else {
+          throw new Error("Invalid resource type or missing required fields");
+        }
       },
       invalidatesTags: (result, error, { lessonId }) => [
         { type: "Lesson", id: lessonId },
