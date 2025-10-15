@@ -20,6 +20,8 @@ import {
   FaEye,
 } from "react-icons/fa";
 import { toast } from "react-toastify";
+import { useDeleteLessonMutation } from "../state/api/lessonApi";
+import { Trash2 } from "lucide-react";
 
 // Types
 type ResourceType = {
@@ -84,10 +86,7 @@ interface Lesson {
 
 interface ModuleManagementProps {
   lessons: Lesson[];
-  onAddResource?: (lessonId: number) => void;
-  onDeleteResource?: (lessonId: number, resourceId: number) => void;
-  onToggleLock?: (lessonId: number, isUnlocked: boolean) => void;
-  onDeleteLesson?: (lessonId: number) => void;
+  courseId: number;
 }
 
 // Constants
@@ -132,7 +131,10 @@ const SAMPLE_QUIZ: Question[] = [
 ];
 
 // Helper functions
-const createResource = (type: "pdf" | "video" | "quiz" | "word", data: any): ResourceType => {
+const createResource = (
+  type: "pdf" | "video" | "quiz" | "word",
+  data: any
+): ResourceType => {
   const baseResource = {
     id: Date.now(),
     uploadedAt: new Date().toISOString().split("T")[0],
@@ -187,20 +189,23 @@ const lessonToModule = (lesson: Lesson): ModuleType => ({
   isUnlocked: lesson.isUnlocked ?? true,
   order: lesson.order || lesson.id,
   createdAt: lesson.createdAt || new Date().toISOString(),
-  resources: lesson.resources?.map(resource => ({
-    id: resource.id,
-    name: resource.title,
-    type: resource.type as "pdf" | "video" | "quiz" | "word",
-    url: resource.url,
-    uploadedAt: new Date().toISOString().split("T")[0],
-  })) || [],
+  resources:
+    lesson.resources?.map((resource) => ({
+      id: resource.id,
+      name: resource.title,
+      type: resource.type as "pdf" | "video" | "quiz" | "word",
+      url: resource.url,
+      uploadedAt: new Date().toISOString().split("T")[0],
+    })) || [],
 });
 
 // Main Component
-function ModuleManagement({ lessons, onAddResource, onDeleteResource, onToggleLock, onDeleteLesson }: ModuleManagementProps) {
+function ModuleManagement({ lessons, courseId }: ModuleManagementProps) {
   // State
   const [showAddResource, setShowAddResource] = useState<number | null>(null);
-  const [resourceType, setResourceType] = useState<"pdf" | "video" | "word" | "quiz" | null>(null);
+  const [resourceType, setResourceType] = useState<
+    "pdf" | "video" | "word" | "quiz" | null
+  >(null);
   const [videoLink, setVideoLink] = useState("");
   const [videoName, setVideoName] = useState("");
   const [quizName, setQuizName] = useState("");
@@ -208,13 +213,21 @@ function ModuleManagement({ lessons, onAddResource, onDeleteResource, onToggleLo
   const [modules, setModules] = useState<ModuleType[]>([]);
   const [menuOpenId, setMenuOpenId] = useState<number | null>(null);
   const [openQuiz, setOpenQuiz] = useState<number | null>(null);
-  const [quizResponses, setQuizResponses] = useState<Record<number, QuizResponse[]>>({});
-  const [showDropdown, setShowDropdown] = useState<number | null>(null);
+  const [quizResponses, setQuizResponses] = useState<
+    Record<number, QuizResponse[]>
+  >({});
+  const [deleteLesson] = useDeleteLessonMutation();
   const [openMenu, setOpenMenu] = useState<number | null>(null);
 
   // Refs
   const menuWrapperRefs = useRef<Record<number, HTMLDivElement | null>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [modals, setModals] = useState({
+    showDeleteConfirm: false,
+  });
+
+  const [lessonToDelete, setLessonToDelete] = useState<number | null>(null);
 
   // Convert lessons to modules when lessons prop changes
   useEffect(() => {
@@ -224,7 +237,6 @@ function ModuleManagement({ lessons, onAddResource, onDeleteResource, onToggleLo
     }
   }, [lessons]);
 
-  // Effects
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (menuOpenId === null) return;
@@ -248,7 +260,7 @@ function ModuleManagement({ lessons, onAddResource, onDeleteResource, onToggleLo
 
     document.addEventListener("mousedown", handleClickOutside);
     document.addEventListener("keydown", handleEscape);
-    
+
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
       document.removeEventListener("keydown", handleEscape);
@@ -257,40 +269,62 @@ function ModuleManagement({ lessons, onAddResource, onDeleteResource, onToggleLo
 
   // Handlers
   const toggleModuleUnlock = (moduleId: number) => {
-    const module = modules.find(m => m.id === moduleId);
+    const module = modules.find((m) => m.id === moduleId);
     if (module) {
       const newUnlockedStatus = !module.isUnlocked;
-      
+
       // Update local state
-      setModules(prev => prev.map(m => 
-        m.id === moduleId ? { ...m, isUnlocked: newUnlockedStatus } : m
-      ));
-      
-      // Call parent handler if provided
-      if (onToggleLock) {
-        onToggleLock(moduleId, newUnlockedStatus);
-      }
-      
+      setModules((prev) =>
+        prev.map((m) =>
+          m.id === moduleId ? { ...m, isUnlocked: newUnlockedStatus } : m
+        )
+      );
+
+      // Call parent handler if provide
+
       setMenuOpenId(null);
     }
   };
+  function updateModals(updated: { showDeleteConfirm: boolean }) {
+    setModals((prev) => ({ ...prev, ...updated }));
+  }
 
-  const deleteModule = (moduleId: number) => {
-    if (window.confirm("Are you sure you want to delete this lesson?")) {
-      // Update local state
-      setModules(prev => prev.filter(m => m.id !== moduleId));
-      setMenuOpenId(null);
-      
-      // Call parent handler if provided
-      if (onDeleteLesson) {
-        onDeleteLesson(moduleId);
-      }
-      
-      if (showAddResource === moduleId) setShowAddResource(null);
-    }
+  const requestDeleteLesson = (lessonId: number) => {
+    setLessonToDelete(lessonId);
+
+    updateModals({ showDeleteConfirm: true });
   };
 
-  const handleFileUpload = (moduleId: number, file: File, type: "pdf" | "word") => {
+  const cancelDelete = () => {
+    updateModals({ showDeleteConfirm: false });
+    setLessonToDelete(null);
+  };
+
+  const confirmDeleteLesson = () => {
+    if (lessonToDelete == null) return;
+
+    // Update local state
+    setModules((prev) => prev.filter((m) => m.id !== lessonToDelete));
+    setMenuOpenId(null);
+    deleteLesson({
+      id: lessonToDelete,
+      courseId,
+    })
+      .unwrap()
+      .then(({ message }) => {
+        toast.success(message);
+      });
+
+    // Close modal and clear state
+    updateModals({ showDeleteConfirm: false });
+    setLessonToDelete(null);
+  };
+
+  const handleFileUpload = (
+    moduleId: number,
+    file: File,
+    type: "pdf" | "word"
+  ) => {
     const resource = createResource(type, { file });
     updateModuleResources(moduleId, resource);
     toast.success(`${type.toUpperCase()} file uploaded successfully!`);
@@ -321,7 +355,11 @@ function ModuleManagement({ lessons, onAddResource, onDeleteResource, onToggleLo
     toast.success("Video resource added successfully!");
   };
 
-  const addQuizResource = (moduleId: number, name: string, description: string = "") => {
+  const addQuizResource = (
+    moduleId: number,
+    name: string,
+    description: string = ""
+  ) => {
     const resource = createResource("quiz", { name, description });
     updateModuleResources(moduleId, resource);
     setQuizName("");
@@ -331,20 +369,31 @@ function ModuleManagement({ lessons, onAddResource, onDeleteResource, onToggleLo
 
   const removeResource = (moduleId: number, resourceId: number) => {
     if (window.confirm("Remove this resource?")) {
-      setModules(prev => prev.map(m =>
-        m.id === moduleId ? { ...m, resources: m.resources.filter(r => r.id !== resourceId) } : m
-      ));
-      
+      setModules((prev) =>
+        prev.map((m) =>
+          m.id === moduleId
+            ? {
+                ...m,
+                resources: m.resources.filter((r) => r.id !== resourceId),
+              }
+            : m
+        )
+      );
+
       // Call parent handler if provided
-      onDeleteResource?.(moduleId, resourceId);
+      // onDeleteResource?.(moduleId, resourceId);
     }
   };
 
-  const handleQuizResponse = (resourceId: number, questionId: number, answer: string | string[]) => {
-    setQuizResponses(prev => ({
+  const handleQuizResponse = (
+    resourceId: number,
+    questionId: number,
+    answer: string | string[]
+  ) => {
+    setQuizResponses((prev) => ({
       ...prev,
       [resourceId]: [
-        ...(prev[resourceId] || []).filter(r => r.questionId !== questionId),
+        ...(prev[resourceId] || []).filter((r) => r.questionId !== questionId),
         { questionId, answer },
       ],
     }));
@@ -352,9 +401,10 @@ function ModuleManagement({ lessons, onAddResource, onDeleteResource, onToggleLo
 
   const submitQuiz = (resourceId: number, quiz: Question[]) => {
     const responses = quizResponses[resourceId] || [];
-    const requiredQuestions = quiz.filter(q => q.required);
-    const answeredRequired = requiredQuestions.filter(q =>
-      responses.some(r =>
+    const requiredQuestions = quiz.filter((q) => q.required);
+    const answeredRequired = requiredQuestions.filter((q) =>
+      responses.some(
+        (r) =>
           r.questionId === q.id &&
           ((typeof r.answer === "string" && r.answer.trim()) ||
             (Array.isArray(r.answer) && r.answer.length > 0))
@@ -366,15 +416,19 @@ function ModuleManagement({ lessons, onAddResource, onDeleteResource, onToggleLo
       return;
     }
 
-    alert("Quiz submitted successfully! \n\nYour responses have been recorded.");
+    alert(
+      "Quiz submitted successfully! \n\nYour responses have been recorded."
+    );
     setOpenQuiz(null);
   };
 
   // Helper functions
   const updateModuleResources = (moduleId: number, resource: ResourceType) => {
-    setModules(prev => prev.map(m =>
-      m.id === moduleId ? { ...m, resources: [...m.resources, resource] } : m
-    ));
+    setModules((prev) =>
+      prev.map((m) =>
+        m.id === moduleId ? { ...m, resources: [...m.resources, resource] } : m
+      )
+    );
     setResourceType(null);
     setShowAddResource(null);
   };
@@ -394,12 +448,16 @@ function ModuleManagement({ lessons, onAddResource, onDeleteResource, onToggleLo
 
   const renderQuiz = (resource: ResourceType) => {
     if (!resource.quiz || openQuiz !== resource.id) return null;
-    
+
     const updateQuiz = (resourceId: number, newQuiz: Question[]) => {
-      setModules(prev => prev.map(m => ({
+      setModules((prev) =>
+        prev.map((m) => ({
           ...m,
-        resources: m.resources.map(r => r.id === resourceId ? { ...r, quiz: newQuiz } : r),
-      })));
+          resources: m.resources.map((r) =>
+            r.id === resourceId ? { ...r, quiz: newQuiz } : r
+          ),
+        }))
+      );
     };
 
     return (
@@ -412,20 +470,50 @@ function ModuleManagement({ lessons, onAddResource, onDeleteResource, onToggleLo
   };
 
   // UI Components
-  const ResourceTypeSelector = ({ onSelect }: { onSelect: (type: "pdf" | "video" | "word" | "quiz") => void }) => (
+  const ResourceTypeSelector = ({
+    onSelect,
+  }: {
+    onSelect: (type: "pdf" | "video" | "word" | "quiz") => void;
+  }) => (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
       {[
-        { type: "pdf" as const, icon: FaFilePdf, color: "red", label: "PDF Document", desc: "Upload PDF file" },
-        { type: "video" as const, icon: FaPlay, color: "purple", label: "Video", desc: "Add video link" },
-        { type: "word" as const, icon: FaFileWord, color: "blue", label: "Word Document", desc: "Upload Word file" },
-        { type: "quiz" as const, icon: FaQuestionCircle, color: "green", label: "Quiz", desc: "Create assessment" },
+        {
+          type: "pdf" as const,
+          icon: FaFilePdf,
+          color: "red",
+          label: "PDF Document",
+          desc: "Upload PDF file",
+        },
+        {
+          type: "video" as const,
+          icon: FaPlay,
+          color: "purple",
+          label: "Video",
+          desc: "Add video link",
+        },
+        {
+          type: "word" as const,
+          icon: FaFileWord,
+          color: "blue",
+          label: "Word Document",
+          desc: "Upload Word file",
+        },
+        {
+          type: "quiz" as const,
+          icon: FaQuestionCircle,
+          color: "green",
+          label: "Quiz",
+          desc: "Create assessment",
+        },
       ].map(({ type, icon: Icon, color, label, desc }) => (
         <button
           key={type}
           onClick={() => onSelect(type)}
           className="flex flex-col items-center justify-center p-5 bg-white rounded-xl border border-gray-200 hover:border-blue-300 hover:shadow-md transition-all duration-200 group"
         >
-          <div className={`w-12 h-12 rounded-full bg-${color}-100 flex items-center justify-center mb-3 group-hover:bg-${color}-200 transition-colors`}>
+          <div
+            className={`w-12 h-12 rounded-full bg-${color}-100 flex items-center justify-center mb-3 group-hover:bg-${color}-200 transition-colors`}
+          >
             <Icon className={`text-2xl text-${color}-600`} />
           </div>
           <span className="font-medium text-gray-800">{label}</span>
@@ -443,13 +531,17 @@ function ModuleManagement({ lessons, onAddResource, onDeleteResource, onToggleLo
         </div>
         <div>
           <h4 className="font-medium text-gray-800">Add Video Link</h4>
-          <p className="text-sm text-gray-600">Paste the URL of your video resource</p>
+          <p className="text-sm text-gray-600">
+            Paste the URL of your video resource
+          </p>
         </div>
       </div>
-      
+
       <div className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Video Title</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Video Title
+          </label>
           <input
             type="text"
             value={videoName}
@@ -458,9 +550,11 @@ function ModuleManagement({ lessons, onAddResource, onDeleteResource, onToggleLo
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
           />
         </div>
-        
+
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Video URL</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Video URL
+          </label>
           <input
             type="url"
             value={videoLink}
@@ -479,7 +573,11 @@ function ModuleManagement({ lessons, onAddResource, onDeleteResource, onToggleLo
           <FaCheck className="text-sm" /> Add Video
         </button>
         <button
-          onClick={() => { setResourceType(null); setVideoLink(""); setVideoName(""); }}
+          onClick={() => {
+            setResourceType(null);
+            setVideoLink("");
+            setVideoName("");
+          }}
           className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
         >
           <FaTimes /> Cancel
@@ -488,15 +586,33 @@ function ModuleManagement({ lessons, onAddResource, onDeleteResource, onToggleLo
     </div>
   );
 
-  const FileUploadForm = ({ moduleId, type }: { moduleId: number; type: "pdf" | "word" }) => (
+  const FileUploadForm = ({
+    moduleId,
+    type,
+  }: {
+    moduleId: number;
+    type: "pdf" | "word";
+  }) => (
     <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
       <div className="flex items-center gap-3 mb-4">
-        <div className={`w-10 h-10 rounded-full ${type === "pdf" ? "bg-red-100" : "bg-blue-100"} flex items-center justify-center`}>
-          {type === "pdf" ? <FaFilePdf className="text-red-600 text-xl" /> : <FaFileWord className="text-blue-800 text-xl" />}
+        <div
+          className={`w-10 h-10 rounded-full ${
+            type === "pdf" ? "bg-red-100" : "bg-blue-100"
+          } flex items-center justify-center`}
+        >
+          {type === "pdf" ? (
+            <FaFilePdf className="text-red-600 text-xl" />
+          ) : (
+            <FaFileWord className="text-blue-800 text-xl" />
+          )}
         </div>
         <div>
-          <h4 className="font-medium text-gray-800">Upload {type === "pdf" ? "PDF" : "Word"} Document</h4>
-          <p className="text-sm text-gray-600">Select a file from your device</p>
+          <h4 className="font-medium text-gray-800">
+            Upload {type === "pdf" ? "PDF" : "Word"} Document
+          </h4>
+          <p className="text-sm text-gray-600">
+            Select a file from your device
+          </p>
         </div>
       </div>
       <div className="flex gap-3 items-center">
@@ -514,7 +630,7 @@ function ModuleManagement({ lessons, onAddResource, onDeleteResource, onToggleLo
         </button>
       </div>
       <p className="text-xs text-gray-500 mt-3">
-        {type === "pdf" 
+        {type === "pdf"
           ? "Supported format: .pdf (Max size: 10MB)"
           : "Supported formats: .doc, .docx (Max size: 10MB)"}
       </p>
@@ -529,12 +645,16 @@ function ModuleManagement({ lessons, onAddResource, onDeleteResource, onToggleLo
         </div>
         <div>
           <h4 className="font-medium text-gray-800">Create New Quiz</h4>
-          <p className="text-sm text-gray-600">Set up your quiz with questions and answers</p>
+          <p className="text-sm text-gray-600">
+            Set up your quiz with questions and answers
+          </p>
         </div>
       </div>
       <div className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Quiz Name</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Quiz Name
+          </label>
           <input
             type="text"
             value={quizName}
@@ -544,7 +664,9 @@ function ModuleManagement({ lessons, onAddResource, onDeleteResource, onToggleLo
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Quiz Description (Optional)</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Quiz Description (Optional)
+          </label>
           <textarea
             value={quizDescription}
             onChange={(e) => setQuizDescription(e.target.value)}
@@ -567,7 +689,11 @@ function ModuleManagement({ lessons, onAddResource, onDeleteResource, onToggleLo
             <FaCheck className="text-sm" /> Create Quiz
           </button>
           <button
-            onClick={() => { setResourceType(null); setQuizName(""); setQuizDescription(""); }}
+            onClick={() => {
+              setResourceType(null);
+              setQuizName("");
+              setQuizDescription("");
+            }}
             className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
           >
             <FaTimes /> Cancel
@@ -587,25 +713,38 @@ function ModuleManagement({ lessons, onAddResource, onDeleteResource, onToggleLo
 
       <div className="space-y-3">
         {sortedModules.map((module) => (
-          <div key={module.id} className="group bg-white border border-gray-200 rounded-xl shadow-lg transition-all hover:shadow-xl">
+          <div
+            key={module.id}
+            className="group bg-white border border-gray-200 rounded-xl shadow-lg transition-all hover:shadow-xl"
+          >
             {/* Header */}
             <div className="p-6 flex justify-between items-center">
               <div>
-                <h2 className="text-xl font-bold text-gray-900 mb-2">{module.order}. {module.title}</h2>
+                <h2 className="text-xl font-bold text-gray-900 mb-2">
+                  {module.order}. {module.title}
+                </h2>
                 <p className="text-gray-600">{module.description}</p>
               </div>
               <div className="flex items-center gap-3">
-                <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                  module.isUnlocked ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
-                }`}>
+                <span
+                  className={`px-3 py-1 rounded-full text-sm font-medium ${
+                    module.isUnlocked
+                      ? "bg-green-100 text-green-700"
+                      : "bg-red-100 text-red-700"
+                  }`}
+                >
                   {module.isUnlocked ? "Unlocked" : "Locked"}
                 </span>
                 <div
                   className="relative"
-                  ref={(el) => { menuWrapperRefs.current[module.id] = el; }}
+                  ref={(el) => {
+                    menuWrapperRefs.current[module.id] = el;
+                  }}
                 >
                   <button
-                    onClick={() => setMenuOpenId(menuOpenId === module.id ? null : module.id)}
+                    onClick={() =>
+                      setMenuOpenId(menuOpenId === module.id ? null : module.id)
+                    }
                     className="p-2 rounded-full hover:bg-gray-100 transition-colors"
                   >
                     <FaEllipsisV className="text-gray-600" />
@@ -619,13 +758,17 @@ function ModuleManagement({ lessons, onAddResource, onDeleteResource, onToggleLo
                             className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-3"
                           >
                             {module.isUnlocked ? <FaLock /> : <FaUnlock />}
-                            {module.isUnlocked ? "Lock Lesson" : "Unlock Lesson"}
+                            {module.isUnlocked
+                              ? "Lock Lesson"
+                              : "Unlock Lesson"}
                           </button>
                         </li>
                         <li>
                           <button
                             onClick={() => {
-                              setShowAddResource(showAddResource === module.id ? null : module.id);
+                              setShowAddResource(
+                                showAddResource === module.id ? null : module.id
+                              );
                               setResourceType(null);
                             }}
                             className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-3"
@@ -635,7 +778,7 @@ function ModuleManagement({ lessons, onAddResource, onDeleteResource, onToggleLo
                         </li>
                         <li>
                           <button
-                            onClick={() => deleteModule(module.id)}
+                            onClick={() => requestDeleteLesson(module.id)}
                             className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-3 text-red-600"
                           >
                             <FaTrash /> Delete Lesson
@@ -653,7 +796,9 @@ function ModuleManagement({ lessons, onAddResource, onDeleteResource, onToggleLo
               <div className="px-6 pb-6 mx-2 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-b-xl relative">
                 <div className="pt-4">
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">Add New Resource</h3>
+                    <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+                      Add New Resource
+                    </h3>
                   </div>
 
                   {resourceType !== null && resourceType !== "quiz" && (
@@ -682,7 +827,8 @@ function ModuleManagement({ lessons, onAddResource, onDeleteResource, onToggleLo
             {module.resources.length > 0 && (
               <div className="px-6 pb-6 mt-4">
                 <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                  <FaFile className="text-gray-600" /> Resources ({module.resources.length})
+                  <FaFile className="text-gray-600" /> Resources (
+                  {module.resources.length})
                 </h3>
                 <div className="space-y-3">
                   {module.resources.map((resource) => (
@@ -691,20 +837,30 @@ function ModuleManagement({ lessons, onAddResource, onDeleteResource, onToggleLo
                       className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:border-gray-300 hover:shadow-sm transition-all"
                     >
                       <div className="flex items-center gap-4">
-                        <div className="text-xl">{getResourceIcon(resource.type!)}</div>
+                        <div className="text-xl">
+                          {getResourceIcon(resource.type!)}
+                        </div>
                         <div>
-                          <h4 className="font-medium text-gray-900">{resource.name}</h4>
+                          <h4 className="font-medium text-gray-900">
+                            {resource.name}
+                          </h4>
                           <div className="flex items-center gap-4 text-sm text-gray-600">
-                            <span>Uploaded: {resource.uploadedAt || "Not yet saved"}</span>
-                            {resource.size && <span>Size: {resource.size}</span>}
-                            {resource.duration && <span>Duration: {resource.duration}</span>}
+                            <span>
+                              Uploaded: {resource.uploadedAt || "Not yet saved"}
+                            </span>
+                            {resource.size && (
+                              <span>Size: {resource.size}</span>
+                            )}
+                            {resource.duration && (
+                              <span>Duration: {resource.duration}</span>
+                            )}
                           </div>
                         </div>
                       </div>
                       <div className="flex items-center gap-3 relative">
                         {!resource.id && (
                           <button
-                            onClick={() => onAddResource?.(module.id)}
+                            // onClick={() => onAddResource?.(module.id)}
                             className="bg-green-700 hover:bg-green-600 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
                           >
                             <FaSave /> Save
@@ -712,7 +868,13 @@ function ModuleManagement({ lessons, onAddResource, onDeleteResource, onToggleLo
                         )}
                         <div className="relative">
                           <button
-                            onClick={() => setOpenMenu(openMenu === resource.id ? null : resource.id || null)}
+                            onClick={() =>
+                              setOpenMenu(
+                                openMenu === resource.id
+                                  ? null
+                                  : resource.id || null
+                              )
+                            }
                             className="text-gray-600 hover:text-gray-800 p-2 rounded-lg hover:bg-gray-100 transition-colors"
                           >
                             <FaEllipsisV />
@@ -737,14 +899,25 @@ function ModuleManagement({ lessons, onAddResource, onDeleteResource, onToggleLo
                                       rel="noopener noreferrer"
                                       className="flex items-center gap-2 px-4 py-2 hover:bg-gray-100"
                                     >
-                                      {resource.type === "video" ? <FaPlay /> : <FaExternalLinkAlt />}
-                                      {resource.type === "video" ? "Watch" : "Open"}
+                                      {resource.type === "video" ? (
+                                        <FaPlay />
+                                      ) : (
+                                        <FaExternalLinkAlt />
+                                      )}
+                                      {resource.type === "video"
+                                        ? "Watch"
+                                        : "Open"}
                                     </a>
                                   </li>
                                 )}
                                 <li>
                                   <button
-                                    onClick={() => removeResource(module.id, resource.id as number)}
+                                    onClick={() =>
+                                      removeResource(
+                                        module.id,
+                                        resource.id as number
+                                      )
+                                    }
                                     className="w-full text-left px-4 py-2 text-red-600 hover:bg-red-50 flex items-center gap-2"
                                   >
                                     <FaTrash /> Delete
@@ -773,10 +946,43 @@ function ModuleManagement({ lessons, onAddResource, onDeleteResource, onToggleLo
         <div className="text-center py-12">
           <div className="max-w-md mx-auto">
             <FaFile className="text-6xl text-gray-300 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">No lessons yet</h3>
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">
+              No lessons yet
+            </h3>
             <p className="text-gray-600 mb-6">
               Create your first lesson to start organizing your course content.
             </p>
+          </div>
+        </div>
+      )}
+
+      {modals.showDeleteConfirm && (
+        <div className="fixed inset-0 bg-gradient-to-br from-black/70 via-black/60 to-black/70  z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 animate-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-center w-16 h-16 bg-red-100 rounded-full mx-auto mb-4">
+              <Trash2 className="w-8 h-8 text-red-600" />
+            </div>
+            <h2 className="text-2xl font-bold mb-3 text-center text-gray-900">
+              Delete Lesson?
+            </h2>
+            <p className="text-gray-600 mb-6 text-center">
+              Are you sure you want to delete this lesson? This action cannot be
+              undone.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={confirmDeleteLesson}
+                className="flex-1 bg-gradient-to-r from-red-500 to-red-600 text-white px-4 py-3.5 cursor-pointer rounded-xl hover:shadow-lg transition-all font-bold"
+              >
+                Delete
+              </button>
+              <button
+                onClick={cancelDelete}
+                className="flex-1 bg-white border-2 border-gray-200 text-gray-700 px-4 py-3.5 cursor-pointer rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all font-bold"
+              >
+                Cancel
+              </button>
+            </div>
           </div>
         </div>
       )}

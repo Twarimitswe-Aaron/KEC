@@ -113,6 +113,20 @@ export const lessonApi = apiSlice.injectEndpoints({
       providesTags: (result, error, id) => [{ type: "Lesson" as const, id }],
     }),
 
+     // Delete lesson
+    deleteLesson: builder.mutation<ApiResponse, DeleteLessonRequest>({
+      query: ({ id }) => ({
+        url: `/lesson/lesson/${id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: (result, error, { id, courseId }) => [
+        { type: "Lesson", id },
+        { type: "Lesson", id: "LIST" },
+        { type: "Lesson", id: courseId },
+        { type: "Course", id: courseId },
+      ],
+    }),
+
  
 
     // Update existing lesson
@@ -128,19 +142,7 @@ export const lessonApi = apiSlice.injectEndpoints({
       ],
     }),
 
-    // Delete lesson
-    deleteLesson: builder.mutation<ApiResponse, DeleteLessonRequest>({
-      query: ({ id }) => ({
-        url: `/lesson/${id}`,
-        method: "DELETE",
-      }),
-      invalidatesTags: (result, error, { id, courseId }) => [
-        { type: "Lesson", id },
-        { type: "Lesson", id: "LIST" },
-        { type: "Lesson", id: courseId },
-        { type: "Course", id: courseId },
-      ],
-    }),
+   
 
     // Toggle lesson lock status
     toggleLessonLock: builder.mutation<ApiResponse<Lesson>, ToggleLessonLockRequest>({

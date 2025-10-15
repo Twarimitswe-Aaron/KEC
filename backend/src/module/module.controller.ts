@@ -115,6 +115,11 @@ export class ModuleController {
     });
   }
 
+  @Delete('/lesson/:id')
+  async deleteLessonAlt(@Param('id', ParseIntPipe) id: number) {
+    return this.svc.deleteLesson(id);
+  }
+
   // Delete resource from lesson
   @Delete(':lessonId/resources/:resourceId')
   async deleteResource(

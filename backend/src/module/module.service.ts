@@ -112,14 +112,13 @@ export class ModuleService {
         title: dto.title,
         description: dto.description,
         courseId: dto.courseId,
-        status: dto.isUnlocked ?? true,
+        status: dto.isUnlocked ?? true
       },
       include: {
         resources: true,
       },
     });
 
-    // Update course lesson count
     await this.prisma.course.update({
       where: { id: dto.courseId },
       data: {
@@ -137,8 +136,6 @@ export class ModuleService {
         courseId: lesson.courseId,
         isUnlocked: lesson.status,
         order: lesson.id,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
       },
       success: true,
     };
@@ -196,11 +193,6 @@ export class ModuleService {
     });
     if (!lesson) throw new NotFoundException('Lesson not found');
 
-    // Delete associated resources first
-    await this.prisma.resource.deleteMany({
-      where: { lessonId: id },
-    });
-
     await this.prisma.lesson.delete({
       where: { id },
     });
@@ -214,8 +206,8 @@ export class ModuleService {
     });
 
     return {
-      message: "Lesson deleted successfully",
-      success: true,
+      message: "Lesson deleted successfully"
+   
     };
   }
 
