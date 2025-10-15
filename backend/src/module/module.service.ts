@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateModuleDto } from './dto/create-module.dto';
 import { CreateQuizDto } from './dto/create-quiz.dto';
 import { CreateVideoDto } from './dto/create-video.dto';
+import { identity } from 'rxjs';
 
 @Injectable()
 export class ModuleService {
@@ -32,26 +33,43 @@ export class ModuleService {
    * Create a module under a specific course
    */
   async createModule(courseId: number, dto: CreateModuleDto) {
-    const course = await this.prisma.course.findUnique({ where: { id: courseId } });
-    if (!course) throw new NotFoundException('Course not found');
-
-    // Get the count of existing lessons to determine order
+    const course = await this.prisma.course.findUnique({
+      where: { id: courseId },
+    });
+    if (!course) throw new NotFoundException("Course not found");
+  
     const lessonCount = await this.prisma.lesson.count({
       where: { courseId },
     });
-    const order = dto.order ?? (lessonCount + 1);
-    console.log("is triggered to create a lesson")
-
-    const newLesson= this.prisma.lesson.create({
+    const order = dto.order ?? lessonCount + 1;
+  
+    console.log("is triggered to create a lesson");
+  
+    const updatedCourse = await this.prisma.course.update({
+      where: { id: courseId },
       data: {
-        title: dto.title,
-        description: dto.description ?? '',
-        courseId,
+        lesson: {
+          create: {
+            title: dto.title,
+            description: dto.description ?? "",
+            
+          },
+        },
       },
+      include: { lesson: true }, // ✅ Include lessons in return
     });
-
-    return {message:"Course Created Successfully"} 
+  
+    // ✅ Extract the newly created lesson
+    const newLesson = updatedCourse.lesson[updatedCourse.lesson.length - 1];
+  
+    console.log(newLesson, "✅ it is created");
+  
+    return {
+      message: "Lesson created successfully",
+      lesson: newLesson,
+    };
   }
+  
 
   /**
    * Toggle module lock/unlock
