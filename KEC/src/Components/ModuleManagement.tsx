@@ -168,14 +168,16 @@ const getResourceIcon = (type: string) => {
 
 // Main Component
 function ModuleManagement(lessons: any) {
-  // State
+  // Stateconso
+
   const [showAddResource, setShowAddResource] = useState<number | null>(null);
   const [resourceType, setResourceType] = useState<"pdf" | "video" | "word" | "quiz" | null>(null);
   const [videoLink, setVideoLink] = useState("");
   const [quizName, setQuizName] = useState("");
   const [quizDescription, setQuizDescription] = useState("");
 
-  const [modules, setModules] = useState<ModuleType[]>(Array.isArray(lessons) ? lessons : []);
+
+  const [modules, setModules] = useState<ModuleType[]>(Array.isArray(lessons.lessons) ? lessons.lessons : []);
 
   const [menuOpenId, setMenuOpenId] = useState<number | null>(null);
   const [openQuiz, setOpenQuiz] = useState<number | null>(null);

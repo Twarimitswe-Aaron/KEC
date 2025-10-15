@@ -56,14 +56,13 @@ export class ModuleService {
           },
         },
       },
-      include: { lesson: true }, // ✅ Include lessons in return
+      include: { lesson: true }, 
     });
   
     // ✅ Extract the newly created lesson
     const newLesson = updatedCourse.lesson[updatedCourse.lesson.length - 1];
   
-    console.log(newLesson, "✅ it is created");
-  
+   
     return {
       message: "Lesson created successfully",
       lesson: newLesson,
