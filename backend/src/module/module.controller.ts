@@ -11,9 +11,10 @@ import {
   ParseIntPipe,
   BadRequestException,
   UseGuards,
+  Put,
 } from '@nestjs/common';
 import { ModuleService } from './module.service';
-import { CreateModuleDto } from './dto/create-module.dto';
+import { CreateLessonDto } from './dto/create-lesson.dto';
 import { CreateVideoDto } from './dto/create-video.dto';
 import { CreateQuizDto } from './dto/create-quiz.dto';
 import { SubmitQuizDto } from './dto/submit-quiz.dto';
@@ -25,83 +26,150 @@ import { existsSync, mkdirSync } from 'fs';
 import { AuthGuard } from 'src/auth/auth.guard';
 import { Roles } from 'src/auth/decorators/roles.decorator';
 import { RolesGuard } from 'src/auth/roles.guard';
+import { UpdateLessonDto } from './dto/update-lesson.dto';
+import { ToggleLockDto } from './dto/toggle-lock.dto';
 
 @UseGuards(AuthGuard, RolesGuard)
 @Roles('admin', 'teacher')
-@Controller('modules')
+@Controller('lesson')
 export class ModuleController {
   constructor(private readonly svc: ModuleService) {}
 
-  @Post(':id')
-  create(@Body() dto: CreateModuleDto, @Param('id') id: string) {
-
-    return this.svc.createModule(+id, dto);
+  // Get all lessons by course ID
+  @Get('lesson-by-course/:courseId')
+  async getLessonsByCourse(@Param('courseId', ParseIntPipe) courseId: number) {
+    return this.svc.getLessonsByCourse(courseId);
   }
 
-  // @Patch(':id/toggle-lock')
-  // toggleLock(@Param('id', ParseIntPipe) id: number) {
-  //   return this.svc.toggleLock(id);
-  // }
+  // Get single lesson by ID
+  @Get(':id')
+  async getLessonById(@Param('id', ParseIntPipe) id: number) {
+    return this.svc.getLessonById(id);
+  }
 
-  // @Delete(':id')
-  // delete(@Param('id', ParseIntPipe) id: number) {
-  //   return this.svc.deleteModule(id);
-  // }
+  // Create new lesson
+  @Post()
+  async createLesson(@Body() dto: CreateLessonDto) {
+    return this.svc.createLesson(dto);
+  }
 
-  // // File upload (pdf/word)
-  // @Post(':id/upload')
-  // @UseInterceptors(FileInterceptor('file', {
-  //   storage: diskStorage({
-  //     destination: (req, file, cb) => {
-  //       const dir = join(process.cwd(), 'uploads');
-  //       if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
-  //       cb(null, dir);
-  //     },
-  //     filename: (req, file, cb) => {
-  //       const safe = `${Date.now()}-${randomUUID()}${extname(file.originalname)}`;
-  //       cb(null, safe);
-  //     }
-  //   }),
-  //   limits: { fileSize: 10 * 1024 * 1024 } // 10MB
-  // }))
-  // async uploadFile(
-  //   @Param('id', ParseIntPipe) id: number,
-  //   @UploadedFile() file: Express.Multer.File,
-  //   @Body('type') type: string
-  // ) {
-  //   if (!file) throw new BadRequestException('No file uploaded');
-  //   if (!['pdf', 'word'].includes(type)) throw new BadRequestException('Invalid file type');
-  //   const url = `/uploads/${file.filename}`;
-  //   const size = `${(file.size / 1024 / 1024).toFixed(1)} MB`;
-  //   // type cast
-  //   const rt = type === 'pdf' ? 'pdf' : 'word';
-  //   return this.svc.addFileResource(id, url, file.originalname, size, rt as any);
-  // }
+  // Update existing lesson
+  @Put(':id')
+  async updateLesson(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateLessonDto,
+  ) {
+    return this.svc.updateLesson(id, dto);
+  }
 
-  // // Add video resource
-  // @Post(':id/video')
-  // addVideo(@Param('id', ParseIntPipe) id: number, @Body() dto: CreateVideoDto) {
-  //   return this.svc.addVideoResource(id, dto);
-  // }
+  // Delete lesson
+  @Delete(':id')
+  async deleteLesson(@Param('id', ParseIntPipe) id: number) {
+    return this.svc.deleteLesson(id);
+  }
 
-  // // Add quiz
-  // @Post(':id/quiz')
-  // addQuiz(@Param('id', ParseIntPipe) id: number, @Body() dto: CreateQuizDto) {
-  //   return this.svc.addQuizResource(id, dto);
-  // }
+  // Toggle lesson lock status (using Module since Lesson doesn't have isUnlocked)
+  @Patch(':id/lock')
+  async toggleLessonLock(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: ToggleLockDto,
+  ) {
+    return this.svc.toggleLessonLock(id, dto.isUnlocked);
+  }
 
-  // // Remove resource
-  // @Delete(':moduleId/resources/:resourceId')
-  // removeResource(
-  //   @Param('moduleId', ParseIntPipe) moduleId: number,
-  //   @Param('resourceId', ParseIntPipe) resourceId: number
-  // ) {
-  //   return this.svc.removeResource(moduleId, resourceId);
-  // }
+  // Add resource to lesson
+  @Post(':lessonId/resources')
+  @UseInterceptors(FileInterceptor('file', {
+    storage: diskStorage({
+      destination: (req, file, cb) => {
+        const dir = join(process.cwd(), 'uploads', 'resources');
+        if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+        cb(null, dir);
+      },
+      filename: (req, file, cb) => {
+        const safe = `${Date.now()}-${randomUUID()}${extname(file.originalname)}`;
+        cb(null, safe);
+      }
+    }),
+    limits: { fileSize: 10 * 1024 * 1024 } // 10MB
+  }))
+  async addResource(
+    @Param('lessonId', ParseIntPipe) lessonId: number,
+    @UploadedFile() file: Express.Multer.File,
+    @Body('title') title: string,
+    @Body('type') type: string,
+  ) {
+    if (!file) throw new BadRequestException('No file uploaded');
+    if (!['pdf', 'video', 'word', 'quiz'].includes(type)) {
+      throw new BadRequestException('Invalid file type');
+    }
 
-  // // Submit quiz
-  // @Post('quiz/:quizId/submit')
-  // submitQuiz(@Param('quizId', ParseIntPipe) quizId: number, @Body() dto: SubmitQuizDto) {
-  //   return this.svc.submitQuiz(quizId, dto.responses);
-  // }
+    const url = `/uploads/resources/${file.filename}`;
+    return this.svc.addResource(lessonId, {
+      title,
+      file,
+      type: type as 'pdf' | 'word' | 'video' | 'quiz',
+      url,
+    });
+  }
+
+  // Delete resource from lesson
+  @Delete(':lessonId/resources/:resourceId')
+  async deleteResource(
+    @Param('lessonId', ParseIntPipe) lessonId: number,
+    @Param('resourceId', ParseIntPipe) resourceId: number,
+  ) {
+    return this.svc.deleteResource(lessonId, resourceId);
+  }
+
+  // Reorder lessons
+  @Put('reorder/:courseId')
+  async reorderLessons(
+    @Param('courseId', ParseIntPipe) courseId: number,
+    @Body('lessonIds') lessonIds: number[],
+  ) {
+    if (!lessonIds || !Array.isArray(lessonIds)) {
+      throw new BadRequestException('lessonIds must be an array');
+    }
+    return this.svc.reorderLessons(courseId, lessonIds);
+  }
+
+  // Duplicate lesson
+  @Post(':id/duplicate')
+  async duplicateLesson(@Param('id', ParseIntPipe) id: number) {
+    return this.svc.duplicateLesson(id);
+  }
+
+  // Add video resource (alternative endpoint for video links)
+  @Post(':lessonId/video')
+  async addVideoResource(
+    @Param('lessonId', ParseIntPipe) lessonId: number,
+    @Body() dto: CreateVideoDto,
+  ) {
+    return this.svc.addVideoResource(lessonId, dto);
+  }
+
+  // Add quiz resource
+  @Post(':lessonId/quiz')
+  async addQuizResource(
+    @Param('lessonId', ParseIntPipe) lessonId: number,
+    @Body() dto: CreateQuizDto,
+  ) {
+    return this.svc.addQuizResource(lessonId, dto);
+  }
+
+  // Submit quiz
+  @Post('quiz/:quizId/submit')
+  async submitQuiz(
+    @Param('quizId', ParseIntPipe) quizId: number,
+    @Body() dto: SubmitQuizDto,
+  ) {
+    return this.svc.submitQuiz(quizId, dto.responses);
+  }
+
+  // Module-specific endpoints
+  @Post('module/:courseId')
+  async createModule(@Body() dto: CreateLessonDto, @Param('courseId') courseId: string) {
+    return this.svc.createModule(+courseId, dto);
+  }
 }

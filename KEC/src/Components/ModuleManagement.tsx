@@ -19,12 +19,14 @@ import {
   FaSave,
   FaEye,
 } from "react-icons/fa";
+import { toast } from "react-toastify";
 
 // Types
 type ResourceType = {
   id?: number;
   tempId?: number;
   name?: string;
+  title?: string;
   type?: "pdf" | "video" | "quiz" | "word";
   size?: string;
   uploadedAt: string;
@@ -56,28 +58,39 @@ type QuizResponse = {
   answer: string | string[];
 };
 
-// Constants
-// const MOCK_MODULES: ModuleType[] = [
-//   {
-//     id: 1,
-//     title: "Introduction to React",
-//     description: "Learn the basics of React development",
-//     isUnlocked: true,
-//     order: 1,
-//     createdAt: "2024-01-15T10:00:00Z",
-//     resources: [],
-//   },
-//   {
-//     id: 2,
-//     title: "Advanced JavaScript",
-//     description: "Deep dive into modern JavaScript concepts",
-//     isUnlocked: false,
-//     order: 2,
-//     createdAt: "2024-01-20T14:30:00Z",
-//     resources: [],
-//   },
-// ];
+// Matches backend Resource shape coming from LessonsView
+type IncomingResource = {
+  id: number;
+  url: string;
+  title?: string;
+  type?: string;
+  size?: string;
+  duration?: string;
+  uploadedAt?: string;
+};
 
+interface Lesson {
+  id: number;
+  title: string;
+  content: string;
+  description?: string;
+  courseId?: number;
+  resources?: IncomingResource[];
+  createdAt?: string;
+  updatedAt?: string;
+  isUnlocked?: boolean;
+  order?: number;
+}
+
+interface ModuleManagementProps {
+  lessons: Lesson[];
+  onAddResource?: (lessonId: number) => void;
+  onDeleteResource?: (lessonId: number, resourceId: number) => void;
+  onToggleLock?: (lessonId: number, isUnlocked: boolean) => void;
+  onDeleteLesson?: (lessonId: number) => void;
+}
+
+// Constants
 const SAMPLE_QUIZ: Question[] = [
   {
     id: 1,
@@ -138,7 +151,7 @@ const createResource = (type: "pdf" | "video" | "quiz" | "word", data: any): Res
     case "video":
       return {
         ...baseResource,
-        name: "Video Resource",
+        name: data.name || "Video Resource",
         type: "video",
         size: "N/A",
         url: data.videoLink,
@@ -147,7 +160,7 @@ const createResource = (type: "pdf" | "video" | "quiz" | "word", data: any): Res
     case "quiz":
       return {
         ...baseResource,
-        name: data.name || "React Fundamentals Quiz",
+        name: data.name || "Quiz",
         type: "quiz",
         quiz: SAMPLE_QUIZ,
       };
@@ -166,19 +179,33 @@ const getResourceIcon = (type: string) => {
   return icons[type as keyof typeof icons] || <FaFile />;
 };
 
-// Main Component
-function ModuleManagement(lessons: any) {
-  // Stateconso
+// Convert Lesson to ModuleType
+const lessonToModule = (lesson: Lesson): ModuleType => ({
+  id: lesson.id,
+  title: lesson.title,
+  description: lesson.description || lesson.content || "",
+  isUnlocked: lesson.isUnlocked ?? true,
+  order: lesson.order || lesson.id,
+  createdAt: lesson.createdAt || new Date().toISOString(),
+  resources: lesson.resources?.map(resource => ({
+    id: resource.id,
+    name: resource.title,
+    type: resource.type as "pdf" | "video" | "quiz" | "word",
+    url: resource.url,
+    uploadedAt: new Date().toISOString().split("T")[0],
+  })) || [],
+});
 
+// Main Component
+function ModuleManagement({ lessons, onAddResource, onDeleteResource, onToggleLock, onDeleteLesson }: ModuleManagementProps) {
+  // State
   const [showAddResource, setShowAddResource] = useState<number | null>(null);
   const [resourceType, setResourceType] = useState<"pdf" | "video" | "word" | "quiz" | null>(null);
   const [videoLink, setVideoLink] = useState("");
+  const [videoName, setVideoName] = useState("");
   const [quizName, setQuizName] = useState("");
   const [quizDescription, setQuizDescription] = useState("");
-
-
-  const [modules, setModules] = useState<ModuleType[]>(Array.isArray(lessons.lessons) ? lessons.lessons : []);
-
+  const [modules, setModules] = useState<ModuleType[]>([]);
   const [menuOpenId, setMenuOpenId] = useState<number | null>(null);
   const [openQuiz, setOpenQuiz] = useState<number | null>(null);
   const [quizResponses, setQuizResponses] = useState<Record<number, QuizResponse[]>>({});
@@ -188,6 +215,14 @@ function ModuleManagement(lessons: any) {
   // Refs
   const menuWrapperRefs = useRef<Record<number, HTMLDivElement | null>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Convert lessons to modules when lessons prop changes
+  useEffect(() => {
+    if (Array.isArray(lessons)) {
+      const convertedModules = lessons.map(lessonToModule);
+      setModules(convertedModules);
+    }
+  }, [lessons]);
 
   // Effects
   useEffect(() => {
@@ -205,6 +240,7 @@ function ModuleManagement(lessons: any) {
         setOpenQuiz(null);
         setResourceType(null);
         setVideoLink("");
+        setVideoName("");
         setQuizName("");
         setQuizDescription("");
       }
@@ -221,16 +257,35 @@ function ModuleManagement(lessons: any) {
 
   // Handlers
   const toggleModuleUnlock = (moduleId: number) => {
-    setModules(prev => prev.map(m => 
-        m.id === moduleId ? { ...m, isUnlocked: !m.isUnlocked } : m
-    ));
-    setMenuOpenId(null);
+    const module = modules.find(m => m.id === moduleId);
+    if (module) {
+      const newUnlockedStatus = !module.isUnlocked;
+      
+      // Update local state
+      setModules(prev => prev.map(m => 
+        m.id === moduleId ? { ...m, isUnlocked: newUnlockedStatus } : m
+      ));
+      
+      // Call parent handler if provided
+      if (onToggleLock) {
+        onToggleLock(moduleId, newUnlockedStatus);
+      }
+      
+      setMenuOpenId(null);
+    }
   };
 
   const deleteModule = (moduleId: number) => {
-    if (window.confirm("Are you sure you want to delete this module?")) {
+    if (window.confirm("Are you sure you want to delete this lesson?")) {
+      // Update local state
       setModules(prev => prev.filter(m => m.id !== moduleId));
       setMenuOpenId(null);
+      
+      // Call parent handler if provided
+      if (onDeleteLesson) {
+        onDeleteLesson(moduleId);
+      }
+      
       if (showAddResource === moduleId) setShowAddResource(null);
     }
   };
@@ -238,24 +293,32 @@ function ModuleManagement(lessons: any) {
   const handleFileUpload = (moduleId: number, file: File, type: "pdf" | "word") => {
     const resource = createResource(type, { file });
     updateModuleResources(moduleId, resource);
+    toast.success(`${type.toUpperCase()} file uploaded successfully!`);
   };
 
   const handleVideoLinkSubmit = (moduleId: number) => {
     if (!videoLink.trim()) {
-      alert("Please enter a valid video URL");
+      toast.error("Please enter a valid video URL");
+      return;
+    }
+
+    if (!videoName.trim()) {
+      toast.error("Please enter a video title");
       return;
     }
 
     try {
       new URL(videoLink);
     } catch (e) {
-      alert("Please enter a valid URL");
+      toast.error("Please enter a valid URL");
       return;
     }
 
-    const resource = createResource("video", { videoLink });
+    const resource = createResource("video", { videoLink, name: videoName });
     updateModuleResources(moduleId, resource);
     setVideoLink("");
+    setVideoName("");
+    toast.success("Video resource added successfully!");
   };
 
   const addQuizResource = (moduleId: number, name: string, description: string = "") => {
@@ -263,6 +326,7 @@ function ModuleManagement(lessons: any) {
     updateModuleResources(moduleId, resource);
     setQuizName("");
     setQuizDescription("");
+    toast.success("Quiz created successfully!");
   };
 
   const removeResource = (moduleId: number, resourceId: number) => {
@@ -270,6 +334,9 @@ function ModuleManagement(lessons: any) {
       setModules(prev => prev.map(m =>
         m.id === moduleId ? { ...m, resources: m.resources.filter(r => r.id !== resourceId) } : m
       ));
+      
+      // Call parent handler if provided
+      onDeleteResource?.(moduleId, resourceId);
     }
   };
 
@@ -379,28 +446,44 @@ function ModuleManagement(lessons: any) {
           <p className="text-sm text-gray-600">Paste the URL of your video resource</p>
         </div>
       </div>
-      <div className="flex flex-col sm:flex-row gap-3">
-        <input
-          type="url"
-          value={videoLink}
-          onChange={(e) => setVideoLink(e.target.value)}
-          placeholder="https://example.com/video.mp4"
-          className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-        />
-        <div className="flex gap-2">
-          <button
-            onClick={() => handleVideoLinkSubmit(moduleId)}
-            className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-3 rounded-lg transition-colors flex items-center gap-2 whitespace-nowrap"
-          >
-            <FaCheck className="text-sm" /> Add Video
-          </button>
-          <button
-            onClick={() => { setResourceType(null); setVideoLink(""); }}
-            className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-3 rounded-lg transition-colors flex items-center gap-2"
-          >
-            <FaTimes /> Cancel
-          </button>
+      
+      <div className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Video Title</label>
+          <input
+            type="text"
+            value={videoName}
+            onChange={(e) => setVideoName(e.target.value)}
+            placeholder="Enter video title"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+          />
         </div>
+        
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Video URL</label>
+          <input
+            type="url"
+            value={videoLink}
+            onChange={(e) => setVideoLink(e.target.value)}
+            placeholder="https://example.com/video.mp4"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+          />
+        </div>
+      </div>
+
+      <div className="flex gap-2 mt-4">
+        <button
+          onClick={() => handleVideoLinkSubmit(moduleId)}
+          className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2 whitespace-nowrap"
+        >
+          <FaCheck className="text-sm" /> Add Video
+        </button>
+        <button
+          onClick={() => { setResourceType(null); setVideoLink(""); setVideoName(""); }}
+          className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
+        >
+          <FaTimes /> Cancel
+        </button>
       </div>
     </div>
   );
@@ -474,7 +557,7 @@ function ModuleManagement(lessons: any) {
           <button
             onClick={() => {
               if (!quizName.trim()) {
-                alert("Please enter a quiz name");
+                toast.error("Please enter a quiz name");
                 return;
               }
               addQuizResource(moduleId, quizName, quizDescription);
@@ -536,7 +619,7 @@ function ModuleManagement(lessons: any) {
                             className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-3"
                           >
                             {module.isUnlocked ? <FaLock /> : <FaUnlock />}
-                            {module.isUnlocked ? "Lock Module" : "Unlock Module"}
+                            {module.isUnlocked ? "Lock Lesson" : "Unlock Lesson"}
                           </button>
                         </li>
                         <li>
@@ -555,7 +638,7 @@ function ModuleManagement(lessons: any) {
                             onClick={() => deleteModule(module.id)}
                             className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-3 text-red-600"
                           >
-                            <FaTrash /> Delete Module
+                            <FaTrash /> Delete Lesson
                           </button>
                         </li>
                       </ul>
@@ -571,10 +654,6 @@ function ModuleManagement(lessons: any) {
                 <div className="pt-4">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">Add New Resource</h3>
-                    <div className="flex items-center gap-2">
-                    
-                 
-                    </div>
                   </div>
 
                   {resourceType !== null && resourceType !== "quiz" && (
@@ -625,7 +704,7 @@ function ModuleManagement(lessons: any) {
                       <div className="flex items-center gap-3 relative">
                         {!resource.id && (
                           <button
-                            onClick={() => console.log("Saving resource:", resource)}
+                            onClick={() => onAddResource?.(module.id)}
                             className="bg-green-700 hover:bg-green-600 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
                           >
                             <FaSave /> Save
@@ -694,11 +773,10 @@ function ModuleManagement(lessons: any) {
         <div className="text-center py-12">
           <div className="max-w-md mx-auto">
             <FaFile className="text-6xl text-gray-300 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">No lesson yet</h3>
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">No lessons yet</h3>
             <p className="text-gray-600 mb-6">
               Create your first lesson to start organizing your course content.
             </p>
-           
           </div>
         </div>
       )}

@@ -1,7 +1,7 @@
 import { apiSlice } from "./apiSlice";
 
 // Types
-interface Lesson {
+export interface Lesson {
   id: number;
   title: string;
   content: string;
@@ -10,49 +10,77 @@ interface Lesson {
   resources?: Resource[];
   createdAt?: string;
   updatedAt?: string;
+  isUnlocked?: boolean;
+  order?: number;
 }
 
-interface Resource {
+export interface Resource {
   id: number;
   url: string;
   title?: string;
   type?: string;
+  size?: string;
+  duration?: string;
+  uploadedAt?: string;
 }
 
-interface CreateLessonRequest {
+export interface CreateLessonRequest {
   courseId: number;
   title: string;
   description: string;
+  content?: string;
+  isUnlocked?: boolean;
+  order?: number;
 }
 
-interface UpdateLessonRequest {
+export interface UpdateLessonRequest {
   id: number;
   title?: string;
   description?: string;
   content?: string;
+  isUnlocked?: boolean;
+  order?: number;
 }
 
-interface DeleteLessonRequest {
+export interface DeleteLessonRequest {
   id: number;
   courseId: number;
 }
 
-interface ApiResponse {
+export interface ToggleLessonLockRequest {
+  id: number;
+  isUnlocked: boolean;
+}
+
+export interface AddResourceRequest {
+  lessonId: number;
+  title: string;
+  file: File;
+  type: string;
+}
+
+export interface DeleteResourceRequest {
+  lessonId: number;
+  resourceId: number;
+}
+
+export interface ApiResponse<T = any> {
   message: string;
-  data?: any;
+  data?: T;
+  success: boolean;
 }
 
 export const lessonApi = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
     // Get all lessons by course ID
     getLessonByCourseId: builder.query<Lesson[], number>({
-      query: (id) => ({
-        url: `/lesson/lesson-by-course/${id}`,
+      query: (courseId) => ({
+        url: `/lesson/lesson-by-course/${courseId}`,
         method: "GET",
       }),
-      providesTags: (result, error, id) => [
-        { type: "Lesson", id: "LIST" },
-        { type: "Lesson", id },
+      providesTags: (result, error, courseId) => [
+        { type: "Lesson" as const, id: "LIST" },
+        { type: "Lesson" as const, id: courseId },
       ],
     }),
 
@@ -62,15 +90,22 @@ export const lessonApi = apiSlice.injectEndpoints({
         url: `/lesson/${id}`,
         method: "GET",
       }),
-      providesTags: (result, error, id) => [{ type: "Lesson", id }],
+      providesTags: (result, error, id) => [{ type: "Lesson" as const, id }],
     }),
 
     // Create new lesson
-    createLesson: builder.mutation<ApiResponse, CreateLessonRequest>({
-      query: ({ courseId, title, description }) => ({
-        url: `/modules/${courseId}`,
+    createLesson: builder.mutation<ApiResponse<Lesson>, CreateLessonRequest>({
+      query: ({ courseId, title, description, content, isUnlocked, order }) => ({
+        url: `/lesson`,
         method: "POST",
-        body: { title, description },
+        body: { 
+          courseId, 
+          title, 
+          description, 
+          content: content || description,
+          isUnlocked: isUnlocked ?? true,
+          order: order || 0
+        },
       }),
       invalidatesTags: (result, error, { courseId }) => [
         { type: "Lesson", id: "LIST" },
@@ -80,7 +115,7 @@ export const lessonApi = apiSlice.injectEndpoints({
     }),
 
     // Update existing lesson
-    updateLesson: builder.mutation<ApiResponse, UpdateLessonRequest>({
+    updateLesson: builder.mutation<ApiResponse<Lesson>, UpdateLessonRequest>({
       query: ({ id, ...patch }) => ({
         url: `/lesson/${id}`,
         method: "PUT",
@@ -106,7 +141,53 @@ export const lessonApi = apiSlice.injectEndpoints({
       ],
     }),
 
-    // Reorder lessons (if you need drag & drop functionality)
+    // Toggle lesson lock status
+    toggleLessonLock: builder.mutation<ApiResponse<Lesson>, ToggleLessonLockRequest>({
+      query: ({ id, isUnlocked }) => ({
+        url: `/lesson/${id}/lock`,
+        method: "PATCH",
+        body: { isUnlocked },
+      }),
+      invalidatesTags: (result, error, { id }) => [
+        { type: "Lesson", id },
+        { type: "Lesson", id: "LIST" },
+      ],
+    }),
+
+    // Add resource to lesson
+    addResource: builder.mutation<ApiResponse<Resource>, AddResourceRequest>({
+      query: ({ lessonId, title, file, type }) => {
+        const formData = new FormData();
+        formData.append('lessonId', lessonId.toString());
+        formData.append('title', title);
+        formData.append('file', file);
+        formData.append('type', type);
+        
+        return {
+          url: `/lesson/${lessonId}/resources`,
+          method: "POST",
+          body: formData,
+        };
+      },
+      invalidatesTags: (result, error, { lessonId }) => [
+        { type: "Lesson", id: lessonId },
+        { type: "Lesson", id: "LIST" },
+      ],
+    }),
+
+    // Delete resource from lesson
+    deleteResource: builder.mutation<ApiResponse, DeleteResourceRequest>({
+      query: ({ lessonId, resourceId }) => ({
+        url: `/lesson/${lessonId}/resources/${resourceId}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: (result, error, { lessonId }) => [
+        { type: "Lesson", id: lessonId },
+        { type: "Lesson", id: "LIST" },
+      ],
+    }),
+
+    // Reorder lessons
     reorderLessons: builder.mutation<
       ApiResponse,
       { courseId: number; lessonIds: number[] }
@@ -123,7 +204,7 @@ export const lessonApi = apiSlice.injectEndpoints({
     }),
 
     // Duplicate lesson
-    duplicateLesson: builder.mutation<ApiResponse, { id: number; courseId: number }>({
+    duplicateLesson: builder.mutation<ApiResponse<Lesson>, { id: number; courseId: number }>({
       query: ({ id }) => ({
         url: `/lesson/${id}/duplicate`,
         method: "POST",
@@ -132,22 +213,6 @@ export const lessonApi = apiSlice.injectEndpoints({
         { type: "Lesson", id: "LIST" },
         { type: "Lesson", id: courseId },
         { type: "Course", id: courseId },
-      ],
-    }),
-
-    // Toggle lesson visibility/lock status
-    toggleLessonVisibility: builder.mutation<
-      ApiResponse,
-      { id: number; isVisible: boolean }
-    >({
-      query: ({ id, isVisible }) => ({
-        url: `/lesson/${id}/visibility`,
-        method: "PATCH",
-        body: { isVisible },
-      }),
-      invalidatesTags: (result, error, { id }) => [
-        { type: "Lesson", id },
-        { type: "Lesson", id: "LIST" },
       ],
     }),
   }),
@@ -160,7 +225,9 @@ export const {
   useCreateLessonMutation,
   useUpdateLessonMutation,
   useDeleteLessonMutation,
+  useToggleLessonLockMutation,
+  useAddResourceMutation,
+  useDeleteResourceMutation,
   useReorderLessonsMutation,
   useDuplicateLessonMutation,
-  useToggleLessonVisibilityMutation,
 } = lessonApi;
