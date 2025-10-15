@@ -572,36 +572,8 @@ function ModuleManagement(lessons: any) {
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">Add New Resource</h3>
                     <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => console.log("Saving resource for module:", module.id)}
-                        className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-sm transition-all"
-                      >
-                        <FaSave className="text-sm" /> Save
-                      </button>
-                      <div className="relative">
-                        <button
-                          onClick={() => setShowDropdown(showDropdown === module.id ? null : module.id)}
-                          className="p-2 hover:bg-gray-100 rounded-full transition-all"
-                        >
-                          <FaEllipsisV className="text-gray-600" />
-                        </button>
-                        {showDropdown === module.id && (
-                          <div className="absolute right-0 top-9 bg-white border shadow-lg rounded-lg w-36 z-50">
-                            <button
-                              onClick={() => { setShowDropdown(null); console.log("Viewing resource for module:", module.id); }}
-                              className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-gray-100 text-gray-700"
-                            >
-                              <FaEye className="text-sm" /> View
-                            </button>
-                            <button
-                              onClick={() => { setShowDropdown(null); console.log("Deleting resource for module:", module.id); }}
-                              className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-gray-100 text-red-600"
-                            >
-                              <FaTrash className="text-sm" /> Delete
-                            </button>
-                          </div>
-                        )}
-                      </div>
+                    
+                 
                     </div>
                   </div>
 

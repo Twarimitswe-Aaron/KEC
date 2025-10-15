@@ -83,6 +83,14 @@ export const courseApi = apiSlice.injectEndpoints({
         body: { id },
       }),
     }),
+    updateCourse: builder.mutation<{ message: string }, FormData>({
+      query: (formData) => ({
+        url: `/course/update-course`,
+        method: "PUT",
+        body: formData,
+      }),
+      invalidatesTags: ["Course"],
+    }),
     getCourseData:builder.query<getSpecificCourseData, number>({
       query:(id)=>`/course/course/${id}`,
       providesTags: ["Course"]
@@ -96,5 +104,6 @@ export const {
   useGetUnconfirmedCoursesQuery,
   useConfirmCourseMutation,
   useDeleteCourseMutation,
+  useUpdateCourseMutation,
   useGetCourseDataQuery
 } = courseApi;
