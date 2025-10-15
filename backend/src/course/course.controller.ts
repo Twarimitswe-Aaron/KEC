@@ -9,6 +9,7 @@ import {
   UseGuards,
   UseInterceptors,
   UploadedFile,
+  Put,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { CourseService } from './course.service';
@@ -107,5 +108,31 @@ export class CourseController {
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.courseService.remove(+id);
+  }
+
+  @Put('/update-course')
+   @UseInterceptors(
+    FileInterceptor('course_avatar', {
+      storage: diskStorage({
+        destination: './uploads/course_url',
+        filename: (req, file, cb) => {
+          const uniqueSuffix =
+            Date.now() + '-' + Math.round(Math.random() * 1e9);
+          const ext = file.originalname.split('.').pop();
+          cb(null, `${file.fieldname}-${uniqueSuffix}.${ext}`);
+        },
+      }),
+    }),
+  )
+  updateCourse(
+    @Body() updateCourseDto: UpdateCourseDto,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    if (file) {
+      updateCourseDto.image_url = file
+        ? `${this.configService.get('BACKEND_URL')}/uploads/course_url/${file.filename}`
+        : '';
+    }
+    return this.courseService.updateCourse(updateCourseDto);
   }
 }

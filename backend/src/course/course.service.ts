@@ -26,6 +26,7 @@ export class CourseService {
   }
 
   async getCourseById(id: number) {
+    console.log("Fetching course with ID:", id);
 
     const course = await this.prisma.course.findUnique({
       where: { id: id },
@@ -124,6 +125,25 @@ export class CourseService {
       },
     }));
   }
+
+  async updateCourse( updateCourseDto: UpdateCourseDto) {
+    const { title, description, price, image_url, maximum,open } = updateCourseDto;
+    await this.prisma.course.update({
+      where: { id: Number(updateCourseDto.id) },
+      data: {
+        title,
+        description,
+        coursePrice: price,
+        image_url,
+        maximum: Number(maximum),
+        open:Boolean(open)
+        
+      },
+    });
+    return { message: 'Course updated successfully'}
+    }
+
+  
 
   findOne(id: number) {
     return `This action returns a #${id} course`;

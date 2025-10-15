@@ -35,6 +35,13 @@ import { ToggleLockDto } from './dto/toggle-lock.dto';
 export class ModuleController {
   constructor(private readonly svc: ModuleService) {}
 
+  
+  // Create new lesson
+  @Post()
+  async createLesson(@Body() dto: CreateLessonDto) {
+    return this.svc.createLesson(dto);
+  }
+
   // Get all lessons by course ID
   @Get('lesson-by-course/:courseId')
   async getLessonsByCourse(@Param('courseId', ParseIntPipe) courseId: number) {
@@ -47,11 +54,6 @@ export class ModuleController {
     return this.svc.getLessonById(id);
   }
 
-  // Create new lesson
-  @Post()
-  async createLesson(@Body() dto: CreateLessonDto) {
-    return this.svc.createLesson(dto);
-  }
 
   // Update existing lesson
   @Put(':id')

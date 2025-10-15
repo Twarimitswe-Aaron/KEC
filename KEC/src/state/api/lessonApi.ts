@@ -72,6 +72,26 @@ export interface ApiResponse<T = any> {
 
 export const lessonApi = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
+       // Create new lesson
+    createLesson: builder.mutation<ApiResponse<Lesson>, CreateLessonRequest>({
+      query: ({ courseId, title, description, content, isUnlocked, order }) => ({
+        url: `/lesson`,
+        method: "POST",
+        body: { 
+          courseId, 
+          title, 
+          description, 
+          content: content || description,
+          isUnlocked: isUnlocked ?? true,
+          order: order || 0
+        },
+      }),
+      invalidatesTags: (result, error, { courseId }) => [
+        { type: "Lesson", id: "LIST" },
+        { type: "Lesson", id: courseId },
+        { type: "Course", id: courseId },
+      ],
+    }),
     // Get all lessons by course ID
     getLessonByCourseId: builder.query<Lesson[], number>({
       query: (courseId) => ({
@@ -93,26 +113,7 @@ export const lessonApi = apiSlice.injectEndpoints({
       providesTags: (result, error, id) => [{ type: "Lesson" as const, id }],
     }),
 
-    // Create new lesson
-    createLesson: builder.mutation<ApiResponse<Lesson>, CreateLessonRequest>({
-      query: ({ courseId, title, description, content, isUnlocked, order }) => ({
-        url: `/lesson`,
-        method: "POST",
-        body: { 
-          courseId, 
-          title, 
-          description, 
-          content: content || description,
-          isUnlocked: isUnlocked ?? true,
-          order: order || 0
-        },
-      }),
-      invalidatesTags: (result, error, { courseId }) => [
-        { type: "Lesson", id: "LIST" },
-        { type: "Lesson", id: courseId },
-        { type: "Course", id: courseId },
-      ],
-    }),
+ 
 
     // Update existing lesson
     updateLesson: builder.mutation<ApiResponse<Lesson>, UpdateLessonRequest>({

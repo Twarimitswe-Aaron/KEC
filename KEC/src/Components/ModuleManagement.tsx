@@ -585,9 +585,9 @@ function ModuleManagement({ lessons, onAddResource, onDeleteResource, onToggleLo
     <div>
       <input type="file" ref={fileInputRef} style={{ display: "none" }} />
 
-      <div className="space-y-8">
+      <div className="space-y-3">
         {sortedModules.map((module) => (
-          <div key={module.id} className="group bg-white rounded-xl shadow-lg transition-all hover:shadow-xl">
+          <div key={module.id} className="group bg-white border border-gray-200 rounded-xl shadow-lg transition-all hover:shadow-xl">
             {/* Header */}
             <div className="p-6 flex justify-between items-center">
               <div>

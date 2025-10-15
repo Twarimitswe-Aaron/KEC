@@ -103,6 +103,7 @@ model Lesson {
   title       String
   description String
   status      Boolean @default(false)
+  createdAt   DateTime @default(now())
 
   courseId Int
   course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)

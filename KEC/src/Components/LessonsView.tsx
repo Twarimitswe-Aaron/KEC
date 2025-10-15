@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from "react";
 import ModuleManagement from "../Components/ModuleManagement";
 import { useParams } from "react-router-dom";
-import { 
-  useCreateLessonMutation, 
-  useDeleteLessonMutation 
+import {
+  useCreateLessonMutation,
+  useDeleteLessonMutation,
 } from "../state/api/lessonApi";
-import { 
-  useGetCourseDataQuery, 
-  useUpdateCourseMutation, 
-  useDeleteCourseMutation 
+import {
+  useGetCourseDataQuery,
+  useUpdateCourseMutation,
+  useDeleteCourseMutation,
 } from "../state/api/courseApi";
 import { X, Edit3, Trash2, Image, BookOpen, Users } from "lucide-react";
 import { toast } from "react-toastify";
@@ -89,10 +89,13 @@ const LessonsView = () => {
     error,
     refetch: refetchCourse,
   } = useGetCourseDataQuery(Number(id));
-  
-  const [addLesson, { isLoading: isCreatingLesson }] = useCreateLessonMutation();
-  const [updateCourse, { isLoading: isUpdatingCourse }] = useUpdateCourseMutation();
-  const [deleteCourse, { isLoading: isDeletingCourse }] = useDeleteCourseMutation();
+
+  const [addLesson, { isLoading: isCreatingLesson }] =
+    useCreateLessonMutation();
+  const [updateCourse, { isLoading: isUpdatingCourse }] =
+    useUpdateCourseMutation();
+  const [deleteCourse, { isLoading: isDeletingCourse }] =
+    useDeleteCourseMutation();
 
   // State
   const [modals, setModals] = useState<ModalStates>({
@@ -161,7 +164,7 @@ const LessonsView = () => {
         title: title.trim(),
         description: description.trim(),
       }).unwrap();
-      
+
       toast.success(response?.message || "Lesson created successfully");
       updateModals({ showAddModule: false });
       resetForm("lesson");
@@ -235,8 +238,8 @@ const LessonsView = () => {
     }
 
     try {
-      const response = await updateCourse(courseFormData).unwrap();
-      toast.success(response?.message || "Course updated successfully");
+      const {message} = await updateCourse(courseFormData).unwrap();
+      toast.success(message || "Course updated successfully");
       updateModals({ showEditForm: false });
       refetchCourse(); // Refresh course data
     } catch (error: any) {
@@ -291,8 +294,12 @@ const LessonsView = () => {
           <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <X className="w-8 h-8 text-red-600" />
           </div>
-          <p className="text-red-600 text-lg font-bold mb-2">Failed to Load Course</p>
-          <p className="text-gray-600 mb-4">We couldn't fetch the course data. Please try again.</p>
+          <p className="text-red-600 text-lg font-bold mb-2">
+            Failed to Load Course
+          </p>
+          <p className="text-gray-600 mb-4">
+            We couldn't fetch the course data. Please try again.
+          </p>
           <button
             onClick={() => refetchCourse()}
             className="bg-[#034153] text-white px-6 py-2.5 rounded-lg font-semibold hover:bg-[#025a73] transition-all"
@@ -317,7 +324,9 @@ const LessonsView = () => {
     <div className="bg-gradient-to-r from-[#034153] to-[#004e64] px-6 py-4 flex justify-between items-center rounded-t-2xl">
       <div>
         <h2 className="text-2xl font-bold text-white">{title}</h2>
-        {subtitle && <p className="text-[#a8dadc] text-sm mt-0.5">{subtitle}</p>}
+        {subtitle && (
+          <p className="text-[#a8dadc] text-sm mt-0.5">{subtitle}</p>
+        )}
       </div>
       <button
         onClick={onClose}
@@ -371,21 +380,30 @@ const LessonsView = () => {
               {courseData?.title}
             </h1>
             <p className="text-md text-gray-600 mt-2 max-w-2xl">
-              Organize your course content, manage access permissions, and upload
-              learning materials
+              Organize your course content, manage access permissions, and
+              upload learning materials
             </p>
             <div className="flex mt-4 items-center gap-6 text-sm">
               <span className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-lg shadow-sm">
                 <BookOpen className="w-4 h-4 text-green-500" />
-                <span className="font-semibold text-gray-700">{unlockedCount} Lessons</span>
+                <span className="font-semibold text-gray-700">
+                  {unlockedCount}{" "}
+                  <span className="sm:inline hidden">Lessons</span>
+                </span>
               </span>
               <span className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-lg shadow-sm">
                 <div className="w-3 h-3 bg-blue-500 rounded-full" />
-                <span className="font-semibold text-gray-700">{totalResources} Resources</span>
+                <span className="font-semibold text-gray-700">
+                  {totalResources}{" "}
+                  <span className="sm:inline hidden">Resources</span>
+                </span>
               </span>
               <span className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-lg shadow-sm">
                 <Users className="w-4 h-4 text-purple-500" />
-                <span className="font-semibold text-gray-700">Max {courseData?.maximum || 0}</span>
+                <span className="font-semibold text-gray-700">
+                  <span className="sm:inline hidden">Max</span>{" "}
+                  {courseData?.maximum || 0}
+                </span>
               </span>
             </div>
           </div>
@@ -591,7 +609,9 @@ const LessonsView = () => {
                     Course Price (RWF) <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
-                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-semibold">₣</span>
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-semibold">
+                      ₣
+                    </span>
                     <input
                       type="number"
                       placeholder="0.00"
@@ -638,8 +658,14 @@ const LessonsView = () => {
                   >
                     Course is open for enrollment
                   </label>
-                  <span className={`text-xs font-semibold px-3 py-1 rounded-full ${forms.course.isOpen ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
-                    {forms.course.isOpen ? 'Open' : 'Closed'}
+                  <span
+                    className={`text-xs font-semibold px-3 py-1 rounded-full ${
+                      forms.course.isOpen
+                        ? "bg-green-100 text-green-700"
+                        : "bg-gray-100 text-gray-600"
+                    }`}
+                  >
+                    {forms.course.isOpen ? "Open" : "Closed"}
                   </span>
                 </div>
               </div>
@@ -671,7 +697,10 @@ const LessonsView = () => {
               Delete Course?
             </h2>
             <p className="text-gray-600 mb-6 text-center">
-              Are you sure you want to delete <span className="font-semibold">"{courseData?.title}"</span>? This action cannot be undone and all lessons will be permanently removed.
+              Are you sure you want to delete{" "}
+              <span className="font-semibold">"{courseData?.title}"</span>? This
+              action cannot be undone and all lessons will be permanently
+              removed.
             </p>
             <div className="flex gap-3">
               <button

@@ -26,22 +26,22 @@ export interface getAllUploaded {
   };
 }
 
-export interface getSpecificCourseData{
-  id:number;
-  title:string;
-  description:string;
-  price:string;
-  image_url:string;
-  no_lessons:string;
-  open:boolean;
-  isConfirmed:boolean;
-  maximum:number;
-  lesson:{
-    id:number;
-    title:string;
-    content:string;
-    resources:{id:number;url:string;}[]
-  }[],
+export interface getSpecificCourseData {
+  id: number;
+  title: string;
+  description: string;
+  price: string;
+  image_url: string;
+  no_lessons: string;
+  open: boolean;
+  isConfirmed: boolean;
+  maximum: number;
+  lesson: {
+    id: number;
+    title: string;
+    content: string;
+    resources: { id: number; url: string }[];
+  }[];
   uploader: {
     id: number;
     email: string;
@@ -82,6 +82,7 @@ export const courseApi = apiSlice.injectEndpoints({
         method: "POST",
         body: { id },
       }),
+      invalidatesTags: ["Course"],
     }),
     updateCourse: builder.mutation<{ message: string }, FormData>({
       query: (formData) => ({
@@ -89,12 +90,25 @@ export const courseApi = apiSlice.injectEndpoints({
         method: "PUT",
         body: formData,
       }),
-      invalidatesTags: ["Course"],
+      // More specific invalidation (optional, better)
+      invalidatesTags: (result, error, formData) => {
+        const courseId = formData.get("id");
+        return [
+          {
+            type: "Course",
+            id:
+              typeof courseId === "string" || typeof courseId === "number"
+                ? courseId
+                : undefined,
+          },
+        ];
+      },
     }),
-    getCourseData:builder.query<getSpecificCourseData, number>({
-      query:(id)=>`/course/course/${id}`,
-      providesTags: ["Course"]
-    })
+
+    getCourseData: builder.query<getSpecificCourseData, number>({
+      query: (id) => `/course/course/${id}`,
+      providesTags: ["Course"],
+    }),
   }),
 });
 
@@ -105,5 +119,5 @@ export const {
   useConfirmCourseMutation,
   useDeleteCourseMutation,
   useUpdateCourseMutation,
-  useGetCourseDataQuery
+  useGetCourseDataQuery,
 } = courseApi;

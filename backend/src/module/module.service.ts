@@ -10,9 +10,6 @@ import { AddResourceDto } from './dto/add-resource.dto';
 export class ModuleService {
   constructor(private prisma: PrismaService) {}
 
-  /**
-   * Get all lessons by course ID
-   */
   async getLessonsByCourse(courseId: number) {
     const course = await this.prisma.course.findUnique({ 
       where: { id: courseId } 
@@ -32,7 +29,7 @@ export class ModuleService {
           },
         },
       },
-      orderBy: { id: 'asc' }, // Using id since order field doesn't exist in Lesson
+      orderBy: { id: 'desc' }, // Using id since order field doesn't exist in Lesson
     });
 
     // Transform to match frontend interface
