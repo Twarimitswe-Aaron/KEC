@@ -71,12 +71,13 @@ export class ModuleController {
   }
 
   // Toggle lesson lock status (using Module since Lesson doesn't have isUnlocked)
-  @Patch(':id/lock')
+  @Patch('/lock/:id')
   async toggleLessonLock(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id') id: number,
     @Body() dto: ToggleLockDto,
   ) {
-    return this.svc.toggleLessonLock(id, dto.isUnlocked);
+   
+    return this.svc.toggleLessonLock(id, dto);
   }
 
   // Add resource to lesson

@@ -20,7 +20,7 @@ import {
   FaEye,
 } from "react-icons/fa";
 import { toast } from "react-toastify";
-import { useDeleteLessonMutation } from "../state/api/lessonApi";
+import { useDeleteLessonMutation,useToggleLessonLockMutation } from "../state/api/lessonApi";
 import { Trash2 } from "lucide-react";
 
 // Types
@@ -217,6 +217,7 @@ function ModuleManagement({ lessons, courseId }: ModuleManagementProps) {
     Record<number, QuizResponse[]>
   >({});
   const [deleteLesson] = useDeleteLessonMutation();
+  const [toggleLessonLock] = useToggleLessonLockMutation();
   const [openMenu, setOpenMenu] = useState<number | null>(null);
 
   // Refs
@@ -267,24 +268,7 @@ function ModuleManagement({ lessons, courseId }: ModuleManagementProps) {
     };
   }, [menuOpenId]);
 
-  // Handlers
-  const toggleModuleUnlock = (moduleId: number) => {
-    const module = modules.find((m) => m.id === moduleId);
-    if (module) {
-      const newUnlockedStatus = !module.isUnlocked;
-
-      // Update local state
-      setModules((prev) =>
-        prev.map((m) =>
-          m.id === moduleId ? { ...m, isUnlocked: newUnlockedStatus } : m
-        )
-      );
-
-      // Call parent handler if provide
-
-      setMenuOpenId(null);
-    }
-  };
+ 
   function updateModals(updated: { showDeleteConfirm: boolean }) {
     setModals((prev) => ({ ...prev, ...updated }));
   }
@@ -319,6 +303,31 @@ function ModuleManagement({ lessons, courseId }: ModuleManagementProps) {
     updateModals({ showDeleteConfirm: false });
     setLessonToDelete(null);
   };
+
+
+ const toggleModuleUnlock = (moduleId: number) => {
+  const module = modules.find(m => m.id === moduleId);
+  console.log(modules,"check if backend is affecting stuffs");
+  if (!module) return;
+  console.log(module,"it is being called");
+
+  const isUnlocked = !module.isUnlocked;
+
+  setModules(prev =>
+    prev.map(m => m.id === moduleId ? { ...m, isUnlocked } : m)
+  );
+
+  toggleLessonLock({ id: moduleId, isUnlocked, courseId })
+    .unwrap()
+    .then(res => toast.success(res.message))
+    .catch(error => {
+      setModules(prev =>
+        prev.map(m => m.id === moduleId ? { ...m, isUnlocked: !isUnlocked } : m)
+      );
+      toast.error(error?.data?.message || "Error updating lesson");
+    });
+};
+
 
   const handleFileUpload = (
     moduleId: number,

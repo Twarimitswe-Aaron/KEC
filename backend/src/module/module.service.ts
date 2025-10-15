@@ -5,6 +5,7 @@ import { CreateQuizDto } from './dto/create-quiz.dto';
 import { CreateVideoDto } from './dto/create-video.dto';
 import { UpdateLessonDto } from './dto/update-lesson.dto';
 import { AddResourceDto } from './dto/add-resource.dto';
+import { ToggleLockDto } from './dto/toggle-lock.dto';
 
 @Injectable()
 export class ModuleService {
@@ -39,10 +40,9 @@ export class ModuleService {
       content: lesson.description, // Using description as content
       description: lesson.description,
       courseId: lesson.courseId,
-      isUnlocked: lesson.status, // Using status as isUnlocked
+      isUnlocked: lesson.isUnlocked,
       order: lesson.id, // Using id as order since no order field
-      createdAt: new Date().toISOString(), // Lesson doesn't have createdAt
-      updatedAt: new Date().toISOString(), // Lesson doesn't have updatedAt
+
       resources: lesson.resources.map(resource => ({
         id: resource.id,
         url: resource.url,
@@ -82,10 +82,10 @@ export class ModuleService {
       content: lesson.description,
       description: lesson.description,
       courseId: lesson.courseId,
-      isUnlocked: lesson.status,
+      isUnlocked: lesson.isUnlocked,
       order: lesson.id,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+      createdAt: lesson.createdAt.toISOString(),
+      updatedAt: lesson.createdAt.toISOString(),
       resources: lesson.resources.map(resource => ({
         id: resource.id,
         url: resource.url,
@@ -107,16 +107,24 @@ export class ModuleService {
     });
     if (!course) throw new NotFoundException("Course not found");
 
-    const lesson = await this.prisma.lesson.create({
+    const lesson = await this.prisma.course.update({
       data: {
-        title: dto.title,
-        description: dto.description,
-        courseId: dto.courseId,
-        status: dto.isUnlocked ?? true
+        lesson: {
+          create: {
+            title: dto.title,
+            description: dto.description,
+
+
+            isUnlocked: dto.isUnlocked ?? false
+          }
+        }
       },
       include: {
-        resources: true,
+        lesson: { include: { resources: true } },
       },
+      where: {
+        id: dto.courseId
+      }
     });
 
     await this.prisma.course.update({
@@ -127,17 +135,8 @@ export class ModuleService {
     });
 
     return {
-      message: "Lesson created successfully",
-      data: {
-        id: lesson.id,
-        title: lesson.title,
-        content: lesson.description,
-        description: lesson.description,
-        courseId: lesson.courseId,
-        isUnlocked: lesson.status,
-        order: lesson.id,
-      },
-      success: true,
+      message: "Lesson created successfully"
+     
     };
   }
 
@@ -163,7 +162,7 @@ export class ModuleService {
       data: {
         title: dto.title,
         description: dto.description,
-        status: dto.isUnlocked,
+        isUnlocked: dto.isUnlocked,
       },
     });
 
@@ -175,10 +174,9 @@ export class ModuleService {
         content: updatedLesson.description,
         description: updatedLesson.description,
         courseId: updatedLesson.courseId,
-        isUnlocked: updatedLesson.status,
+        isUnlocked: updatedLesson.isUnlocked,
         order: updatedLesson.id,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+
       },
       success: true,
     };
@@ -212,35 +210,34 @@ export class ModuleService {
   }
 
   /**
-   * Toggle lesson lock status (using status field)
+   * Toggle lesson lock status
    */
-  async toggleLessonLock(id: number, isUnlocked: boolean) {
-    const lesson = await this.prisma.lesson.findUnique({
-      where: { id },
-    });
-    if (!lesson) throw new NotFoundException('Lesson not found');
+async toggleLessonLock(id: number, dto: ToggleLockDto) {
+  console.log("i am in the service and i am going to configure the lock", id, typeof id, dto, typeof dto);
 
-    const updatedLesson = await this.prisma.lesson.update({
-      where: { id },
-      data: { status: isUnlocked },
-    });
+  const lesson = await this.prisma.lesson.findUnique({
+    where: { id: Number(id) },
+  });
+  if (!lesson) throw new NotFoundException('Lesson not found');
 
-    return {
-      message: "Lesson lock status updated successfully",
-      data: {
-        id: updatedLesson.id,
-        title: updatedLesson.title,
-        content: updatedLesson.description,
-        description: updatedLesson.description,
-        courseId: updatedLesson.courseId,
-        isUnlocked: updatedLesson.status,
-        order: updatedLesson.id,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+  const updatedLesson = await this.prisma.course.update({
+    where: { id: dto.courseId },
+    data: {
+      lesson: {
+        update: {
+          where: { id: Number(id) },
+          data: { isUnlocked: dto.isUnlocked }
+        }
       },
-      success: true,
-    };
-  }
+    },
+    include: { lesson: true }
+  });
+
+  return {
+    message: dto.isUnlocked ? "Lesson is Unlocked" : "Lesson is Locked",
+  };
+}
+
 
   /**
    * Add resource to lesson
@@ -362,7 +359,7 @@ export class ModuleService {
         title: `${originalLesson.title} (Copy)`,
         description: originalLesson.description,
         courseId: originalLesson.courseId,
-        status: originalLesson.status,
+        isUnlocked: originalLesson.isUnlocked,
       },
     });
 
@@ -427,10 +424,10 @@ export class ModuleService {
         content: duplicatedLesson.description,
         description: duplicatedLesson.description,
         courseId: duplicatedLesson.courseId,
-        isUnlocked: duplicatedLesson.status,
+        isUnlocked: duplicatedLesson.isUnlocked,
         order: duplicatedLesson.id,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+        createdAt: duplicatedLesson.createdAt.toISOString(),
+        updatedAt: duplicatedLesson.createdAt.toISOString(),
       },
       success: true,
     };

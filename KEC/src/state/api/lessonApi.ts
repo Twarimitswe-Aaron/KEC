@@ -50,6 +50,7 @@ export interface DeleteLessonRequest {
 export interface ToggleLessonLockRequest {
   id: number;
   isUnlocked: boolean;
+  courseId: number;
 }
 
 export interface AddResourceRequest {
@@ -127,6 +128,20 @@ export const lessonApi = apiSlice.injectEndpoints({
       ],
     }),
 
+        // Toggle lesson lock status
+    toggleLessonLock: builder.mutation<ApiResponse<Lesson>, ToggleLessonLockRequest>({
+      query: ({ id, isUnlocked,courseId }) => ({
+        url: `/lesson/lock/${id}`,
+        method: "PATCH",
+        body: { isUnlocked ,courseId},
+
+      }),
+      invalidatesTags: (result, error, { id }) => [
+        { type: "Lesson", id },
+        { type: "Lesson", id: "LIST" },
+      ],
+    }),
+
  
 
     // Update existing lesson
@@ -144,18 +159,7 @@ export const lessonApi = apiSlice.injectEndpoints({
 
    
 
-    // Toggle lesson lock status
-    toggleLessonLock: builder.mutation<ApiResponse<Lesson>, ToggleLessonLockRequest>({
-      query: ({ id, isUnlocked }) => ({
-        url: `/lesson/${id}/lock`,
-        method: "PATCH",
-        body: { isUnlocked },
-      }),
-      invalidatesTags: (result, error, { id }) => [
-        { type: "Lesson", id },
-        { type: "Lesson", id: "LIST" },
-      ],
-    }),
+
 
     // Add resource to lesson
     addResource: builder.mutation<ApiResponse<Resource>, AddResourceRequest>({
