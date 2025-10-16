@@ -1,0 +1,8 @@
+-- AlterTable
+ALTER TABLE "public"."QuizAttempt" ADD COLUMN     "score" INTEGER NOT NULL DEFAULT 0,
+ADD COLUMN     "totalPoints" INTEGER NOT NULL DEFAULT 0;
+
+-- AlterTable
+ALTER TABLE "public"."QuizQuestion" ADD COLUMN     "order" INTEGER NOT NULL DEFAULT 0,
+ADD COLUMN     "orderIndex" INTEGER NOT NULL DEFAULT 0,
+ADD COLUMN     "points" INTEGER NOT NULL DEFAULT 1;

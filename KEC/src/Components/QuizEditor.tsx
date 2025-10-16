@@ -1,38 +1,118 @@
+// src/components/QuizEditor.tsx
 import { FaCheckCircle, FaEdit, FaQuestionCircle, FaTimes } from "react-icons/fa";
 import { FaCheck, FaList, FaPlus, FaRegCircle, FaRegSquare, FaTrash, FaArrowUp, FaArrowDown } from "react-icons/fa6";
 import { toast } from "react-toastify";
-import { Question, ResourceType } from "./ModuleManagement";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { X, Eye, Hash, Type, List as ListIcon, CheckSquare, ToggleLeft, Menu } from "lucide-react";
+import { useGetQuizQuery, useUpdateQuizMutation, useCreateQuizMutation } from "../state/api/quizApi";
+
+// Define proper TypeScript interfaces
+export interface Question {
+  id: number;
+  type: 'multiple' | 'checkbox' | 'truefalse' | 'short' | 'long' | 'number';
+  question: string;
+  description?: string;
+  options?: string[];
+  required: boolean;
+  points: number;
+}
+
+export interface QuizSettings {
+  title: string;
+  description?: string;
+  shuffleQuestions?: boolean;
+  timeLimit?: number;
+  showResults?: boolean;
+  allowRetakes?: boolean;
+  passingScore?: number;
+}
+
+export interface ResourceType {
+  id: number;
+  name: string;
+  description?: string;
+  quizId?: number;
+  quiz?: any;
+  type: string;
+}
 
 interface QuizEditorProps {
   resource: ResourceType;
   onClose: () => void;
-  onUpdate: (resourceId: number, updatedQuiz: any) => void;
+  onUpdate?: (resourceId: number, updatedQuiz: any) => void;
 }
 
 const QuizEditor = ({ resource, onClose, onUpdate }: QuizEditorProps) => {
-  // Handle both array format (old) and object format (new) for quiz data
-  const initialQuestions = Array.isArray(resource.quiz) 
-    ? resource.quiz 
-    : (resource.quiz?.questions || []);
+  // RTK Query hooks
+  const { 
+    data: quizData, 
+    isLoading, 
+    error,
+    refetch 
+  } = useGetQuizQuery(resource.quizId!, {
+    skip: !resource.quizId
+  });
   
-  const initialSettings = resource.quiz?.settings || {
-    title: resource.name,
-    description: resource.description || "",
-    shuffleQuestions: false,
-    timeLimit: 0,
-    showResults: true,
-    allowRetakes: false,
-    passingScore: 0,
+  const [updateQuiz, { isLoading: isUpdating }] = useUpdateQuizMutation();
+  const [createQuiz, { isLoading: isCreating }] = useCreateQuizMutation();
+
+  // Initialize state with proper fallbacks
+  const getInitialQuestions = (): Question[] => {
+    if (Array.isArray(resource.quiz)) {
+      return resource.quiz.map((q: any, index:number) => ({
+        id: q.id || Date.now() + index,
+        type: q.type || 'multiple',
+        question: q.question || '',
+        description: q.description || '',
+        options: q.options || (q.type !== 'short' && q.type !== 'long' && q.type !== 'number' ? [''] : undefined),
+        required: q.required || false,
+        points: q.points || 1
+      }));
+    }
+    
+    if (quizData?.questions) {
+      return quizData.questions.map((q: any, index:number) => ({
+        id: q.id || Date.now() + index,
+        type: q.type,
+        question: q.question,
+        description: q.description || '',
+        options: q.options,
+        required: q.required || false,
+        points: q.points || 1
+      }));
+    }
+    
+    return [];
   };
 
-  const [questions, setQuestions] = useState<Question[]>(initialQuestions);
+  const getInitialSettings = (): QuizSettings => {
+    return resource.quiz?.settings || quizData?.settings || {
+      title: resource.name,
+      description: resource.description || "",
+      shuffleQuestions: false,
+      timeLimit: 0,
+      showResults: true,
+      allowRetakes: false,
+      passingScore: 0,
+    };
+  };
+
+  const [questions, setQuestions] = useState<Question[]>(getInitialQuestions);
   const [editingQuestion, setEditingQuestion] = useState<number | null>(null);
-  const [quizSettings, setQuizSettings] = useState(initialSettings);
+  const [quizSettings, setQuizSettings] = useState<QuizSettings>(getInitialSettings);
   const [showSidebar, setShowSidebar] = useState(false);
+  const [hasChanges, setHasChanges] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Update local state when quiz data loads
+  useEffect(() => {
+    if (quizData) {
+      setQuestions(getInitialQuestions());
+      setQuizSettings(getInitialSettings());
+    }
+  }, [quizData]);
 
   const questionTypes = [
     {
@@ -82,6 +162,83 @@ const QuizEditor = ({ resource, onClose, onUpdate }: QuizEditorProps) => {
     points: 1
   });
 
+  // Save quiz to backend
+  const saveQuiz = async () => {
+    if (isSaving) return;
+    
+    setIsSaving(true);
+    try {
+      const quizPayload = {
+        name: quizSettings.title,
+        description: quizSettings.description,
+        questions: questions.map((q, index) => ({
+          type: q.type,
+          question: q.question,
+          description: q.description,
+          options: q.options,
+          required: q.required,
+          points: q.points || 1,
+          order: index
+        })),
+        settings: quizSettings
+      };
+
+      let result;
+      if (resource.quizId) {
+        // Update existing quiz
+        result = await updateQuiz({
+          id: resource.quizId,
+          data: quizPayload
+        }).unwrap();
+        toast.success("Quiz updated successfully!");
+      } else {
+        // Create new quiz
+        result = await createQuiz(quizPayload).unwrap();
+        toast.success("Quiz created successfully!");
+        
+        // If there's a callback to handle the new quiz ID, call it
+        if (onUpdate) {
+          onUpdate(resource.id, { 
+            ...resource.quiz, 
+            id: result.id, 
+            questions, 
+            settings: quizSettings 
+          });
+        }
+      }
+      
+      setHasChanges(false);
+      // Refetch the quiz data to ensure we have the latest state
+      if (resource.quizId) {
+        await refetch();
+      }
+    } catch (error: any) {
+      console.error('Failed to save quiz:', error);
+      const errorMessage = error?.data?.message || error?.message || "Failed to save quiz. Please try again.";
+      toast.error(errorMessage);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Auto-save when questions or settings change
+  useEffect(() => {
+    if (hasChanges && !isSaving) {
+      const autoSaveTimer = setTimeout(() => {
+        saveQuiz();
+      }, 3000); // Increased to 3 seconds to avoid too frequent saves
+
+      return () => clearTimeout(autoSaveTimer);
+    }
+  }, [questions, quizSettings, hasChanges]);
+
+  // Mark changes when questions or settings are modified
+  useEffect(() => {
+    if (questions.length > 0 || quizSettings.title !== resource.name) {
+      setHasChanges(true);
+    }
+  }, [questions, quizSettings]);
+
   // Add new question
   const addQuestion = () => {
     if (!newQuestion.question?.trim()) {
@@ -92,19 +249,29 @@ const QuizEditor = ({ resource, onClose, onUpdate }: QuizEditorProps) => {
     const question: Question = {
       id: Date.now(),
       type: newQuestion.type as any,
-      question: newQuestion.question,
-      description: newQuestion.description,
+      question: newQuestion.question.trim(),
+      description: newQuestion.description?.trim() || '',
       options: newQuestion.type !== "short" && newQuestion.type !== "long" && newQuestion.type !== "number" 
-        ? newQuestion.options?.filter(opt => opt.trim()) 
+        ? newQuestion.options?.filter(opt => opt.trim()).map(opt => opt.trim()) 
         : undefined,
-      required: newQuestion.required,
+      required: newQuestion.required || false,
       points: newQuestion.points || 1
     };
 
     const updatedQuestions = [...questions, question];
     setQuestions(updatedQuestions);
-    onUpdate(resource.id, { ...resource.quiz, questions: updatedQuestions, settings: quizSettings });
+    setHasChanges(true);
     
+    // Call onUpdate callback if provided (for immediate parent component updates)
+    if (onUpdate) {
+      onUpdate(resource.id, { 
+        ...resource.quiz, 
+        questions: updatedQuestions, 
+        settings: quizSettings 
+      });
+    }
+    
+    // Reset new question form
     setNewQuestion({
       type: "multiple",
       question: "",
@@ -123,14 +290,31 @@ const QuizEditor = ({ resource, onClose, onUpdate }: QuizEditorProps) => {
       q.id === questionId ? { ...q, ...updates } : q
     );
     setQuestions(updatedQuestions);
-    onUpdate(resource.id, { ...resource.quiz, questions: updatedQuestions, settings: quizSettings });
+    setHasChanges(true);
+    
+    if (onUpdate) {
+      onUpdate(resource.id, { 
+        ...resource.quiz, 
+        questions: updatedQuestions, 
+        settings: quizSettings 
+      });
+    }
   };
 
   // Delete question
   const deleteQuestion = (questionId: number) => {
     const updatedQuestions = questions.filter(q => q.id !== questionId);
     setQuestions(updatedQuestions);
-    onUpdate(resource.id, { ...resource.quiz, questions: updatedQuestions, settings: quizSettings });
+    setHasChanges(true);
+    
+    if (onUpdate) {
+      onUpdate(resource.id, { 
+        ...resource.quiz, 
+        questions: updatedQuestions, 
+        settings: quizSettings 
+      });
+    }
+    
     toast.success("Question deleted successfully!");
   };
 
@@ -147,7 +331,15 @@ const QuizEditor = ({ resource, onClose, onUpdate }: QuizEditorProps) => {
     const updatedQuestions = [...questions];
     [updatedQuestions[index], updatedQuestions[newIndex]] = [updatedQuestions[newIndex], updatedQuestions[index]];
     setQuestions(updatedQuestions);
-    onUpdate(resource.id, { ...resource.quiz, questions: updatedQuestions, settings: quizSettings });
+    setHasChanges(true);
+    
+    if (onUpdate) {
+      onUpdate(resource.id, { 
+        ...resource.quiz, 
+        questions: updatedQuestions, 
+        settings: quizSettings 
+      });
+    }
   };
 
   // Option management
@@ -176,17 +368,61 @@ const QuizEditor = ({ resource, onClose, onUpdate }: QuizEditorProps) => {
     }
   };
 
-  // Handle settings update
-  const updateSettings = (updates: Partial<typeof quizSettings>) => {
-    const newSettings = { ...quizSettings, ...updates };
-    setQuizSettings(newSettings);
-    onUpdate(resource.id, { ...resource.quiz, questions, settings: newSettings });
-  };
-
   const getQuestionIcon = (type: string) => {
     const questionType = questionTypes.find(t => t.value === type);
     return questionType?.icon || FaQuestionCircle;
   };
+
+  // Handle settings changes
+  const handleSettingsChange = (key: keyof QuizSettings, value: any) => {
+    setQuizSettings(prev => ({ ...prev, [key]: value }));
+    setHasChanges(true);
+  };
+
+  // Handle manual save
+  const handleManualSave = async () => {
+    await saveQuiz();
+  };
+
+  // Reset new question options when type changes
+  useEffect(() => {
+    if (newQuestion.type === "short" || newQuestion.type === "long" || newQuestion.type === "number") {
+      setNewQuestion(prev => ({ ...prev, options: undefined }));
+    } else if (!newQuestion.options || newQuestion.options.length === 0) {
+      setNewQuestion(prev => ({ ...prev, options: [""] }));
+    }
+  }, [newQuestion.type]);
+
+  if (isLoading) {
+    return (
+      <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center">
+        <div className="bg-white rounded-xl p-6 text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#034153] mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading quiz...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error && !resource.quizId) {
+    return (
+      <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center">
+        <div className="bg-white rounded-xl p-6 text-center max-w-md">
+          <FaQuestionCircle className="text-4xl text-red-500 mx-auto mb-4" />
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">Failed to load quiz</h3>
+          <p className="text-gray-600 mb-4">There was an error loading the quiz data.</p>
+          <button
+            onClick={onClose}
+            className="bg-[#034153] text-white px-4 py-2 rounded-lg font-semibold hover:bg-[#004e64] transition-colors"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const isSaveDisabled = isUpdating || isCreating || isSaving;
 
   return (
     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4">
@@ -203,6 +439,20 @@ const QuizEditor = ({ resource, onClose, onUpdate }: QuizEditorProps) => {
             </div>
           </div>
           <div className="flex items-center gap-1 sm:gap-2">
+            {/* Auto-save indicator */}
+            {hasChanges && !isSaving && (
+              <div className="text-white/80 text-xs flex items-center gap-1">
+                <div className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></div>
+                <span className="hidden sm:inline">Unsaved changes</span>
+              </div>
+            )}
+            {isSaving && (
+              <div className="text-white/80 text-xs flex items-center gap-1">
+                <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
+                <span className="hidden sm:inline">Saving...</span>
+              </div>
+            )}
+            
             <button
               onClick={() => setShowSidebar(!showSidebar)}
               className="lg:hidden text-white/90 hover:text-white hover:bg-white/10 p-2 rounded-lg transition-all duration-200"
@@ -210,14 +460,28 @@ const QuizEditor = ({ resource, onClose, onUpdate }: QuizEditorProps) => {
               <Menu size={20} />
             </button>
             <button
-              onClick={() => onUpdate(resource.id, { ...resource.quiz, questions, settings: quizSettings })}
-              className="bg-white text-[#034153] px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg font-semibold hover:bg-gray-100 transition-colors flex items-center gap-1 sm:gap-2 text-sm sm:text-base"
+              onClick={handleManualSave}
+              disabled={isSaveDisabled}
+              className="bg-white text-[#034153] px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg font-semibold hover:bg-gray-100 transition-colors flex items-center gap-1 sm:gap-2 text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <FaCheck className="text-sm sm:text-base" /> <span className="hidden sm:inline">Save Quiz</span><span className="sm:hidden">Save</span>
+              {isSaveDisabled ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#034153]"></div>
+                  <span className="hidden sm:inline">Saving...</span>
+                  <span className="sm:hidden">Save</span>
+                </>
+              ) : (
+                <>
+                  <FaCheck className="text-sm sm:text-base" /> 
+                  <span className="hidden sm:inline">Save Quiz</span>
+                  <span className="sm:hidden">Save</span>
+                </>
+              )}
             </button>
             <button
               onClick={onClose}
-              className="text-white/90 hover:text-white hover:bg-white/10 p-1.5 sm:p-2 rounded-lg transition-all duration-200"
+              disabled={isSaveDisabled}
+              className="text-white/90 hover:text-white hover:bg-white/10 p-1.5 sm:p-2 rounded-lg transition-all duration-200 disabled:opacity-50"
             >
               <X size={20} className="sm:w-6 sm:h-6" />
             </button>
@@ -277,6 +541,51 @@ const QuizEditor = ({ resource, onClose, onUpdate }: QuizEditorProps) => {
                 })}
               </div>
             </div>
+
+            {/* Quiz Settings Section */}
+            <div className="p-3 sm:p-4 border-b border-gray-200">
+              <h3 className="font-semibold text-gray-800 mb-3">Quiz Settings</h3>
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Quiz Title</label>
+                  <input
+                    type="text"
+                    value={quizSettings.title}
+                    onChange={(e) => handleSettingsChange('title', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#034153] text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                  <textarea
+                    value={quizSettings.description || ''}
+                    onChange={(e) => handleSettingsChange('description', e.target.value)}
+                    rows={2}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#034153] text-sm resize-none"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={quizSettings.showResults || true}
+                      onChange={(e) => handleSettingsChange('showResults', e.target.checked)}
+                      className="w-4 h-4 text-[#034153] border-gray-300 rounded focus:ring-[#034153]"
+                    />
+                    <span className="text-sm text-gray-700">Show results immediately</span>
+                  </label>
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={quizSettings.allowRetakes || false}
+                      onChange={(e) => handleSettingsChange('allowRetakes', e.target.checked)}
+                      className="w-4 h-4 text-[#034153] border-gray-300 rounded focus:ring-[#034153]"
+                    />
+                    <span className="text-sm text-gray-700">Allow retakes</span>
+                  </label>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Sidebar Overlay */}
@@ -300,6 +609,12 @@ const QuizEditor = ({ resource, onClose, onUpdate }: QuizEditorProps) => {
                   <span>{questions.length} questions</span>
                   <span>•</span>
                   <span>Total points: {questions.reduce((sum, q) => sum + (q.points || 1), 0)}</span>
+                  {resource.quizId && (
+                    <>
+                      <span>•</span>
+                      <span>ID: {resource.quizId}</span>
+                    </>
+                  )}
                 </div>
               </div>
 
@@ -316,7 +631,7 @@ const QuizEditor = ({ resource, onClose, onUpdate }: QuizEditorProps) => {
                       <input
                         type="number"
                         min="1"
-                        value={newQuestion.points}
+                        value={newQuestion.points || 1}
                         onChange={(e) => setNewQuestion(prev => ({ ...prev, points: parseInt(e.target.value) || 1 }))}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#034153] focus:border-transparent text-sm sm:text-base"
                       />
@@ -336,9 +651,9 @@ const QuizEditor = ({ resource, onClose, onUpdate }: QuizEditorProps) => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Question</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Question *</label>
                     <textarea
-                      value={newQuestion.question}
+                      value={newQuestion.question || ''}
                       onChange={(e) => setNewQuestion(prev => ({ ...prev, question: e.target.value }))}
                       placeholder="Enter your question here..."
                       rows={2}
@@ -349,7 +664,7 @@ const QuizEditor = ({ resource, onClose, onUpdate }: QuizEditorProps) => {
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Description (Optional)</label>
                     <textarea
-                      value={newQuestion.description}
+                      value={newQuestion.description || ''}
                       onChange={(e) => setNewQuestion(prev => ({ ...prev, description: e.target.value }))}
                       placeholder="Add additional context or instructions..."
                       rows={1}
@@ -357,11 +672,11 @@ const QuizEditor = ({ resource, onClose, onUpdate }: QuizEditorProps) => {
                     />
                   </div>
 
-                  {newQuestion.type !== "short" && newQuestion.type !== "long" && newQuestion.type !== "number" && (
+                  {newQuestion.type !== "short" && newQuestion.type !== "long" && newQuestion.type !== "number" && newQuestion.options && (
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">Options</label>
                       <div className="space-y-2">
-                        {newQuestion.options?.map((option, index) => (
+                        {newQuestion.options.map((option, index) => (
                           <div key={index} className="flex gap-2 items-center">
                             {newQuestion.type === "multiple" && <FaRegCircle className="text-gray-400 mt-1 flex-shrink-0" />}
                             {newQuestion.type === "checkbox" && <FaRegSquare className="text-gray-400 mt-1 flex-shrink-0" />}
@@ -370,17 +685,17 @@ const QuizEditor = ({ resource, onClose, onUpdate }: QuizEditorProps) => {
                               type="text"
                               value={option}
                               onChange={(e) => {
-                                const newOptions = [...(newQuestion.options || [])];
+                                const newOptions = [...newQuestion.options!];
                                 newOptions[index] = e.target.value;
                                 setNewQuestion(prev => ({ ...prev, options: newOptions }));
                               }}
                               placeholder={`Option ${index + 1}`}
                               className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#034153] focus:border-transparent text-sm sm:text-base"
                             />
-                            {newQuestion.options && newQuestion.options.length > 1 && (
+                            {newQuestion.options!.length > 1 && (
                               <button
                                 onClick={() => {
-                                  const newOptions = newQuestion.options?.filter((_, i) => i !== index) || [""];
+                                  const newOptions = newQuestion.options!.filter((_, i) => i !== index);
                                   setNewQuestion(prev => ({ ...prev, options: newOptions }));
                                 }}
                                 className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors flex-shrink-0"
@@ -407,7 +722,7 @@ const QuizEditor = ({ resource, onClose, onUpdate }: QuizEditorProps) => {
                     <label className="flex items-center gap-2">
                       <input
                         type="checkbox"
-                        checked={newQuestion.required}
+                        checked={newQuestion.required || false}
                         onChange={(e) => setNewQuestion(prev => ({ ...prev, required: e.target.checked }))}
                         className="w-4 h-4 text-[#034153] border-gray-300 rounded focus:ring-[#034153]"
                       />
@@ -416,7 +731,8 @@ const QuizEditor = ({ resource, onClose, onUpdate }: QuizEditorProps) => {
 
                     <button
                       onClick={addQuestion}
-                      className="w-full sm:w-auto bg-[#034153] hover:bg-[#004e64] text-white px-4 sm:px-6 py-2 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2 text-sm sm:text-base"
+                      disabled={!newQuestion.question?.trim()}
+                      className="w-full sm:w-auto bg-[#034153] hover:bg-[#004e64] disabled:bg-gray-400 disabled:cursor-not-allowed text-white px-4 sm:px-6 py-2 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2 text-sm sm:text-base"
                     >
                       <FaCheck /> Add Question
                     </button>

@@ -34,6 +34,7 @@ model User {
   student      Student?
   course       Course[]
   announcement Announcement[]
+  responses    Response[] // ✅ User responses to forms/quizzes
 }
 
 model Admin {
@@ -43,9 +44,9 @@ model Admin {
 }
 
 model Teacher {
-  id     Int   @id @default(autoincrement())
-  userId Int   @unique
-  user   User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id     Int  @id @default(autoincrement())
+  userId Int  @unique
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Student {
@@ -62,25 +63,25 @@ model Student {
 }
 
 model Course {
-  id          Int      @id @default(autoincrement())
-  uploaderId  Int?
-  uploader    User?    @relation(fields: [uploaderId], references: [id], onDelete: Cascade)
+  id         Int   @id @default(autoincrement())
+  uploaderId Int?
+  uploader   User? @relation(fields: [uploaderId], references: [id], onDelete: Cascade)
 
   title       String
   description String
   coursePrice String
   image_url   String
-  isConfirmed Boolean   @default(false)
+  isConfirmed Boolean @default(false)
 
-  no_lesson   Int       @default(0)
-  maximum     Int?
-  open        Boolean?
-  totalPaid   String?
+  no_lesson Int      @default(0)
+  maximum   Int?
+  open      Boolean?
+  totalPaid String?
 
   // relations
-  lesson       Lesson[]
-  assignment   Assignment[]
-  modules      Module[]    // NEW: Added module relationship
+  lesson     Lesson[]
+  assignment Assignment[]
+  modules    Module[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -99,12 +100,11 @@ model Assignment {
 }
 
 model Lesson {
-  id          Int     @id @default(autoincrement())
+  id          Int      @id @default(autoincrement())
   title       String
   description String
-  isUnlocked      Boolean @default(false)
+  isUnlocked  Boolean  @default(false)
   createdAt   DateTime @default(now())
-
 
   courseId Int
   course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
@@ -112,9 +112,6 @@ model Lesson {
   resources Resource[]
 }
 
-//
-// UPDATED PART: Added detailed learning module and resource system
-//
 model Module {
   id          Int        @id @default(autoincrement())
   title       String
@@ -128,22 +125,22 @@ model Module {
 }
 
 model Resource {
-  id         Int          @id @default(autoincrement())
-  moduleId   Int?
-  module     Module?      @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  id       Int     @id @default(autoincrement())
+  moduleId Int?
+  module   Module? @relation(fields: [moduleId], references: [id], onDelete: Cascade)
 
-  lessonId   Int?
-  lesson     Lesson?      @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  lessonId Int?
+  lesson   Lesson? @relation(fields: [lessonId], references: [id], onDelete: Cascade)
 
   name       String
   type       ResourceType
-  size       String?      // human-readable
+  size       String?
   uploadedAt DateTime     @default(now())
   duration   String?
-  url        String?      // file path or external link
+  url        String?
 
-  quizId     Int?         @unique
-  quiz       Quiz?        @relation(fields: [quizId], references: [id])
+  quizId Int?  @unique
+  quiz   Quiz? @relation(fields: [quizId], references: [id])
 }
 
 model Quiz {
@@ -153,16 +150,21 @@ model Quiz {
   questions   QuizQuestion[]
   resource    Resource?
   attempts    QuizAttempt[]
+  formId      Int? // ✅ Each Quiz may include a dynamic Form
+  form        Form?          @relation(fields: [formId], references: [id], onDelete: Cascade)
 }
 
 model QuizQuestion {
-  id        Int      @id @default(autoincrement())
-  quizId    Int
-  type      String   // "multiple" | "checkbox" | "truefalse" | "short"
-  question  String
-  options   String?  // JSON stringified array
-  required  Boolean  @default(false)
-  quiz      Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  id         Int     @id @default(autoincrement())
+  quizId     Int
+  type       String // "multiple" | "checkbox" | "truefalse" | "short"
+  question   String
+  options    String? // JSON stringified array
+  required   Boolean @default(false)
+  orderIndex Int     @default(0) // For ordering questions
+  order      Int     @default(0) // Alternative ordering field
+  points     Int     @default(1) // Points for this question
+  quiz       Quiz    @relation(fields: [quizId], references: [id], onDelete: Cascade)
 }
 
 model QuizAttempt {
@@ -170,7 +172,58 @@ model QuizAttempt {
   quizId      Int
   submittedAt DateTime @default(now())
   responses   String   // JSON stringified responses
+  score       Int      @default(0) // Calculated score
+  totalPoints Int      @default(0) // Total possible points
   quiz        Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+}
+
+
+model Form {
+  id          Int        @id @default(autoincrement())
+  title       String
+  description String?
+  questions   Question[]
+  createdAt   DateTime   @default(now())
+  responses   Response[]
+  quizzes     Quiz[]
+}
+
+model Question {
+  id           Int          @id @default(autoincrement())
+  formId       Int
+  form         Form         @relation(fields: [formId], references: [id])
+  questionText String
+  type         QuestionType
+  options      Option[]
+  responses    Response[]
+  required     Boolean      @default(false)
+}
+
+model Option {
+  id         Int      @id @default(autoincrement())
+  questionId Int
+  question   Question @relation(fields: [questionId], references: [id])
+  text       String
+}
+
+model Response {
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  formId     Int
+  questionId Int
+  user       User     @relation(fields: [userId], references: [id])
+  form       Form     @relation(fields: [formId], references: [id])
+  question   Question @relation(fields: [questionId], references: [id])
+  answer     String
+  createdAt  DateTime @default(now())
+}
+
+enum QuestionType {
+  TEXT
+  MULTIPLE_CHOICE
+  CHECKBOX
+  DATE
+  NUMBER
 }
 
 enum ResourceType {
