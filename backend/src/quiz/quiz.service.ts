@@ -15,17 +15,19 @@ export class QuizService {
     return this.prisma.quiz.create({
       data: {
         ...quizData,
+        settings: settings ? JSON.stringify(settings) : null,
         questions: {
           create: questions.map((q, index) => ({
             type: q.type,
             question: q.question,
             options: q.options ? JSON.stringify(q.options) : null,
+            correctAnswers: q.correctAnswers ? JSON.stringify(q.correctAnswers) : null,
+            correctAnswer: q.correctAnswer !== undefined ? q.correctAnswer : null,
             required: q.required || false,
             order: index,
             points: q.points || 1,
           })),
         },
-
       },
       include: {
         questions: true,
@@ -39,7 +41,7 @@ export class QuizService {
       where: { id },
       include: {
         questions: {
-          orderBy: { orderIndex: 'asc' },
+          orderBy: { order: 'asc' },
         },
         resource: {
           include: {
@@ -63,13 +65,15 @@ export class QuizService {
       questions: quiz.questions.map(q => ({
         ...q,
         options: q.options ? JSON.parse(q.options) : null,
+        correctAnswers: q.correctAnswers ? JSON.parse(q.correctAnswers) : [],
+        correctAnswer: q.correctAnswer !== null ? q.correctAnswer : undefined,
       })),
-
+      settings: quiz.settings ? JSON.parse(quiz.settings) : null,
     };
   }
 
   async updateQuiz(id: number, updateQuizDto: UpdateQuizDto) {
-    const { questions, ...quizData } = updateQuizDto;
+    const { questions, settings, ...quizData } = updateQuizDto;
 
     // Verify quiz exists
     const existingQuiz = await this.prisma.quiz.findUnique({
@@ -88,7 +92,7 @@ export class QuizService {
         where: { id },
         data: {
           ...quizData,
-
+          settings: settings ? JSON.stringify(settings) : undefined,
         },
       });
 
@@ -106,6 +110,8 @@ export class QuizService {
             type: q.type!,
             question: q.question!,
             options: q.options ? JSON.stringify(q.options) : null,
+            correctAnswers: q.correctAnswers ? JSON.stringify(q.correctAnswers) : null,
+            correctAnswer: q.correctAnswer !== undefined ? q.correctAnswer : null,
             required: q.required || false,
             order: index,
             points: q.points || 1,
@@ -157,64 +163,116 @@ export class QuizService {
       throw new NotFoundException(`Quiz with ID ${quizId} not found`);
     }
 
-    // Calculate score
-    const score = this.calculateScore(quiz.questions, responses);
+    // Parse questions with correct answers
+    const parsedQuestions = quiz.questions.map(q => ({
+      ...q,
+      options: q.options ? JSON.parse(q.options) : null,
+      correctAnswers: q.correctAnswers ? JSON.parse(q.correctAnswers) : [],
+      correctAnswer: q.correctAnswer !== null ? q.correctAnswer : undefined,
+    }));
+
+    // Calculate score and detailed results
+    const { score, results } = this.calculateScoreWithDetails(parsedQuestions, responses);
 
     // Create attempt
-    return this.prisma.quizAttempt.create({
+    const attempt = await this.prisma.quizAttempt.create({
       data: {
         quizId,
         responses: JSON.stringify(responses),
         score,
-        totalPoints: quiz.questions.reduce((sum, q) => sum + (q.points || 1), 0),
+        totalPoints: parsedQuestions.reduce((sum, q) => sum + (q.points || 1), 0),
+        detailedResults: JSON.stringify(results),
       },
     });
+
+    return {
+      ...attempt,
+      percentage: (score / parsedQuestions.reduce((sum, q) => sum + (q.points || 1), 0)) * 100,
+      passed: score >= (quiz.settings ? JSON.parse(quiz.settings).passingScore || 0 : 0),
+      results,
+    };
   }
 
-  private calculateScore(questions: any[], responses: any[]): number {
+  private calculateScoreWithDetails(questions: any[], responses: any[]) {
     let score = 0;
+    const results: any[] = [];
 
     responses.forEach(response => {
       const question = questions.find(q => q.id === response.questionId);
       if (!question) return;
 
-      const correctAnswer = question.options ? JSON.parse(question.options) : null;
       const userAnswer = response.answer;
+      let isCorrect = false;
+      let earnedPoints = 0;
 
       switch (question.type) {
         case 'multiple':
-          if (userAnswer === correctAnswer?.[0]) {
-            score += question.points || 1;
+          // For multiple choice, compare with correctAnswer (index)
+          if (question.correctAnswer !== undefined && userAnswer === question.correctAnswer) {
+            isCorrect = true;
+            earnedPoints = question.points || 1;
+            score += earnedPoints;
           }
           break;
+
         case 'checkbox':
-          if (Array.isArray(userAnswer) && Array.isArray(correctAnswer)) {
+          // For checkbox, compare arrays of indices
+          if (question.correctAnswers && Array.isArray(userAnswer) && Array.isArray(question.correctAnswers)) {
             const sortedUser = [...userAnswer].sort();
-            const sortedCorrect = [...correctAnswer].sort();
+            const sortedCorrect = [...question.correctAnswers].sort();
             if (JSON.stringify(sortedUser) === JSON.stringify(sortedCorrect)) {
-              score += question.points || 1;
+              isCorrect = true;
+              earnedPoints = question.points || 1;
+              score += earnedPoints;
             }
           }
           break;
+
         case 'truefalse':
-          if (userAnswer === correctAnswer?.[0]) {
-            score += question.points || 1;
+          // For true/false, compare with correctAnswer (index)
+          if (question.correctAnswer !== undefined && userAnswer === question.correctAnswer) {
+            isCorrect = true;
+            earnedPoints = question.points || 1;
+            score += earnedPoints;
           }
           break;
-        // For short/long/number, we might need manual grading
+
+        case 'short':
+        case 'long':
+        case 'number':
+          // For text/number questions, compare with correctAnswer (string/number)
+          if (question.correctAnswer !== undefined && userAnswer === question.correctAnswer) {
+            isCorrect = true;
+            earnedPoints = question.points || 1;
+            score += earnedPoints;
+          }
+          break;
+
         default:
-          // Auto-grade based on exact match for now
-          if (userAnswer === correctAnswer?.[0]) {
-            score += question.points || 1;
+          // Fallback for unknown types
+          if (question.correctAnswer !== undefined && userAnswer === question.correctAnswer) {
+            isCorrect = true;
+            earnedPoints = question.points || 1;
+            score += earnedPoints;
           }
       }
+
+      results.push({
+        questionId: question.id,
+        question: question.question,
+        userAnswer,
+        correctAnswer: question.correctAnswer !== undefined ? question.correctAnswer : question.correctAnswers,
+        isCorrect,
+        points: question.points || 1,
+        earnedPoints,
+      });
     });
 
-    return score;
+    return { score, results };
   }
 
   async getQuizAttempts(quizId: number) {
-    return this.prisma.quizAttempt.findMany({
+    const attempts = await this.prisma.quizAttempt.findMany({
       where: { quizId },
       orderBy: { submittedAt: 'desc' },
       include: {
@@ -225,10 +283,37 @@ export class QuizService {
         },
       },
     });
+
+    return attempts.map(attempt => ({
+      ...attempt,
+      responses: attempt.responses ? JSON.parse(attempt.responses) : [],
+      detailedResults: attempt.detailedResults ? JSON.parse(attempt.detailedResults) : [],
+      percentage: (attempt.score / attempt.totalPoints) * 100,
+      passed: attempt.score >= (attempt.quiz.settings ? JSON.parse(attempt.quiz.settings).passingScore || 0 : 0),
+    }));
+  }
+
+  async getUserQuizAttempts(quizId: number, userId: number) {
+    const attempts = await this.prisma.quizAttempt.findMany({
+      where: { 
+        quizId,
+        // Note: You'll need to add userId to your QuizAttempt model for this to work
+        // userId: userId 
+      },
+      orderBy: { submittedAt: 'desc' },
+    });
+
+    return attempts.map(attempt => ({
+      ...attempt,
+      responses: attempt.responses ? JSON.parse(attempt.responses) : [],
+      detailedResults: attempt.detailedResults ? JSON.parse(attempt.detailedResults) : [],
+      percentage: (attempt.score / attempt.totalPoints) * 100,
+      passed: attempt.score >= (50), // Default passing score, adjust as needed
+    }));
   }
 
   async getQuizzesByModule(moduleId: number) {
-    return this.prisma.quiz.findMany({
+    const quizzes = await this.prisma.quiz.findMany({
       where: {
         resource: {
           moduleId,
@@ -241,10 +326,21 @@ export class QuizService {
         resource: true,
       },
     });
+
+    return quizzes.map(quiz => ({
+      ...quiz,
+      questions: quiz.questions.map(q => ({
+        ...q,
+        options: q.options ? JSON.parse(q.options) : null,
+        correctAnswers: q.correctAnswers ? JSON.parse(q.correctAnswers) : [],
+        correctAnswer: q.correctAnswer !== null ? q.correctAnswer : undefined,
+      })),
+      settings: quiz.settings ? JSON.parse(quiz.settings) : null,
+    }));
   }
 
   async getQuizzesByLesson(lessonId: number) {
-    return this.prisma.quiz.findMany({
+    const quizzes = await this.prisma.quiz.findMany({
       where: {
         resource: {
           lessonId,
@@ -254,6 +350,90 @@ export class QuizService {
         questions: {
           orderBy: { order: 'asc' },
         },
+        resource: true,
+      },
+    });
+
+    return quizzes.map(quiz => ({
+      ...quiz,
+      questions: quiz.questions.map(q => ({
+        ...q,
+        options: q.options ? JSON.parse(q.options) : null,
+        correctAnswers: q.correctAnswers ? JSON.parse(q.correctAnswers) : [],
+        correctAnswer: q.correctAnswer !== null ? q.correctAnswer : undefined,
+      })),
+      settings: quiz.settings ? JSON.parse(quiz.settings) : null,
+    }));
+  }
+
+  async getQuizStatistics(quizId: number) {
+    const quiz = await this.getQuizById(quizId);
+    const attempts = await this.getQuizAttempts(quizId);
+
+    const totalAttempts = attempts.length;
+    const averageScore = totalAttempts > 0 
+      ? attempts.reduce((sum, attempt) => sum + attempt.percentage, 0) / totalAttempts 
+      : 0;
+    
+    const passingScore = quiz.settings?.passingScore || 0;
+    const passingRate = totalAttempts > 0
+      ? (attempts.filter(attempt => attempt.percentage >= passingScore).length / totalAttempts) * 100
+      : 0;
+
+    const questionStatistics = quiz.questions.map(question => {
+      const questionAttempts = attempts.filter(attempt => 
+        attempt.responses.some((response: any) => response.questionId === question.id)
+      );
+      
+      const correctAnswers = questionAttempts.filter(attempt => {
+        const response = attempt.responses.find((r: any) => r.questionId === question.id);
+        if (!response) return false;
+
+        // This is a simplified check - you might want to use the detailedResults instead
+        const detailedResult = attempt.detailedResults?.find((r: any) => r.questionId === question.id);
+        return detailedResult?.isCorrect || false;
+      }).length;
+
+      return {
+        questionId: question.id,
+        question: question.question,
+        correctAnswers,
+        totalAttempts: questionAttempts.length,
+        successRate: questionAttempts.length > 0 ? (correctAnswers / questionAttempts.length) * 100 : 0,
+      };
+    });
+
+    return {
+      totalAttempts,
+      averageScore,
+      passingRate,
+      questionStatistics,
+    };
+  }
+
+  async duplicateQuiz(id: number, name: string) {
+    const originalQuiz = await this.getQuizById(id);
+
+    return this.prisma.quiz.create({
+      data: {
+        name,
+        description: originalQuiz.description,
+        settings: originalQuiz.settings ? JSON.stringify(originalQuiz.settings) : null,
+        questions: {
+          create: originalQuiz.questions.map(q => ({
+            type: q.type,
+            question: q.question,
+            options: q.options ? JSON.stringify(q.options) : null,
+            correctAnswers: q.correctAnswers ? JSON.stringify(q.correctAnswers) : null,
+            correctAnswer: q.correctAnswer !== undefined ? q.correctAnswer : null,
+            required: q.required,
+            order: q.order,
+            points: q.points,
+          })),
+        },
+      },
+      include: {
+        questions: true,
         resource: true,
       },
     });

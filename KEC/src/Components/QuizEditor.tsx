@@ -13,6 +13,8 @@ export interface Question {
   question: string;
   description?: string;
   options?: string[];
+  correctAnswers?: (string | number)[]; // Array of correct answers (indices or values)
+  correctAnswer?: string | number; // For single correct answer types
   required: boolean;
   points: number;
 }
@@ -59,24 +61,28 @@ const QuizEditor = ({ resource, onClose, onUpdate }: QuizEditorProps) => {
   // Initialize state with proper fallbacks
   const getInitialQuestions = (): Question[] => {
     if (Array.isArray(resource.quiz)) {
-      return resource.quiz.map((q: any, index:number) => ({
+      return resource.quiz.map((q: any, index: number) => ({
         id: q.id || Date.now() + index,
         type: q.type || 'multiple',
         question: q.question || '',
         description: q.description || '',
         options: q.options || (q.type !== 'short' && q.type !== 'long' && q.type !== 'number' ? [''] : undefined),
+        correctAnswers: q.correctAnswers || [],
+        correctAnswer: q.correctAnswer,
         required: q.required || false,
         points: q.points || 1
       }));
     }
     
     if (quizData?.questions) {
-      return quizData.questions.map((q: any, index:number) => ({
+      return quizData.questions.map((q: any, index: number) => ({
         id: q.id || Date.now() + index,
         type: q.type,
         question: q.question,
         description: q.description || '',
         options: q.options,
+        correctAnswers: q.correctAnswers || [],
+        correctAnswer: q.correctAnswer,
         required: q.required || false,
         points: q.points || 1
       }));
@@ -158,6 +164,8 @@ const QuizEditor = ({ resource, onClose, onUpdate }: QuizEditorProps) => {
     question: "",
     description: "",
     options: [""],
+    correctAnswers: [],
+    correctAnswer: undefined,
     required: false,
     points: 1
   });
@@ -176,6 +184,8 @@ const QuizEditor = ({ resource, onClose, onUpdate }: QuizEditorProps) => {
           question: q.question,
           description: q.description,
           options: q.options,
+          correctAnswers: q.correctAnswers,
+          correctAnswer: q.correctAnswer,
           required: q.required,
           points: q.points || 1,
           order: index
@@ -226,7 +236,7 @@ const QuizEditor = ({ resource, onClose, onUpdate }: QuizEditorProps) => {
     if (hasChanges && !isSaving) {
       const autoSaveTimer = setTimeout(() => {
         saveQuiz();
-      }, 3000); // Increased to 3 seconds to avoid too frequent saves
+      }, 3000);
 
       return () => clearTimeout(autoSaveTimer);
     }
@@ -254,6 +264,8 @@ const QuizEditor = ({ resource, onClose, onUpdate }: QuizEditorProps) => {
       options: newQuestion.type !== "short" && newQuestion.type !== "long" && newQuestion.type !== "number" 
         ? newQuestion.options?.filter(opt => opt.trim()).map(opt => opt.trim()) 
         : undefined,
+      correctAnswers: newQuestion.correctAnswers || [],
+      correctAnswer: newQuestion.correctAnswer,
       required: newQuestion.required || false,
       points: newQuestion.points || 1
     };
@@ -262,7 +274,7 @@ const QuizEditor = ({ resource, onClose, onUpdate }: QuizEditorProps) => {
     setQuestions(updatedQuestions);
     setHasChanges(true);
     
-    // Call onUpdate callback if provided (for immediate parent component updates)
+    // Call onUpdate callback if provided
     if (onUpdate) {
       onUpdate(resource.id, { 
         ...resource.quiz, 
@@ -277,6 +289,8 @@ const QuizEditor = ({ resource, onClose, onUpdate }: QuizEditorProps) => {
       question: "",
       description: "",
       options: [""],
+      correctAnswers: [],
+      correctAnswer: undefined,
       required: false,
       points: 1
     });
@@ -364,13 +378,72 @@ const QuizEditor = ({ resource, onClose, onUpdate }: QuizEditorProps) => {
     const question = questions.find(q => q.id === questionId);
     if (question && question.options && question.options.length > 1) {
       const updatedOptions = question.options.filter((_, index) => index !== optionIndex);
-      updateQuestion(questionId, { options: updatedOptions });
+      
+      // Also remove from correct answers if this option was marked as correct
+      let updatedCorrectAnswers = question.correctAnswers || [];
+      if (question.type === 'multiple' || question.type === 'truefalse') {
+        if (question.correctAnswer === optionIndex) {
+          updatedCorrectAnswers = [];
+        }
+      } else if (question.type === 'checkbox') {
+        updatedCorrectAnswers = updatedCorrectAnswers.filter(ans => ans !== optionIndex);
+      }
+      
+      updateQuestion(questionId, { 
+        options: updatedOptions,
+        correctAnswers: updatedCorrectAnswers,
+        correctAnswer: question.type === 'multiple' || question.type === 'truefalse' 
+          ? (question.correctAnswer === optionIndex ? undefined : question.correctAnswer)
+          : question.correctAnswer
+      });
     }
+  };
+
+  // Correct answer management
+  const toggleCorrectAnswer = (questionId: number, optionIndex: number) => {
+    const question = questions.find(q => q.id === questionId);
+    if (!question || !question.options) return;
+
+    if (question.type === 'multiple' || question.type === 'truefalse') {
+      // Single correct answer - toggle the selected option
+      const newCorrectAnswer = question.correctAnswer === optionIndex ? undefined : optionIndex;
+      updateQuestion(questionId, { 
+        correctAnswer: newCorrectAnswer,
+        correctAnswers: newCorrectAnswer !== undefined ? [newCorrectAnswer] : []
+      });
+    } else if (question.type === 'checkbox') {
+      // Multiple correct answers - toggle the option in the array
+      const currentCorrectAnswers = question.correctAnswers || [];
+      const isCurrentlyCorrect = currentCorrectAnswers.includes(optionIndex);
+      const newCorrectAnswers = isCurrentlyCorrect
+        ? currentCorrectAnswers.filter(ans => ans !== optionIndex)
+        : [...currentCorrectAnswers, optionIndex];
+      
+      updateQuestion(questionId, { correctAnswers: newCorrectAnswers });
+    }
+  };
+
+  // Set correct answer for text/number questions
+  const setTextCorrectAnswer = (questionId: number, answer: string) => {
+    updateQuestion(questionId, { 
+      correctAnswer: answer,
+      correctAnswers: [answer]
+    });
   };
 
   const getQuestionIcon = (type: string) => {
     const questionType = questionTypes.find(t => t.value === type);
     return questionType?.icon || FaQuestionCircle;
+  };
+
+  // Check if an option is correct
+  const isOptionCorrect = (question: Question, optionIndex: number): boolean => {
+    if (question.type === 'multiple' || question.type === 'truefalse') {
+      return question.correctAnswer === optionIndex;
+    } else if (question.type === 'checkbox') {
+      return (question.correctAnswers || []).includes(optionIndex);
+    }
+    return false;
   };
 
   // Handle settings changes
@@ -387,9 +460,19 @@ const QuizEditor = ({ resource, onClose, onUpdate }: QuizEditorProps) => {
   // Reset new question options when type changes
   useEffect(() => {
     if (newQuestion.type === "short" || newQuestion.type === "long" || newQuestion.type === "number") {
-      setNewQuestion(prev => ({ ...prev, options: undefined }));
+      setNewQuestion(prev => ({ 
+        ...prev, 
+        options: undefined,
+        correctAnswers: [],
+        correctAnswer: undefined
+      }));
     } else if (!newQuestion.options || newQuestion.options.length === 0) {
-      setNewQuestion(prev => ({ ...prev, options: [""] }));
+      setNewQuestion(prev => ({ 
+        ...prev, 
+        options: [""],
+        correctAnswers: [],
+        correctAnswer: undefined
+      }));
     }
   }, [newQuestion.type]);
 
@@ -519,7 +602,9 @@ const QuizEditor = ({ resource, onClose, onUpdate }: QuizEditorProps) => {
                         setNewQuestion(prev => ({ 
                           ...prev, 
                           type: type.value as any,
-                          options: type.value === "short" || type.value === "long" || type.value === "number" ? undefined : [""]
+                          options: type.value === "short" || type.value === "long" || type.value === "number" ? undefined : [""],
+                          correctAnswers: [],
+                          correctAnswer: undefined
                         }));
                         setShowSidebar(false);
                       }}
@@ -674,13 +759,52 @@ const QuizEditor = ({ resource, onClose, onUpdate }: QuizEditorProps) => {
 
                   {newQuestion.type !== "short" && newQuestion.type !== "long" && newQuestion.type !== "number" && newQuestion.options && (
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Options</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Options 
+                        <span className="text-xs text-gray-500 ml-2">
+                          {newQuestion.type === 'multiple' || newQuestion.type === 'truefalse' 
+                            ? '(Click to mark correct answer)' 
+                            : '(Click to mark correct answers)'}
+                        </span>
+                      </label>
                       <div className="space-y-2">
                         {newQuestion.options.map((option, index) => (
                           <div key={index} className="flex gap-2 items-center">
-                            {newQuestion.type === "multiple" && <FaRegCircle className="text-gray-400 mt-1 flex-shrink-0" />}
-                            {newQuestion.type === "checkbox" && <FaRegSquare className="text-gray-400 mt-1 flex-shrink-0" />}
-                            {newQuestion.type === "truefalse" && <FaCheckCircle className="text-gray-400 mt-1 flex-shrink-0" />}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (newQuestion.type === 'multiple' || newQuestion.type === 'truefalse') {
+                                  const newCorrectAnswer = newQuestion.correctAnswer === index ? undefined : index;
+                                  setNewQuestion(prev => ({
+                                    ...prev,
+                                    correctAnswer: newCorrectAnswer,
+                                    correctAnswers: newCorrectAnswer !== undefined ? [newCorrectAnswer] : []
+                                  }));
+                                } else if (newQuestion.type === 'checkbox') {
+                                  const currentCorrectAnswers = newQuestion.correctAnswers || [];
+                                  const isCurrentlyCorrect = currentCorrectAnswers.includes(index);
+                                  const newCorrectAnswers = isCurrentlyCorrect
+                                    ? currentCorrectAnswers.filter(ans => ans !== index)
+                                    : [...currentCorrectAnswers, index];
+                                  setNewQuestion(prev => ({ ...prev, correctAnswers: newCorrectAnswers }));
+                                }
+                              }}
+                              className={`p-2 rounded-lg border transition-colors flex-shrink-0 ${
+                                (newQuestion.type === 'multiple' || newQuestion.type === 'truefalse') 
+                                  ? newQuestion.correctAnswer === index
+                                    ? 'bg-green-500 border-green-600 text-white'
+                                    : 'bg-gray-100 border-gray-300 text-gray-600 hover:bg-gray-200'
+                                  : newQuestion.type === 'checkbox'
+                                  ? (newQuestion.correctAnswers || []).includes(index)
+                                    ? 'bg-green-500 border-green-600 text-white'
+                                    : 'bg-gray-100 border-gray-300 text-gray-600 hover:bg-gray-200'
+                                  : 'bg-gray-100 border-gray-300 text-gray-600'
+                              }`}
+                            >
+                              {newQuestion.type === "multiple" && <FaRegCircle className="text-sm" />}
+                              {newQuestion.type === "checkbox" && <FaRegSquare className="text-sm" />}
+                              {newQuestion.type === "truefalse" && <FaCheckCircle className="text-sm" />}
+                            </button>
                             <input
                               type="text"
                               value={option}
@@ -715,6 +839,23 @@ const QuizEditor = ({ resource, onClose, onUpdate }: QuizEditorProps) => {
                           <FaPlus /> Add Option
                         </button>
                       </div>
+                    </div>
+                  )}
+
+                  {(newQuestion.type === "short" || newQuestion.type === "long" || newQuestion.type === "number") && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Correct Answer</label>
+                      <input
+                        type={newQuestion.type === "number" ? "number" : "text"}
+                        value={newQuestion.correctAnswer || ''}
+                        onChange={(e) => setNewQuestion(prev => ({ 
+                          ...prev, 
+                          correctAnswer: e.target.value,
+                          correctAnswers: [e.target.value]
+                        }))}
+                        placeholder={`Enter correct ${newQuestion.type === "number" ? "number" : "answer"}`}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#034153] focus:border-transparent text-sm sm:text-base"
+                      />
                     </div>
                   )}
 
@@ -801,7 +942,9 @@ const QuizEditor = ({ resource, onClose, onUpdate }: QuizEditorProps) => {
                                     value={question.type}
                                     onChange={(e) => updateQuestion(question.id, { 
                                       type: e.target.value as any,
-                                      options: e.target.value === "short" || e.target.value === "long" || e.target.value === "number" ? undefined : question.options || [""]
+                                      options: e.target.value === "short" || e.target.value === "long" || e.target.value === "number" ? undefined : question.options || [""],
+                                      correctAnswers: [],
+                                      correctAnswer: undefined
                                     })}
                                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#034153] text-sm sm:text-base"
                                   >
@@ -824,10 +967,27 @@ const QuizEditor = ({ resource, onClose, onUpdate }: QuizEditorProps) => {
 
                               {question.type !== "short" && question.type !== "long" && question.type !== "number" && question.options && (
                                 <div className="space-y-2">
-                                  <label className="block text-sm font-medium text-gray-700">Options</label>
+                                  <label className="block text-sm font-medium text-gray-700">
+                                    Options 
+                                    <span className="text-xs text-gray-500 ml-2">
+                                      {question.type === 'multiple' || question.type === 'truefalse' 
+                                        ? '(Click to mark correct answer)' 
+                                        : '(Click to mark correct answers)'}
+                                    </span>
+                                  </label>
                                   {question.options.map((option, optIndex) => (
                                     <div key={optIndex} className="flex gap-2 items-center">
-                                      <QuestionIcon className="text-gray-400 mt-1 flex-shrink-0" />
+                                      <button
+                                        type="button"
+                                        onClick={() => toggleCorrectAnswer(question.id, optIndex)}
+                                        className={`p-2 rounded-lg border transition-colors flex-shrink-0 ${
+                                          isOptionCorrect(question, optIndex)
+                                            ? 'bg-green-500 border-green-600 text-white'
+                                            : 'bg-gray-100 border-gray-300 text-gray-600 hover:bg-gray-200'
+                                        }`}
+                                      >
+                                        <QuestionIcon className="text-sm" />
+                                      </button>
                                       <input
                                         type="text"
                                         value={option}
@@ -850,6 +1010,19 @@ const QuizEditor = ({ resource, onClose, onUpdate }: QuizEditorProps) => {
                                   >
                                     <FaPlus /> Add Option
                                   </button>
+                                </div>
+                              )}
+
+                              {(question.type === "short" || question.type === "long" || question.type === "number") && (
+                                <div>
+                                  <label className="block text-sm font-medium text-gray-700 mb-2">Correct Answer</label>
+                                  <input
+                                    type={question.type === "number" ? "number" : "text"}
+                                    value={question.correctAnswer || ''}
+                                    onChange={(e) => setTextCorrectAnswer(question.id, e.target.value)}
+                                    placeholder={`Enter correct ${question.type === "number" ? "number" : "answer"}`}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#034153] text-sm sm:text-base"
+                                  />
                                 </div>
                               )}
 
@@ -882,6 +1055,11 @@ const QuizEditor = ({ resource, onClose, onUpdate }: QuizEditorProps) => {
                                       {question.required && (
                                         <span className="bg-red-100 text-red-800 text-xs sm:text-sm font-medium px-2 py-1 rounded whitespace-nowrap">
                                           Required
+                                        </span>
+                                      )}
+                                      {(question.correctAnswer !== undefined || (question.correctAnswers && question.correctAnswers.length > 0)) && (
+                                        <span className="bg-green-100 text-green-800 text-xs sm:text-sm font-medium px-2 py-1 rounded whitespace-nowrap">
+                                          Correct Answer Set
                                         </span>
                                       )}
                                     </div>
@@ -930,13 +1108,47 @@ const QuizEditor = ({ resource, onClose, onUpdate }: QuizEditorProps) => {
                               {question.type !== "short" && question.type !== "long" && question.type !== "number" && question.options && (
                                 <div className="space-y-2 ml-4 sm:ml-8">
                                   {question.options.map((option, optIndex) => (
-                                    <div key={optIndex} className="flex items-center gap-2 sm:gap-3 text-gray-700 p-2 hover:bg-gray-50 rounded-lg text-sm sm:text-base">
-                                      {question.type === "multiple" && <FaRegCircle className="text-gray-400 flex-shrink-0 text-xs sm:text-sm" />}
-                                      {question.type === "checkbox" && <FaRegSquare className="text-gray-400 flex-shrink-0 text-xs sm:text-sm" />}
-                                      {question.type === "truefalse" && <FaCheckCircle className="text-gray-400 flex-shrink-0 text-xs sm:text-sm" />}
+                                    <div 
+                                      key={optIndex} 
+                                      className={`flex items-center gap-2 sm:gap-3 p-2 rounded-lg text-sm sm:text-base transition-colors ${
+                                        isOptionCorrect(question, optIndex)
+                                          ? 'bg-green-50 border border-green-200 text-green-800'
+                                          : 'text-gray-700 hover:bg-gray-50'
+                                      }`}
+                                    >
+                                      {question.type === "multiple" && (
+                                        <FaRegCircle className={`flex-shrink-0 text-xs sm:text-sm ${
+                                          isOptionCorrect(question, optIndex) ? 'text-green-600' : 'text-gray-400'
+                                        }`} />
+                                      )}
+                                      {question.type === "checkbox" && (
+                                        <FaRegSquare className={`flex-shrink-0 text-xs sm:text-sm ${
+                                          isOptionCorrect(question, optIndex) ? 'text-green-600' : 'text-gray-400'
+                                        }`} />
+                                      )}
+                                      {question.type === "truefalse" && (
+                                        <FaCheckCircle className={`flex-shrink-0 text-xs sm:text-sm ${
+                                          isOptionCorrect(question, optIndex) ? 'text-green-600' : 'text-gray-400'
+                                        }`} />
+                                      )}
                                       <span className="break-words">{option}</span>
+                                      {isOptionCorrect(question, optIndex) && (
+                                        <FaCheckCircle className="text-green-500 flex-shrink-0 text-xs sm:text-sm ml-auto" />
+                                      )}
                                     </div>
                                   ))}
+                                </div>
+                              )}
+
+                              {(question.type === "short" || question.type === "long" || question.type === "number") && question.correctAnswer && (
+                                <div className="ml-4 sm:ml-8">
+                                  <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                                    <div className="flex items-center gap-2 text-green-800 text-sm font-medium mb-1">
+                                      <FaCheckCircle className="text-green-600" />
+                                      Correct Answer:
+                                    </div>
+                                    <p className="text-green-700 text-sm">{question.correctAnswer}</p>
+                                  </div>
                                 </div>
                               )}
                             </div>

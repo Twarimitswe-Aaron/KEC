@@ -11,6 +11,8 @@ export class CreateQuizQuestionDto {
   question: string;
   description?: string;
   options?: string[];
+  correctAnswer?: number; // For single-answer questions (index)
+  correctAnswers?: number[]; // For multi-answer questions (array of indices)
   required?: boolean;
   points?: number;
 }

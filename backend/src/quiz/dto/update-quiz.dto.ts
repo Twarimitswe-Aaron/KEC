@@ -1,9 +1,11 @@
 // src/quiz/dto/update-quiz.dto.ts
+import { QuizSettingsDto } from './create-quiz.dto';
+
 export class UpdateQuizDto {
   name?: string;
   description?: string;
   questions?: UpdateQuizQuestionDto[];
-
+  settings?: QuizSettingsDto;
 }
 
 export class UpdateQuizQuestionDto {
@@ -12,6 +14,8 @@ export class UpdateQuizQuestionDto {
   question?: string;
   description?: string;
   options?: string[];
+  correctAnswer?: number; // For single-answer questions (index)
+  correctAnswers?: number[]; // For multi-answer questions (array of indices)
   required?: boolean;
   points?: number;
 }

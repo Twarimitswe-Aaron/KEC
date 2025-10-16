@@ -147,6 +147,7 @@ model Quiz {
   id          Int            @id @default(autoincrement())
   name        String
   description String?
+  settings    String? // JSON stringified quiz settings
   questions   QuizQuestion[]
   resource    Resource?
   attempts    QuizAttempt[]
@@ -155,26 +156,29 @@ model Quiz {
 }
 
 model QuizQuestion {
-  id         Int     @id @default(autoincrement())
-  quizId     Int
-  type       String // "multiple" | "checkbox" | "truefalse" | "short"
-  question   String
-  options    String? // JSON stringified array
-  required   Boolean @default(false)
-  orderIndex Int     @default(0) // For ordering questions
-  order      Int     @default(0) // Alternative ordering field
-  points     Int     @default(1) // Points for this question
-  quiz       Quiz    @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  id             Int     @id @default(autoincrement())
+  quizId         Int
+  type           String // "multiple" | "checkbox" | "truefalse" | "short"
+  question       String
+  options        String? // JSON stringified array
+  correctAnswer  Int? // For single-answer questions (index or value)
+  correctAnswers String? // JSON stringified array for multi-answer questions
+  required       Boolean @default(false)
+  orderIndex     Int     @default(0) // For ordering questions
+  order          Int     @default(0) // Alternative ordering field
+  points         Int     @default(1) // Points for this question
+  quiz           Quiz    @relation(fields: [quizId], references: [id], onDelete: Cascade)
 }
 
 model QuizAttempt {
-  id          Int      @id @default(autoincrement())
-  quizId      Int
-  submittedAt DateTime @default(now())
-  responses   String   // JSON stringified responses
-  score       Int      @default(0) // Calculated score
-  totalPoints Int      @default(0) // Total possible points
-  quiz        Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  id              Int      @id @default(autoincrement())
+  quizId          Int
+  submittedAt     DateTime @default(now())
+  responses       String   // JSON stringified responses
+  score           Int      @default(0) // Calculated score
+  totalPoints     Int      @default(0) // Total possible points
+  detailedResults String? // JSON stringified detailed results
+  quiz            Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
 }
 
 
