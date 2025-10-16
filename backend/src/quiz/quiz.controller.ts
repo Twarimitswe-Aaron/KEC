@@ -147,7 +147,6 @@ export class QuizController {
         id: q.id,
         type: q.type,
         question: q.question,
-        description: q.description,
         options: q.options,
         required: q.required,
         points: q.points,
