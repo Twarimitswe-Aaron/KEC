@@ -7,6 +7,7 @@ import {
 } from "../state/api/announcementsApi";
 import { useUser } from "../hooks/useUser";
 import { toast } from "react-toastify";
+import { Link } from "react-router-dom";
 
 // Skeleton Loader for feedback
 const FeedbackSkeleton = () => {
@@ -32,17 +33,20 @@ type FeedbackCardProps = {
   role: string;
   message: string;
   date: string;
+  avatar:string;
+  id:number
 };
 
-const FeedbackCard = ({ name, role, message, date }: FeedbackCardProps) => {
+const FeedbackCard = ({ name, role, message, date, avatar ,id}: FeedbackCardProps) => {
   return (
     <div className="bg-white/70 backdrop-blur-md rounded-xl shadow-md border border-gray-200 p-3 mb-4 hover:shadow-lg transition duration-300">
       <div className="flex items-center gap-3 mb-2">
+       <Link to={`/profile/${id}`}>
         <img
-          src={`https://ui-avatars.com/api/?name=${name}&background=022F40&color=ffffff&rounded=true&size=48`}
+          src={avatar}
           alt={`${name} avatar`}
-          className="w-10 h-10 rounded-full shadow-sm"
-        />
+          className="w-10 h-10 cursor-pointer rounded-full shadow-sm"
+        /></Link>
         <div className="flex justify-between w-full items-center gap-2">
           <div>
             <h3 className="font-semibold text-[#022F40] text-sm">{name}</h3>
@@ -116,26 +120,32 @@ const Feedback = () => {
         </div>
       )}
 
-      <h2 className="text-xl font-semibold text-[#022F40] mb-4">Feedback</h2>
-
-      {isLoading || isFetching ? (
+      {(UserRole === "admin" || UserRole ==="teacher") && (
         <>
-          <FeedbackSkeleton />
-          <FeedbackSkeleton />
-          <FeedbackSkeleton />
+          <h2 className="text-xl font-semibold text-[#022F40] mb-4">Feedback</h2>
+
+          {isLoading || isFetching ? (
+            <>
+              <FeedbackSkeleton />
+              <FeedbackSkeleton />
+              <FeedbackSkeleton />
+            </>
+          ) : (feedBackFetched ?? []).length > 0 ? (
+            (feedBackFetched ?? []).map((fb, index) => (
+              <FeedbackCard
+                key={index}
+                name={`${fb.poster.firstName} ${fb.poster.lastName}`}
+                role={fb.poster.email}
+                message={fb.content}
+                date={fb.createdAt}
+                avatar={fb.poster.avatar}
+                id={fb.poster.id}
+              />
+            ))
+          ) : (
+            <p className="text-gray-400 text-center">No feedback available.</p>
+          )}
         </>
-      ) : (feedBackFetched ?? []).length > 0 ? (
-        (feedBackFetched ?? []).map((fb, index) => (
-          <FeedbackCard
-            key={index}
-            name={`${fb.poster.firstName} ${fb.poster.lastName}`}
-            role={fb.poster.email}
-            message={fb.content}
-            date={fb.createdAt}
-          />
-        ))
-      ) : (
-        <p className="text-gray-400 text-center">No feedback available.</p>
       )}
     </div>
   );

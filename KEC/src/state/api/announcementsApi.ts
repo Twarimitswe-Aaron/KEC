@@ -14,6 +14,7 @@ export interface feedBackRes {
   content: string;
   createdAt: string;
   poster: {
+    id:number;
     firstName: string;
     lastName: string;
     avatar: string;

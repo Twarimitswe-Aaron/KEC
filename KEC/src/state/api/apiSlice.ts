@@ -16,14 +16,7 @@ export const apiSlice = createApi({
         const res = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:4000'}/csrf/token`, {
           credentials: 'include',
         });
-  //       if (
-  //   res?.status === 403 &&
-  //   res?.data?.message === "CSRF token not found in session"
-  // ) {
-  //   window.location.reload();
-  // }
-  console.log(res);
-        
+
         if (res.ok) {
           const data = await res.json();
           cachedCsrfToken = data.csrfToken;

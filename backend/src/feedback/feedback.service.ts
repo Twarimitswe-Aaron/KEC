@@ -62,6 +62,7 @@ export class FeedbackService {
       content: fb.feedback,         // rename feedback → content
       createdAt: fb.createdAt.toISOString(),
       poster: {
+        id:fb?.student?.user?.id,
         firstName: fb?.student?.user?.firstName ?? '',
         lastName: fb?.student?.user?.lastName ?? '',
         avatar: fb?.student?.user?.profile?.avatar ?? '',
@@ -69,7 +70,6 @@ export class FeedbackService {
       }
     }));
     
-    console.log(allFeedbacks)
 
     return allFeedbacks;
   }

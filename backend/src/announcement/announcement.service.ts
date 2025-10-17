@@ -21,6 +21,7 @@ export class AnnouncementService {
 
     const id=Number(body.posterId)
     if (!id || isNaN(id)) {
+
       throw new Error("Invalid posterId");
     }
   
@@ -69,6 +70,7 @@ export class AnnouncementService {
       },
       orderBy: { createdAt: 'desc' },
     });
+   
   
     return allAnnouncements;
   }

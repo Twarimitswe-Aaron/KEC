@@ -30,6 +30,7 @@ export class AnnouncementController {
   }
 
   @UseGuards(AuthGuard)
+ 
   @Get()
   findAll() {
     return this.announcementService.findAll();
