@@ -1,4 +1,4 @@
-// src/hooks/useCsrfToken.ts
+
 import { useFetchCsrfTokenQuery } from '../state/api/csrfApi';
 
 export const useCsrfToken = () => {

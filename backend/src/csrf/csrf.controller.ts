@@ -7,7 +7,7 @@ import { generateCsrfToken } from './csrf.config';
 export class CsrfController {
   @Get('token')
   async getCsrfToken(@Req() req: Request, @Res() res: Response) {
-    console.log('Received request for CSRF token');
+
     try {
       if (!req.session) {
         throw new Error('Session not initialized');

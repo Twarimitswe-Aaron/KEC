@@ -124,16 +124,13 @@ export const lessonApi = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
     // Create new lesson
     createLesson: builder.mutation<ApiResponse<Lesson>, CreateLessonRequest>({
-      query: ({ courseId, title, description, content, isUnlocked, order }) => ({
+      query: ({ courseId, title, description }) => ({
         url: `/lesson`,
         method: "POST",
         body: { 
           courseId, 
           title, 
           description, 
-          content: content || description,
-          isUnlocked: isUnlocked ?? true,
-          order: order || 0
         },
       }),
       invalidatesTags: (result, error, { courseId }) => [

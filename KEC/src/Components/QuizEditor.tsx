@@ -170,68 +170,98 @@ const QuizEditor = ({ resource, onClose, onUpdate }: QuizEditorProps) => {
     points: 1
   });
 
-  // Save quiz to backend
-  const saveQuiz = async () => {
-    if (isSaving) return;
-    
-    setIsSaving(true);
-    try {
-      const quizPayload = {
-        name: quizSettings.title,
-        description: quizSettings.description,
-        questions: questions.map((q, index) => ({
-          type: q.type,
-          question: q.question,
-          description: q.description,
-          options: q.options,
-          correctAnswers: q.correctAnswers,
-          correctAnswer: q.correctAnswer,
-          required: q.required,
+ // Save quiz to backend
+const saveQuiz = async () => {
+  if (isSaving) return;
+
+  setIsSaving(true);
+  try {
+    // --- STEP 1: Only include non-empty fields in payload ---
+    const filteredQuizSettings = Object.fromEntries(
+      Object.entries(quizSettings).filter(([_, value]) => 
+        value !== null && value !== undefined && value !== ''
+      )
+    );
+
+    const filteredQuestions = questions
+      .filter(q => q.question?.trim() !== '') // skip completely empty questions
+      .map((q, index) => {
+        // remove empty values per question
+        const cleanedQuestion = Object.fromEntries(
+          Object.entries(q).filter(([_, value]) => 
+            value !== null && value !== undefined && value !== ''
+          )
+        );
+        return {
+          ...cleanedQuestion,
           points: q.points || 1,
           order: index
-        })),
-        settings: quizSettings
-      };
+        };
+      });
 
-      let result;
-      if (resource.quizId) {
-        // Update existing quiz
-        result = await updateQuiz({
-          id: resource.quizId,
-          data: quizPayload
-        }).unwrap();
-        toast.success("Quiz updated successfully!");
-      } else {
-        // Create new quiz
-        result = await createQuiz(quizPayload).unwrap();
-        toast.success("Quiz created successfully!");
-        
-        // If there's a callback to handle the new quiz ID, call it
-        if (onUpdate) {
-          onUpdate(resource.id, { 
-            ...resource.quiz, 
-            id: result.id, 
-            questions, 
-            settings: quizSettings 
-          });
-        }
-      }
-      
-      setHasChanges(false);
-      // Refetch the quiz data to ensure we have the latest state
-      if (resource.quizId) {
-        await refetch();
-      }
-    } catch (error: any) {
-      console.error('Failed to save quiz:', error);
-      const errorMessage = error?.data?.message || error?.message || "Failed to save quiz. Please try again.";
-      toast.error(errorMessage);
-    } finally {
+    const quizPayload: any = {
+      ...(filteredQuizSettings.name && { name: filteredQuizSettings.name }),
+      ...(filteredQuizSettings.description && { description: filteredQuizSettings.description }),
+      ...(resource?.id && { resourceId: resource.id }),
+      ...(filteredQuestions.length > 0 && { questions: filteredQuestions }),
+      settings: filteredQuizSettings
+    };
+
+    // if nothing to send
+    if (Object.keys(quizPayload).length === 0) {
+      toast.error("Please fill at least one field before saving.");
       setIsSaving(false);
+      return;
     }
-  };
 
-  // Auto-save when questions or settings change
+    let message: string | undefined;
+    console.log(resource, "hello now i can see the resource");
+
+    // --- STEP 2: Decide create or update ---
+    if (resource.quizId) {
+      // Update existing quiz
+      const updateResult: { message?: string } = await updateQuiz({
+        id: resource.quizId,
+        data: quizPayload
+      }).unwrap();
+      message = updateResult.message;
+      console.log("Updating quiz:", message);
+      toast.success("Quiz updated successfully!");
+    } else {
+      // Create new quiz
+      const result = await createQuiz(quizPayload).unwrap();
+      console.log(result, "Quiz created");
+      toast.success("Quiz created successfully!");
+
+      // Callback with new quiz data
+      if (onUpdate) {
+        onUpdate(resource.id, { 
+          ...resource.quiz, 
+          id: result.id, 
+          questions: filteredQuestions, 
+          settings: filteredQuizSettings 
+        });
+      }
+    }
+
+    setHasChanges(false);
+
+    // --- STEP 3: Refetch to sync state ---
+    if (resource.quizId) {
+      await refetch();
+    }
+  } catch (error: any) {
+    console.error('Failed to save quiz:', error);
+    const errorMessage =
+      error?.data?.message || error?.message || "Failed to save quiz. Please try again.";
+    toast.error(errorMessage);
+  } finally {
+    setIsSaving(false);
+  }
+};
+
+
+
   useEffect(() => {
     if (hasChanges && !isSaving) {
       const autoSaveTimer = setTimeout(() => {
@@ -240,7 +270,7 @@ const QuizEditor = ({ resource, onClose, onUpdate }: QuizEditorProps) => {
 
       return () => clearTimeout(autoSaveTimer);
     }
-  }, [questions, quizSettings, hasChanges]);
+  }, [ quizSettings]);
 
   // Mark changes when questions or settings are modified
   useEffect(() => {
@@ -454,6 +484,7 @@ const QuizEditor = ({ resource, onClose, onUpdate }: QuizEditorProps) => {
 
   // Handle manual save
   const handleManualSave = async () => {
+    console.log("request updating quiz")
     await saveQuiz();
   };
 
@@ -831,6 +862,7 @@ const QuizEditor = ({ resource, onClose, onUpdate }: QuizEditorProps) => {
                         ))}
                         <button
                           onClick={() => setNewQuestion(prev => ({ 
+                            
                             ...prev, 
                             options: [...(prev.options || []), ""] 
                           }))}

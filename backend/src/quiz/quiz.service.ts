@@ -4,31 +4,55 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateQuizDto } from './dto/create-quiz.dto';
 import { UpdateQuizDto } from './dto/update-quiz.dto';
 import { CreateQuizAttemptDto } from './dto/quiz-attempt.dto';
+import { create } from 'domain';
 
 @Injectable()
 export class QuizService {
   constructor(private prisma: PrismaService) {}
 
   async createQuiz(createQuizDto: CreateQuizDto) {
-    const { questions, settings, ...quizData } = createQuizDto;
+    console.log(createQuizDto,"dealing with data")
+    const { questions = [], settings, name, description, resourceId } = createQuizDto;
+    
+    if (!name) {
+      throw new Error('Quiz name is required');
+    }
+    
+    if (!resourceId) {
+      throw new Error('Resource ID is required');
+    }
+
+    const data: any = {
+      name,
+      resourceId,
+      settings: settings ? JSON.stringify(settings) : null,
+    };
+
+    // Only include description if it's provided
+    if (description !== undefined) {
+      data.description = description;
+    }
+
+    // Only include questions if they are provided
+    if (questions && questions.length > 0) {
+      data.questions = {
+        create: questions.map((q, index) => ({
+          type: q.type,
+          question: q.question,
+          options: q.options ? JSON.stringify(q.options) : null,
+          correctAnswers: q.correctAnswers ? JSON.stringify(q.correctAnswers) : null,
+          correctAnswer: q.correctAnswer !== undefined ? q.correctAnswer : null,
+          required: q.required !== undefined ? q.required : true,
+          order: index,
+          points: q.points || 1,
+        })),
+      };
+    }
+
+    console.log("Creating quiz with data:", JSON.stringify(data, null, 2));
 
     return this.prisma.quiz.create({
-      data: {
-        ...quizData,
-        settings: settings ? JSON.stringify(settings) : null,
-        questions: {
-          create: questions.map((q, index) => ({
-            type: q.type,
-            question: q.question,
-            options: q.options ? JSON.stringify(q.options) : null,
-            correctAnswers: q.correctAnswers ? JSON.stringify(q.correctAnswers) : null,
-            correctAnswer: q.correctAnswer !== undefined ? q.correctAnswer : null,
-            required: q.required || false,
-            order: index,
-            points: q.points || 1,
-          })),
-        },
-      },
+      data,
       include: {
         questions: true,
         resource: true,
@@ -62,6 +86,7 @@ export class QuizService {
 
     return {
       ...quiz,
+      resourceId: quiz.resourceId,
       questions: quiz.questions.map(q => ({
         ...q,
         options: q.options ? JSON.parse(q.options) : null,
@@ -73,9 +98,7 @@ export class QuizService {
   }
 
   async updateQuiz(id: number, updateQuizDto: UpdateQuizDto) {
-    const { questions, settings, ...quizData } = updateQuizDto;
-
-    // Verify quiz exists
+    // Find the existing quiz
     const existingQuiz = await this.prisma.quiz.findUnique({
       where: { id },
       include: { questions: true },
@@ -85,69 +108,132 @@ export class QuizService {
       throw new NotFoundException(`Quiz with ID ${id} not found`);
     }
 
-    // Start transaction for atomic update
-    return this.prisma.$transaction(async (tx) => {
-      // Update quiz basic info
-      const updatedQuiz = await tx.quiz.update({
-        where: { id },
-        data: {
-          ...quizData,
-          settings: settings ? JSON.stringify(settings) : undefined,
-        },
-      });
+    const { questions, settings, ...quizData } = updateQuizDto;
+    
+    // Filter out undefined values to only update provided fields
+    const updateData: any = {};
+    
+    // Only include fields that were actually provided in the DTO
+    if (quizData.name !== undefined) updateData.name = quizData.name;
+    if (quizData.description !== undefined) updateData.description = quizData.description;
+    if (settings !== undefined) updateData.settings = JSON.stringify(settings);
 
-      // Handle questions update if provided
-      if (questions) {
-        // Delete existing questions
-        await tx.quizQuestion.deleteMany({
-          where: { quizId: id },
+    // Update quiz with only the provided fields
+    const updatedQuiz = await this.prisma.quiz.update({
+      where: { id },
+      data: updateData,
+      include: { questions: true },
+    });
+
+    // Handle questions update if provided
+    if (questions && questions.length > 0) {
+      await this.updateQuizQuestions(id, questions, existingQuiz);
+    }
+
+    return this.getQuizById(id);
+  }
+
+
+  private async updateQuizQuestions(quizId: number, questions: any[], existingQuiz: any) {
+    // Delete questions not in the update
+    const existingQuestionIds = questions
+      .filter(q => q.id)
+      .map(q => q.id);
+
+    await this.prisma.quizQuestion.deleteMany({
+      where: {
+        quizId,
+        id: { notIn: existingQuestionIds },
+      },
+    });
+
+    // Update or create questions
+    for (const question of questions) {
+      const { id, ...questionData } = question;
+      
+      if (id) {
+        // Update existing question
+        await this.prisma.quizQuestion.update({
+          where: { id },
+          data: {
+            ...questionData,
+            options: questionData.options ? JSON.stringify(questionData.options) : null,
+            correctAnswers: questionData.correctAnswers ? JSON.stringify(questionData.correctAnswers) : null,
+          },
         });
-
-        // Create new questions
-        await tx.quizQuestion.createMany({
-          data: questions.map((q, index) => ({
-            quizId: id,
-            type: q.type!,
-            question: q.question!,
-            options: q.options ? JSON.stringify(q.options) : null,
-            correctAnswers: q.correctAnswers ? JSON.stringify(q.correctAnswers) : null,
-            correctAnswer: q.correctAnswer !== undefined ? q.correctAnswer : null,
-            required: q.required || false,
-            order: index,
-            points: q.points || 1,
-          })),
+      } else {
+        // Create new question
+        await this.prisma.quizQuestion.create({
+          data: {
+            ...questionData,
+            quizId,
+            options: questionData.options ? JSON.stringify(questionData.options) : null,
+            correctAnswers: questionData.correctAnswers ? JSON.stringify(questionData.correctAnswers) : null,
+          },
         });
       }
+    }
+  }
 
-      return this.getQuizById(id);
+  async patchQuiz(id: number, updateQuizDto: Partial<UpdateQuizDto>) {
+    // Find the existing quiz
+    const existingQuiz = await this.prisma.quiz.findUnique({
+      where: { id },
+      include: { questions: true },
     });
+
+    if (!existingQuiz) {
+      throw new NotFoundException(`Quiz with ID ${id} not found`);
+    }
+
+    const { questions, settings, ...quizData } = updateQuizDto;
+    
+    // Build update data object with only provided fields
+    const updateData: any = {};
+    
+    // Only include fields that were actually provided in the DTO
+    if (quizData.name !== undefined) updateData.name = quizData.name;
+    if (quizData.description !== undefined) updateData.description = quizData.description;
+    if (settings !== undefined) updateData.settings = JSON.stringify(settings);
+
+    // Update quiz with only the provided fields
+    const updatedQuiz = await this.prisma.quiz.update({
+      where: { id },
+      data: updateData,
+      include: { questions: true },
+    });
+
+    // Handle questions update if provided
+    if (questions && questions.length > 0) {
+      await this.updateQuizQuestions(id, questions, existingQuiz);
+    }
+
+    return this.getQuizById(id);
   }
 
   async deleteQuiz(id: number) {
     const quiz = await this.prisma.quiz.findUnique({
       where: { id },
-      include: { resource: true },
+      include: { questions: true },
     });
 
     if (!quiz) {
       throw new NotFoundException(`Quiz with ID ${id} not found`);
     }
 
-    // If quiz is linked to a resource, we might want to handle that differently
-    if (quiz.resource) {
-      // Option 1: Delete the resource as well
-      // await this.prisma.resource.delete({ where: { id: quiz.resource.id } });
-      
-      // Option 2: Just remove the quiz link
-      await this.prisma.resource.update({
-        where: { id: quiz.resource.id },
-        data: { quizId: null },
+    // First delete all related questions
+    if (quiz.questions && quiz.questions.length > 0) {
+      await this.prisma.quizQuestion.deleteMany({
+        where: { quizId: id },
       });
     }
 
-    return this.prisma.quiz.delete({
+    // Then delete the quiz
+    await this.prisma.quiz.delete({
       where: { id },
     });
+
+    return { message: 'Quiz deleted successfully' };
   }
 
   async submitQuizAttempt(createAttemptDto: CreateQuizAttemptDto) {
@@ -418,6 +504,7 @@ export class QuizService {
       data: {
         name,
         description: originalQuiz.description,
+        resourceId:originalQuiz.resourceId,
         settings: originalQuiz.settings ? JSON.stringify(originalQuiz.settings) : null,
         questions: {
           create: originalQuiz.questions.map(q => ({

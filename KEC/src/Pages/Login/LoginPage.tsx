@@ -6,12 +6,11 @@ import { IoIosLock } from "react-icons/io";
 import clsx from "clsx";
 import { toast } from "react-toastify";
 import { FcGoogle } from "react-icons/fc";
-import { useCsrfToken } from "../../hooks/useCsrfToken";
 import { useLoginMutation } from "../../state/api/authApi";
 
 const Login = () => {
   const navigate = useNavigate();
-  // const { getToken } = useCsrfToken();
+
   const [login] = useLoginMutation();
 
   interface FormData {
@@ -32,7 +31,7 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [stepPassword, setStepPassword] = useState(false);
 
-  // Validation function
+ 
   const validate = (
     name: string,
     value: string | boolean
@@ -51,7 +50,6 @@ const Login = () => {
     return errors;
   };
 
-  // Handlers for focus, blur, change
   const handleFocus = (e: ChangeEvent<HTMLInputElement>) => {
     const { name } = e.target;
     setIsFocused((prev) => ({ ...prev, [name]: true }));
@@ -67,14 +65,13 @@ const Login = () => {
     const fieldValue = type === "checkbox" ? checked : value;
     setFormData((prev) => ({ ...prev, [name]: fieldValue }));
 
-    // Validate only if user has started typing (value is not empty)
+
     if (fieldValue !== "" || formData[name as keyof FormData] !== "") {
       const errors = validate(name, fieldValue);
       setFormErrors((prev) => ({ ...prev, [name]: errors[name] || [] }));
     }
   };
 
-  // Button to continue after email
   const handleContinue = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     const emailErrors = validate("email", formData.email);
@@ -86,7 +83,7 @@ const Login = () => {
     }
   };
 
-  // Handle going back to email step
+
   const handleBack = () => {
     setStepPassword(false);
     setFormErrors({});
@@ -98,8 +95,6 @@ const Login = () => {
     console.log("Google login clicked");
     toast.info("Google login integration pending...");
   };
-
-  // Submit password
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -110,14 +105,6 @@ const Login = () => {
       setIsLoading(false);
       return;
     }
-
-    // Fetch CSRF token
-    // const csrfToken = await getToken();
-    // if (!csrfToken) {
-    //   toast.error("CSRF token not found. Please try again.");
-    //   setIsLoading(false);
-    //   return;
-    // }
 
     try {
       await login({

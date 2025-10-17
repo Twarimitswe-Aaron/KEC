@@ -1,18 +1,17 @@
 import React, { ChangeEvent, useState, useRef } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { MdEmail } from "react-icons/md";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { IoIosLock } from "react-icons/io";
 import { toast } from "react-toastify";
 import clsx from "clsx";
 
-import { useCsrfToken } from "../../hooks/useCsrfToken";
+
 import { useSignupMutation } from "../../state/api/authApi";
 import { FcGoogle } from "react-icons/fc";
 
 const Signup = () => {
-  // const navigate = useNavigate();
-  // const { getToken } = useCsrfToken();
+
   const [signup] = useSignupMutation();
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -194,15 +193,6 @@ const Signup = () => {
       shakeForm();
       return;
     }
-
-    // Fetch CSRF token
-    // const csrfToken = await getToken();
-    // if (!csrfToken) {
-    //   toast.error("Could not fetch CSRF token. Please try again.");
-    //   setIsLoading(false);
-    //   shakeForm();
-    //   return;
-    // }
 
     try {
       const res = await signup({ ...formData,

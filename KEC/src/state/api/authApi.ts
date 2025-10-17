@@ -91,7 +91,7 @@ export const authApi = apiCore.apiSlice.injectEndpoints({
       async onQueryStarted(_, { queryFulfilled }) {
         try {
           await queryFulfilled;
-          apiCore.resetCsrfToken(); // Reset cached CSRF token on logout
+          apiCore.resetCsrfToken(); 
         } catch (error) {
           console.error('Logout failed:', error);
         }

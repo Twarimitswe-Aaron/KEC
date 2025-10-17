@@ -38,6 +38,7 @@ export interface Quiz {
 }
 
 export interface CreateQuizRequest {
+    resourceId:number;
   name: string;
   description?: string;
   questions: QuizQuestion[];
@@ -118,10 +119,10 @@ export const quizApi = apiSlice.injectEndpoints({
       invalidatesTags: ['Quiz'],
     }),
 
-    updateQuiz: builder.mutation<Quiz, { id: number; data: UpdateQuizRequest }>({
+    updateQuiz: builder.mutation<{message:string}, { id: number; data: UpdateQuizRequest }>({
       query: ({ id, data }) => ({
         url: `quizzes/${id}`,
-        method: 'PUT',
+        method: 'PATCH',
         body: data,
       }),
       invalidatesTags: (result, error, { id }) => [

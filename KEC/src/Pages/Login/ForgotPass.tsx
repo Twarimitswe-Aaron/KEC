@@ -3,7 +3,7 @@ import { FaEye, FaEyeSlash } from "react-icons/fa6";
 import { IoIosLock } from "react-icons/io";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import { useCsrfToken } from "../../hooks/useCsrfToken";
+
 import {
   useRequestPasswordResetMutation,
   useResetPasswordMutation,
@@ -17,7 +17,7 @@ const ForgotPass = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const navigate = useNavigate();
-  // const { getToken } = useCsrfToken();
+
   const [requestReset] = useRequestPasswordResetMutation();
   const [verifyCode] = useVerifyResetMutation();
   const [resetPassword] = useResetPasswordMutation();

@@ -11,6 +11,7 @@ import {
   ParseIntPipe,
   HttpCode,
   HttpStatus,
+  Patch,
 } from '@nestjs/common';
 import { QuizService } from './quiz.service';
 import { CreateQuizDto } from './dto/create-quiz.dto';
@@ -50,7 +51,16 @@ export class QuizController {
     @Param('id', ParseIntPipe) id: number,
     @Body() updateQuizDto: UpdateQuizDto,
   ) {
+    console.log("i am called to update this stuff")
     return this.quizService.updateQuiz(id, updateQuizDto);
+  }
+
+  @Patch(':id')
+  patch(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() updateQuizDto: Partial<UpdateQuizDto>,
+  ) {
+    return this.quizService.patchQuiz(id, updateQuizDto);
   }
 
   @Delete(':id')

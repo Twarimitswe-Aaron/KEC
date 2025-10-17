@@ -49,11 +49,11 @@ export class ModuleService {
         size: resource.size,
         duration: resource.duration,
         uploadedAt: resource.uploadedAt?.toISOString(),
-        quiz: resource.quiz ? {
-          id: resource.quiz.id,
-          name: resource.quiz.name,
-          description: resource.quiz.description,
-          questions: resource.quiz.questions.map(q => ({
+        quiz: resource.quiz && resource.quiz.length > 0 ? {
+          id: resource.quiz[0].id,
+          name: resource.quiz[0].name,
+          description: resource.quiz[0].description,
+          questions: resource.quiz[0].questions.map(q => ({
             id: q.id,
             type: q.type,
             question: q.question,
@@ -99,11 +99,11 @@ export class ModuleService {
         size: resource.size,
         duration: resource.duration,
         uploadedAt: resource.uploadedAt?.toISOString(),
-        quiz: resource.quiz ? {
-          id: resource.quiz.id,
-          name: resource.quiz.name,
-          description: resource.quiz.description,
-          questions: resource.quiz.questions.map(q => ({
+        quiz: resource.quiz && resource.quiz.length > 0 ? {
+          id: resource.quiz[0].id,
+          name: resource.quiz[0].name,
+          description: resource.quiz[0].description,
+          questions: resource.quiz[0].questions.map(q => ({
             id: q.id,
             type: q.type,
             question: q.question,
@@ -116,6 +116,7 @@ export class ModuleService {
   }
 
   async createLesson(dto: CreateLessonDto) {
+   
     const course = await this.prisma.course.findUnique({
       where: { id: dto.courseId },
     });
@@ -126,7 +127,7 @@ export class ModuleService {
         title: dto.title,
         description: dto.description,
         courseId: dto.courseId,
-        isUnlocked: dto.isUnlocked ?? false,
+
       },
     });
 
@@ -200,10 +201,12 @@ export class ModuleService {
     });
 
     for (const resource of resources) {
-      if (resource.quiz) {
-        await this.prisma.quiz.delete({
-          where: { id: resource.quiz.id }
-        });
+      if (resource.quiz && resource.quiz.length > 0) {
+        for (const quiz of resource.quiz) {
+          await this.prisma.quiz.delete({
+            where: { id: quiz.id }
+          });
+        }
       }
     }
 
@@ -268,23 +271,15 @@ export class ModuleService {
         lessonId: lessonId,
         name: dto.title,
         type: dto.type,
+      
         size: size,
-        uploadedAt: new Date(),
+        
         url: url,
       },
     });
 
     return {
       message: "Resource added successfully",
-      data: {
-        id: resource.id,
-        url: resource.url,
-        title: resource.name,
-        type: resource.type,
-        size: resource.size,
-        uploadedAt: resource.uploadedAt.toISOString(),
-      },
-      success: true,
     };
   }
 
@@ -311,10 +306,12 @@ export class ModuleService {
     }
 
     // If it's a quiz resource, delete the quiz first
-    if (resource.quiz) {
-      await this.prisma.quiz.delete({
-        where: { id: resource.quiz.id },
-      });
+    if (resource.quiz && resource.quiz.length > 0) {
+      for (const quiz of resource.quiz) {
+        await this.prisma.quiz.delete({
+          where: { id: quiz.id },
+        });
+      }
     }
 
     await this.prisma.resource.delete({
@@ -387,13 +384,14 @@ export class ModuleService {
     });
 
     for (const resource of originalLesson.resources) {
-      if (resource.type === 'quiz' && resource.quiz) {
+      if (resource.type === 'quiz' && resource.quiz && resource.quiz.length > 0) {
         const duplicatedQuiz = await this.prisma.quiz.create({
           data: {
-            name: resource.quiz.name,
-            description: resource.quiz.description,
+            name: resource.quiz[0].name,
+            description: resource.quiz[0].description,
+            resourceId: resource.id,
             questions: {
-              create: resource.quiz.questions.map(question => ({
+              create: resource.quiz[0].questions.map(question => ({
                 type: question.type,
                 question: question.question,
                 options: question.options ? JSON.stringify(question.options) : null,
@@ -408,10 +406,12 @@ export class ModuleService {
             lessonId: duplicatedLesson.id,
             name: resource.name,
             type: resource.type,
-            quizId: duplicatedQuiz.id,
             url: resource.url,
             size: resource.size,
             uploadedAt: new Date(),
+            quiz: {
+              connect: { id: duplicatedQuiz.id },
+            },
           },
         });
       } else {
@@ -482,10 +482,22 @@ export class ModuleService {
     });
     if (!lesson) throw new NotFoundException('Lesson not found');
 
+    // First create the Resource
+    const resource = await this.prisma.resource.create({
+      data: {
+        lessonId: lessonId,
+        name: dto.name,
+        type: 'quiz',
+        uploadedAt: new Date(),
+      },
+    });
+
+    // Then create the Quiz with the resourceId
     const quiz = await this.prisma.quiz.create({
       data: {
         name: dto.name,
         description: dto.description || '',
+        resourceId: resource.id,
         questions: {
           create: dto.questions.map((q: any) => ({
             type: q.type,
@@ -496,16 +508,6 @@ export class ModuleService {
         },
       },
       include: { questions: true },
-    });
-
-    const resource = await this.prisma.resource.create({
-      data: {
-        lessonId: lessonId,
-        name: dto.name,
-        type: 'quiz',
-        quizId: quiz.id,
-        uploadedAt: new Date(),
-      },
     });
 
     return {
