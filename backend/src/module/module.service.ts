@@ -1,8 +1,166 @@
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Prisma, PrismaClient, ResourceType } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateLessonDto } from './dto/create-lesson.dto';
 import { CreateQuizDto } from './dto/create-quiz.dto';
+
+interface QuizQuestion {
+  id: number;
+  type: string;
+  question: string;
+  options: string | null;
+  required: boolean;
+  orderIndex: number;
+  order: number;
+  points: number;
+}
+
+interface QuizAttempt {
+  id: number;
+  submittedAt: Date;
+  responses: string;
+  score: number;
+  totalPoints: number;
+  detailedResults: string | null;
+}
+
+interface Quiz {
+  id: number;
+  name: string;
+  description: string | null;
+  settings: string | null;
+  questions: QuizQuestion[];
+  attempts: QuizAttempt[];
+}
+
+interface Resource {
+  id: number;
+  name: string;
+  type: ResourceType;
+  size: string | null;
+  duration: string | null;
+  url: string | null;
+  uploadedAt: Date | null;
+  form?: {
+    id: number;
+    title: string;
+    description: string | null;
+    quizzes?: Quiz[];
+  };
+}
+
+interface LessonWithResources extends Prisma.LessonGetPayload<{
+  include: {
+    resources: {
+      include: {
+        form: {
+          include: {
+            quizzes: {
+              include: {
+                questions: true;
+                attempts: true;
+              };
+            };
+          };
+        };
+      };
+    };
+  };
+}> {}
 import { CreateVideoDto } from './dto/create-video.dto';
+
+type ResourceWithForm = Prisma.ResourceGetPayload<{
+  include: {
+    form: {
+      include: {
+        questions: true;
+        quizzes: {
+          include: {
+            questions: true;
+            attempts: true;
+          };
+        };
+      };
+    };
+  };
+}>;
+
+interface ResourceWithFormAndQuizzes extends ResourceWithForm {
+  form: ({
+    questions: Array<{
+      id: number;
+      formId: number;
+      questionText: string;
+      type: string;
+      required: boolean;
+    }>;
+    quizzes: Array<{
+      id: number;
+      name: string;
+      description: string | null;
+      settings: string | null;
+      formId: number | null;
+      questions: Array<{
+        id: number;
+        quizId: number;
+        type: string;
+        question: string;
+        options: string | null;
+        correctAnswer: number | null;
+        correctAnswers: string | null;
+        required: boolean;
+        orderIndex: number;
+        order: number;
+        points: number;
+      }>;
+      attempts: Array<{
+        id: number;
+        quizId: number;
+        submittedAt: Date;
+        responses: string;
+        score: number;
+        totalPoints: number;
+        detailedResults: string | null;
+      }>;
+    }>;
+  } & ResourceWithForm['form']) | null;
+}
+
+interface FormWithQuizzes {
+  id: number;
+  title: string;
+  description: string | null;
+  resourceId: number;
+  quizzes: Array<{
+    id: number;
+    name: string;
+    description: string | null;
+    settings: string | null;
+    formId: number | null;
+    questions: Array<{
+      id: number;
+      quizId: number;
+      type: string;
+      question: string;
+      options: string | null;
+      correctAnswer: number | null;
+      correctAnswers: string | null;
+      required: boolean;
+      orderIndex: number;
+      order: number;
+      points: number;
+    }>;
+    attempts: Array<{
+      id: number;
+      quizId: number;
+      submittedAt: Date;
+      responses: string;
+      score: number;
+      totalPoints: number;
+      detailedResults: string | null;
+    }>;
+  }>;
+}
 import { UpdateLessonDto } from './dto/update-lesson.dto';
 import { AddResourceDto } from './dto/add-resource.dto';
 import { ToggleLockDto } from './dto/toggle-lock.dto';
@@ -12,107 +170,194 @@ export class ModuleService {
   constructor(private prisma: PrismaService) {}
 
   async getLessonsByCourse(courseId: number) {
-    const course = await this.prisma.course.findUnique({ 
-      where: { id: courseId } 
-    });
-    if (!course) throw new NotFoundException('Course not found');
-
-    const lessons = await this.prisma.lesson.findMany({
-      where: { courseId },
+    // Define the type for the lesson with its relations
+    type LessonWithResources = Prisma.LessonGetPayload<{
       include: {
         resources: {
           include: {
-            quiz: {
+            form: {
               include: {
-                questions: true,
-              },
-            },
-          },
-        },
-      },
-      orderBy: { id: 'desc' },
-    });
+                quizzes: {
+                  include: {
+                    questions: true;
+                    attempts: true;
+                  };
+                };
+              };
+            };
+          };
+        };
+      };
+    }>;
 
-    return lessons.map(lesson => ({
-      id: lesson.id,
-      title: lesson.title,
-      content: lesson.description,
-      description: lesson.description,
-      courseId: lesson.courseId,
-      isUnlocked: lesson.isUnlocked,
-      order: lesson.id,
-      resources: lesson.resources.map(resource => ({
-        id: resource.id,
-        url: resource.url,
-        title: resource.name || 'Untitled Resource',
-        type: resource.type,
-        size: resource.size,
-        duration: resource.duration,
-        uploadedAt: resource.uploadedAt?.toISOString(),
-        quiz: resource.quiz && resource.quiz.length > 0 ? {
-          id: resource.quiz[0].id,
-          name: resource.quiz[0].name,
-          description: resource.quiz[0].description,
-          questions: resource.quiz[0].questions.map(q => ({
-            id: q.id,
-            type: q.type,
-            question: q.question,
-            options: q.options ? JSON.parse(q.options) : null,
-            required: q.required,
-          })),
-        } : undefined,
-      })),
-    }));
+    try {
+      const lessons = await this.prisma.lesson.findMany({
+        where: { courseId },
+        include: {
+          resources: {
+            include: {
+              form: {
+                include: {
+                  quizzes: {
+                    include: {
+                      questions: true,
+                      attempts: true
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        orderBy: { id: 'asc' },
+      }) as unknown as LessonWithResources[];
+
+      return lessons.map(lesson => {
+        const resources = lesson.resources?.map(resource => {
+          const quiz = resource.form?.quizzes?.[0];
+          const resourceData = {
+            id: resource.id,
+            url: resource.url || null,
+            title: resource.name || 'Untitled Resource',
+            type: resource.type,
+            size: resource.size || null,
+            duration: resource.duration || null,
+            uploadedAt: resource.uploadedAt?.toISOString() || null,
+          };
+
+          if (quiz) {
+            return {
+              ...resourceData,
+              quiz: {
+                id: quiz.id,
+                name: quiz.name,
+                description: quiz.description,
+                questions: quiz.questions?.map(q => ({
+                  id: q.id,
+                  type: q.type,
+                  question: q.question,
+                  options: q.options ? JSON.parse(q.options) : null,
+                  required: q.required,
+                })) || [],
+                attempts: quiz.attempts || []
+              }
+            };
+          }
+          return resourceData;
+        }) || [];
+
+        return {
+          id: lesson.id,
+          title: lesson.title,
+          content: lesson.description,
+          description: lesson.description,
+          courseId: lesson.courseId,
+          isUnlocked: lesson.isUnlocked,
+          order: lesson.id,
+          resources
+        };
+      });
+    } catch (error) {
+      console.error('Error fetching lessons:', error);
+      throw new Error('Failed to fetch lessons');
+    }
   }
 
   async getLessonById(id: number) {
-    const lesson = await this.prisma.lesson.findUnique({
-      where: { id },
+    type LessonWithResources = Prisma.LessonGetPayload<{
       include: {
         resources: {
           include: {
-            quiz: {
+            form: {
               include: {
-                questions: true,
+                questions: true;
+                quizzes: {
+                  include: {
+                    questions: true;
+                    attempts: true;
+                  };
+                };
+              };
+            };
+          };
+        };
+      };
+    }>;
+
+    try {
+      const lesson = await this.prisma.lesson.findUnique({
+        where: { id },
+        include: {
+          resources: {
+            include: {
+              form: {
+                include: {
+                  questions: true,
+                  quizzes: {
+                    include: {
+                      questions: true,
+                      attempts: true,
+                    },
+                  },
+                },
               },
             },
           },
         },
-      },
-    });
+      });
 
-    if (!lesson) throw new NotFoundException('Lesson not found');
+      if (!lesson) {
+        throw new NotFoundException('Lesson not found');
+      }
 
-    return {
-      id: lesson.id,
-      title: lesson.title,
-      content: lesson.description,
-      description: lesson.description,
-      courseId: lesson.courseId,
-      isUnlocked: lesson.isUnlocked,
-      order: lesson.id,
-      resources: lesson.resources.map(resource => ({
-        id: resource.id,
-        url: resource.url,
-        title: resource.name || 'Untitled Resource',
-        type: resource.type,
-        size: resource.size,
-        duration: resource.duration,
-        uploadedAt: resource.uploadedAt?.toISOString(),
-        quiz: resource.quiz && resource.quiz.length > 0 ? {
-          id: resource.quiz[0].id,
-          name: resource.quiz[0].name,
-          description: resource.quiz[0].description,
-          questions: resource.quiz[0].questions.map(q => ({
-            id: q.id,
-            type: q.type,
-            question: q.question,
-            options: q.options ? JSON.parse(q.options) : null,
-            required: q.required,
-          })),
-        } : undefined,
-      })),
-    };
+      // Type assertion since we've already included all necessary relations
+      const typedLesson = lesson as unknown as LessonWithResources;
+
+      return {
+        id: typedLesson.id,
+        title: typedLesson.title,
+        content: typedLesson.description,
+        description: typedLesson.description,
+        courseId: typedLesson.courseId,
+        isUnlocked: typedLesson.isUnlocked,
+        order: typedLesson.id,
+        resources: typedLesson.resources.map(resource => {
+          const quiz = resource.form?.quizzes?.[0];
+          const resourceData = {
+            id: resource.id,
+            url: resource.url || null,
+            title: resource.name || 'Untitled Resource',
+            type: resource.type,
+            size: resource.size || null,
+            duration: resource.duration || null,
+            uploadedAt: resource.uploadedAt?.toISOString() || null,
+          };
+
+          if (quiz) {
+            return {
+              ...resourceData,
+              quiz: {
+                id: quiz.id,
+                name: quiz.name,
+                description: quiz.description,
+                questions: quiz.questions?.map(q => ({
+                  id: q.id,
+                  type: q.type,
+                  question: q.question,
+                  options: q.options ? JSON.parse(q.options) : null,
+                  required: q.required,
+                })) || [],
+                attempts: quiz.attempts || []
+              }
+            };
+          }
+          return resourceData;
+        }),
+      };
+    } catch (error) {
+      console.error('Error fetching lesson:', error);
+      throw new Error('Failed to fetch lesson');
+    }
   }
 
   async createLesson(dto: CreateLessonDto) {
@@ -197,16 +442,52 @@ export class ModuleService {
     // Delete all resources first (including quizzes)
     const resources = await this.prisma.resource.findMany({
       where: { lessonId: id },
-      include: { quiz: true }
+      include: { 
+        form: {
+          include: {
+            quizzes: {
+              include: {
+                questions: true,
+                attempts: true
+              }
+            }
+          }
+        } 
+      }
     });
 
-    for (const resource of resources) {
-      if (resource.quiz && resource.quiz.length > 0) {
-        for (const quiz of resource.quiz) {
+    // Type assertion to handle the form with quizzes
+    const typedResources = resources as unknown as Array<{
+      form: FormWithQuizzes | null;
+    }>;
+
+    for (const resource of typedResources) {
+      if (resource.form?.quizzes?.length) {
+        for (const quiz of resource.form.quizzes) {
+          // Delete quiz attempts first
+          if (quiz.attempts?.length) {
+            await this.prisma.quizAttempt.deleteMany({
+              where: { quizId: quiz.id }
+            });
+          }
+          
+          // Delete quiz questions
+          if (quiz.questions?.length) {
+            await this.prisma.quizQuestion.deleteMany({
+              where: { quizId: quiz.id }
+            });
+          }
+          
+          // Delete the quiz
           await this.prisma.quiz.delete({
             where: { id: quiz.id }
           });
         }
+        
+        // Delete the form
+        await this.prisma.form.delete({
+          where: { id: resource.form.id }
+        });
       }
     }
 
@@ -296,7 +577,13 @@ export class ModuleService {
   async deleteResource(lessonId: number, resourceId: number) {
     const resource = await this.prisma.resource.findUnique({
       where: { id: resourceId },
-      include: { quiz: true }
+      include: { 
+        form: {
+          include: {
+            quizzes: true
+          }
+        }
+      }
     });
     
     if (!resource) throw new NotFoundException('Resource not found');
@@ -305,13 +592,12 @@ export class ModuleService {
       throw new BadRequestException('Resource does not belong to this lesson');
     }
 
-    // If it's a quiz resource, delete the quiz first
-    if (resource.quiz && resource.quiz.length > 0) {
-      for (const quiz of resource.quiz) {
-        await this.prisma.quiz.delete({
-          where: { id: quiz.id },
-        });
-      }
+    // If it's a quiz resource, delete the form and its related quizzes
+    if (resource.form) {
+      await this.prisma.form.delete({
+        where: { id: resource.form.id },
+        include: { quizzes: true }
+      });
     }
 
     await this.prisma.resource.delete({
@@ -355,9 +641,13 @@ export class ModuleService {
       include: {
         resources: {
           include: {
-            quiz: {
+            form: {
               include: {
-                questions: true,
+                quizzes: {
+                  include: {
+                    questions: true,
+                  },
+                },
               },
             },
           },
@@ -384,14 +674,15 @@ export class ModuleService {
     });
 
     for (const resource of originalLesson.resources) {
-      if (resource.type === 'quiz' && resource.quiz && resource.quiz.length > 0) {
+      if (resource.type === 'quiz' && resource.form?.quizzes && resource.form.quizzes.length > 0) {
+        const quizToDuplicate = resource.form.quizzes[0];
         const duplicatedQuiz = await this.prisma.quiz.create({
           data: {
-            name: resource.quiz[0].name,
-            description: resource.quiz[0].description,
-            resourceId: resource.id,
+            name: quizToDuplicate.name,
+            description: quizToDuplicate.description,
+            formId: resource.form.id,
             questions: {
-              create: resource.quiz[0].questions.map(question => ({
+              create: quizToDuplicate.questions.map(question => ({
                 type: question.type,
                 question: question.question,
                 options: question.options ? JSON.stringify(question.options) : null,
@@ -409,7 +700,7 @@ export class ModuleService {
             url: resource.url,
             size: resource.size,
             uploadedAt: new Date(),
-            quiz: {
+            form: {
               connect: { id: duplicatedQuiz.id },
             },
           },
@@ -480,81 +771,89 @@ export class ModuleService {
     const lesson = await this.prisma.lesson.findUnique({
       where: { id: lessonId },
     });
-    if (!lesson) throw new NotFoundException('Lesson not found');
 
-    // First create the Resource
+    if (!lesson) {
+      throw new NotFoundException('Lesson not found');
+    }
+
+    // First create the resource
     const resource = await this.prisma.resource.create({
       data: {
-        lessonId: lessonId,
         name: dto.name,
         type: 'quiz',
-        uploadedAt: new Date(),
+        lessonId: lessonId,
       },
     });
 
-    // Then create the Quiz with the resourceId
-    const quiz = await this.prisma.quiz.create({
-      data: {
+// Then create the form with quiz
+const form = await this.prisma.form.create({
+  data: {
+    title: dto.name,
+    description: dto.description,
+    resourceId: resource.id,
+    questions: {
+      create: dto.questions.map((q, index) => ({
+        questionText: q.question,
+        type: q.type,
+        required: q.required,
+        options: {
+          create: q.options?.map((option, i) => ({
+            optionText: option,
+            isCorrect: q.correctAnswers?.includes(i) || false,
+          })),
+        },
+      })),
+    },
+    quizzes: {
+      create: {
         name: dto.name,
-        description: dto.description || '',
-        resourceId: resource.id,
+        description: dto.description,
+        settings: JSON.stringify(dto.settings || {}),
         questions: {
-          create: dto.questions.map((q: any) => ({
+          create: dto.questions.map((q, index) => ({
             type: q.type,
             question: q.question,
             options: q.options ? JSON.stringify(q.options) : null,
-            required: !!q.required,
-          })),
-        },
-      },
-      include: { questions: true },
-    });
-
-    return {
-      message: "Quiz resource added successfully",
-      data: {
-        id: resource.id,
-        title: resource.name,
-        type: resource.type,
-        uploadedAt: resource.uploadedAt.toISOString(),
-        quiz: {
-          id: quiz.id,
-          name: quiz.name,
-          description: quiz.description,
-          questions: quiz.questions.map(q => ({
-            id: q.id,
-            type: q.type,
-            question: q.question,
-            options: q.options ? JSON.parse(q.options) : null,
+            correctAnswer: q.type === 'single_choice' ? q.correctAnswers?.[0] : null,
+            correctAnswers: q.type === 'multiple_choice' ? JSON.stringify(q.correctAnswers) : null,
             required: q.required,
+            orderIndex: index,
+            order: index,
+            points: q.points || 1,
           })),
         },
       },
-      success: true,
-    };
-  }
+    },
+  },
+    include: {
+      quizzes: {
+        include: {
+          questions: true,
+        },
+      },
+    },
+  });
+  
+  return resource;
+}
 
-  async submitQuiz(quizId: number, responses: any[]) {
+async submitQuiz(quizId: number, responses: Array<{ questionId: number; answer: any }>): Promise<{ message: string; success: boolean }> {
+    // First, verify all required questions are answered
     const quiz = await this.prisma.quiz.findUnique({
       where: { id: quizId },
       include: { questions: true },
     });
-    if (!quiz) throw new NotFoundException('Quiz not found');
 
-    const required = quiz.questions.filter((q) => q.required);
-    const answeredRequired = required.filter((req) =>
-      responses.some(
-        (r) =>
-          r.questionId === req.id &&
-          (r.answer !== undefined &&
-            r.answer !== null &&
-            (Array.isArray(r.answer)
-              ? r.answer.length > 0
-              : ('' + r.answer).trim().length > 0)),
-      ),
-    );
+    if (!quiz) {
+      throw new NotFoundException('Quiz not found');
+    }
 
-    if (answeredRequired.length < required.length) {
+    // Check if all required questions are answered
+    const requiredQuestions = quiz.questions.filter(q => q.required);
+    const answeredQuestionIds = new Set(responses.map(r => r.questionId));
+    const missingRequired = requiredQuestions.some(q => !answeredQuestionIds.has(q.id));
+
+    if (missingRequired) {
       throw new BadRequestException('Please answer all required questions');
     }
 
@@ -562,6 +861,9 @@ export class ModuleService {
       data: {
         quizId,
         responses: JSON.stringify(responses),
+        submittedAt: new Date(),
+        score: 0, // You might want to calculate this based on correct answers
+        totalPoints: quiz.questions.reduce((sum, q) => sum + (q.points || 0), 0),
       },
     });
 

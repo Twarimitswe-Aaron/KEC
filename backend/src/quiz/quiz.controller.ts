@@ -12,6 +12,7 @@ import {
   HttpCode,
   HttpStatus,
   Patch,
+  Req,
 } from '@nestjs/common';
 import { QuizService } from './quiz.service';
 import { CreateQuizDto } from './dto/create-quiz.dto';
@@ -105,8 +106,9 @@ export class QuizController {
   duplicateQuiz(
     @Param('id', ParseIntPipe) id: number,
     @Body() body: { name: string },
+    @Req() req: Request
   ) {
-    return this.quizService.duplicateQuiz(id, body.name);
+    return this.quizService.duplicateQuiz(id, body.name, req);
   }
 
   // Bulk Question Operations
@@ -115,7 +117,9 @@ export class QuizController {
     @Param('id', ParseIntPipe) id: number,
     @Body() body: { questions: any[] },
   ) {
-    return this.quizService.updateQuiz(id, { questions: body.questions });
+    return this.quizService.updateQuiz(id, { 
+      questions: body.questions 
+    } as UpdateQuizDto);
   }
 
   // Quiz Validation (for manual grading)

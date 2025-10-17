@@ -199,17 +199,25 @@ const saveQuiz = async () => {
         };
       });
 
+    // Ensure we have a name - use resource name as fallback if settings name is not set
+    const quizName = filteredQuizSettings.name || resource.name;
+    if (!quizName) {
+      toast.error("Quiz name is required");
+      setIsSaving(false);
+      return;
+    }
+
     const quizPayload: any = {
-      ...(filteredQuizSettings.name && { name: filteredQuizSettings.name }),
+      name: quizName, // Always include name, it's required
       ...(filteredQuizSettings.description && { description: filteredQuizSettings.description }),
-      ...(resource?.id && { resourceId: resource.id }),
+      resourceId: resource.id, // resourceId is required, so include it directly
       ...(filteredQuestions.length > 0 && { questions: filteredQuestions }),
       settings: filteredQuizSettings
     };
 
-    // if nothing to send
-    if (Object.keys(quizPayload).length === 0) {
-      toast.error("Please fill at least one field before saving.");
+    // Check if we have at least questions or settings
+    if (!filteredQuestions.length && Object.keys(filteredQuizSettings).length === 0) {
+      toast.error("Please add at least one question or setting before saving.");
       setIsSaving(false);
       return;
     }
@@ -229,19 +237,19 @@ const saveQuiz = async () => {
       toast.success("Quiz updated successfully!");
     } else {
       // Create new quiz
-      const result = await createQuiz(quizPayload).unwrap();
-      console.log(result, "Quiz created");
-      toast.success("Quiz created successfully!");
-
-      // Callback with new quiz data
-      if (onUpdate) {
-        onUpdate(resource.id, { 
-          ...resource.quiz, 
-          id: result.id, 
-          questions: filteredQuestions, 
-          settings: filteredQuizSettings 
-        });
-      }
+            const result = await createQuiz(quizPayload).unwrap() as any;
+            console.log(result, "Quiz created");
+            toast.success("Quiz created successfully!");
+      
+            // Callback with new quiz data - use returned id if available
+            if (onUpdate) {
+              onUpdate(resource.id, { 
+                ...resource.quiz, 
+                id: result?.id ?? resource.quiz?.id, 
+                questions: filteredQuestions, 
+                settings: filteredQuizSettings 
+              });
+            }
     }
 
     setHasChanges(false);

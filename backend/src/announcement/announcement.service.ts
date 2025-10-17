@@ -16,9 +16,6 @@ export class AnnouncementService {
  async create(createAnnouncementDto: CreateAnnouncementDto) {
 
     const { body } = createAnnouncementDto;
-   
-
-
     const id=Number(body.posterId)
     if (!id || isNaN(id)) {
 

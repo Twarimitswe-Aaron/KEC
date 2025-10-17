@@ -10,92 +10,138 @@ import { create } from 'domain';
 export class QuizService {
   constructor(private prisma: PrismaService) {}
 
-  async createQuiz(createQuizDto: CreateQuizDto) {
-    console.log(createQuizDto,"dealing with data")
-    const { questions = [], settings, name, description, resourceId } = createQuizDto;
-    
-    if (!name) {
-      throw new Error('Quiz name is required');
-    }
-    
-    if (!resourceId) {
-      throw new Error('Resource ID is required');
-    }
+ async createQuiz(createQuizDto: CreateQuizDto) {
 
-    const data: any = {
-      name,
-      resourceId,
-      settings: settings ? JSON.stringify(settings) : null,
-    };
+  const { questions = [], settings, name, description, resourceId } = createQuizDto;
 
-    // Only include description if it's provided
-    if (description !== undefined) {
-      data.description = description;
-    }
+  // Step 1: Validate inputs
+  if (!name) {
+    throw new Error('Quiz name is required');
+  }
 
-    // Only include questions if they are provided
-    if (questions && questions.length > 0) {
-      data.questions = {
-        create: questions.map((q, index) => ({
-          type: q.type,
-          question: q.question,
-          options: q.options ? JSON.stringify(q.options) : null,
-          correctAnswers: q.correctAnswers ? JSON.stringify(q.correctAnswers) : null,
-          correctAnswer: q.correctAnswer !== undefined ? q.correctAnswer : null,
-          required: q.required !== undefined ? q.required : true,
-          order: index,
-          points: q.points || 1,
-        })),
-      };
-    }
+  if (!resourceId) {
+    throw new Error('Resource ID is required');
+  }
 
-    console.log("Creating quiz with data:", JSON.stringify(data, null, 2));
+  // Step 2: Ensure the resource exists
+  const resource = await this.prisma.resource.findUnique({
+    where: { id: resourceId },
+  });
 
-    return this.prisma.quiz.create({
-      data,
-      include: {
-        questions: true,
-        resource: true,
+  if (!resource) {
+    throw new Error(`Resource with ID ${resourceId} not found`);
+  }
+
+
+  let form = await this.prisma.form.findFirst({
+    where: { resourceId },
+  });
+
+  if (!form) {
+    form = await this.prisma.form.create({
+      data: {
+        title: `${name} Form`,
+        description: description || null,
+        resource: {
+          connect: { id: resourceId },
+        },
       },
     });
   }
+
+  // Step 4: Prepare Quiz data
+  const data: any = {
+    name,
+    description: description || null,
+    settings: settings ? JSON.stringify(settings) : null,
+    form: { connect: { id: form.id } },
+  };
+
+  // Step 5: Add questions if provided
+  if (questions && questions.length > 0) {
+    data.questions = {
+      create: questions.map((q, index) => ({
+        type: q.type,
+        question: q.question,
+        options: q.options ? JSON.stringify(q.options) : null,
+        correctAnswers: q.correctAnswers ? JSON.stringify(q.correctAnswers) : null,
+        correctAnswer: q.correctAnswer ?? null,
+        required: q.required ?? true,
+        order: index,
+        points: q.points || 1,
+      })),
+    };
+  }
+
+  console.log("Creating quiz with data:", JSON.stringify(data, null, 2));
+
+  // Step 6: Create Quiz linked to the Form
+  const quiz = await this.prisma.quiz.create({
+    data,
+    include: {
+      questions: true,
+      form: true,
+    },
+  });
+
+  return {
+    message: "Quiz created successfully"
+   
+  };
+}
 
   async getQuizById(id: number) {
-    const quiz = await this.prisma.quiz.findUnique({
-      where: { id },
-      include: {
-        questions: {
-          orderBy: { order: 'asc' },
-        },
-        resource: {
-          include: {
-            module: true,
-            lesson: true,
+  const quiz = await this.prisma.quiz.findUnique({
+    where: { id },
+    include: {
+      questions: {
+        orderBy: { order: 'asc' },
+      },
+      attempts: {
+        orderBy: { submittedAt: 'desc' },
+        take: 10,
+      },
+      form: {
+        include: {
+          resource: {
+            select: {
+              id: true,
+              name: true,
+              type: true,
+              url: true,
+            },
           },
         },
-        attempts: {
-          orderBy: { submittedAt: 'desc' },
-          take: 10,
-        },
       },
-    });
+    },
+  });
 
-    if (!quiz) {
-      throw new NotFoundException(`Quiz with ID ${id} not found`);
-    }
-
-    return {
-      ...quiz,
-      resourceId: quiz.resourceId,
-      questions: quiz.questions.map(q => ({
-        ...q,
-        options: q.options ? JSON.parse(q.options) : null,
-        correctAnswers: q.correctAnswers ? JSON.parse(q.correctAnswers) : [],
-        correctAnswer: q.correctAnswer !== null ? q.correctAnswer : undefined,
-      })),
-      settings: quiz.settings ? JSON.parse(quiz.settings) : null,
-    };
+  if (!quiz) {
+    throw new NotFoundException(`Quiz with ID ${id} not found`);
   }
+
+  // Extract resourceId safely through the form relation
+  const resourceId = quiz.form?.resource?.id ?? null;
+
+  // Parse JSON fields for better frontend usability
+  return {
+    id: quiz.id,
+    name: quiz.name,
+    description: quiz.description,
+    resourceId,
+    resource: quiz.form?.resource ?? null,
+    settings: quiz.settings ? JSON.parse(quiz.settings) : null,
+    questions: quiz.questions.map(q => ({
+      ...q,
+      options: q.options ? JSON.parse(q.options) : null,
+      correctAnswers: q.correctAnswers ? JSON.parse(q.correctAnswers) : [],
+      correctAnswer: q.correctAnswer ?? undefined,
+    })),
+    attempts: quiz.attempts,
+    createdAt: quiz.form?.createdAt ?? null,
+  };
+}
+
 
   async updateQuiz(id: number, updateQuizDto: UpdateQuizDto) {
     // Find the existing quiz
@@ -398,59 +444,98 @@ export class QuizService {
     }));
   }
 
-  async getQuizzesByModule(moduleId: number) {
-    const quizzes = await this.prisma.quiz.findMany({
-      where: {
+ async getQuizzesByModule(moduleId: number) {
+  const quizzes = await this.prisma.quiz.findMany({
+    where: {
+      form: {
         resource: {
-          moduleId,
+          moduleId, // filter quizzes whose linked resource belongs to this module
         },
       },
-      include: {
-        questions: {
-          orderBy: { order: 'asc' },
-        },
-        resource: true,
+    },
+    include: {
+      questions: {
+        orderBy: { order: 'asc' },
       },
-    });
+      form: {
+        include: {
+          resource: {
+            select: {
+              id: true,
+              name: true,
+              type: true,
+              url: true,
+              moduleId: true,
+            },
+          },
+        },
+      },
+    },
+  });
 
-    return quizzes.map(quiz => ({
+  return quizzes.map(quiz => ({
+    id: quiz.id,
+    name: quiz.name,
+    description: quiz.description,
+    resourceId: quiz.form?.resource?.id ?? null,
+    resource: quiz.form?.resource ?? null,
+    settings: quiz.settings ? JSON.parse(quiz.settings) : null,
+    questions: quiz.questions.map(q => ({
+      ...q,
+      options: q.options ? JSON.parse(q.options) : null,
+      correctAnswers: q.correctAnswers ? JSON.parse(q.correctAnswers) : [],
+      correctAnswer: q.correctAnswer ?? undefined,
+    })),
+  }));
+}
+
+
+async getQuizzesByLesson(lessonId: number) {
+  // ✅ Fetch resources that belong to the given lesson
+  const resources = await this.prisma.resource.findMany({
+    where: { lessonId },
+    include: {
+      form: {
+        include: {
+          quizzes: {
+            include: {
+              questions: { orderBy: { order: 'asc' } },
+            },
+          },
+        },
+      },
+    },
+  });
+
+  // ✅ Flatten all quizzes from all resources and format them
+  const quizzes = resources.flatMap((resource) => {
+    // resource.form may be an array (e.g. forms[]) or a single object depending on schema/typing.
+    const forms = Array.isArray(resource.form) ? resource.form : resource.form ? [resource.form] : [];
+    const quizzesForResource = forms.flatMap((f) => f.quizzes ?? []);
+
+    return quizzesForResource.map((quiz) => ({
       ...quiz,
-      questions: quiz.questions.map(q => ({
+      refreshRequired: false,
+      questions: quiz.questions.map((q) => ({
         ...q,
-        options: q.options ? JSON.parse(q.options) : null,
+        options: q.options ? JSON.parse(q.options) : [],
         correctAnswers: q.correctAnswers ? JSON.parse(q.correctAnswers) : [],
-        correctAnswer: q.correctAnswer !== null ? q.correctAnswer : undefined,
+        correctAnswer: q.correctAnswer ?? undefined,
       })),
       settings: quiz.settings ? JSON.parse(quiz.settings) : null,
-    }));
-  }
-
-  async getQuizzesByLesson(lessonId: number) {
-    const quizzes = await this.prisma.quiz.findMany({
-      where: {
-        resource: {
-          lessonId,
-        },
+      resource: {
+        id: resource.id,
+        name: resource.name,
+        type: resource.type,
+        form: forms[0] ? { id: forms[0].id } : null,
       },
-      include: {
-        questions: {
-          orderBy: { order: 'asc' },
-        },
-        resource: true,
-      },
-    });
-
-    return quizzes.map(quiz => ({
-      ...quiz,
-      questions: quiz.questions.map(q => ({
-        ...q,
-        options: q.options ? JSON.parse(q.options) : null,
-        correctAnswers: q.correctAnswers ? JSON.parse(q.correctAnswers) : [],
-        correctAnswer: q.correctAnswer !== null ? q.correctAnswer : undefined,
-      })),
-      settings: quiz.settings ? JSON.parse(quiz.settings) : null,
     }));
-  }
+  });
+
+  return quizzes;
+}
+
+
 
   async getQuizStatistics(quizId: number) {
     const quiz = await this.getQuizById(quizId);
@@ -497,32 +582,76 @@ export class QuizService {
     };
   }
 
-  async duplicateQuiz(id: number, name: string) {
-    const originalQuiz = await this.getQuizById(id);
+ async duplicateQuiz(id: number, name: string, req: Request) {
+  // ✅ Step 1: (optional) CSRF session check (keep commented until test)
+  // if (!req.session || !req.session.csrfToken) {
+  //   return {
+  //     refreshRequired: true,
+  //     message: 'CSRF token not found in session',
+  //   };
+  // }
 
-    return this.prisma.quiz.create({
-      data: {
-        name,
-        description: originalQuiz.description,
-        resourceId:originalQuiz.resourceId,
-        settings: originalQuiz.settings ? JSON.stringify(originalQuiz.settings) : null,
-        questions: {
-          create: originalQuiz.questions.map(q => ({
-            type: q.type,
-            question: q.question,
-            options: q.options ? JSON.stringify(q.options) : null,
-            correctAnswers: q.correctAnswers ? JSON.stringify(q.correctAnswers) : null,
-            correctAnswer: q.correctAnswer !== undefined ? q.correctAnswer : null,
-            required: q.required,
-            order: q.order,
-            points: q.points,
-          })),
-        },
-      },
-      include: {
-        questions: true,
-        resource: true,
-      },
-    });
-  }
+  // ✅ Step 2: Fetch original quiz
+  const originalQuiz = await this.getQuizById(id);
+  const form=await this.getQuizById(id);
+
+
+  // ✅ Step 3: Duplicate the quiz and connect its form
+  // const duplicatedQuiz = await this.prisma.quiz.create({
+  //   data: {
+  //     name,
+  //     description: originalQuiz.description,
+  
+  //     settings: originalQuiz.settings
+  //       ? JSON.stringify(originalQuiz.settings)
+  //       : null,
+  //     form: {
+  //       create: {
+  //         title: `${name} Form`,
+  //         description: originalQuiz.description || '',
+  //         ...(form.resourceId ? { resource: { connect: { id: form.resourceId } } } : {}),
+  //       },
+  //     },
+  //     questions: {
+  //       create: originalQuiz.questions.map((q) => ({
+  //         type: q.type,
+  //         question: q.question,
+  //         options: q.options ? JSON.stringify(q.options) : null,
+  //         correctAnswers: q.correctAnswers
+  //           ? JSON.stringify(q.correctAnswers)
+  //           : null,
+  //         correctAnswer:
+  //           q.correctAnswer !== undefined ? q.correctAnswer : null,
+  //         required: q.required,
+  //         order: q.order,
+  //         points: q.points,
+  //       })),
+  //     },
+  //   },
+  //   include: {
+  //     questions: true,
+  //     form: true, // ✅ make sure form data is returned
+  //     resource: true,
+  //   },
+  // });
+
+  // // ✅ Step 4: Parse JSON fields safely
+  // return {
+  //   ...duplicatedQuiz,
+  //   questions: duplicatedQuiz.questions.map((q) => ({
+  //     ...q,
+  //     options: q.options ? JSON.parse(q.options) : null,
+  //     correctAnswers: q.correctAnswers
+  //       ? JSON.parse(q.correctAnswers)
+  //       : [],
+  //     correctAnswer:
+  //       q.correctAnswer !== null ? q.correctAnswer : undefined,
+  //   })),
+  //   settings: duplicatedQuiz.settings
+  //     ? JSON.parse(duplicatedQuiz.settings)
+  //     : null,
+  // };
+}
+
+
 }

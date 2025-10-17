@@ -14,26 +14,26 @@ enum Role {
 }
 
 model User {
-  id                Int            @id @default(autoincrement())
-  firstName         String         @default("")
-  lastName          String         @default("")
-  isEmailVerified   Boolean        @default(false)
+  id                Int       @id @default(autoincrement())
+  firstName         String    @default("")
+  lastName          String    @default("")
+  isEmailVerified   Boolean   @default(false)
   verificationToken String?
   tokenExpiresAt    DateTime?
-  email             String         @unique
+  email             String    @unique
   password          String
   role              Role
   refresh_token     String?
-  createdAt         DateTime       @default(now())
-  updatedAt         DateTime       @updatedAt
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
-  profile           Profile?
-  admin             Admin?
-  teacher           Teacher?
-  student           Student?
-  course            Course[]
-  announcement      Announcement[]
-  responses         Response[]
+  profile      Profile?
+  admin        Admin?
+  teacher      Teacher?
+  student      Student?
+  course       Course[]
+  announcement Announcement[]
+  responses    Response[]
 }
 
 model Admin {
@@ -122,12 +122,12 @@ model Module {
 }
 
 model Resource {
-  id         Int       @id @default(autoincrement())
-  moduleId   Int?
-  module     Module?   @relation(fields: [moduleId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  id       Int     @id @default(autoincrement())
+  moduleId Int?
+  module   Module? @relation(fields: [moduleId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
-  lessonId   Int?
-  lesson     Lesson?   @relation(fields: [lessonId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  lessonId Int?
+  lesson   Lesson? @relation(fields: [lessonId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
   name       String
   type       ResourceType
@@ -135,22 +135,10 @@ model Resource {
   uploadedAt DateTime     @default(now())
   duration   String?
   url        String?
-  quiz       Quiz[]
+  form       Form?
 }
 
-model Quiz {
-  id          Int            @id @default(autoincrement())
-  name        String
-  description String?
-  settings    String? // JSON stringified quiz settings
-  questions   QuizQuestion[]
-  attempts    QuizAttempt[]
 
-  resourceId  Int
-  resource    Resource      @relation(fields: [resourceId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  formId      Int?
-  form        Form?         @relation(fields: [formId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-}
 
 model QuizQuestion {
   id             Int     @id @default(autoincrement())
@@ -178,6 +166,16 @@ model QuizAttempt {
   quiz            Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 }
 
+model Quiz {
+  id          Int            @id @default(autoincrement())
+  name        String
+  description String?
+  settings    String? // JSON stringified quiz settings
+  questions   QuizQuestion[]
+  attempts    QuizAttempt[]
+  formId     Int?
+  form       Form?    @relation(fields: [formId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+}
 model Form {
   id          Int        @id @default(autoincrement())
   title       String
@@ -186,6 +184,8 @@ model Form {
   createdAt   DateTime   @default(now())
   responses   Response[]
   quizzes     Quiz[]
+  resourceId Int @unique
+  resource   Resource @relation(fields: [resourceId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 }
 
 model Question {
