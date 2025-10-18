@@ -116,7 +116,6 @@ model Module {
   isUnlocked  Boolean    @default(false)
   order       Int
   createdAt   DateTime   @default(now())
-
   courseId    Int?
   course      Course?    @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 }

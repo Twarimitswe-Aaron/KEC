@@ -1,0 +1,40 @@
+import React, { useState, useContext } from "react";
+import { UserRoleContext } from "../UserRoleContext";
+import {
+  feedBackPost,
+  useGetFeedBackQuery,
+  usePostFeedBackMutation,
+} from "../state/api/announcementsApi";
+import { useUser } from "../hooks/useUser";
+import { toast } from "react-toastify";
+import { Link } from "react-router-dom";
+
+/* Fix for: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+   This adds a global JSX namespace to satisfy the compiler in environments missing @types/react. */
+declare global {
+  namespace JSX {
+    interface IntrinsicElements {
+      [elemName: string]: any;
+    }
+  }
+}
+
+// Skeleton Loader for feedback
+const FeedbackSkeleton = () => {
+  return (
+    <div className="animate-pulse bg-white/40 backdrop-blur-md rounded-xl shadow border border-gray-200 p-3 mb-4">
+      <div className="flex items-center gap-3 mb-2">
+        <div className="w-8 h-8 bg-gray-300 rounded-full"></div>
+        <div className="flex-1">
+          <div className="h-3 bg-gray-300 rounded w-28 mb-1"></div>
+          <div className="h-2 bg-gray-200 rounded w-16"></div>
+        </div>
+        <div className="h-3 w-12 bg-gray-200 rounded"></div>
+      </div>
+      <div className="h-3 bg-gray-200 rounded w-full mb-1"></div>
+      <div className="h-3 bg-gray-200 rounded w-2/3"></div>
+    </div>
+  );
+};
+
+// Rest of your component code...
