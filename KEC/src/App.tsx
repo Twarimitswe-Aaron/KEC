@@ -8,6 +8,7 @@ import CreateModule from "./routes/CreateModule";
 import LessonsView from "./Components/LessonsView.tsx";
 import Dashboard from "./routes/Dashboard";
 import Login from "./Pages/Login/LoginPage.tsx";
+
 import Signup from "./Pages/Login/Signup.tsx";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
