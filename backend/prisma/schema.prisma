@@ -116,15 +116,13 @@ model Module {
   isUnlocked  Boolean    @default(false)
   order       Int
   createdAt   DateTime   @default(now())
-  resources   Resource[]
+
   courseId    Int?
   course      Course?    @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 }
 
 model Resource {
   id       Int     @id @default(autoincrement())
-  moduleId Int?
-  module   Module? @relation(fields: [moduleId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
   lessonId Int?
   lesson   Lesson? @relation(fields: [lessonId], references: [id], onDelete: Cascade, onUpdate: Cascade)
