@@ -3,6 +3,7 @@ export class AddResourceDto {
   type!: 'pdf' | 'word' | 'video' | 'quiz';
 
   file?: Express.Multer.File;
+   description?: string; 
 
   url?: string;
 

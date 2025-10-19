@@ -47,7 +47,7 @@ export interface ResourceType {
   quiz?: any;
 }
 
-export type ModuleType = {
+export type lessonType = {
   id: number;
   title: string;
   description: string;
@@ -96,7 +96,7 @@ export  interface Lesson {
   order?: number;
 }
 
-export interface ModuleManagementProps {
+export interface lessonManagementProps {
   lessons: Lesson[];
   courseId: number;
 }
@@ -171,8 +171,8 @@ const getResourceIcon = (type: string) => {
   return icons[type as keyof typeof icons] || <FaFile className="text-lg sm:text-xl" />;
 };
 
-// Convert Lesson to ModuleType
-const lessonToModule = (lesson: Lesson): ModuleType => ({
+// Convert Lesson to lessonType
+const lessonTolesson = (lesson: Lesson): lessonType => ({
   id: lesson.id,
   title: lesson.title,
   description: lesson.description || lesson.content || "",
@@ -193,7 +193,7 @@ const lessonToModule = (lesson: Lesson): ModuleType => ({
 });
 
 // Main Component
-function ModuleManagement({ lessons, courseId }: ModuleManagementProps) {
+function lessonManagement({ lessons: initialLessons, courseId }: lessonManagementProps) {
   // State
   const [showAddResource, setShowAddResource] = useState<number | null>(null);
   const [resourceType, setResourceType] = useState<"pdf" | "video" | "word" | "quiz" | null>(null);
@@ -201,7 +201,7 @@ function ModuleManagement({ lessons, courseId }: ModuleManagementProps) {
   const [videoName, setVideoName] = useState("");
   const [quizName, setQuizName] = useState("");
   const [quizDescription, setQuizDescription] = useState("");
-  const [modules, setModules] = useState<ModuleType[]>([]);
+  const [lessons, setLessons] = useState<lessonType[]>(initialLessons.map(lessonTolesson));
   const [menuOpenId, setMenuOpenId] = useState<number | null>(null);
   const [openQuiz, setOpenQuiz] = useState<number | null>(null);
   const [quizResponses, setQuizResponses] = useState<Record<number, QuizResponse[]>>({});
@@ -222,13 +222,12 @@ function ModuleManagement({ lessons, courseId }: ModuleManagementProps) {
   const menuWrapperRefs = useRef<Record<number, HTMLDivElement | null>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Convert lessons to modules when lessons prop changes
+  // Handle initialLessons prop updates
   useEffect(() => {
-    if (Array.isArray(lessons)) {
-      const convertedModules = lessons.map(lessonToModule);
-      setModules(convertedModules);
+    if (Array.isArray(initialLessons)) {
+      setLessons(initialLessons.map(lessonTolesson));
     }
-  }, [lessons]);
+  }, [initialLessons]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -260,7 +259,7 @@ function ModuleManagement({ lessons, courseId }: ModuleManagementProps) {
     };
   }, [menuOpenId]);
 
-  const handleVideoLinkSubmit = async (moduleId: number) => {
+  const handleVideoLinkSubmit = async (lessonId: number) => {
     if (!videoLink.trim()) {
       toast.error("Please enter a valid video URL");
       return;
@@ -277,66 +276,68 @@ function ModuleManagement({ lessons, courseId }: ModuleManagementProps) {
     }
 
     try {
-      const response = await addResource({
-        lessonId: moduleId,
+
+      const {message} = await addResource({
+        lessonId: lessonId,
         title: videoName,
         type: "video",
         description: "",
         url: videoLink
       }).unwrap();
 
-      setModules(prev => prev.map(m => 
-        m.id === moduleId 
-          ? { 
-              ...m, 
-              resources: [...m.resources, {
-                id: response.data?.id || Date.now(),
-                name: videoName,
-                type: "video",
-                url: videoLink,
-                uploadedAt: new Date().toISOString().split("T")[0],
-                duration: "N/A"
-              }]
-            } 
-          : m
-      ));
+      // setLessons(prev => prev.map(m => 
+      //   m.id === lessonId 
+      //     ? { 
+      //         ...m, 
+      //         resources: [...m.resources, {
+      //           id: response.data?.id || Date.now(),
+      //           name: videoName,
+      //           type: "video",
+      //           url: videoLink,
+      //           uploadedAt: new Date().toISOString().split("T")[0],
+      //           duration: "N/A"
+      //         }]
+      //       } 
+      //     : m
+      // ));
 
       setVideoLink("");
       setVideoName("");
       setResourceType(null);
       setShowAddResource(null);
-      toast.success("Video resource added successfully!");
+      console.log(message)
+      toast.success(message);
     } catch (error: any) {
       toast.error(error?.data?.message || "Failed to add video resource");
     }
   };
 
-  const handleFileUpload = async (moduleId: number, file: File, type: "pdf" | "word") => {
+  const handleFileUpload = async (lessonId: number, file: File, type: "pdf" | "word") => {
     try {
-      const response = await addResource({
-        lessonId: moduleId,
+      const {message} = await addResource({
+        lessonId: lessonId,
         title: file.name,
         file,
         type
       }).unwrap();
 
-      setModules(prev => prev.map(m => 
-        m.id === moduleId 
-          ? { 
-              ...m, 
-              resources: [...m.resources, {
-                id: response.data?.id || Date.now(),
-                name: file.name,
-                type,
-                url: response.data?.url || URL.createObjectURL(file),
-                uploadedAt: new Date().toISOString().split("T")[0],
-                size: `${(file.size / 1024 / 1024).toFixed(1)} MB`
-              }]
-            } 
-          : m
-      ));
+      // setLessons(prev => prev.map(m => 
+      //   m.id === lessonId 
+      //     ? { 
+      //         ...m, 
+      //         resources: [...m.resources, {
+      //           id: response.data?.id || Date.now(),
+      //           name: file.name,
+      //           type,
+      //           url: response.data?.url || URL.createObjectURL(file),
+      //           uploadedAt: new Date().toISOString().split("T")[0],
+      //           size: `${(file.size / 1024 / 1024).toFixed(1)} MB`
+      //         }]
+      //       } 
+      //     : m
+      // ));
 
-      toast.success(`${type.toUpperCase()} file uploaded successfully!`);
+      toast.success(message);
       setResourceType(null);
       setShowAddResource(null);
     } catch (error: any) {
@@ -357,14 +358,14 @@ function ModuleManagement({ lessons, courseId }: ModuleManagementProps) {
     try {
       await deleteResource({ lessonId, resourceId }).unwrap();
 
-      setModules(prev =>
-        prev.map(module =>
-          module.id === lessonId
+      setLessons(prev =>
+        prev.map(lesson =>
+          lesson.id === lessonId
             ? {
-                ...module,
-                resources: module.resources.filter(r => r.id !== resourceId),
+                ...lesson,
+                resources: lesson.resources.filter(r => r.id !== resourceId),
               }
-            : module
+            : lesson
         )
       );
 
@@ -377,75 +378,77 @@ function ModuleManagement({ lessons, courseId }: ModuleManagementProps) {
     }
   };
 
-  const handleQuizCreation = async (moduleId: number) => {
+  const handleQuizCreation = async (lessonId: number) => {
     if (!quizName.trim()) {
       toast.error("Please enter a quiz name");
       return;
     }
 
     try {
-      const response = await addResource({
-        lessonId: moduleId,
+      console.log(quizName,quizDescription)
+      const {message} = await addResource({
+        lessonId: lessonId,
         title: quizName,
         type: "quiz",
         description: quizDescription || ""
       }).unwrap();
 
-      setModules(prev => prev.map(m => 
-        m.id === moduleId 
-          ? { 
-              ...m, 
-              resources: [...m.resources, {
-                id: response.data?.id || Date.now(),
-                name: quizName,
-                type: "quiz",
-                url: "",
-                uploadedAt: new Date().toISOString().split("T")[0],
-                quiz: SAMPLE_QUIZ
-              }]
-            } 
-          : m
-      ));
+      // setLessons(prev => prev.map(m => 
+      //   m.id === lessonId 
+      //     ? { 
+      //         ...m, 
+      //         resources: [...m.resources, {
+      //           id: response.data?.id || Date.now(),
+      //           name: quizName,
+      //           type: "quiz",
+      //           url: "",
+      //           uploadedAt: new Date().toISOString().split("T")[0],
+      //           quiz: SAMPLE_QUIZ
+      //         }]
+      //       } 
+      //     : m
+      // ));
+
 
       setQuizName("");
       setQuizDescription("");
       setResourceType(null);
       setShowAddResource(null);
-      toast.success("Quiz created successfully!");
+      toast.success(message);
     } catch (error: any) {
       toast.error(error?.data?.message || "Failed to create quiz");
     }
   };
 
-  const handleFileSelect = (moduleId: number, type: "pdf" | "word") => {
+  const handleFileSelect = (lessonId: number, type: "pdf" | "word") => {
     if (fileInputRef.current) {
       fileInputRef.current.accept = type === "pdf" ? ".pdf" : ".doc,.docx";
       fileInputRef.current.onchange = (e) => {
         const target = e.target as HTMLInputElement;
         if (target.files?.[0]) {
-          handleFileUpload(moduleId, target.files[0], type);
+          handleFileUpload(lessonId, target.files[0], type);
         }
       };
       fileInputRef.current.click();
     }
   };
 
-  const toggleModuleUnlock = async (moduleId: number) => {
+  const togglelessonUnlock = async (lessonId: number) => {
     try {
-      const module = modules.find(m => m.id === moduleId);
-      if (!module) return;
+      const lesson = lessons.find(m => m.id === lessonId);
+      if (!lesson) return;
 
       await toggleLessonLock({
-        id: moduleId,
-        isUnlocked: !module.isUnlocked,
+        id: lessonId,
+        isUnlocked: !lesson.isUnlocked,
         courseId
       }).unwrap();
 
-      setModules(prev => prev.map(m =>
-        m.id === moduleId ? { ...m, isUnlocked: !m.isUnlocked } : m
+      setLessons(prev => prev.map(m =>
+        m.id === lessonId ? { ...m, isUnlocked: !m.isUnlocked } : m
       ));
 
-      toast.success(`Lesson ${!module.isUnlocked ? "unlocked" : "locked"} successfully!`);
+      toast.success(`Lesson ${!lesson.isUnlocked ? "unlocked" : "locked"} successfully!`);
     } catch (error: any) {
       toast.error(error?.data?.message || "Failed to toggle lesson lock");
     }
@@ -461,7 +464,7 @@ function ModuleManagement({ lessons, courseId }: ModuleManagementProps) {
 
     try {
       await deleteLesson({ id: lessonToDelete, courseId }).unwrap();
-      setModules(prev => prev.filter(m => m.id !== lessonToDelete));
+      setLessons(prev => prev.filter(m => m.id !== lessonToDelete));
       toast.success("Lesson deleted successfully!");
     } catch (error: any) {
       toast.error(error?.data?.message || "Failed to delete lesson");
@@ -478,9 +481,9 @@ function ModuleManagement({ lessons, courseId }: ModuleManagementProps) {
   };
 
   const handleQuizUpdate = (resourceId: number, updatedQuiz: any) => {
-    setModules(prev => prev.map(module => ({
-      ...module,
-      resources: module.resources.map(resource =>
+    setLessons(prev => prev.map(lesson => ({
+      ...lesson,
+      resources: lesson.resources.map(resource =>
         resource.id === resourceId
           ? { ...resource, quiz: updatedQuiz }
           : resource
@@ -512,7 +515,7 @@ function ModuleManagement({ lessons, courseId }: ModuleManagementProps) {
     </div>
   );
 
-  const VideoLinkForm = ({ moduleId }: { moduleId: number }) => (
+  const VideoLinkForm = ({ lessonId }: { lessonId: number }) => (
     <div className="bg-white p-4 sm:p-5 rounded-lg sm:rounded-xl border border-gray-200 shadow-sm">
       <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
         <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0">
@@ -550,7 +553,7 @@ function ModuleManagement({ lessons, courseId }: ModuleManagementProps) {
 
       <div className="flex flex-col sm:flex-row gap-2 mt-3 sm:mt-4">
         <button
-          onClick={() => handleVideoLinkSubmit(moduleId)}
+          onClick={() => handleVideoLinkSubmit(lessonId)}
           className="bg-purple-600 hover:bg-purple-700 text-white px-3 sm:px-4 py-2 rounded-lg transition-colors flex items-center justify-center gap-2 text-sm sm:text-base whitespace-nowrap"
         >
           <FaCheck className="text-xs sm:text-sm" /> Add Video
@@ -569,7 +572,7 @@ function ModuleManagement({ lessons, courseId }: ModuleManagementProps) {
     </div>
   );
 
-  const FileUploadForm = ({ moduleId, type }: { moduleId: number; type: "pdf" | "word" }) => (
+  const FileUploadForm = ({ lessonId, type }: { lessonId: number; type: "pdf" | "word" }) => (
     <div className="bg-white p-4 sm:p-5 rounded-lg sm:rounded-xl border border-gray-200 shadow-sm">
       <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
         <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full ${type === "pdf" ? "bg-red-100" : "bg-blue-100"} flex items-center justify-center flex-shrink-0`}>
@@ -582,7 +585,7 @@ function ModuleManagement({ lessons, courseId }: ModuleManagementProps) {
       </div>
       <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 items-stretch sm:items-center">
         <button
-          onClick={() => handleFileSelect(moduleId, type)}
+          onClick={() => handleFileSelect(lessonId, type)}
           className="bg-blue-800 hover:bg-blue-700 text-white px-3 sm:px-4 py-2 sm:py-3 rounded-lg transition-colors flex items-center justify-center gap-2 text-sm sm:text-base"
         >
           <FaFile className="text-xs sm:text-sm" /> Choose File
@@ -600,7 +603,7 @@ function ModuleManagement({ lessons, courseId }: ModuleManagementProps) {
     </div>
   );
 
-  const QuizForm = ({ moduleId }: { moduleId: number }) => (
+  const QuizForm = ({ lessonId }: { lessonId: number }) => (
     <div className="bg-white p-4 sm:p-5 rounded-lg sm:rounded-xl border border-gray-200 shadow-sm">
       <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
         <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
@@ -634,7 +637,7 @@ function ModuleManagement({ lessons, courseId }: ModuleManagementProps) {
         </div>
         <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-2">
           <button
-            onClick={() => handleQuizCreation(moduleId)}
+            onClick={() => handleQuizCreation(lessonId)}
             className="bg-green-600 hover:bg-green-700 text-white px-3 sm:px-4 py-2 rounded-lg transition-colors flex items-center justify-center gap-2 text-sm sm:text-base"
           >
             <FaCheck className="text-xs sm:text-sm" /> Create Quiz
@@ -654,13 +657,13 @@ function ModuleManagement({ lessons, courseId }: ModuleManagementProps) {
     </div>
   );
 
-  const sortedModules = [...modules].sort(
+  const sortedLessons = [...lessons].sort(
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
 
   // Find the currently open quiz resource
   const currentQuizResource = openQuiz 
-    ? modules.flatMap(m => m.resources).find(r => r.id === openQuiz)
+    ? lessons.flatMap(m => m.resources).find(r => r.id === openQuiz)
     : null;
 
   return (
@@ -677,48 +680,48 @@ function ModuleManagement({ lessons, courseId }: ModuleManagementProps) {
       )}
 
       <div className="space-y-3">
-        {sortedModules.map((module) => (
-          <div key={module.id} className="group bg-white border border-gray-200 rounded-lg sm:rounded-xl shadow-lg transition-all hover:shadow-xl">
+        {sortedLessons.map((lesson) => (
+          <div key={lesson.id} className="group bg-white border border-gray-200 rounded-lg sm:rounded-xl shadow-lg transition-all hover:shadow-xl">
             {/* Header - Responsive */}
             <div className="p-4 sm:p-6 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-0">
               <div className="flex-1 min-w-0">
                 <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-1 sm:mb-2 break-words">
-                  {module.order}. {module.title}
+                  {lesson.order}. {lesson.title}
                 </h2>
-                <p className="text-sm sm:text-base text-gray-600 break-words">{module.description}</p>
+                <p className="text-sm sm:text-base text-gray-600 break-words">{lesson.description}</p>
               </div>
               <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-                <span className={`px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium whitespace-nowrap ${module.isUnlocked ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
-                  {module.isUnlocked ? "Unlocked" : "Locked"}
+                <span className={`px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium whitespace-nowrap ${lesson.isUnlocked ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
+                  {lesson.isUnlocked ? "Unlocked" : "Locked"}
                 </span>
                 <div
                   className="relative"
                   ref={(el) => {
-                    menuWrapperRefs.current[module.id] = el;
+                    menuWrapperRefs.current[lesson.id] = el;
                   }}
                 >
                   <button
-                    onClick={() => setMenuOpenId(menuOpenId === module.id ? null : module.id)}
+                    onClick={() => setMenuOpenId(menuOpenId === lesson.id ? null : lesson.id)}
                     className="p-2 rounded-full cursor-pointer hover:bg-gray-100 transition-colors"
                   >
                     <FaEllipsisV className="text-gray-600 text-sm sm:text-base" />
                   </button>
-                  {menuOpenId === module.id && (
+                  {menuOpenId === lesson.id && (
                     <div className="absolute right-0 mt-2 w-44 sm:w-48 bg-white border border-gray-500 rounded-lg shadow-lg z-10">
                       <ul className="py-2 text-xs sm:text-sm text-gray-700">
                         <li>
                           <button
-                            onClick={() => toggleModuleUnlock(module.id)}
+                            onClick={() => togglelessonUnlock(lesson.id)}
                             className="w-full cursor-pointer px-3 sm:px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-2 sm:gap-3"
                           >
-                            {module.isUnlocked ? <FaLock className="flex-shrink-0" /> : <FaUnlock className="flex-shrink-0" />}
-                            <span>{module.isUnlocked ? "Lock Lesson" : "Unlock Lesson"}</span>
+                            {lesson.isUnlocked ? <FaLock className="flex-shrink-0" /> : <FaUnlock className="flex-shrink-0" />}
+                            <span>{lesson.isUnlocked ? "Lock Lesson" : "Unlock Lesson"}</span>
                           </button>
                         </li>
                         <li>
                           <button
                             onClick={() => {
-                              setShowAddResource(showAddResource === module.id ? null : module.id);
+                              setShowAddResource(showAddResource === lesson.id ? null : lesson.id);
                               setResourceType(null);
                             }}
                             className="w-full cursor-pointer px-3 sm:px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-2 sm:gap-3"
@@ -728,7 +731,7 @@ function ModuleManagement({ lessons, courseId }: ModuleManagementProps) {
                         </li>
                         <li>
                           <button
-                            onClick={() => requestDeleteLesson(module.id)}
+                            onClick={() => requestDeleteLesson(lesson.id)}
                             className="w-full cursor-pointer px-3 sm:px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-2 sm:gap-3 text-red-600"
                           >
                             <FaTrash className="flex-shrink-0" /> <span>Delete Lesson</span>
@@ -742,7 +745,7 @@ function ModuleManagement({ lessons, courseId }: ModuleManagementProps) {
             </div>
 
             {/* Add Resource - Responsive */}
-            {showAddResource === module.id && (
+            {showAddResource === lesson.id && (
               <div className="px-3 sm:px-6 pb-4 sm:pb-6 mx-2 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-b-lg sm:rounded-b-xl relative">
                 <div className="pt-3 sm:pt-4">
                   <div className="flex items-center justify-between mb-3 sm:mb-4">
@@ -761,24 +764,24 @@ function ModuleManagement({ lessons, courseId }: ModuleManagementProps) {
                   {resourceType === null ? (
                     <ResourceTypeSelector onSelect={setResourceType} />
                   ) : resourceType === "video" ? (
-                    <VideoLinkForm moduleId={module.id} />
+                    <VideoLinkForm lessonId={lesson.id} />
                   ) : resourceType === "pdf" || resourceType === "word" ? (
-                    <FileUploadForm moduleId={module.id} type={resourceType} />
+                    <FileUploadForm lessonId={lesson.id} type={resourceType} />
                   ) : resourceType === "quiz" ? (
-                    <QuizForm moduleId={module.id} />
+                    <QuizForm lessonId={lesson.id} />
                   ) : null}
                 </div>
               </div>
             )}
 
             {/* Resources - Responsive */}
-            {module.resources.length > 0 && (
+            {lesson.resources.length > 0 && (
               <div className="px-4 sm:px-6 pb-4 sm:pb-6 mt-3 sm:mt-4">
                 <h3 className="font-semibold text-gray-900 mb-3 sm:mb-4 flex items-center gap-2 text-sm sm:text-base">
-                  <FaFile className="text-gray-600 flex-shrink-0" /> Resources ({module.resources.length})
+                  <FaFile className="text-gray-600 flex-shrink-0" /> Resources ({lesson.resources.length})
                 </h3>
                 <div className="space-y-2 sm:space-y-3">
-                  {module.resources.map((resource) => (
+                  {lesson.resources.map((resource) => (
                     <div
                       key={resource.id}
                       className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 sm:p-4 border border-gray-200 rounded-lg hover:border-gray-300 hover:shadow-sm transition-all"
@@ -850,7 +853,7 @@ function ModuleManagement({ lessons, courseId }: ModuleManagementProps) {
                                 <li>
                                   <button
                                     onClick={() => {
-                                      requestDeleteResource(module.id, resource.id);
+                                      requestDeleteResource(lesson.id, resource.id);
                                       setOpenMenu(null);
                                     }}
                                     className="w-full text-left px-3 sm:px-4 py-2 text-red-600 hover:bg-red-50 flex items-center gap-2"
@@ -872,7 +875,7 @@ function ModuleManagement({ lessons, courseId }: ModuleManagementProps) {
         ))}
       </div>
 
-      {modules.length === 0 && (
+      {lessons.length === 0 && (
         <div className="text-center py-8 sm:py-12 px-4">
           <div className="max-w-md mx-auto">
             <FaFile className="text-4xl sm:text-6xl text-gray-300 mx-auto mb-3 sm:mb-4" />
@@ -903,4 +906,4 @@ function ModuleManagement({ lessons, courseId }: ModuleManagementProps) {
   );
 }
 
-export default ModuleManagement;
+export default lessonManagement;

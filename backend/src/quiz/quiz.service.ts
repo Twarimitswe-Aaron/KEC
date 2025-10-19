@@ -40,8 +40,7 @@ export class QuizService {
   if (!form) {
     form = await this.prisma.form.create({
       data: {
-        title: `${name} Form`,
-        description: description || null,
+     
         resource: {
           connect: { id: resourceId },
         },

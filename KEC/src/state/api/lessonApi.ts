@@ -206,10 +206,7 @@ export const lessonApi = apiSlice.injectEndpoints({
     }),
 
     // Add resource to lesson
-    addResource: builder.mutation<
-      ApiResponse<Resource>,
-      AddResourceRequest
-    >({
+    addResource: builder.mutation<{message:string},AddResourceRequest>({
       query: ({ lessonId, title, file, type, description,url }) => {
         if (file) {
           // File upload (PDF, Word)
@@ -236,22 +233,22 @@ export const lessonApi = apiSlice.injectEndpoints({
             },
           };
         } else if (type === "quiz") {
-          // Quiz creation
+       
           return {
             url: `/lesson/${lessonId}/quiz`,
             method: "POST",
             body: {
               name: title,
               description: description || "",
-              questions: [
-                {
-                  id: 1,
-                  type: "multiple",
-                  question: "Sample question - edit this quiz to add your questions",
-                  options: ["Option 1", "Option 2", "Option 3", "Option 4"],
-                  required: true,
-                }
-              ]
+              // questions: [
+              //   {
+              //     id: 1,
+              //     type: "multiple",
+              //     question: "Sample question - edit this quiz to add your questions",
+              //     options: ["Option 1", "Option 2", "Option 3", "Option 4"],
+              //     required: true,
+              //   }
+              // ]
             },
           };
         } else {

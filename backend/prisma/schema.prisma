@@ -166,8 +166,6 @@ model Quiz {
 }
 model Form {
   id          Int        @id @default(autoincrement())
-  title       String
-  description String?
   questions   Question[]
   createdAt   DateTime   @default(now())
   responses   Response[]

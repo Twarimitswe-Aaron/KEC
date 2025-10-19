@@ -1,3 +1,5 @@
+import * as path from 'path'
+import * as fs from 'fs'
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { Prisma, PrismaClient, ResourceType } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
@@ -534,34 +536,52 @@ export class ModuleService {
   }
 
   async addResource(lessonId: number, dto: AddResourceDto) {
+
     const lesson = await this.prisma.lesson.findUnique({
       where: { id: lessonId },
     });
     if (!lesson) throw new NotFoundException('Lesson not found');
 
-    let url = dto.url;
-    let size: string | null = null;
+    let fileUrl: string | null = null;
+    let fileSize: string | null = null;
 
-    if (dto.file) {
-      url = await this.uploadFile(dto.file);
-      size = `${(dto.file.size / 1024 / 1024).toFixed(1)} MB`;
+   
+    if (dto.file && ['pdf', 'word'].includes(dto.type)) {
+      const uploadDir = path.join(process.cwd(), 'uploads', dto.type);
+      fs.mkdirSync(uploadDir, { recursive: true });
+
+      const fileExt = path.extname(dto.file.originalname);
+      const baseName = path.basename(dto.file.originalname, fileExt);
+      const fileName = `${baseName}-${Date.now()}${fileExt}`;
+      const filePath = path.join(uploadDir, fileName);
+
+      // Save file
+      fs.writeFileSync(filePath, dto.file.buffer);
+
+      // Generate accessible URL (served from main.ts)
+      fileUrl = `/uploads/${dto.type}/${fileName}`;
+      fileSize = `${(dto.file.size / 1024 / 1024).toFixed(1)} MB`;
     }
 
-    const resource = await this.prisma.resource.create({
+    
+    if (dto.type === 'quiz' && dto.file) {
+      throw new BadRequestException('Quiz must not contain a file');
+    }
+
+  
+    await this.prisma.resource.create({
       data: {
-        lessonId: lessonId,
+        lessonId,
         name: dto.title,
         type: dto.type,
-      
-        size: size,
-        
-        url: url,
+        url: fileUrl, 
+        size: fileSize, 
+       
       },
     });
 
-    return {
-      message: "Resource added successfully",
-    };
+    
+    return { message: 'Resource added successfully' };
   }
 
   private async uploadFile(file: Express.Multer.File): Promise<string> {
@@ -748,94 +768,81 @@ export class ModuleService {
         name: dto.name || 'Video Resource',
         type: 'video',
         url: dto.url,
-        duration: dto.duration || 'N/A',
+        duration: dto.duration || '--',
         uploadedAt: new Date(),
       },
     });
 
-    return {
-      message: "Video resource added successfully",
-      data: {
-        id: resource.id,
-        url: resource.url,
-        title: resource.name,
-        type: resource.type,
-        duration: resource.duration,
-        uploadedAt: resource.uploadedAt.toISOString(),
-      },
-      success: true,
-    };
+    return {message: "Video resource added successfully",};
   }
 
-  async addQuizResource(lessonId: number, dto: CreateQuizDto) {
-    const lesson = await this.prisma.lesson.findUnique({
-      where: { id: lessonId },
-    });
+async addQuizResource(lessonId: number, dto: CreateQuizDto) {
+ 
+  const lesson = await this.prisma.lesson.findUnique({
+    where: { id: lessonId },
+  });
 
-    if (!lesson) {
-      throw new NotFoundException('Lesson not found');
-    }
+  if (!lesson) {
+    throw new NotFoundException('Lesson not found');
+  }
 
-    // First create the resource
-    const resource = await this.prisma.resource.create({
+
+  let resource = await this.prisma.resource.findFirst({
+    where: {
+      lessonId,
+      name: dto.name,
+      type: 'quiz',
+    },
+    include: { form: { include: { quizzes: true } } },
+  });
+
+  if (!resource) {
+
+    resource = await this.prisma.resource.create({
       data: {
         name: dto.name,
         type: 'quiz',
-        lessonId: lessonId,
+        lessonId,
+      },
+      include: { form: { include: { quizzes: true } } },
+    });
+  }
+
+ 
+  let form = resource.form;
+  if (!form) {
+    form = await this.prisma.form.create({
+      data: {
+        resourceId: resource.id,
+        quizzes: {
+          create: {
+            name: dto.name,
+            description: dto.description || '',
+          },
+        },
+      },
+      include: { quizzes: true },
+    });
+  } else {
+  
+    await this.prisma.quiz.create({
+      data: {
+        name: dto.name,
+        description: dto.description || '',
+        formId: form.id,
       },
     });
+  }
 
-// Then create the form with quiz
-const form = await this.prisma.form.create({
-  data: {
-    title: dto.name,
-    description: dto.description,
-    resourceId: resource.id,
-    questions: {
-      create: dto.questions.map((q, index) => ({
-        questionText: q.question,
-        type: q.type,
-        required: q.required,
-        options: {
-          create: q.options?.map((option, i) => ({
-            optionText: option,
-            isCorrect: q.correctAnswers?.includes(i) || false,
-          })),
-        },
-      })),
-    },
-    quizzes: {
-      create: {
-        name: dto.name,
-        description: dto.description,
-        settings: JSON.stringify(dto.settings || {}),
-        questions: {
-          create: dto.questions.map((q, index) => ({
-            type: q.type,
-            question: q.question,
-            options: q.options ? JSON.stringify(q.options) : null,
-            correctAnswer: q.type === 'single_choice' ? q.correctAnswers?.[0] : null,
-            correctAnswers: q.type === 'multiple_choice' ? JSON.stringify(q.correctAnswers) : null,
-            required: q.required,
-            orderIndex: index,
-            order: index,
-            points: q.points || 1,
-          })),
-        },
-      },
-    },
-  },
-    include: {
-      quizzes: {
-        include: {
-          questions: true,
-        },
-      },
-    },
-  });
-  
-  return resource;
+  return {
+    message: 'Quiz added successfully'
+
+  };
 }
+
+
+
+
 
 async submitQuiz(quizId: number, responses: Array<{ questionId: number; answer: any }>): Promise<{ message: string; success: boolean }> {
     // First, verify all required questions are answered

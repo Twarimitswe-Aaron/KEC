@@ -1,3 +1,5 @@
+import * as fs from 'fs';
+import * as path from 'path';
 import {
   Controller,
   Get,
@@ -25,6 +27,7 @@ import { RolesGuard } from 'src/auth/roles.guard';
 import { UpdateLessonDto } from './dto/update-lesson.dto';
 import { ToggleLockDto } from './dto/toggle-lock.dto';
 import { AddResourceDto } from './dto/add-resource.dto';
+import { diskStorage } from 'multer';
 
 @UseGuards(AuthGuard, RolesGuard)
 @Roles('admin', 'teacher')
@@ -66,23 +69,67 @@ export class ModuleController {
   }
 
   // Add resource to lesson - Main endpoint for file uploads
-  @Post(':lessonId/resources')
-  @UseInterceptors(FileInterceptor('file'))
+    @Post(':lessonId/resources')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: diskStorage({
+        destination: (req, file, cb) => {
+          const type = req.body.type;
+          if (!['pdf', 'word'].includes(type)) {
+            return cb(new BadRequestException('Only PDF or Word files are allowed for uploads'), '');
+          }
+
+          const uploadDir = path.join(process.cwd(), 'uploads', type);
+          fs.mkdirSync(uploadDir, { recursive: true });
+          cb(null, uploadDir);
+        },
+        filename: (req, file, cb) => {
+          const fileExt = path.extname(file.originalname);
+          const baseName = path.basename(file.originalname, fileExt);
+          const uniqueName = `${baseName}-${Date.now()}${fileExt}`;
+          cb(null, uniqueName);
+        },
+      }),
+    }),
+  )
   async addResource(
     @Param('lessonId', ParseIntPipe) lessonId: number,
     @UploadedFile() file: Express.Multer.File,
-    @Body() body: { title: string; type: string; url?: string },
+    @Body() body: { title?: string; type: string; description?: string },
   ) {
-    const allowedTypes = ['pdf', 'word', 'video', 'quiz'] as const;
-    if (!allowedTypes.includes(body.type as any)) {
-      throw new BadRequestException('Invalid resource type');
+    const { type } = body;
+
+    
+    const allowedTypes = ['pdf', 'word', 'quiz', 'video'] as const;
+    if (!allowedTypes.includes(type as any)) {
+      throw new BadRequestException('Invalid resource type. Allowed: pdf, word, quiz, video');
     }
+
+
+    if (type === 'quiz' || type === 'video') {
+      if (!body.title) throw new BadRequestException(`${type} must have a title`);
+      const dto: AddResourceDto = {
+        title: body.title,
+        type: type as 'quiz' | 'video',
+        description: body.description || '',
+      };
+      return this.svc.addResource(lessonId, dto);
+    }
+
+
+    if (!file) throw new BadRequestException('File is required for PDF or Word type');
+
+    const title = body.title || file.originalname.split('.').slice(0, -1).join('.');
+    const fileUrl = `/uploads/${type}/${file.filename}`;
+
     const dto: AddResourceDto = {
-      title: body.title,
-      type: body.type as 'pdf' | 'word' | 'video' | 'quiz',
-      file: file,
-      url: body.url,
+      title,
+      type: type as 'pdf' | 'word' | 'quiz',
+      url: fileUrl,
+      file,
+      description: body.description || '',
     };
+
     return this.svc.addResource(lessonId, dto);
   }
 
@@ -137,6 +184,8 @@ export class ModuleController {
     @Param('lessonId', ParseIntPipe) lessonId: number,
     @Body() dto: CreateQuizDto,
   ) {
+   
+    
     return this.svc.addQuizResource(lessonId, dto);
   }
 
