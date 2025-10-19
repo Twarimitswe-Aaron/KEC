@@ -29,13 +29,7 @@ export class QuizController {
   }
 
   @Get()
-  findAll(
-    @Query('moduleId') moduleId?: string,
-    @Query('lessonId') lessonId?: string,
-  ) {
-    if (moduleId) {
-      return this.quizService.getQuizzesByModule(parseInt(moduleId));
-    }
+  findAll(@Query('lessonId') lessonId?: string) {
     if (lessonId) {
       return this.quizService.getQuizzesByLesson(parseInt(lessonId));
     }

@@ -444,51 +444,6 @@ export class QuizService {
     }));
   }
 
- async getQuizzesByModule(moduleId: number) {
-  const quizzes = await this.prisma.quiz.findMany({
-    where: {
-      form: {
-        resource: {
-          moduleId, // filter quizzes whose linked resource belongs to this module
-        },
-      },
-    },
-    include: {
-      questions: {
-        orderBy: { order: 'asc' },
-      },
-      form: {
-        include: {
-          resource: {
-            select: {
-              id: true,
-              name: true,
-              type: true,
-              url: true,
-              moduleId: true,
-            },
-          },
-        },
-      },
-    },
-  });
-
-  return quizzes.map(quiz => ({
-    id: quiz.id,
-    name: quiz.name,
-    description: quiz.description,
-    resourceId: quiz.form?.resource?.id ?? null,
-    resource: quiz.form?.resource ?? null,
-    settings: quiz.settings ? JSON.parse(quiz.settings) : null,
-    questions: quiz.questions.map(q => ({
-      ...q,
-      options: q.options ? JSON.parse(q.options) : null,
-      correctAnswers: q.correctAnswers ? JSON.parse(q.correctAnswers) : [],
-      correctAnswer: q.correctAnswer ?? undefined,
-    })),
-  }));
-}
-
 
 async getQuizzesByLesson(lessonId: number) {
   // ✅ Fetch resources that belong to the given lesson
