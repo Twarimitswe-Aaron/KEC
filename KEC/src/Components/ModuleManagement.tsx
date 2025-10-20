@@ -672,7 +672,7 @@ function ModuleManagement({ lessons: initialLessons, courseId }: lessonManagemen
     <div className="px-2 sm:px-0">
       <input type="file" ref={fileInputRef} style={{ display: "none" }} />
 
-      {/* Quiz Editor Modal */}
+       {/* Quiz Editor Modal  */}
       {openQuiz && currentQuizResource && (
         <QuizEditor
           resource={currentQuizResource}
@@ -680,6 +680,7 @@ function ModuleManagement({ lessons: initialLessons, courseId }: lessonManagemen
           onUpdate={handleQuizUpdate}
         />
       )}
+        
 
       <div className="space-y-3">
         {sortedLessons.map((lesson) => (
@@ -778,6 +779,7 @@ function ModuleManagement({ lessons: initialLessons, courseId }: lessonManagemen
 
             {/* Resources - Responsive */}
             {lesson.resources.length > 0 && (
+            
               <div className="px-4 sm:px-6 pb-4 sm:pb-6 mt-3 sm:mt-4">
                 <h3 className="font-semibold text-gray-900 mb-3 sm:mb-4 flex items-center gap-2 text-sm sm:text-base">
                   <FaFile className="text-gray-600 flex-shrink-0" /> Resources ({lesson.resources.length})
@@ -873,6 +875,7 @@ function ModuleManagement({ lessons: initialLessons, courseId }: lessonManagemen
                 </div>
               </div>
             )}
+              
           </div>
         ))}
       </div>

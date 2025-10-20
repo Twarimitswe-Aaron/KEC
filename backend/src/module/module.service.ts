@@ -552,11 +552,6 @@ export class ModuleService {
     fileSize = `${(size / 1024 / 1024).toFixed(1)} MB`;
   }
 
- 
-  if (dto.type === 'quiz' && dto.file) {
-    throw new BadRequestException('Quiz must not contain a file');
-  }
-
 
   await this.prisma.resource.create({
     data: {
