@@ -69,18 +69,27 @@ export class ModuleController {
   }
 
   // Add resource to lesson - Main endpoint for file uploads
-    @Post(':lessonId/resources')
+  @Post(':lessonId/resources')
   @UseInterceptors(
     FileInterceptor('file', {
       storage: diskStorage({
         destination: (req, file, cb) => {
-          const type = req.body.type;
-          if (!['pdf', 'word'].includes(type)) {
-            return cb(new BadRequestException('Only PDF or Word files are allowed for uploads'), '');
+          const type = file.mimetype;
+          if (
+            !(
+              type.includes('pdf') ||
+              type.includes('msword') ||
+              type.includes('officedocument')
+            )
+          ) {
+            return cb(new Error('Only PDF or Word files are allowed'), '');
           }
 
-          const uploadDir = path.join(process.cwd(), 'uploads', type);
+          const folderType = type.includes('pdf') ? 'pdf' : 'word';
+          const uploadDir = path.join(process.cwd(), 'uploads', folderType);
+
           fs.mkdirSync(uploadDir, { recursive: true });
+
           cb(null, uploadDir);
         },
         filename: (req, file, cb) => {
@@ -98,28 +107,22 @@ export class ModuleController {
     @Body() body: { title?: string; type: string; description?: string },
   ) {
     const { type } = body;
-
     
+
     const allowedTypes = ['pdf', 'word', 'quiz', 'video'] as const;
     if (!allowedTypes.includes(type as any)) {
-      throw new BadRequestException('Invalid resource type. Allowed: pdf, word, quiz, video');
+      throw new BadRequestException(
+        'Invalid resource type. Allowed: pdf, word, quiz, video',
+      );
     }
 
+ 
 
-    if (type === 'quiz' || type === 'video') {
-      if (!body.title) throw new BadRequestException(`${type} must have a title`);
-      const dto: AddResourceDto = {
-        title: body.title,
-        type: type as 'quiz' | 'video',
-        description: body.description || '',
-      };
-      return this.svc.addResource(lessonId, dto);
-    }
+    if (!file)
+      throw new BadRequestException('File is required for PDF or Word type');
 
-
-    if (!file) throw new BadRequestException('File is required for PDF or Word type');
-
-    const title = body.title || file.originalname.split('.').slice(0, -1).join('.');
+    const title =
+      body.title || file.originalname.split('.').slice(0, -1).join('.');
     const fileUrl = `/uploads/${type}/${file.filename}`;
 
     const dto: AddResourceDto = {
@@ -133,7 +136,7 @@ export class ModuleController {
     return this.svc.addResource(lessonId, dto);
   }
 
-  // Toggle lesson lock status
+
   @Patch('lock/:id')
   async toggleLessonLock(
     @Param('id', ParseIntPipe) id: number,
@@ -160,6 +163,7 @@ export class ModuleController {
     if (!lessonIds || !Array.isArray(lessonIds)) {
       throw new BadRequestException('lessonIds must be an array');
     }
+
     return this.svc.reorderLessons(courseId, lessonIds);
   }
 
@@ -184,8 +188,6 @@ export class ModuleController {
     @Param('lessonId', ParseIntPipe) lessonId: number,
     @Body() dto: CreateQuizDto,
   ) {
-   
-    
     return this.svc.addQuizResource(lessonId, dto);
   }
 
@@ -201,8 +203,8 @@ export class ModuleController {
   // Module-specific endpoints (alias for lesson endpoints)
   @Post('module/:courseId')
   async createModule(
-    @Body() dto: CreateLessonDto, 
-    @Param('courseId', ParseIntPipe) courseId: number
+    @Body() dto: CreateLessonDto,
+    @Param('courseId', ParseIntPipe) courseId: number,
   ) {
     return this.svc.createModule(courseId, dto);
   }

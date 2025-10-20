@@ -40,6 +40,7 @@ type FormKey = keyof typeof INITIAL_FORM_STATE;
 const LessonsView = () => {
   const { id } = useParams();
   const { data: courseData, isLoading, error, refetch: refetchCourse } = useGetCourseDataQuery(Number(id));
+ 
   const [addLesson, { isLoading: isCreatingLesson }] = useCreateLessonMutation();
   const [updateCourse, { isLoading: isUpdatingCourse }] = useUpdateCourseMutation();
   const [deleteCourse, { isLoading: isDeletingCourse }] = useDeleteCourseMutation();

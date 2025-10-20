@@ -536,63 +536,42 @@ export class ModuleService {
   }
 
   async addResource(lessonId: number, dto: AddResourceDto) {
+  const lesson = await this.prisma.lesson.findUnique({
+    where: { id: lessonId },
+  });
+  if (!lesson) throw new NotFoundException('Lesson not found');
 
-    const lesson = await this.prisma.lesson.findUnique({
-      where: { id: lessonId },
-    });
-    if (!lesson) throw new NotFoundException('Lesson not found');
+  let fileUrl: string | null = null;
+  let fileSize: string | null = null;
 
-    let fileUrl: string | null = null;
-    let fileSize: string | null = null;
-
-   
-    if (dto.file && ['pdf', 'word'].includes(dto.type)) {
-      const uploadDir = path.join(process.cwd(), 'uploads', dto.type);
-      fs.mkdirSync(uploadDir, { recursive: true });
-
-      const fileExt = path.extname(dto.file.originalname);
-      const baseName = path.basename(dto.file.originalname, fileExt);
-      const fileName = `${baseName}-${Date.now()}${fileExt}`;
-      const filePath = path.join(uploadDir, fileName);
-
-      // Save file
-      fs.writeFileSync(filePath, dto.file.buffer);
-
-      // Generate accessible URL (served from main.ts)
-      fileUrl = `/uploads/${dto.type}/${fileName}`;
-      fileSize = `${(dto.file.size / 1024 / 1024).toFixed(1)} MB`;
-    }
-
-    
-    if (dto.type === 'quiz' && dto.file) {
-      throw new BadRequestException('Quiz must not contain a file');
-    }
-
+ 
+  if (dto.file && ['pdf', 'word'].includes(dto.type)) {
   
-    await this.prisma.resource.create({
-      data: {
-        lessonId,
-        name: dto.title,
-        type: dto.type,
-        url: fileUrl, 
-        size: fileSize, 
-       
-      },
-    });
-
-    
-    return { message: 'Resource added successfully' };
+    const { filename, size } = dto.file;
+    fileUrl = `/uploads/${dto.type}/${filename}`;
+    fileSize = `${(size / 1024 / 1024).toFixed(1)} MB`;
   }
 
-  private async uploadFile(file: Express.Multer.File): Promise<string> {
-    // Simple file upload implementation - replace with your actual file storage logic
-    const fileName = `${Date.now()}-${file.originalname}`;
-    const publicUrl = `/uploads/${fileName}`;
-    
-    // In a real implementation, you would save the file to disk or cloud storage here
-    // For now, we'll just return a placeholder URL
-    return publicUrl;
+ 
+  if (dto.type === 'quiz' && dto.file) {
+    throw new BadRequestException('Quiz must not contain a file');
   }
+
+
+  await this.prisma.resource.create({
+    data: {
+      lessonId,
+      name: dto.title,
+      type: dto.type,
+      url: fileUrl,
+      size: fileSize,
+    },
+  });
+
+  return { message: 'Resource added successfully' };
+}
+
+
 
   async deleteResource(lessonId: number, resourceId: number) {
     const resource = await this.prisma.resource.findUnique({

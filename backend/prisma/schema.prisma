@@ -166,12 +166,13 @@ model Quiz {
 }
 model Form {
   id          Int        @id @default(autoincrement())
+  
   questions   Question[]
   createdAt   DateTime   @default(now())
   responses   Response[]
   quizzes     Quiz[]
-  resourceId Int @unique
-  resource   Resource @relation(fields: [resourceId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  resourceId  Int        @unique
+  resource    Resource   @relation(fields: [resourceId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 }
 
 model Question {

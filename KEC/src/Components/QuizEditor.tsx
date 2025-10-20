@@ -45,6 +45,7 @@ interface QuizEditorProps {
 }
 
 const QuizEditor = ({ resource, onClose, onUpdate }: QuizEditorProps) => {
+  console.log(resource,"resources of this lesson")
   // RTK Query hooks
   const { 
     data: quizData, 
@@ -54,6 +55,10 @@ const QuizEditor = ({ resource, onClose, onUpdate }: QuizEditorProps) => {
   } = useGetQuizQuery(resource.quizId!, {
     skip: !resource.quizId
   });
+
+  console.log(quizData)
+
+  
   
   const [updateQuiz, { isLoading: isUpdating }] = useUpdateQuizMutation();
   const [createQuiz, { isLoading: isCreating }] = useCreateQuizMutation();

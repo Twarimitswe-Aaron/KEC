@@ -193,7 +193,8 @@ const lessonTolesson = (lesson: Lesson): lessonType => ({
 });
 
 // Main Component
-function lessonManagement({ lessons: initialLessons, courseId }: lessonManagementProps) {
+function ModuleManagement({ lessons: initialLessons, courseId }: lessonManagementProps) {
+
   // State
   const [showAddResource, setShowAddResource] = useState<number | null>(null);
   const [resourceType, setResourceType] = useState<"pdf" | "video" | "word" | "quiz" | null>(null);
@@ -314,6 +315,7 @@ function lessonManagement({ lessons: initialLessons, courseId }: lessonManagemen
 
   const handleFileUpload = async (lessonId: number, file: File, type: "pdf" | "word") => {
     try {
+      console.log(file)
       const {message} = await addResource({
         lessonId: lessonId,
         title: file.name,
@@ -906,4 +908,4 @@ function lessonManagement({ lessons: initialLessons, courseId }: lessonManagemen
   );
 }
 
-export default lessonManagement;
+export default ModuleManagement;
