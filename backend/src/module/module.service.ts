@@ -166,10 +166,11 @@ interface FormWithQuizzes {
 import { UpdateLessonDto } from './dto/update-lesson.dto';
 import { AddResourceDto } from './dto/add-resource.dto';
 import { ToggleLockDto } from './dto/toggle-lock.dto';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class ModuleService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService,private configService:ConfigService) {}
 
   async getLessonsByCourse(courseId: number) {
     // Define the type for the lesson with its relations
@@ -548,7 +549,7 @@ export class ModuleService {
   if (dto.file && ['pdf', 'word'].includes(dto.type)) {
   
     const { filename, size } = dto.file;
-    fileUrl = `/uploads/${dto.type}/${filename}`;
+    fileUrl =  `${this.configService.get("BACKEND_URL")}/uploads/${dto.type}/${filename}`;
     fileSize = `${(size / 1024 / 1024).toFixed(1)} MB`;
   }
 

@@ -75,7 +75,7 @@ export type QuizResponse = {
 export type IncomingResource = {
   id: number;
   url: string;
-  title?: string;
+  name?: string;
   type?: string;
   size?: string;
   duration?: string;
@@ -178,11 +178,11 @@ const lessonTolesson = (lesson: Lesson): lessonType => ({
   description: lesson.description || lesson.content || "",
   isUnlocked: lesson.isUnlocked ?? true,
   order: lesson.order || lesson.id,
-  createdAt: lesson.createdAt || new Date().toISOString(),
+  createdAt: lesson.createdAt || "",
   resources:
     lesson.resources?.map((resource) => ({
       id: resource.id,
-      name: resource.title || "Untitled Resource",
+      name: resource.name || "Untitled Resource",
       type: (resource.type as "pdf" | "video" | "quiz" | "word") || "pdf",
       url: resource.url,
       uploadedAt: resource.uploadedAt || new Date().toISOString().split("T")[0],
@@ -194,6 +194,7 @@ const lessonTolesson = (lesson: Lesson): lessonType => ({
 
 // Main Component
 function ModuleManagement({ lessons: initialLessons, courseId }: lessonManagementProps) {
+  console.log(initialLessons, 'i want to get resources')
 
   // State
   const [showAddResource, setShowAddResource] = useState<number | null>(null);
@@ -801,6 +802,8 @@ function ModuleManagement({ lessons: initialLessons, courseId }: lessonManagemen
                             {resource.type === "quiz" && (
                               <span className="bg-green-100 text-green-800 px-2 py-0.5 sm:py-1 rounded-full text-xs font-medium whitespace-nowrap">
                                 {resource.quiz?.length || 0} questions
+                                {console.log(resource, " quizes")}
+                               
                               </span>
                             )}
                           </div>
@@ -850,6 +853,7 @@ function ModuleManagement({ lessons: initialLessons, courseId }: lessonManagemen
                                       className="flex items-center gap-2 px-3 sm:px-4 py-2 hover:bg-gray-100"
                                     >
                                       {resource.type === "video" ? <FaPlay className="flex-shrink-0" /> : <FaExternalLinkAlt className="flex-shrink-0" />}
+                                   
                                       <span>{resource.type === "video" ? "Watch" : "Open"}</span>
                                     </a>
                                   </li>
