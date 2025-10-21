@@ -37,8 +37,6 @@ export class CourseController {
   getCourseByIdByAdmin(@Param('id') id: string) {
 
     const newId=Number(id);
-
-  
     return this.courseService.getCourseById(newId);
   }
 

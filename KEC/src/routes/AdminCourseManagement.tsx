@@ -1,6 +1,6 @@
 import React, { useContext } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useGetUploadedCoursesQuery } from "./../state/api/courseApi";
+import { useCoursesQuery } from "./../state/api/courseApi";
 import { BookOpen } from "lucide-react";
 import { UserRoleContext } from "../UserRoleContext";
 
@@ -150,7 +150,7 @@ const AdminCourseManagement: React.FC = () => {
     data: courses = [],
     isLoading,
     isFetching,
-  } = useGetUploadedCoursesQuery();
+  } = useCoursesQuery({unconfirmed:false});
 
   const handleCourseAction = (id: number) => {
     navigate(`${id}/create-modules`);

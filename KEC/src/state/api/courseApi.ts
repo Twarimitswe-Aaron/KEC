@@ -1,15 +1,21 @@
 import { apiSlice } from "./apiSlice";
-interface createCourseDto {
+
+interface CreateCourseDto {
   title: string;
   description: string;
   image_url: string;
   price: string;
-  uploader: {
-    id: number;
-  };
+  uploader: { id: number };
 }
 
-export interface getAllUploaded {
+export interface UploaderInfo {
+  id: number;
+  email: string;
+  name: string;
+  avatar_url: string;
+}
+
+export interface CourseSummary {
   id: number;
   title: string;
   description: string;
@@ -17,105 +23,103 @@ export interface getAllUploaded {
   image_url: string;
   no_lessons: string;
   open: boolean;
-
-  uploader: {
-    id: number;
-    email: string;
-    name: string;
-    avatar_url: string;
-  };
+  uploader: UploaderInfo;
 }
 
-export interface getSpecificCourseData {
+export interface LessonResource {
+  id: number;
+  url: string | null;
+}
+
+export interface LessonData {
   id: number;
   title: string;
-  description: string;
-  price: string;
-  image_url: string;
-  no_lessons: string;
-  open: boolean;
+  content: string;
+  resources: LessonResource[];
+}
+
+export interface CourseDetails extends CourseSummary {
   isConfirmed: boolean;
   maximum: number;
-  lesson: {
-    id: number;
-    title: string;
-    content: string;
-    resources: { id: number; url: string }[];
-  }[];
-  uploader: {
-    id: number;
-    email: string;
-    name: string;
-    avatar_url: string;
-  };
+  lesson: LessonData[];
 }
 
 export const courseApi = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
-    createCourse: builder.mutation<{ message: string }, createCourseDto>({
+    createCourse: builder.mutation<{ message: string }, CreateCourseDto>({
       query: (body) => ({
         url: "/course/create-course",
         method: "POST",
         body,
       }),
-      invalidatesTags: ["Course"],
+      invalidatesTags: [{ type: "Course", id: "LIST" }],
     }),
-    getUploadedCourses: builder.query<getAllUploaded[], void>({
-      query: () => "/course/get-uploaded-courses",
-      providesTags: ["Course"],
+
+    getCourses: builder.query<CourseSummary[], { unconfirmed?: boolean } | void>({
+      query: (params) =>
+        params?.unconfirmed
+          ? "/course/get-unconfirmed-courses"
+          : "/course/get-uploaded-courses",
+      providesTags: (result) =>
+        result
+          ? [
+              ...result.map(({ id }) => ({ type: "Course" as const, id })),
+              { type: "Course", id: "LIST" },
+            ]
+          : [{ type: "Course", id: "LIST" }],
     }),
-    getUnconfirmedCourses: builder.query<getAllUploaded[], void>({
-      query: () => "/course/get-unconfirmed-courses",
-      providesTags: ["Course"],
-    }),
+
     confirmCourse: builder.mutation<{ message: string }, number>({
       query: (id) => ({
         url: "/course/confirm-course",
         method: "POST",
         body: { id },
       }),
-      invalidatesTags: ["Course"],
+      invalidatesTags: (result, error, id) => [
+        { type: "Course", id },
+        { type: "Course", id: "LIST" },
+      ],
     }),
-    deleteCourse: builder.mutation<{ message: String }, number>({
+
+    deleteCourse: builder.mutation<{ message: string }, number>({
       query: (id) => ({
         url: "/course/delete-course",
         method: "POST",
         body: { id },
       }),
-      invalidatesTags: ["Course"],
+      invalidatesTags: (result, error, id) => [
+        { type: "Course", id },
+        { type: "Course", id: "LIST" },
+      ],
     }),
+
     updateCourse: builder.mutation<{ message: string }, FormData>({
       query: (formData) => ({
-        url: `/course/update-course`,
+        url: "/course/update-course",
         method: "PUT",
         body: formData,
       }),
-      // More specific invalidation (optional, better)
       invalidatesTags: (result, error, formData) => {
-        const courseId = formData.get("id");
+        const id = formData.get("id");
         return [
-          {
-            type: "Course",
-            id:
-              typeof courseId === "string" || typeof courseId === "number"
-                ? courseId
-                : undefined,
-          },
+          { type: "Course", id: typeof id === "string" || typeof id === "number" ? id : "LIST" },
         ];
       },
     }),
 
-    getCourseData: builder.query<getSpecificCourseData, number>({
+    getCourseData: builder.query<CourseDetails, number>({
       query: (id) => `/course/course/${id}`,
-      providesTags: ["Course"],
+      providesTags: (result, error, id) => [
+        { type: "Course", id },
+        ...(result?.lesson.map((lesson) => ({ type: "Lesson" as const, id: lesson.id })) || []),
+      ],
     }),
   }),
 });
 
 export const {
   useCreateCourseMutation,
-  useGetUploadedCoursesQuery,
-  useGetUnconfirmedCoursesQuery,
+ useGetCoursesQuery: useCoursesQuery, // versatile: both uploaded and unconfirmed
   useConfirmCourseMutation,
   useDeleteCourseMutation,
   useUpdateCourseMutation,

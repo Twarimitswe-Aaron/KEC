@@ -26,41 +26,77 @@ export class CourseService {
   }
 
   async getCourseById(id: number) {
-    console.log("Fetching course with ID:", id);
+  console.log("Fetching course with ID:", id);
 
-    const course = await this.prisma.course.findUnique({
-      where: { id: id },
-      include: {
-        lesson: { include: { resources: true } },
-        uploader: {
-          include: { profile: true },
-        },
-      },
+  const course = await this.prisma.course.findUnique({
+    where: { id },
+    include: {
+      lesson: { include: { resources: true } },
+      uploader: { include: { profile: true } },
+    },
+  });
+
+  if (!course) {
+    return { message: 'Course not found' };
+  }
+
+  // Helper function to format dates
+  const formatDate = (date: Date) =>
+    new Date(date).toLocaleString('en-US', {
+      weekday: 'short',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
     });
 
-    if (!course) {
-      return { message: 'Course not found' };
-    }
+    console.log(formatDate(new Date()));
 
-    return {
-      id: course.id,
-      title: course.title,
-      description: course.description,
-      price: course.coursePrice,
-      image_url: course.image_url,
-      no_lessons: '0',
-      open: course.open,
-      isConfirmed: course.isConfirmed,
-      maximum:course.maximum,
-      lesson: course.lesson,
-      uploader: {
-        id: course.uploaderId,
-        name: `${course.uploader?.firstName} ${course.uploader?.lastName}`,
-        email: course.uploader?.email,
-        avatar_url: course.uploader?.profile?.avatar || '',
-      },
-    };
-  }
+ 
+ return {
+  id: course.id,
+  title: course.title,
+  description: course.description,
+  price: course.coursePrice,
+  image_url: course.image_url,
+  no_lessons: course.lesson?.length || 0,
+  open: course.open,
+  isConfirmed: course.isConfirmed,
+  maximum: course.maximum,
+  createdAt: formatDate(course.createdAt),
+  updatedAt: formatDate(course.updatedAt),
+
+  lesson: course.lesson.map((l) => ({
+    id: l.id,
+    title: l.title,
+    description: l.description,
+    isUnlocked: l.isUnlocked,
+    createdAt: formatDate(l.createdAt),
+
+  
+    resources: l.resources.map((r) => ({
+      id: r.id,
+      name: r.name,
+      lessonId: r.lessonId,
+      type: r.type,
+      size: r.size,
+      createdAt: formatDate(r.uploadedAt),
+      duration: r.duration,
+      url: r.url,
+    })),
+  })),
+
+  uploader: {
+    id: course.uploaderId,
+    name: `${course.uploader?.firstName} ${course.uploader?.lastName}`,
+    email: course.uploader?.email,
+    avatar_url: course.uploader?.profile?.avatar || '',
+  },
+};
+
+}
+
 
   async findAllUnconfirmed() {
     const getAllUploaded = await this.prisma.course.findMany({

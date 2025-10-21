@@ -4,7 +4,7 @@ import { UserRoleContext } from "../UserRoleContext";
 import { FaEye, FaTimes, FaCheck, FaTrash } from "react-icons/fa";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import { useConfirmCourseMutation, useDeleteCourseMutation, useGetUnconfirmedCoursesQuery } from "../state/api/courseApi";
+import { useConfirmCourseMutation, useDeleteCourseMutation, useCoursesQuery } from "../state/api/courseApi";
 
 // Confirmation Modal Component
 interface ConfirmationModalProps {
@@ -76,7 +76,7 @@ const RequestedCourses = () => {
   const userRole = useContext(UserRoleContext);
 
   // RTK Query hooks
-  const { data: coursesData, isLoading, isError, refetch } = useGetUnconfirmedCoursesQuery();
+  const { data: coursesData, isLoading, isError, refetch } = useCoursesQuery({unconfirmed:true});
   const [confirmCourse] = useConfirmCourseMutation();
   const [deleteCourse] = useDeleteCourseMutation();
 

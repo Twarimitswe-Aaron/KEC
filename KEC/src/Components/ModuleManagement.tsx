@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   FaPlus,
   FaLock,
@@ -15,24 +15,17 @@ import {
   FaTimes,
   FaChevronUp,
   FaLink,
-  FaSave,
-  FaEye,
   FaEdit,
-  FaList,
-  FaCheckCircle,
-  FaRegCircle,
-  FaRegCheckSquare,
-  FaRegSquare,
 } from "react-icons/fa";
 import { toast } from "react-toastify";
-import { 
-  useDeleteLessonMutation, 
+import {
+  useDeleteLessonMutation,
   useToggleLessonLockMutation,
   useAddResourceMutation,
-  useDeleteResourceMutation
+  useDeleteResourceMutation,
 } from "../state/api/lessonApi";
-import { Trash2, X } from "lucide-react";
-import QuizEditor from './QuizEditor'
+import { Trash2 } from "lucide-react";
+import QuizEditor from "./QuizEditor";
 
 // Types
 export interface ResourceType {
@@ -79,11 +72,11 @@ export type IncomingResource = {
   type?: string;
   size?: string;
   duration?: string;
-  uploadedAt?: string;
+  createdAt?: string;
   quiz?: any;
 };
 
-export  interface Lesson {
+export interface Lesson {
   id: number;
   title: string;
   content: string;
@@ -119,23 +112,27 @@ export const ConfirmDeleteModal = ({
   if (!visible) return null;
 
   return (
-    <div className="fixed inset-0 bg-gradient-to-br from-black/70 via-black/60 to-black/70 z-50 flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-200">
-      <div className="bg-white rounded-xl sm:rounded-2xl shadow-2xl w-full max-w-md p-4 sm:p-6 animate-in zoom-in-95 duration-200">
-        <div className="flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16 bg-red-100 rounded-full mx-auto mb-3 sm:mb-4">
-          <Trash2 className="w-6 h-6 sm:w-8 sm:h-8 text-red-600" />
+    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+      <div className="bg-white rounded-lg shadow-2xl w-full max-w-md p-6 animate-in zoom-in-95 duration-200">
+        <div className="flex items-center justify-center w-14 h-14 bg-red-100 rounded-full mx-auto mb-4">
+          <Trash2 className="w-6 h-6 text-red-600" />
         </div>
-        <h2 className="text-xl sm:text-2xl font-bold mb-2 sm:mb-3 text-center text-gray-900">{title}</h2>
-        <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6 text-center px-2">{description}</p>
-        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+        <h2 className="text-xl font-semibold mb-3 text-center text-gray-900">
+          {title}
+        </h2>
+        <p className="text-sm text-gray-600 mb-6 text-center">
+          {description}
+        </p>
+        <div className="flex gap-3">
           <button
             onClick={onConfirm}
-            className="flex-1 bg-gradient-to-r from-red-500 to-red-600 text-white px-4 py-2.5 sm:py-3.5 cursor-pointer rounded-lg sm:rounded-xl hover:shadow-lg transition-all font-bold text-sm sm:text-base"
+            className="flex-1 bg-red-600 hover:bg-red-700 text-white px-4 py-2.5 rounded-lg transition-colors font-medium"
           >
             Delete
           </button>
           <button
             onClick={onCancel}
-            className="flex-1 bg-white border-2 border-gray-200 text-gray-700 px-4 py-2.5 sm:py-3.5 cursor-pointer rounded-lg sm:rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all font-bold text-sm sm:text-base"
+            className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2.5 rounded-lg transition-colors font-medium"
           >
             Cancel
           </button>
@@ -163,12 +160,12 @@ const SAMPLE_QUIZ: Question[] = [
 
 const getResourceIcon = (type: string) => {
   const icons = {
-    pdf: <FaFilePdf className="text-red-500 text-lg sm:text-xl" />,
-    video: <FaPlay className="text-purple-500 text-lg sm:text-xl" />,
-    word: <FaFileWord className="text-blue-500 text-lg sm:text-xl" />,
-    quiz: <FaQuestionCircle className="text-green-500 text-lg sm:text-xl" />,
+    pdf: <FaFilePdf className="text-red-500" />,
+    video: <FaPlay className="text-purple-500" />,
+    word: <FaFileWord className="text-blue-500" />,
+    quiz: <FaQuestionCircle className="text-green-500" />,
   };
-  return icons[type as keyof typeof icons] || <FaFile className="text-lg sm:text-xl" />;
+  return icons[type as keyof typeof icons] || <FaFile />;
 };
 
 // Convert Lesson to lessonType
@@ -185,7 +182,7 @@ const lessonTolesson = (lesson: Lesson): lessonType => ({
       name: resource.name || "Untitled Resource",
       type: (resource.type as "pdf" | "video" | "quiz" | "word") || "pdf",
       url: resource.url,
-      uploadedAt: resource.uploadedAt || new Date().toISOString().split("T")[0],
+      uploadedAt: resource.createdAt || "",
       size: resource.size,
       duration: resource.duration,
       quiz: resource.quiz || SAMPLE_QUIZ,
@@ -193,35 +190,43 @@ const lessonTolesson = (lesson: Lesson): lessonType => ({
 });
 
 // Main Component
-function ModuleManagement({ lessons: initialLessons, courseId }: lessonManagementProps) {
-  console.log(initialLessons, 'i want to get resources')
-
+function ModuleManagement({
+  lessons: initialLessons,
+  courseId,
+}: lessonManagementProps) {
   // State
   const [showAddResource, setShowAddResource] = useState<number | null>(null);
-  const [resourceType, setResourceType] = useState<"pdf" | "video" | "word" | "quiz" | null>(null);
+  const [resourceType, setResourceType] = useState<
+    "pdf" | "video" | "word" | "quiz" | null
+  >(null);
   const [videoLink, setVideoLink] = useState("");
   const [videoName, setVideoName] = useState("");
   const [quizName, setQuizName] = useState("");
   const [quizDescription, setQuizDescription] = useState("");
-  const [lessons, setLessons] = useState<lessonType[]>(initialLessons.map(lessonTolesson));
+  const [lessons, setLessons] = useState<lessonType[]>(
+    initialLessons.map(lessonTolesson)
+  );
   const [menuOpenId, setMenuOpenId] = useState<number | null>(null);
   const [openQuiz, setOpenQuiz] = useState<number | null>(null);
-  const [quizResponses, setQuizResponses] = useState<Record<number, QuizResponse[]>>({});
   const [deleteLesson] = useDeleteLessonMutation();
   const [toggleLessonLock] = useToggleLessonLockMutation();
   const [addResource] = useAddResourceMutation();
   const [deleteResource] = useDeleteResourceMutation();
-  const [openMenu, setOpenMenu] = useState<number | null>(null);
+  const [openResourceMenu, setOpenResourceMenu] = useState<number | null>(null);
   const [modals, setModals] = useState({
     showDeleteConfirm: false,
     showResourceDeleteConfirm: false,
   });
 
   const [lessonToDelete, setLessonToDelete] = useState<number | null>(null);
-  const [resourceToDelete, setResourceToDelete] = useState<{ lessonId: number; resourceId: number } | null>(null);
+  const [resourceToDelete, setResourceToDelete] = useState<{
+    lessonId: number;
+    resourceId: number;
+  } | null>(null);
 
   // Refs
   const menuWrapperRefs = useRef<Record<number, HTMLDivElement | null>>({});
+  const resourceMenuRefs = useRef<Record<number, HTMLDivElement | null>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Handle initialLessons prop updates
@@ -231,18 +236,30 @@ function ModuleManagement({ lessons: initialLessons, courseId }: lessonManagemen
     }
   }, [initialLessons]);
 
+  // Click outside handler
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (menuOpenId === null) return;
-      const wrapper = menuWrapperRefs.current[menuOpenId];
-      if (wrapper && !wrapper.contains(event.target as Node)) {
-        setMenuOpenId(null);
+      // Close lesson menu
+      if (menuOpenId !== null) {
+        const wrapper = menuWrapperRefs.current[menuOpenId];
+        if (wrapper && !wrapper.contains(event.target as Node)) {
+          setMenuOpenId(null);
+        }
+      }
+
+      // Close resource menu
+      if (openResourceMenu !== null) {
+        const wrapper = resourceMenuRefs.current[openResourceMenu];
+        if (wrapper && !wrapper.contains(event.target as Node)) {
+          setOpenResourceMenu(null);
+        }
       }
     };
 
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         setMenuOpenId(null);
+        setOpenResourceMenu(null);
         setOpenQuiz(null);
         setResourceType(null);
         setVideoLink("");
@@ -259,7 +276,7 @@ function ModuleManagement({ lessons: initialLessons, courseId }: lessonManagemen
       document.removeEventListener("mousedown", handleClickOutside);
       document.removeEventListener("keydown", handleEscape);
     };
-  }, [menuOpenId]);
+  }, [menuOpenId, openResourceMenu]);
 
   const handleVideoLinkSubmit = async (lessonId: number) => {
     if (!videoLink.trim()) {
@@ -278,67 +295,36 @@ function ModuleManagement({ lessons: initialLessons, courseId }: lessonManagemen
     }
 
     try {
-
-      const {message} = await addResource({
+      const { message } = await addResource({
         lessonId: lessonId,
         title: videoName,
         type: "video",
         description: "",
-        url: videoLink
+        url: videoLink,
       }).unwrap();
-
-      // setLessons(prev => prev.map(m => 
-      //   m.id === lessonId 
-      //     ? { 
-      //         ...m, 
-      //         resources: [...m.resources, {
-      //           id: response.data?.id || Date.now(),
-      //           name: videoName,
-      //           type: "video",
-      //           url: videoLink,
-      //           uploadedAt: new Date().toISOString().split("T")[0],
-      //           duration: "N/A"
-      //         }]
-      //       } 
-      //     : m
-      // ));
 
       setVideoLink("");
       setVideoName("");
       setResourceType(null);
       setShowAddResource(null);
-      console.log(message)
       toast.success(message);
     } catch (error: any) {
       toast.error(error?.data?.message || "Failed to add video resource");
     }
   };
 
-  const handleFileUpload = async (lessonId: number, file: File, type: "pdf" | "word") => {
+  const handleFileUpload = async (
+    lessonId: number,
+    file: File,
+    type: "pdf" | "word"
+  ) => {
     try {
-      console.log(file)
-      const {message} = await addResource({
+      const { message } = await addResource({
         lessonId: lessonId,
         title: file.name,
         file,
-        type
+        type,
       }).unwrap();
-
-      // setLessons(prev => prev.map(m => 
-      //   m.id === lessonId 
-      //     ? { 
-      //         ...m, 
-      //         resources: [...m.resources, {
-      //           id: response.data?.id || Date.now(),
-      //           name: file.name,
-      //           type,
-      //           url: response.data?.url || URL.createObjectURL(file),
-      //           uploadedAt: new Date().toISOString().split("T")[0],
-      //           size: `${(file.size / 1024 / 1024).toFixed(1)} MB`
-      //         }]
-      //       } 
-      //     : m
-      // ));
 
       toast.success(message);
       setResourceType(null);
@@ -350,7 +336,7 @@ function ModuleManagement({ lessons: initialLessons, courseId }: lessonManagemen
 
   const requestDeleteResource = (lessonId: number, resourceId: number) => {
     setResourceToDelete({ lessonId, resourceId });
-    setModals(prev => ({ ...prev, showResourceDeleteConfirm: true }));
+    setModals((prev) => ({ ...prev, showResourceDeleteConfirm: true }));
   };
 
   const confirmDeleteResource = async () => {
@@ -361,12 +347,12 @@ function ModuleManagement({ lessons: initialLessons, courseId }: lessonManagemen
     try {
       await deleteResource({ lessonId, resourceId }).unwrap();
 
-      setLessons(prev =>
-        prev.map(lesson =>
+      setLessons((prev) =>
+        prev.map((lesson) =>
           lesson.id === lessonId
             ? {
                 ...lesson,
-                resources: lesson.resources.filter(r => r.id !== resourceId),
+                resources: lesson.resources.filter((r) => r.id !== resourceId),
               }
             : lesson
         )
@@ -377,7 +363,7 @@ function ModuleManagement({ lessons: initialLessons, courseId }: lessonManagemen
       toast.error(error?.data?.message || "Failed to delete resource");
     } finally {
       setResourceToDelete(null);
-      setModals(prev => ({ ...prev, showResourceDeleteConfirm: false }));
+      setModals((prev) => ({ ...prev, showResourceDeleteConfirm: false }));
     }
   };
 
@@ -388,30 +374,12 @@ function ModuleManagement({ lessons: initialLessons, courseId }: lessonManagemen
     }
 
     try {
-      console.log(quizName,quizDescription)
-      const {message} = await addResource({
+      const { message } = await addResource({
         lessonId: lessonId,
         title: quizName,
         type: "quiz",
-        description: quizDescription || ""
+        description: quizDescription || "",
       }).unwrap();
-
-      // setLessons(prev => prev.map(m => 
-      //   m.id === lessonId 
-      //     ? { 
-      //         ...m, 
-      //         resources: [...m.resources, {
-      //           id: response.data?.id || Date.now(),
-      //           name: quizName,
-      //           type: "quiz",
-      //           url: "",
-      //           uploadedAt: new Date().toISOString().split("T")[0],
-      //           quiz: SAMPLE_QUIZ
-      //         }]
-      //       } 
-      //     : m
-      // ));
-
 
       setQuizName("");
       setQuizDescription("");
@@ -438,20 +406,24 @@ function ModuleManagement({ lessons: initialLessons, courseId }: lessonManagemen
 
   const togglelessonUnlock = async (lessonId: number) => {
     try {
-      const lesson = lessons.find(m => m.id === lessonId);
+      const lesson = lessons.find((m) => m.id === lessonId);
       if (!lesson) return;
 
       await toggleLessonLock({
         id: lessonId,
         isUnlocked: !lesson.isUnlocked,
-        courseId
+        courseId,
       }).unwrap();
 
-      setLessons(prev => prev.map(m =>
-        m.id === lessonId ? { ...m, isUnlocked: !m.isUnlocked } : m
-      ));
+      setLessons((prev) =>
+        prev.map((m) =>
+          m.id === lessonId ? { ...m, isUnlocked: !m.isUnlocked } : m
+        )
+      );
 
-      toast.success(`Lesson ${!lesson.isUnlocked ? "unlocked" : "locked"} successfully!`);
+      toast.success(
+        `Lesson ${!lesson.isUnlocked ? "unlocked" : "locked"} successfully!`
+      );
     } catch (error: any) {
       toast.error(error?.data?.message || "Failed to toggle lesson lock");
     }
@@ -467,7 +439,7 @@ function ModuleManagement({ lessons: initialLessons, courseId }: lessonManagemen
 
     try {
       await deleteLesson({ id: lessonToDelete, courseId }).unwrap();
-      setLessons(prev => prev.filter(m => m.id !== lessonToDelete));
+      setLessons((prev) => prev.filter((m) => m.id !== lessonToDelete));
       toast.success("Lesson deleted successfully!");
     } catch (error: any) {
       toast.error(error?.data?.message || "Failed to delete lesson");
@@ -484,174 +456,171 @@ function ModuleManagement({ lessons: initialLessons, courseId }: lessonManagemen
   };
 
   const handleQuizUpdate = (resourceId: number, updatedQuiz: any) => {
-    setLessons(prev => prev.map(lesson => ({
-      ...lesson,
-      resources: lesson.resources.map(resource =>
-        resource.id === resourceId
-          ? { ...resource, quiz: updatedQuiz }
-          : resource
-      )
-    })));
+    setLessons((prev) =>
+      prev.map((lesson) => ({
+        ...lesson,
+        resources: lesson.resources.map((resource) =>
+          resource.id === resourceId
+            ? { ...resource, quiz: updatedQuiz }
+            : resource
+        ),
+      }))
+    );
   };
 
   // UI Components
-  const ResourceTypeSelector = ({ onSelect }: { onSelect: (type: "pdf" | "video" | "word" | "quiz") => void }) => (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+  const ResourceTypeSelector = ({
+    onSelect,
+  }: {
+    onSelect: (type: "pdf" | "video" | "word" | "quiz") => void;
+  }) => (
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
       {[
-        { type: "pdf" as const, icon: FaFilePdf, color: "red", label: "PDF Document", desc: "Upload PDF file" },
-        { type: "video" as const, icon: FaPlay, color: "purple", label: "Video", desc: "Add video link" },
-        { type: "word" as const, icon: FaFileWord, color: "blue", label: "Word Document", desc: "Upload Word file" },
-        { type: "quiz" as const, icon: FaQuestionCircle, color: "green", label: "Quiz", desc: "Create assessment" },
-      ].map(({ type, icon: Icon, color, label, desc }) => (
+        {
+          type: "pdf" as const,
+          icon: FaFilePdf,
+          color: "red",
+          label: "PDF",
+        },
+        {
+          type: "video" as const,
+          icon: FaPlay,
+          color: "purple",
+          label: "Video",
+        },
+        {
+          type: "word" as const,
+          icon: FaFileWord,
+          color: "blue",
+          label: "Word",
+        },
+        {
+          type: "quiz" as const,
+          icon: FaQuestionCircle,
+          color: "green",
+          label: "Quiz",
+        },
+      ].map(({ type, icon: Icon, color, label }) => (
         <button
           key={type}
           onClick={() => onSelect(type)}
-          className="flex flex-col items-center justify-center p-3 sm:p-5 bg-white rounded-lg sm:rounded-xl border border-gray-200 hover:border-blue-300 hover:shadow-md transition-all duration-200 group"
+          className="flex flex-col items-center justify-center p-4 bg-white rounded-lg border border-gray-200 hover:border-blue-400 hover:shadow-sm transition-all"
         >
-          <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-${color}-100 flex items-center justify-center mb-2 sm:mb-3 group-hover:bg-${color}-200 transition-colors`}>
-            <Icon className={`text-lg sm:text-2xl text-${color}-600`} />
+          <div className={`w-12 h-12 rounded-full bg-${color}-100 flex items-center justify-center mb-2`}>
+            <Icon className={`text-xl text-${color}-600`} />
           </div>
-          <span className="font-medium text-gray-800 text-xs sm:text-base text-center">{label}</span>
-          <span className="text-xs text-gray-500 mt-1 hidden sm:block text-center">{desc}</span>
+          <span className="font-medium text-gray-800 text-sm">{label}</span>
         </button>
       ))}
     </div>
   );
 
-  const VideoLinkForm = ({ lessonId }: { lessonId: number }) => (
-    <div className="bg-white p-4 sm:p-5 rounded-lg sm:rounded-xl border border-gray-200 shadow-sm">
-      <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
-        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0">
-          <FaLink className="text-purple-600 text-sm sm:text-base" />
-        </div>
-        <div className="min-w-0">
-          <h4 className="font-medium text-gray-800 text-sm sm:text-base">Add Video Link</h4>
-          <p className="text-xs sm:text-sm text-gray-600 truncate">Paste the URL of your video resource</p>
-        </div>
-      </div>
 
-      <div className="space-y-3 sm:space-y-4">
-        <div>
-          <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Video Title</label>
-          <input
-            type="text"
-            value={videoName}
-            onChange={(e) => setVideoName(e.target.value)}
-            placeholder="Enter video title"
-            className="w-full px-3 sm:px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-sm sm:text-base"
-          />
-        </div>
 
-        <div>
-          <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Video URL</label>
-          <input
-            type="url"
-            value={videoLink}
-            onChange={(e) => setVideoLink(e.target.value)}
-            placeholder="https://example.com/video.mp4"
-            className="w-full px-3 sm:px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-sm sm:text-base"
-          />
+  const FileUploadForm = ({
+    lessonId,
+    type,
+  }: {
+    lessonId: number;
+    type: "pdf" | "word";
+  }) => (
+    <div className="bg-white p-4 rounded-lg border border-gray-200">
+      <div className="flex items-center gap-3 mb-4">
+        <div className={`w-10 h-10 rounded-full ${type === "pdf" ? "bg-red-100" : "bg-blue-100"} flex items-center justify-center`}>
+          {type === "pdf" ? (
+            <FaFilePdf className="text-red-600 text-lg" />
+          ) : (
+            <FaFileWord className="text-blue-600 text-lg" />
+          )}
         </div>
+        <h4 className="font-medium text-gray-800">
+          Upload {type === "pdf" ? "PDF" : "Word"}
+        </h4>
       </div>
-
-      <div className="flex flex-col sm:flex-row gap-2 mt-3 sm:mt-4">
-        <button
-          onClick={() => handleVideoLinkSubmit(lessonId)}
-          className="bg-purple-600 hover:bg-purple-700 text-white px-3 sm:px-4 py-2 rounded-lg transition-colors flex items-center justify-center gap-2 text-sm sm:text-base whitespace-nowrap"
-        >
-          <FaCheck className="text-xs sm:text-sm" /> Add Video
-        </button>
-        <button
-          onClick={() => {
-            setResourceType(null);
-            setVideoLink("");
-            setVideoName("");
-          }}
-          className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 sm:px-4 py-2 rounded-lg transition-colors flex items-center justify-center gap-2 text-sm sm:text-base"
-        >
-          <FaTimes /> Cancel
-        </button>
-      </div>
-    </div>
-  );
-
-  const FileUploadForm = ({ lessonId, type }: { lessonId: number; type: "pdf" | "word" }) => (
-    <div className="bg-white p-4 sm:p-5 rounded-lg sm:rounded-xl border border-gray-200 shadow-sm">
-      <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
-        <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full ${type === "pdf" ? "bg-red-100" : "bg-blue-100"} flex items-center justify-center flex-shrink-0`}>
-          {type === "pdf" ? <FaFilePdf className="text-red-600 text-base sm:text-xl" /> : <FaFileWord className="text-blue-800 text-base sm:text-xl" />}
-        </div>
-        <div className="min-w-0">
-          <h4 className="font-medium text-gray-800 text-sm sm:text-base">Upload {type === "pdf" ? "PDF" : "Word"} Document</h4>
-          <p className="text-xs sm:text-sm text-gray-600 truncate">Select a file from your device</p>
-        </div>
-      </div>
-      <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 items-stretch sm:items-center">
+      <div className="flex gap-2">
         <button
           onClick={() => handleFileSelect(lessonId, type)}
-          className="bg-blue-800 hover:bg-blue-700 text-white px-3 sm:px-4 py-2 sm:py-3 rounded-lg transition-colors flex items-center justify-center gap-2 text-sm sm:text-base"
+          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
         >
-          <FaFile className="text-xs sm:text-sm" /> Choose File
+          <FaFile /> Choose File
         </button>
         <button
           onClick={() => setResourceType(null)}
-          className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 sm:px-4 py-2 sm:py-3 rounded-lg transition-colors flex items-center justify-center gap-2 text-sm sm:text-base"
+          className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
         >
           <FaTimes /> Cancel
         </button>
       </div>
-      <p className="text-xs text-gray-500 mt-2 sm:mt-3">
-        {type === "pdf" ? "Supported format: .pdf (Max size: 10MB)" : "Supported formats: .doc, .docx (Max size: 10MB)"}
-      </p>
     </div>
   );
+const QuizForm = ({ lessonId }: { lessonId: number }) => {
+  const handleQuizNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setQuizName(e.target.value);
+  };
 
-  const QuizForm = ({ lessonId }: { lessonId: number }) => (
-    <div className="bg-white p-4 sm:p-5 rounded-lg sm:rounded-xl border border-gray-200 shadow-sm">
-      <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
-        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
-          <FaQuestionCircle className="text-green-600 text-sm sm:text-base" />
+  const handleQuizDescriptionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setQuizDescription(e.target.value);
+  };
+
+  return (
+    <div className="bg-white p-4 rounded-lg border border-gray-200">
+      <div className="flex items-center gap-3 mb-4">
+        <div className="w-10 h-10 rounded-full bg-[#034153]/10 flex items-center justify-center">
+          <FaQuestionCircle className="text-[#034153]" />
         </div>
-        <div className="min-w-0">
-          <h4 className="font-medium text-gray-800 text-sm sm:text-base">Create New Quiz</h4>
-          <p className="text-xs sm:text-sm text-gray-600 truncate">Set up your quiz with questions and answers</p>
-        </div>
+        <h4 className="font-medium text-gray-800">Create Quiz</h4>
       </div>
-      <div className="space-y-3 sm:space-y-4">
+      <div className="space-y-3">
         <div>
-          <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Quiz Name</label>
+          <label 
+            htmlFor={`quiz-name-${lessonId}`}
+            className="block text-sm font-medium text-gray-700 mb-1"
+          >
+            Quiz Name
+          </label>
           <input
+            id={`quiz-name-${lessonId}`}
             type="text"
             value={quizName}
-            onChange={(e) => setQuizName(e.target.value)}
+            onChange={handleQuizNameChange}
             placeholder="Enter quiz name"
-            className="w-full px-3 sm:px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all text-sm sm:text-base"
+            autoComplete="off"
+            className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#034153]"
           />
         </div>
         <div>
-          <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Quiz Description (Optional)</label>
+          <label 
+            htmlFor={`quiz-description-${lessonId}`}
+            className="block text-sm font-medium text-gray-700 mb-1"
+          >
+            Description (Optional)
+          </label>
           <textarea
+            id={`quiz-description-${lessonId}`}
             value={quizDescription}
-            onChange={(e) => setQuizDescription(e.target.value)}
+            onChange={handleQuizDescriptionChange}
             placeholder="Describe what this quiz covers"
             rows={2}
-            className="w-full px-3 sm:px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all text-sm sm:text-base"
+            autoComplete="off"
+            className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#034153]"
           />
         </div>
-        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-2">
+        <div className="flex gap-2 pt-2">
           <button
+            type="button"
             onClick={() => handleQuizCreation(lessonId)}
-            className="bg-green-600 hover:bg-green-700 text-white px-3 sm:px-4 py-2 rounded-lg transition-colors flex items-center justify-center gap-2 text-sm sm:text-base"
+            className="bg-[#034153] hover:bg-[#034153]/90 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
           >
-            <FaCheck className="text-xs sm:text-sm" /> Create Quiz
+            <FaCheck /> Create Quiz
           </button>
           <button
+            type="button"
             onClick={() => {
               setResourceType(null);
               setQuizName("");
               setQuizDescription("");
             }}
-            className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 sm:px-4 py-2 rounded-lg transition-colors flex items-center justify-center gap-2 text-sm sm:text-base"
+            className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
           >
             <FaTimes /> Cancel
           </button>
@@ -659,21 +628,103 @@ function ModuleManagement({ lessons: initialLessons, courseId }: lessonManagemen
       </div>
     </div>
   );
+};
 
+const VideoLinkForm = ({ lessonId }: { lessonId: number }) => {
+  const handleVideoNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setVideoName(e.target.value);
+  };
+
+  const handleVideoLinkChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setVideoLink(e.target.value);
+  };
+
+  return (
+    <div className="bg-white p-4 rounded-lg border border-gray-200">
+      <div className="flex items-center gap-3 mb-4">
+        <div className="w-10 h-10 rounded-full bg-[#034153]/10 flex items-center justify-center">
+          <FaLink className="text-[#034153]" />
+        </div>
+        <h4 className="font-medium text-gray-800">Add Video Link</h4>
+      </div>
+
+      <div className="space-y-3">
+        <div>
+          <label 
+            htmlFor={`video-title-${lessonId}`}
+            className="block text-sm font-medium text-gray-700 mb-1"
+          >
+            Video Title
+          </label>
+          <input
+            id={`video-title-${lessonId}`}
+            type="text"
+            value={videoName}
+            onChange={handleVideoNameChange}
+            placeholder="Enter video title"
+            autoComplete="off"
+            className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#034153]"
+          />
+        </div>
+
+        <div>
+          <label 
+            htmlFor={`video-url-${lessonId}`}
+            className="block text-sm font-medium text-gray-700 mb-1"
+          >
+            Video URL
+          </label>
+          <input
+            id={`video-url-${lessonId}`}
+            type="url"
+            value={videoLink}
+            onChange={handleVideoLinkChange}
+            placeholder="https://example.com/video.mp4"
+            autoComplete="off"
+            className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#034153]"
+          />
+        </div>
+      </div>
+
+      <div className="flex gap-2 mt-4">
+        <button
+          type="button"
+          onClick={() => handleVideoLinkSubmit(lessonId)}
+          className="bg-[#034153] hover:bg-[#034153]/90 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
+        >
+          <FaCheck /> Add Video
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setResourceType(null);
+            setVideoLink("");
+            setVideoName("");
+          }}
+          className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
+        >
+          <FaTimes /> Cancel
+        </button>
+      </div>
+    </div>
+  );
+};
+
+  // Sort lessons by createdAt DESC (newest first = last created at bottom)
   const sortedLessons = [...lessons].sort(
-    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
   );
 
   // Find the currently open quiz resource
-  const currentQuizResource = openQuiz 
-    ? lessons.flatMap(m => m.resources).find(r => r.id === openQuiz)
+  const currentQuizResource = openQuiz
+    ? lessons.flatMap((m) => m.resources).find((r) => r.id === openQuiz)
     : null;
 
   return (
-    <div className="px-2 sm:px-0">
+    <div className="w-full">
       <input type="file" ref={fileInputRef} style={{ display: "none" }} />
 
-       {/* Quiz Editor Modal  */}
+      {/* Quiz Editor Modal  */}
       {openQuiz && currentQuizResource && (
         <QuizEditor
           resource={currentQuizResource}
@@ -681,21 +732,31 @@ function ModuleManagement({ lessons: initialLessons, courseId }: lessonManagemen
           onUpdate={handleQuizUpdate}
         />
       )}
-        
 
-      <div className="space-y-3">
-        {sortedLessons.map((lesson) => (
-          <div key={lesson.id} className="group bg-white border border-gray-200 rounded-lg sm:rounded-xl shadow-lg transition-all hover:shadow-xl">
-            {/* Header - Responsive */}
-            <div className="p-4 sm:p-6 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-0">
+      <div className="space-y-4">
+        {sortedLessons.map((lesson, index) => (
+          <div
+            key={lesson.id}
+            className="bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow"
+          >
+            {/* Header */}
+            <div className="p-4 sm:p-6 flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3">
               <div className="flex-1 min-w-0">
-                <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-1 sm:mb-2 break-words">
-                  {lesson.order}. {lesson.title}
+                <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">
+                  {index + 1}. {lesson.title}
                 </h2>
-                <p className="text-sm sm:text-base text-gray-600 break-words">{lesson.description}</p>
+                <p className="text-sm text-gray-600 break-words">
+                  {lesson.description}
+                </p>
               </div>
-              <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-                <span className={`px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium whitespace-nowrap ${lesson.isUnlocked ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <span
+                  className={`px-3 py-1 rounded-full text-xs font-medium ${
+                    lesson.isUnlocked
+                      ? "bg-green-100 text-green-700"
+                      : "bg-red-100 text-red-700"
+                  }`}
+                >
                   {lesson.isUnlocked ? "Unlocked" : "Locked"}
                 </span>
                 <div
@@ -705,40 +766,53 @@ function ModuleManagement({ lessons: initialLessons, courseId }: lessonManagemen
                   }}
                 >
                   <button
-                    onClick={() => setMenuOpenId(menuOpenId === lesson.id ? null : lesson.id)}
-                    className="p-2 rounded-full cursor-pointer hover:bg-gray-100 transition-colors"
+                    onClick={() =>
+                      setMenuOpenId(menuOpenId === lesson.id ? null : lesson.id)
+                    }
+                    className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
                   >
-                    <FaEllipsisV className="text-gray-600 text-sm sm:text-base" />
+                    <FaEllipsisV className="text-gray-600" />
                   </button>
                   {menuOpenId === lesson.id && (
-                    <div className="absolute right-0 mt-2 w-44 sm:w-48 bg-white border border-gray-500 rounded-lg shadow-lg z-10">
-                      <ul className="py-2 text-xs sm:text-sm text-gray-700">
+                    <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-20">
+                      <ul className="py-1 text-sm">
                         <li>
                           <button
-                            onClick={() => togglelessonUnlock(lesson.id)}
-                            className="w-full cursor-pointer px-3 sm:px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-2 sm:gap-3"
+                            onClick={() => {
+                              togglelessonUnlock(lesson.id);
+                              setMenuOpenId(null);
+                            }}
+                            className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-3"
                           >
-                            {lesson.isUnlocked ? <FaLock className="flex-shrink-0" /> : <FaUnlock className="flex-shrink-0" />}
-                            <span>{lesson.isUnlocked ? "Lock Lesson" : "Unlock Lesson"}</span>
+                            {lesson.isUnlocked ? <FaLock /> : <FaUnlock />}
+                            <span>
+                              {lesson.isUnlocked ? "Lock Lesson" : "Unlock Lesson"}
+                            </span>
                           </button>
                         </li>
                         <li>
                           <button
                             onClick={() => {
-                              setShowAddResource(showAddResource === lesson.id ? null : lesson.id);
+                              setShowAddResource(
+                                showAddResource === lesson.id ? null : lesson.id
+                              );
                               setResourceType(null);
+                              setMenuOpenId(null);
                             }}
-                            className="w-full cursor-pointer px-3 sm:px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-2 sm:gap-3"
+                            className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-3"
                           >
-                            <FaPlus className="flex-shrink-0" /> <span>Add Resource</span>
+                            <FaPlus /> <span>Add Resource</span>
                           </button>
                         </li>
                         <li>
                           <button
-                            onClick={() => requestDeleteLesson(lesson.id)}
-                            className="w-full cursor-pointer px-3 sm:px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-2 sm:gap-3 text-red-600"
+                            onClick={() => {
+                              requestDeleteLesson(lesson.id);
+                              setMenuOpenId(null);
+                            }}
+                            className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-3 text-red-600"
                           >
-                            <FaTrash className="flex-shrink-0" /> <span>Delete Lesson</span>
+                            <FaTrash /> <span>Delete Lesson</span>
                           </button>
                         </li>
                       </ul>
@@ -748,18 +822,20 @@ function ModuleManagement({ lessons: initialLessons, courseId }: lessonManagemen
               </div>
             </div>
 
-            {/* Add Resource - Responsive */}
+            {/* Add Resource */}
             {showAddResource === lesson.id && (
-              <div className="px-3 sm:px-6 pb-4 sm:pb-6 mx-2 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-b-lg sm:rounded-b-xl relative">
-                <div className="pt-3 sm:pt-4">
-                  <div className="flex items-center justify-between mb-3 sm:mb-4">
-                    <h3 className="text-base sm:text-lg font-semibold text-gray-800 flex items-center gap-2">Add New Resource</h3>
+              <div className="px-4 sm:px-6 pb-4 bg-gray-50 border-t border-gray-200">
+                <div className="pt-4">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-base font-semibold text-gray-800">
+                      Add New Resource
+                    </h3>
                   </div>
 
                   {resourceType !== null && resourceType !== "quiz" && (
                     <button
                       onClick={() => setResourceType(null)}
-                      className="text-gray-500 hover:text-gray-700 transition-colors flex items-center gap-1 text-xs sm:text-sm mb-3 sm:mb-4"
+                      className="text-gray-500 hover:text-gray-700 transition-colors flex items-center gap-1 text-sm mb-3"
                     >
                       <FaChevronUp className="text-xs" /> Back to options
                     </button>
@@ -778,83 +854,109 @@ function ModuleManagement({ lessons: initialLessons, courseId }: lessonManagemen
               </div>
             )}
 
-            {/* Resources - Responsive */}
+            {/* Resources */}
             {lesson.resources.length > 0 && (
-            
-              <div className="px-4 sm:px-6 pb-4 sm:pb-6 mt-3 sm:mt-4">
-                <h3 className="font-semibold text-gray-900 mb-3 sm:mb-4 flex items-center gap-2 text-sm sm:text-base">
-                  <FaFile className="text-gray-600 flex-shrink-0" /> Resources ({lesson.resources.length})
+              <div className="px-4 sm:px-6 pb-4 border-t border-gray-200">
+                <h3 className="font-medium text-gray-900 my-4 flex items-center gap-2">
+                  <FaFile className="text-gray-500" /> Resources ({lesson.resources.length})
                 </h3>
-                <div className="space-y-2 sm:space-y-3">
+                <div className="space-y-2">
                   {lesson.resources.map((resource) => (
                     <div
                       key={resource.id}
-                      className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 sm:p-4 border border-gray-200 rounded-lg hover:border-gray-300 hover:shadow-sm transition-all"
+                      className="flex items-center justify-between gap-3 p-3 border border-gray-200 rounded-lg hover:border-gray-300 hover:shadow-sm transition-all"
                     >
-                      <div className="flex items-start sm:items-center gap-3 sm:gap-4 min-w-0 flex-1">
-                        <div className="text-base sm:text-xl flex-shrink-0 mt-0.5 sm:mt-0">{getResourceIcon(resource.type)}</div>
+                      <div className="flex items-center gap-3 min-w-0 flex-1">
+                        <div className="text-xl flex-shrink-0">
+                          {getResourceIcon(resource.type)}
+                        </div>
                         <div className="min-w-0 flex-1">
-                          <h4 className="font-medium text-gray-900 text-sm sm:text-base break-words">{resource.name}</h4>
-                          <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm text-gray-600 mt-1">
-                            <span className="whitespace-nowrap">Uploaded: {resource.uploadedAt}</span>
-                            {resource.size && <span className="whitespace-nowrap">Size: {resource.size}</span>}
-                            {resource.duration && <span className="whitespace-nowrap">Duration: {resource.duration}</span>}
+                          <h4 className="font-medium text-gray-900 text-sm truncate">
+                            {resource.name}
+                          </h4>
+                          <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500 mt-1">
+                            <span>{resource.uploadedAt}</span>
+                            {resource.size && <span>Size: {resource.size}</span>}
+                            {resource.duration && <span>Duration: {resource.duration}</span>}
                             {resource.type === "quiz" && (
-                              <span className="bg-green-100 text-green-800 px-2 py-0.5 sm:py-1 rounded-full text-xs font-medium whitespace-nowrap">
+                              <span className="bg-green-100 text-green-800 px-2 py-0.5 rounded-full font-medium">
                                 {resource.quiz?.length || 0} questions
-                                {console.log(resource, " quizes")}
-                               
                               </span>
                             )}
                           </div>
                         </div>
                       </div>
-                      <div className="flex items-center justify-end gap-2 sm:gap-3 relative flex-shrink-0">
-                        <div className="relative">
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <div
+                          className="relative"
+                          ref={(el) => {
+                            resourceMenuRefs.current[resource.id] = el;
+                          }}
+                        >
                           <button
-                            onClick={() => setOpenMenu(openMenu === resource.id ? null : resource.id)}
-                            className="text-gray-600 hover:text-gray-800 p-1.5 sm:p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                            onClick={() =>
+                              setOpenResourceMenu(
+                                openResourceMenu === resource.id ? null : resource.id
+                              )
+                            }
+                            className="text-gray-600 hover:text-gray-800 p-2 rounded-lg hover:bg-gray-100 transition-colors"
                           >
-                            <FaEllipsisV className="text-xs sm:text-sm" />
+                            <FaEllipsisV />
                           </button>
-                          {openMenu === resource.id && (
-                            <div className="absolute right-0 mt-2 w-36 sm:w-40 bg-white shadow-md border border-gray-200 rounded-lg z-10">
-                              <ul className="text-xs sm:text-sm text-gray-700">
+                          {openResourceMenu === resource.id && (
+                            <div className="absolute right-0 mt-2 w-40 bg-white shadow-lg border border-gray-200 rounded-lg z-20">
+                              <ul className="py-1 text-sm">
                                 {resource.type === "quiz" ? (
                                   <>
                                     <li>
                                       <button
                                         onClick={() => {
                                           setOpenQuiz(resource.id);
-                                          setOpenMenu(null);
+                                          setOpenResourceMenu(null);
                                         }}
-                                        className="w-full text-left px-3 sm:px-4 py-2 hover:bg-gray-100 flex items-center gap-2"
+                                        className="w-full text-left px-4 py-2 hover:bg-gray-50 flex items-center gap-2"
                                       >
-                                        <FaEdit className="flex-shrink-0" /> <span>Edit Quiz</span>
+                                        <FaEdit /> <span>Edit Quiz</span>
                                       </button>
                                     </li>
                                     <li>
                                       <button
                                         onClick={() => {
-                                          setOpenMenu(null);
+                                          setOpenResourceMenu(null);
                                         }}
-                                        className="w-full text-left px-3 sm:px-4 py-2 hover:bg-gray-100 flex items-center gap-2"
+                                        className="w-full text-left px-4 py-2 hover:bg-gray-50 flex items-center gap-2"
                                       >
-                                        <FaQuestionCircle className="flex-shrink-0" /> <span>Take Quiz</span>
+                                        <FaQuestionCircle /> <span>Take Quiz</span>
                                       </button>
                                     </li>
                                   </>
                                 ) : (
                                   <li>
                                     <a
-                                      href={resource.url}
+                                      href={
+                                        resource.type === "word"
+                                          ? `https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(
+                                              resource.url
+                                            )}`
+                                          : resource.url
+                                      }
                                       target="_blank"
                                       rel="noopener noreferrer"
-                                      className="flex items-center gap-2 px-3 sm:px-4 py-2 hover:bg-gray-100"
+                                      className="flex items-center gap-2 px-4 py-2 hover:bg-gray-50"
+                                      onClick={() => setOpenResourceMenu(null)}
                                     >
-                                      {resource.type === "video" ? <FaPlay className="flex-shrink-0" /> : <FaExternalLinkAlt className="flex-shrink-0" />}
-                                   
-                                      <span>{resource.type === "video" ? "Watch" : "Open"}</span>
+                                      {resource.type === "video" ? (
+                                        <FaPlay />
+                                      ) : (
+                                        <FaExternalLinkAlt />
+                                      )}
+                                      <span>
+                                        {resource.type === "video"
+                                          ? "Watch"
+                                          : resource.type === "word"
+                                          ? "Open Word"
+                                          : "Open PDF"}
+                                      </span>
                                     </a>
                                   </li>
                                 )}
@@ -862,11 +964,11 @@ function ModuleManagement({ lessons: initialLessons, courseId }: lessonManagemen
                                   <button
                                     onClick={() => {
                                       requestDeleteResource(lesson.id, resource.id);
-                                      setOpenMenu(null);
+                                      setOpenResourceMenu(null);
                                     }}
-                                    className="w-full text-left px-3 sm:px-4 py-2 text-red-600 hover:bg-red-50 flex items-center gap-2"
+                                    className="w-full text-left px-4 py-2 text-red-600 hover:bg-red-50 flex items-center gap-2"
                                   >
-                                    <FaTrash className="flex-shrink-0" /> <span>Delete</span>
+                                    <FaTrash /> <span>Delete</span>
                                   </button>
                                 </li>
                               </ul>
@@ -879,17 +981,18 @@ function ModuleManagement({ lessons: initialLessons, courseId }: lessonManagemen
                 </div>
               </div>
             )}
-              
           </div>
         ))}
       </div>
 
       {lessons.length === 0 && (
-        <div className="text-center py-8 sm:py-12 px-4">
+        <div className="text-center py-12">
           <div className="max-w-md mx-auto">
-            <FaFile className="text-4xl sm:text-6xl text-gray-300 mx-auto mb-3 sm:mb-4" />
-            <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">No lessons yet</h3>
-            <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6">
+            <FaFile className="text-6xl text-gray-300 mx-auto mb-4" />
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">
+              No lessons yet
+            </h3>
+            <p className="text-gray-600">
               Create your first lesson to start organizing your course content.
             </p>
           </div>
