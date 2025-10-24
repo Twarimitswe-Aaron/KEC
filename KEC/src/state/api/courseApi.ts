@@ -119,7 +119,7 @@ export const courseApi = apiSlice.injectEndpoints({
 
 export const {
   useCreateCourseMutation,
- useGetCoursesQuery: useCoursesQuery, // versatile: both uploaded and unconfirmed
+ useGetCoursesQuery: useCoursesQuery,
   useConfirmCourseMutation,
   useDeleteCourseMutation,
   useUpdateCourseMutation,

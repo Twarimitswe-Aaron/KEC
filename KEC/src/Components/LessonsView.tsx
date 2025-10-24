@@ -248,21 +248,55 @@ const LessonsViewSkeleton = () => {
       </div>
 
       {modals.showAddModule && (
-        <div className="fixed inset-0 bg-gradient-to-br from-black/70 via-black/60 to-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg transform transition-all animate-in zoom-in-95 duration-200">
-            <ModalHeader title="Create New Lesson" subtitle="Add a new lesson to your course" onClose={() => { updateModals({ showAddModule: false }); resetForm("lesson"); }} />
-            <div className="p-6 space-y-5">
-              <div><label className="block text-sm font-bold text-gray-800 mb-3">Lesson Title <span className="text-red-500">*</span></label>
-                <input type="text" placeholder="e.g., Introduction to Thermodynamics" value={forms.lesson.title} onChange={(e) => updateForm("lesson", { title: e.target.value })} className="w-full bg-gray-50 border-2 border-gray-200 px-4 py-3 rounded-xl focus:border-[#034153] focus:bg-white focus:ring-2 focus:ring-[#034153]/10 transition-all outline-none font-medium" />
-              </div>
-              <div><label className="block text-sm font-bold text-gray-800 mb-3">Lesson Description <span className="text-red-500">*</span></label>
-                <textarea placeholder="Provide a brief overview of what students will learn in this lesson..." value={forms.lesson.description} onChange={(e) => updateForm("lesson", { description: e.target.value })} rows={4} className="w-full bg-gray-50 border-2 border-gray-200 focus:border-[#034153] focus:bg-white px-4 py-3 rounded-xl transition-all outline-none resize-none focus:ring-2 focus:ring-[#034153]/10 font-medium" />
-              </div>
-              <ActionButtons onPrimary={handleAddModule} onSecondary={() => { updateModals({ showAddModule: false }); resetForm("lesson"); }} primaryText="Create Lesson" secondaryText="Cancel" loading={isCreatingLesson} />
-            </div>
-          </div>
+  <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+    <div className="bg-white rounded-lg shadow-2xl w-full max-w-lg transform transition-all animate-in zoom-in-95 duration-200">
+      <ModalHeader 
+        title="Create New Lesson" 
+        subtitle="Add a new lesson to your course" 
+        onClose={() => { 
+          updateModals({ showAddModule: false }); 
+          resetForm("lesson"); 
+        }} 
+      />
+      <div className="p-6 space-y-5">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Lesson Title <span className="text-red-500">*</span>
+          </label>
+          <input 
+            type="text" 
+            placeholder="e.g., Introduction to Thermodynamics" 
+            value={forms.lesson.title} 
+            onChange={(e) => updateForm("lesson", { title: e.target.value })} 
+            className="w-full bg-white border border-gray-200 px-4 py-2.5 rounded-lg focus:border-[#034153] focus:ring-2 focus:ring-[#034153]/20 transition-all outline-none" 
+          />
         </div>
-      )}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Lesson Description <span className="text-red-500">*</span>
+          </label>
+          <textarea 
+            placeholder="Provide a brief overview of what students will learn in this lesson..." 
+            value={forms.lesson.description} 
+            onChange={(e) => updateForm("lesson", { description: e.target.value })} 
+            rows={4} 
+            className="w-full bg-white border border-gray-200 px-4 py-2.5 rounded-lg focus:border-[#034153] focus:ring-2 focus:ring-[#034153]/20 transition-all outline-none resize-none" 
+          />
+        </div>
+        <ActionButtons 
+          onPrimary={handleAddModule} 
+          onSecondary={() => { 
+            updateModals({ showAddModule: false }); 
+            resetForm("lesson"); 
+          }} 
+          primaryText="Create Lesson" 
+          secondaryText="Cancel" 
+          loading={isCreatingLesson} 
+        />
+      </div>
+    </div>
+  </div>
+)}
 
       {modals.showEditForm && (
         <div className="fixed inset-0 bg-gradient-to-br from-black/70 via-black/60 to-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">

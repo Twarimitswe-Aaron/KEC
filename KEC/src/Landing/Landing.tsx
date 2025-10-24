@@ -12,6 +12,7 @@ import {
   WhyUs,
   OtherBusinesses
 } from "../Routes";
+import KECServiceForm from "../Components/Landing/OtherBusinesses/OtherBusinesses";
 
 const Landing = () => {
   return (
@@ -24,6 +25,7 @@ const Landing = () => {
       <WhatStudentsSay />
       <WhyUs />
       <OtherBusinesses/>
+      <KECServiceForm/>
       <CoreTeam />
       <FAQ />
       <JoinRwanda />
