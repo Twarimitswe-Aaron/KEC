@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
 import {
   FaPlus,
   FaLock,
@@ -18,6 +18,7 @@ import {
   FaEdit,
 } from "react-icons/fa";
 import { toast } from "react-toastify";
+import { SearchContext } from "../SearchContext";
 import {
   useDeleteLessonMutation,
   useToggleLessonLockMutation,
@@ -27,7 +28,7 @@ import {
 import { Trash2 } from "lucide-react";
 import QuizEditor from "./QuizEditor";
 
-// Types
+// --- Types ---
 export interface ResourceType {
   id: number;
   uploadedAt: string;
@@ -142,7 +143,7 @@ export const ConfirmDeleteModal = ({
   );
 };
 
-// Constants
+// --- Constants ---
 const SAMPLE_QUIZ: Question[] = [
   {
     id: 1,
@@ -189,11 +190,13 @@ const lessonTolesson = (lesson: Lesson): lessonType => ({
     })) || [],
 });
 
-// Main Component
+// --- Main Component ---
 function ModuleManagement({
   lessons: initialLessons,
   courseId,
 }: lessonManagementProps) {
+
+  const { searchQuery } = useContext(SearchContext)
   // State
   const [showAddResource, setShowAddResource] = useState<number | null>(null);
   const [resourceType, setResourceType] = useState<
@@ -229,12 +232,54 @@ function ModuleManagement({
   const resourceMenuRefs = useRef<Record<number, HTMLDivElement | null>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Handle initialLessons prop updates
+  // Handle initialLessons prop updates and SEARCH FILTERING
   useEffect(() => {
-    if (Array.isArray(initialLessons)) {
-      setLessons(initialLessons.map(lessonTolesson));
+    const initialLessonTypes = initialLessons.map(lessonTolesson);
+    
+    if (searchQuery && searchQuery.trim().length > 0) {
+        const query = searchQuery.toLowerCase();
+
+        // Create a new array of filtered lessons
+        const filteredLessons = initialLessonTypes
+            .map(lesson => {
+                const lessonMatches = 
+                    lesson.title.toLowerCase().includes(query) ||
+                    lesson.description.toLowerCase().includes(query);
+
+                // Filter resources whose name matches the query
+                const filteredResources = lesson.resources.filter(resource =>
+                    resource.name.toLowerCase().includes(query)
+                );
+                
+                // If the lesson itself or any of its resources match, keep the lesson
+                if (lessonMatches || filteredResources.length > 0) {
+                    // If the lesson itself matches, keep all its resources for context.
+                    // If only resources match, keep only the filtered resources.
+                    const resourcesToDisplay = lessonMatches ? lesson.resources : filteredResources;
+
+                    return {
+                        ...lesson,
+                        // Ensure we don't display an empty lesson block if only resources matched 
+                        // and the lesson title/desc didn't match (though my logic above keeps all resources 
+                        // if the lesson matches, and only filtered if not. Here, we just return the full lesson
+                        // if the lesson matches, and the lesson with filtered resources otherwise).
+                        resources: resourcesToDisplay
+                    };
+                }
+                // If neither the lesson nor its resources match, return null to be filtered out
+                return null;
+            })
+            // Filter out lessons that returned null
+            .filter((lesson): lesson is lessonType => lesson !== null);
+
+        setLessons(filteredLessons);
+
+    } else {
+        // Reset to initial lessons if searchQuery is empty or cleared
+        setLessons(initialLessonTypes);
     }
-  }, [initialLessons]);
+  }, [initialLessons, searchQuery]);
+
 
   // Click outside handler
   useEffect(() => {
@@ -942,21 +987,9 @@ const VideoLinkForm = ({ lessonId }: { lessonId: number }) => {
                                       }
                                       target="_blank"
                                       rel="noopener noreferrer"
-                                      className="flex items-center gap-2 px-4 py-2 hover:bg-gray-50"
-                                      onClick={() => setOpenResourceMenu(null)}
+                                      className="w-full text-left px-4 py-2 hover:bg-gray-50 flex items-center gap-2"
                                     >
-                                      {resource.type === "video" ? (
-                                        <FaPlay />
-                                      ) : (
-                                        <FaExternalLinkAlt />
-                                      )}
-                                      <span>
-                                        {resource.type === "video"
-                                          ? "Watch"
-                                          : resource.type === "word"
-                                          ? "Open Word"
-                                          : "Open PDF"}
-                                      </span>
+                                      <FaExternalLinkAlt /> <span>View</span>
                                     </a>
                                   </li>
                                 )}
@@ -966,7 +999,7 @@ const VideoLinkForm = ({ lessonId }: { lessonId: number }) => {
                                       requestDeleteResource(lesson.id, resource.id);
                                       setOpenResourceMenu(null);
                                     }}
-                                    className="w-full text-left px-4 py-2 text-red-600 hover:bg-red-50 flex items-center gap-2"
+                                    className="w-full text-left px-4 py-2 hover:bg-gray-50 flex items-center gap-2 text-red-600"
                                   >
                                     <FaTrash /> <span>Delete</span>
                                   </button>
@@ -983,33 +1016,28 @@ const VideoLinkForm = ({ lessonId }: { lessonId: number }) => {
             )}
           </div>
         ))}
-      </div>
-
-      {lessons.length === 0 && (
-        <div className="text-center py-12">
-          <div className="max-w-md mx-auto">
-            <FaFile className="text-6xl text-gray-300 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">
-              No lessons yet
-            </h3>
-            <p className="text-gray-600">
-              Create your first lesson to start organizing your course content.
+        {sortedLessons.length === 0 && searchQuery && (
+          <div className="p-8 text-center bg-white rounded-lg border border-gray-200">
+            <h3 className="text-xl font-semibold text-gray-700">No results found</h3>
+            <p className="text-gray-500 mt-2">
+              Try adjusting your search for "{searchQuery}".
             </p>
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
+      {/* Delete Confirmation Modals */}
       <ConfirmDeleteModal
         visible={modals.showDeleteConfirm}
-        title="Delete Lesson?"
-        description="Are you sure you want to delete this lesson? This action cannot be undone."
+        title={`Delete Lesson?`}
+        description="Are you sure you want to delete this lesson and all its resources? This action cannot be undone."
         onConfirm={confirmDeleteLesson}
         onCancel={cancelDelete}
       />
 
       <ConfirmDeleteModal
         visible={modals.showResourceDeleteConfirm}
-        title="Delete Resource?"
+        title={`Delete Resource?`}
         description="Are you sure you want to delete this resource? This action cannot be undone."
         onConfirm={confirmDeleteResource}
         onCancel={cancelDelete}
