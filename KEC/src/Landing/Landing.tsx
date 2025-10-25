@@ -10,7 +10,7 @@ import {
   Main,
   WhatStudentsSay,
   WhyUs,
-  OtherBusinesses
+  OtherBusinessesDescription
 } from "../Routes";
 import KECServiceForm from "../Components/Landing/OtherBusinesses/OtherBusinesses";
 
@@ -24,7 +24,7 @@ const Landing = () => {
 
       <WhatStudentsSay />
       <WhyUs />
-      <OtherBusinesses/>
+      <OtherBusinessesDescription/>
       <KECServiceForm/>
       <CoreTeam />
       <FAQ />

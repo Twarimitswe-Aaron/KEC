@@ -70,7 +70,7 @@ const UserManagement = () => {
   
   const [createUser, { isLoading: isCreating }] = useCreateUserMutation();
   const [deleteUser] = useDeleteUserMutation();
-  const { searchQuery, setSearchQuery } = useContext(SearchContext);
+  const { searchQuery } = useContext(SearchContext);
   const userRole = useContext(UserRoleContext);
   const [users, setUsers] = useState<User[]>([]);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
