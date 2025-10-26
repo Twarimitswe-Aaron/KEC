@@ -6,6 +6,8 @@ export class UpdateQuizDto {
   description?: string;
   questions?: UpdateQuizQuestionDto[];
   settings?: QuizSettingsDto;
+  courseId?: number;
+  lessonId?: number;
 }
 
 export class UpdateQuizQuestionDto {

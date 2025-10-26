@@ -245,7 +245,7 @@ function LessonManagement({ // Renamed to LessonManagement for consistency
     initialLessons.map(toLessonType) // Use renamed function
   );
 
-  console.log(lessons)
+
 
   
  

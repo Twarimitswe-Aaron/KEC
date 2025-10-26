@@ -27,13 +27,15 @@ export interface QuizSettings {
 }
 
 export interface Quiz {
- 
+  id: number;
   name: string;
   description?: string;
   questions: QuizQuestion[];
   settings?: QuizSettings;
   createdAt?: string;
   updatedAt?: string;
+  courseId?: number;
+  lessonId?: number;
 }
 
 export interface CreateQuizRequest {
@@ -48,6 +50,8 @@ export interface UpdateQuizRequest {
   description?: string;
   questions?: QuizQuestion[];
   settings?: QuizSettings;
+  courseId?: number;
+  lessonId?: number;
 }
 
 export interface QuizAttempt {
@@ -114,11 +118,51 @@ export const quizApi = apiSlice.injectEndpoints({
       },
     }),
     getQuizDataByQuizId: builder.query<Quiz, quizHelper>({
-  query: (quizHelper) => ({
-    url: `quizzes/quiz/?courseId=${quizHelper.courseId}&lessonId=${quizHelper.lessonId}&quizId=${quizHelper.quizId}`,
-   
-  })
-})
+      query: (quizHelper) => ({
+        url: `quizzes/quiz/?courseId=${quizHelper.courseId}&lessonId=${quizHelper.lessonId}&quizId=${quizHelper.quizId}`,
+      }),
+      transformResponse: (response: any): Quiz => {
+        if (!response) {
+          throw new Error('No response data received');
+        }
+        
+        // Transform the response to match the Quiz interface
+        return {
+          id: response.id,
+          name: response.name || '',
+          description: response.description || '',
+          questions: Array.isArray(response.questions) 
+            ? response.questions.map((q: any) => ({
+                id: q.id || Date.now(),
+                type: q.type || 'multiple',
+                question: q.question || '',
+                description: q.description || '',
+                options: q.options || [],
+                correctAnswers: q.correctAnswers || [],
+                correctAnswer: q.correctAnswer,
+                required: q.required || false,
+                points: q.points || 1,
+                imageUrl: q.imageUrl,
+                labelAnswers: q.labelAnswers,
+                label: q.label || '',
+                answer: q.answer || '',
+                order: q.order
+              }))
+            : [],
+          settings: response.settings || {
+            title: response.name || '',
+            description: response.description || '',
+            shuffleQuestions: false,
+            timeLimit: 0,
+            showResults: true,
+            allowRetakes: false,
+            passingScore: 0
+          },
+          courseId: response.courseId,
+          lessonId: response.lessonId
+        };
+      }
+    })
     ,
 
     createQuiz: builder.mutation<{message: string; id: number}, CreateQuizRequest>({

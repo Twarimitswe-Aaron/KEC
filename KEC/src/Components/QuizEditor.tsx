@@ -10,11 +10,16 @@ import { X, Eye, Hash, Type, List as ListIcon, CheckSquare, ToggleLeft, Menu } f
 import { 
   useUpdateQuizMutation,
   useGetQuizDataByQuizIdQuery,
-  quizHelper
+  quizHelper,
+  Quiz as ApiQuiz
 } from "../state/api/quizApi";
 
-// Define proper TypeScript interfaces
-export interface Question {
+// Use the Quiz interface from the API
+interface Quiz extends ApiQuiz {
+  // Any additional properties specific to this component can be added here
+}
+
+interface Question {
   id: number;
   type: 'multiple' | 'checkbox' | 'truefalse' | 'short' | 'long' | 'number' | 'labeling';
   question: string;
@@ -29,17 +34,17 @@ export interface Question {
   order?: number;
 }
 
-export interface QuizSettings {
+interface QuizSettings {
   title: string;
   description?: string;
-  shuffleQuestions: boolean;
+  shuffleQuestions?: boolean;
   timeLimit?: number;
-  showResults: boolean;
-  allowRetakes: boolean;
+  showResults?: boolean;
+  allowRetakes?: boolean;
   passingScore?: number;
 }
 
-export interface ResourceType {
+interface ResourceType {
   id: number;
   name: string;
   description?: string;
@@ -95,6 +100,7 @@ const QuizEditor = ({ resource, onClose }: QuizEditorProps) => {
     lessonId: resource.lessonId!,
     quizId: resource.quizId!
   };
+
   
   const { 
     data: quizData, 
@@ -103,6 +109,7 @@ const QuizEditor = ({ resource, onClose }: QuizEditorProps) => {
     refetch 
   } = useGetQuizDataByQuizIdQuery(quizQueryParams);
 
+  console.log(quizData)
 
   const [updateQuiz, { isLoading: isUpdating }] = useUpdateQuizMutation();
   // Quiz creation is not allowed - only editing existing quizzes
@@ -112,7 +119,7 @@ const QuizEditor = ({ resource, onClose }: QuizEditorProps) => {
 
   // Memoized initial state functions
   const getInitialQuestions = useCallback((): Question[] => {
-    const source = resource.quiz || quizData;
+    const source = quizData || resource.quiz;
     
     if (source?.questions && Array.isArray(source.questions)) {
       return source.questions.map((q: any, index: number) => ({
@@ -134,16 +141,16 @@ const QuizEditor = ({ resource, onClose }: QuizEditorProps) => {
   }, [resource.quiz, quizData]);
 
   const getInitialSettings = useCallback((): QuizSettings => {
-    return resource.quiz?.settings || quizData?.settings || {
-      title: resource.name,
-      description: resource.description || "",
+    return quizData?.settings || resource.quiz?.settings || {
+      title: quizData?.name || resource.name,
+      description: quizData?.description || resource.description || "",
       shuffleQuestions: false,
       timeLimit: 0,
       showResults: true,
       allowRetakes: false,
       passingScore: 0,
     };
-  }, [resource.quiz, quizData, resource.name, resource.description]);
+  }, [quizData, resource.quiz, resource.name, resource.description]);
 
   // State
   const [questions, setQuestions] = useState<Question[]>(getInitialQuestions);
@@ -165,89 +172,98 @@ const QuizEditor = ({ resource, onClose }: QuizEditorProps) => {
   }, [quizData, getInitialQuestions, getInitialSettings]);
 
   // Save quiz to backend
-  const saveQuiz = useCallback(async () => {
-    if (isSaving) return;
+  // const saveQuiz = useCallback(async () => {
+  //   if (isSaving || !quizData) return;
 
-    setIsSaving(true);
-    try {
-      const filteredQuizSettings = Object.fromEntries(
-        Object.entries(quizSettings).filter(([_, value]) => 
-          value !== null && value !== undefined && value !== ''
-        )
-      ) as QuizSettings;
+  //   setIsSaving(true);
+  //   try {
+  //     const filteredQuizSettings = Object.fromEntries(
+  //       Object.entries(quizSettings).filter(([_, value]) => 
+  //         value !== null && value !== undefined && value !== ''
+  //       )
+  //     ) as QuizSettings;
 
-      const filteredQuestions = questions
-        .filter(q => q.question?.trim() !== '' || (q.type === 'labeling' && q.imageUrl && q.labelAnswers?.length))
-        .map((q, index) => {
-          const cleanedQuestion = Object.fromEntries(
-            Object.entries(q).filter(([key, value]) => 
-              (Array.isArray(value) && value.length > 0) || 
-              (['required', 'points', 'type', 'id', 'imageUrl', 'labelAnswers'].includes(key)) ||
-              (value !== null && value !== undefined && value !== '')
-            )
-          ) as Question;
+  //     const filteredQuestions = questions
+  //       .filter(q => q.question?.trim() !== '' || (q.type === 'labeling' && q.imageUrl && q.labelAnswers?.length))
+  //       .map((q, index) => {
+  //         const cleanedQuestion = Object.fromEntries(
+  //           Object.entries(q).filter(([key, value]) => 
+  //             (Array.isArray(value) && value.length > 0) || 
+  //             (['required', 'points', 'type', 'id', 'imageUrl', 'labelAnswers'].includes(key)) ||
+  //             (value !== null && value !== undefined && value !== '')
+  //           )
+  //         ) as Question;
           
-          return {
-            ...cleanedQuestion,
-            points: cleanedQuestion.points || 1,
-            order: index,
-            options: cleanedQuestion.options?.filter(opt => opt.trim()),
-            labelAnswers: cleanedQuestion.type === 'labeling' ? 
-              cleanedQuestion.labelAnswers?.filter(la => la.label.trim() && la.answer.trim()) : undefined,
-            correctAnswer: cleanedQuestion.type === 'labeling' ? undefined : cleanedQuestion.correctAnswer,
-            correctAnswers: cleanedQuestion.type === 'labeling' ? [] : cleanedQuestion.correctAnswers,
-          };
-        });
+  //         return {
+  //           ...cleanedQuestion,
+  //           points: cleanedQuestion.points || 1,
+  //           order: index,
+  //           options: cleanedQuestion.options?.filter(opt => opt.trim()),
+  //           labelAnswers: cleanedQuestion.type === 'labeling' ? 
+  //             cleanedQuestion.labelAnswers?.filter(la => la.label.trim() && la.answer.trim()) : undefined,
+  //           correctAnswer: cleanedQuestion.type === 'labeling' ? undefined : cleanedQuestion.correctAnswer,
+  //           correctAnswers: cleanedQuestion.type === 'labeling' ? [] : cleanedQuestion.correctAnswers,
+  //         };
+  //       });
 
-      const quizTitle = filteredQuizSettings.title || resource.name;
-      if (!quizTitle) {
-        toast.error("Quiz title is required");
-        setIsSaving(false);
-        return;
-      }
+  //     const quizTitle = filteredQuizSettings.title || quizData.name || resource.name;
+  //     if (!quizTitle) {
+  //       toast.error("Quiz title is required");
+  //       setIsSaving(false);
+  //       return;
+  //     }
 
-      // Only allow updating existing quizzes
-      if (!resource.quizId) {
-        throw new Error("Cannot create new quizzes - only editing existing quizzes is allowed");
-      }
+  //     // Only allow updating existing quizzes
+  //     if (!quizData?.id) {
+  //       throw new Error("Cannot save quiz - missing quiz data or ID");
+  //     }
       
-      // Update existing quiz
-      await updateQuiz({ 
-        id: resource.quizId, 
-        data: {
-          name: quizTitle,
-          description: filteredQuizSettings.description || '',
-          questions: filteredQuestions,
-          settings: filteredQuizSettings
-        }
-      }).unwrap();
-      toast.success("Quiz updated successfully!");
+  //     // Update existing quiz
+  //     await updateQuiz({ 
+  //       id: quizData.id, 
+  //       data: {
+  //         name: quizTitle,
+  //         description: filteredQuizSettings.description || quizData.description || '',
+  //         questions: filteredQuestions,
+  //         settings: filteredQuizSettings,
+  //         courseId: quizData.courseId,
+  //         lessonId: quizData.lessonId
+  //       }
+  //     }).unwrap();
+  //     toast.success("Quiz updated successfully!");
 
-      setHasChanges(false);
-      await refetch();
-    } catch (error: any) {
-      console.error('Failed to save quiz:', error);
-      const errorMessage = error?.data?.message || error?.message || "Failed to save quiz. Please try again.";
-      toast.error(errorMessage);
-    } finally {
-      setIsSaving(false);
-    }
-  }, [quizSettings, questions, resource, isSaving, updateQuiz, refetch]);
+  //     setHasChanges(false);
+  //     await refetch();
+  //   } catch (error: any) {
+  //     console.error('Failed to save quiz:', error);
+  //     const errorMessage = error?.data?.message || error?.message || "Failed to save quiz. Please try again.";
+  //     toast.error(errorMessage);
+  //   } finally {
+  //     setIsSaving(false);
+  //   }
+  // }, [quizSettings, questions, resource, isSaving, updateQuiz, refetch]);
 
   // Auto-save effect
-  useEffect(() => {
-    if (hasChanges && !isSaving) {
-      const autoSaveTimer = setTimeout(saveQuiz, 3000);
-      return () => clearTimeout(autoSaveTimer);
-    }
-  }, [questions, quizSettings, hasChanges, isSaving, saveQuiz]);
+  // useEffect(() => {
+  //   if (hasChanges && !isSaving) {
+  //     const autoSaveTimer = setTimeout(saveQuiz, 3000);
+  //     return () => clearTimeout(autoSaveTimer);
+  //   }
+  // }, [questions, quizSettings, hasChanges, isSaving, saveQuiz]);
 
   // Mark changes when questions or settings are modified
   useEffect(() => {
-    if (!hasChanges && (questions.length > 0 || quizSettings.title !== resource.name)) {
-      setHasChanges(true);
+    if (quizData && !hasChanges) {
+      const titleChanged = quizSettings.title !== (quizData.name || resource.name);
+      const descriptionChanged = quizSettings.description !== (quizData.description || resource.description || '');
+      const questionsChanged = JSON.stringify(questions) !== JSON.stringify(quizData.questions || []);
+      const settingsChanged = JSON.stringify(quizSettings) !== JSON.stringify(quizData.settings || {});
+      
+      if (titleChanged || descriptionChanged || questionsChanged || settingsChanged) {
+        setHasChanges(true);
+      }
     }
-  }, [questions, quizSettings, hasChanges, resource.name]);
+  }, [questions, quizSettings, hasChanges, quizData, resource.name, resource.description]);
 
   // Question management functions
   const addQuestion = useCallback(() => {
@@ -571,10 +587,10 @@ const QuizEditor = ({ resource, onClose }: QuizEditorProps) => {
     setHasChanges(true);
   }, []);
 
-  const handleManualSave = useCallback(async () => {
-    console.log("request updating quiz");
-    await saveQuiz();
-  }, [saveQuiz]);
+  // const handleManualSave = useCallback(async () => {
+  //   console.log("request updating quiz");
+  //   await saveQuiz();
+  // }, [saveQuiz]);
 
   // Reset new question options when type changes
   useEffect(() => {
@@ -708,7 +724,18 @@ const QuizEditor = ({ resource, onClose }: QuizEditorProps) => {
       <Sidebar 
         showSidebar={showSidebar}
         onCloseSidebar={() => setShowSidebar(false)}
-        quizSettings={quizSettings}
+        quizSettings={quizData?.settings ? {
+          ...quizData.settings,
+          title: quizData.settings.title || quizData?.name || '',
+          showResults: quizData.settings.showResults ?? true,
+          allowRetakes: quizData.settings.allowRetakes ?? true
+        } : {
+          title: quizData?.name || '',
+          description: quizData?.description,
+          shuffleQuestions: false,
+          showResults: true,
+          allowRetakes: true
+        }}
         onSettingsChange={handleSettingsChange}
       />
 
@@ -716,16 +743,16 @@ const QuizEditor = ({ resource, onClose }: QuizEditorProps) => {
         <Header 
           showSidebar={showSidebar}
           onToggleSidebar={() => setShowSidebar(true)}
-          quizSettings={quizSettings}
+          quizData={quizData}
           hasChanges={hasChanges}
           isSaveDisabled={isSaveDisabled}
           isSaving={isSaving}
-          onManualSave={handleManualSave}
+          // onManualSave={handleManualSave}
           onClose={onClose}
         />
 
         <QuestionList 
-          questions={questions}
+          questions={quizData?.questions}
           QuestionCard={QuestionCard}
           newQuestion={newQuestion}
           onNewQuestionChange={setNewQuestion}
@@ -912,16 +939,30 @@ checked={Boolean(checked)}
   </div>
 );
 
+interface HeaderProps {
+  showSidebar: boolean;
+  onToggleSidebar: () => void;
+  quizData?: {
+    name: string;
+    settings?: QuizSettings;
+  };
+  hasChanges: boolean;
+  isSaveDisabled: boolean;
+  isSaving: boolean;
+  // onManualSave: () => void;
+  onClose: () => void;
+}
+
 const Header = ({ 
   showSidebar, 
   onToggleSidebar, 
-  quizSettings, 
+  quizData, 
   hasChanges, 
   isSaveDisabled, 
   isSaving, 
-  onManualSave, 
+  // onManualSave, 
   onClose 
-}: any) => (
+}: HeaderProps) => (
   <div className="p-4 sm:p-5 bg-white border-b border-gray-200 shadow-sm flex items-center justify-between flex-wrap gap-3 sticky top-0 z-40">
     <div className="flex items-center gap-3">
       <button 
@@ -932,7 +973,7 @@ const Header = ({
         <Menu size={20} />
       </button>
       <h1 className="text-xl sm:text-2xl font-bold text-gray-900 truncate">
-        Editing: {quizSettings.title}
+        {quizData?.name ? `Editing: ${quizData.name}` : 'New Quiz'}
       </h1>
       <span className={`text-xs font-medium px-2 py-1 rounded-full border border-gray-200 ${
         hasChanges ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'
@@ -942,7 +983,7 @@ const Header = ({
     </div>
     <div className="flex items-center gap-3">
       <button
-        onClick={onManualSave}
+        // onClick={onManualSave}
         disabled={isSaveDisabled}
         className={`px-4 py-2 rounded-lg font-semibold transition-colors flex items-center gap-2 border border-gray-200 rounded-lg hover:border-gray-300 hover:shadow-sm ${
           isSaveDisabled 
