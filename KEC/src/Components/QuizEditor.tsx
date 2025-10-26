@@ -7,7 +7,11 @@ import {
   FaArrowUp, FaArrowDown
 } from "react-icons/fa";
 import { X, Eye, Hash, Type, List as ListIcon, CheckSquare, ToggleLeft, Menu } from "lucide-react";
-import { useGetQuizQuery, useUpdateQuizMutation, useCreateQuizMutation } from "../state/api/quizApi";
+import { 
+  useUpdateQuizMutation,
+  useGetQuizDataByQuizIdQuery,
+  quizHelper
+} from "../state/api/quizApi";
 
 // Define proper TypeScript interfaces
 export interface Question {
@@ -22,6 +26,7 @@ export interface Question {
   labelAnswers?: { label: string; answer: string }[];
   required: boolean;
   points: number;
+  order?: number;
 }
 
 export interface QuizSettings {
@@ -41,12 +46,21 @@ export interface ResourceType {
   quizId?: number;
   quiz?: any;
   type: string;
+  courseId?: number;
+  lessonId?: number;
+  [key: string]: any; // Add index signature to allow dynamic properties
 }
 
+// Type that combines both ResourceType and quizHelper
+interface QuizEditorResource extends Omit<ResourceType, 'courseId' | 'lessonId'> {
+  quizId?: number;
+  courseId: number;
+  lessonId: number;
+};
+
 interface QuizEditorProps {
-  resource: ResourceType;
+  resource: QuizEditorResource;
   onClose: () => void;
-  onUpdate?: (resourceId: number, updatedQuiz: any) => void;
 }
 
 // Constants
@@ -73,19 +87,30 @@ const INITIAL_NEW_QUESTION: Partial<Question> = {
   labelAnswers: undefined
 };
 
-const QuizEditor = ({ resource, onClose, onUpdate }: QuizEditorProps) => {
-  console.log(resource, "resources of this lesson");
+const QuizEditor = ({ resource, onClose }: QuizEditorProps) => {
 
-  // RTK Query hooks
+  
+  const quizQueryParams: quizHelper = {
+    courseId: resource.courseId || 0,
+    lessonId: resource.lessonId || 0,
+    quizId: resource.quizId || resource.id
+  };
+  
   const { 
     data: quizData, 
     isLoading, 
     error,
     refetch 
-  } = useGetQuizQuery(resource.quizId!, { skip: !resource.quizId });
+  } = useGetQuizDataByQuizIdQuery(quizQueryParams);
+if(!isLoading){
+    console.log(quizData,"printitn quiz data")
+}
 
   const [updateQuiz, { isLoading: isUpdating }] = useUpdateQuizMutation();
-  const [createQuiz, { isLoading: isCreating }] = useCreateQuizMutation();
+  // Quiz creation is not allowed - only editing existing quizzes
+  const isCreating = false;
+
+
 
   // Memoized initial state functions
   const getInitialQuestions = useCallback((): Question[] => {
@@ -183,39 +208,22 @@ const QuizEditor = ({ resource, onClose, onUpdate }: QuizEditorProps) => {
         return;
       }
 
-      const quizPayload: any = {
-        name: quizTitle,
-        ...(filteredQuizSettings.description && { description: filteredQuizSettings.description }),
-        resourceId: resource.id,
-        ...(filteredQuestions.length > 0 && { questions: filteredQuestions }),
-        settings: filteredQuizSettings
-      };
-
-      if (filteredQuestions.length === 0 && Object.keys(filteredQuizSettings).length === 1 && filteredQuizSettings.title === resource.name) {
-        toast.error("Please add at least one question or change a setting before saving.");
-        setIsSaving(false);
-        return;
+      // Only allow updating existing quizzes
+      if (!resource.quizId) {
+        throw new Error("Cannot create new quizzes - only editing existing quizzes is allowed");
       }
-
-      if (resource.quizId) {
-       
-        await updateQuiz({ id: resource.quiz.id, data: quizPayload }).unwrap();
-        toast.success("Quiz updated successfully!");
-      } else {
-        console.log(quizData)
-        const result = await createQuiz(quizPayload).unwrap() as any;
-        toast.success("Quiz created successfully!");
-    
-        if (onUpdate) {
-          onUpdate(resource.id, { 
-            ...resource.quiz, 
-            quizId: result?.id,
-            name: quizTitle,
-            questions: filteredQuestions, 
-            settings: filteredQuizSettings 
-          });
+      
+      // Update existing quiz
+      await updateQuiz({ 
+        id: resource.quizId, 
+        data: {
+          name: quizTitle,
+          description: filteredQuizSettings.description || '',
+          questions: filteredQuestions,
+          settings: filteredQuizSettings
         }
-      }
+      }).unwrap();
+      toast.success("Quiz updated successfully!");
 
       setHasChanges(false);
       await refetch();
@@ -226,7 +234,7 @@ const QuizEditor = ({ resource, onClose, onUpdate }: QuizEditorProps) => {
     } finally {
       setIsSaving(false);
     }
-  }, [quizSettings, questions, resource, isSaving, updateQuiz, createQuiz, onUpdate, refetch]);
+  }, [quizSettings, questions, resource, isSaving, updateQuiz, refetch]);
 
   // Auto-save effect
   useEffect(() => {
@@ -245,67 +253,98 @@ const QuizEditor = ({ resource, onClose, onUpdate }: QuizEditorProps) => {
 
   // Question management functions
   const addQuestion = useCallback(() => {
-    if (!newQuestion.question?.trim()) {
+    // Create a type-safe copy of the new question
+    const currentQuestion = { 
+      ...INITIAL_NEW_QUESTION, 
+      ...newQuestion,
+      type: newQuestion.type || 'multiple', // Ensure type has a default value
+      question: newQuestion.question || '', // Ensure question is a string
+      labelAnswers: newQuestion.type === 'labeling' 
+        ? (newQuestion.labelAnswers || [])
+        : undefined
+    };
+    
+    // Validate required fields
+    if (!currentQuestion.question.trim()) {
       toast.error("Please enter a question");
       return;
     }
 
-    if (newQuestion.type !== 'labeling') {
-      if (
-        (newQuestion.type === 'multiple' || newQuestion.type === 'checkbox' || newQuestion.type === 'truefalse') &&
-        (!newQuestion.options || newQuestion.options.filter(opt => opt.trim()).length < 2)
-      ) {
+    if (currentQuestion.type === 'labeling') {
+      // Validate labeling question
+      if (!currentQuestion.imageUrl?.trim()) {
+        toast.error("Please provide an image URL for the labeling question.");
+        return;
+      }
+      
+      if (!currentQuestion.labelAnswers?.length) {
+        toast.error("Please add at least one label-answer pair.");
+        return;
+      }
+      
+      // Validate that all labels and answers are filled
+      const invalidLabels = currentQuestion.labelAnswers.some(
+        (la: { label?: string; answer?: string }) => !la.label?.trim() || !la.answer?.trim()
+      );
+      
+      if (invalidLabels) {
+        toast.error("Please fill in all label names and their corresponding answers.");
+        return;
+      }
+    } else if (currentQuestion.type === 'multiple' || currentQuestion.type === 'checkbox' || currentQuestion.type === 'truefalse') {
+      // Validate multiple choice/checkbox/truefalse questions
+      const validOptions = (currentQuestion.options || []).filter(opt => opt.trim());
+      
+      if (validOptions.length < 2) {
         toast.error("Multiple Choice/Checkbox questions require at least two options.");
         return;
       }
       
-      if (
-        (newQuestion.type === 'multiple' || newQuestion.type === 'truefalse') &&
-        newQuestion.correctAnswer === undefined
-      ) {
+      if ((currentQuestion.type === 'multiple' || currentQuestion.type === 'truefalse') && 
+          currentQuestion.correctAnswer === undefined) {
         toast.error("Please mark a correct answer.");
         return;
       }
     }
 
-    if (newQuestion.type === 'labeling') {
-      if (!newQuestion.imageUrl || !newQuestion.labelAnswers?.length || newQuestion.labelAnswers.some(la => !la.label.trim() || !la.answer.trim())) {
-        toast.error("Please provide an image URL and define at least one label key (Label and Answer).");
-        return;
-      }
-    }
-
+    // Create the question object with proper type safety
     const question: Question = {
       id: Date.now(),
-      type: newQuestion.type as any,
-      question: newQuestion.question.trim(),
-      description: newQuestion.description?.trim() || '',
-      options: newQuestion.type !== "short" && newQuestion.type !== "long" && newQuestion.type !== "number" && newQuestion.type !== 'labeling'
-        ? newQuestion.options?.filter(opt => opt.trim()).map(opt => opt.trim()) 
+      type: currentQuestion.type,
+      question: currentQuestion.question.trim(),
+      description: currentQuestion.description?.trim() || '',
+      options: (currentQuestion.type === 'multiple' || currentQuestion.type === 'checkbox' || currentQuestion.type === 'truefalse')
+        ? (currentQuestion.options || []).filter(opt => opt.trim()).map(opt => opt.trim())
         : undefined,
-      correctAnswers: newQuestion.correctAnswers || [],
-      correctAnswer: newQuestion.correctAnswer,
-      required: newQuestion.required || false,
-      points: newQuestion.points || 1,
-      imageUrl: newQuestion.type === 'labeling' ? newQuestion.imageUrl : undefined,
-      labelAnswers: newQuestion.type === 'labeling' ? newQuestion.labelAnswers?.filter(la => la.label.trim() && la.answer.trim()) : undefined,
+      correctAnswers: currentQuestion.correctAnswers || [],
+      correctAnswer: currentQuestion.correctAnswer,
+      required: currentQuestion.required || false,
+      points: currentQuestion.points || 1,
+      ...(currentQuestion.type === 'labeling' && {
+        imageUrl: currentQuestion.imageUrl,
+        labelAnswers: (currentQuestion.labelAnswers || [])
+          .filter(la => la.label?.trim() && la.answer?.trim())
+          .map(la => ({
+            label: la.label.trim(),
+            answer: la.answer.trim()
+          }))
+      })
     };
 
+    // Add the new question to the list
     const updatedQuestions = [...questions, question];
     setQuestions(updatedQuestions);
     setHasChanges(true);
     
-    if (onUpdate) {
-      onUpdate(resource.id, { 
-        ...resource.quiz, 
-        questions: updatedQuestions, 
-        settings: quizSettings 
-      });
-    }
+    // Reset the form with proper typing
+    setNewQuestion({
+      ...INITIAL_NEW_QUESTION,
+      type: 'labeling', // Default to labeling for next question
+      labelAnswers: [{ label: 'A', answer: '' }] // Initialize with one empty label-answer pair
+    });
     
-    setNewQuestion(INITIAL_NEW_QUESTION);
     toast.success("Question added successfully!");
-  }, [newQuestion, questions, onUpdate, resource, quizSettings]);
+  }, [newQuestion, questions, resource, quizSettings]);
 
   const updateQuestion = useCallback((questionId: number, updates: Partial<Question>) => {
     const updatedQuestions = questions.map(q => 
@@ -314,30 +353,18 @@ const QuizEditor = ({ resource, onClose, onUpdate }: QuizEditorProps) => {
     setQuestions(updatedQuestions);
     setHasChanges(true);
     
-    if (onUpdate) {
-      onUpdate(resource.id, { 
-        ...resource.quiz, 
-        questions: updatedQuestions, 
-        settings: quizSettings 
-      });
-    }
-  }, [questions, onUpdate, resource, quizSettings]);
+  
+  }, [questions, resource, quizSettings]);
 
   const deleteQuestion = useCallback((questionId: number) => {
     const updatedQuestions = questions.filter(q => q.id !== questionId);
     setQuestions(updatedQuestions);
     setHasChanges(true);
     
-    if (onUpdate) {
-      onUpdate(resource.id, { 
-        ...resource.quiz, 
-        questions: updatedQuestions, 
-        settings: quizSettings 
-      });
-    }
+
     
     toast.success("Question deleted successfully!");
-  }, [questions, onUpdate, resource, quizSettings]);
+  }, [questions, resource, quizSettings]);
 
   const moveQuestion = useCallback((index: number, direction: 'up' | 'down') => {
     if (
@@ -353,14 +380,8 @@ const QuizEditor = ({ resource, onClose, onUpdate }: QuizEditorProps) => {
     setQuestions(updatedQuestions);
     setHasChanges(true);
     
-    if (onUpdate) {
-      onUpdate(resource.id, { 
-        ...resource.quiz, 
-        questions: updatedQuestions, 
-        settings: quizSettings 
-      });
-    }
-  }, [questions, onUpdate, resource, quizSettings]);
+ 
+  }, [questions, resource, quizSettings]);
 
   // Option management
   const addOption = useCallback((questionId: number) => {
@@ -725,7 +746,7 @@ const QuizEditor = ({ resource, onClose, onUpdate }: QuizEditorProps) => {
 // Extracted Components for better organization
 const LoadingOverlay = ({ message }: { message: string }) => (
   <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center">
-    <div className="bg-white rounded-xl p-6 text-center border border-gray-200 rounded-lg hover:border-gray-300 hover:shadow-sm transition-all">
+    <div className="bg-white  p-6 text-center border border-gray-200 rounded-lg hover:border-gray-300 hover:shadow-sm transition-all">
       <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#034153] mx-auto"></div>
       <p className="mt-4 text-gray-600">{message}</p>
     </div>
@@ -733,8 +754,8 @@ const LoadingOverlay = ({ message }: { message: string }) => (
 );
 
 const ErrorOverlay = ({ onClose }: { onClose: () => void }) => (
-  <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center">
-    <div className="bg-white rounded-xl p-6 text-center max-w-md border border-gray-200 rounded-lg hover:border-gray-300 hover:shadow-sm transition-all">
+  <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center">
+    <div className="bg-white  p-6 text-center max-w-md border border-gray-200 rounded-lg hover:border-gray-300 hover:shadow-sm transition-all">
       <FaQuestionCircle className="text-4xl text-red-500 mx-auto mb-4" />
       <h3 className="text-lg font-semibold text-gray-900 mb-2">Failed to load quiz</h3>
       <p className="text-gray-600 mb-4">There was an error loading the quiz data.</p>

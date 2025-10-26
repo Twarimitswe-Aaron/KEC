@@ -63,12 +63,12 @@ const LessonsView = () => {
 const filteredLessons = useMemo(() => {
   // If no search, return all
   if (!searchQuery || searchQuery.trim() === "") {
-    console.log("[Search] Empty query — returning all lessons");
+
     return baseLessons;
   }
 
   const lowerCaseQuery = searchQuery.toLowerCase().trim();
-  console.log("[Search] Filtering lessons for:", lowerCaseQuery);
+
 
   // Perform filtering
   const filtered = baseLessons.filter((lesson) => {
@@ -86,15 +86,9 @@ const filteredLessons = useMemo(() => {
       : false;
 
     const isMatch = titleMatch || contentMatch || resourceMatch;
-
-    if (isMatch) {
-      console.log("[Match] Lesson matched:", lesson.title);
-    }
-
     return isMatch;
   });
 
-  console.log(`[Search] ${filtered.length} lessons found`);
   return filtered;
 }, [baseLessons, searchQuery]);
 

@@ -27,6 +27,7 @@ import {
 } from "../state/api/lessonApi";
 import { Trash2 } from "lucide-react";
 import QuizEditor from "./QuizEditor";
+import { quizHelper } from "../state/api/quizApi";
 
 // --- Types ---
 export interface ResourceType {
@@ -39,6 +40,8 @@ export interface ResourceType {
   duration?: string;
   description?: string;
   quiz?: any;
+  lessonId?: number; // Add lessonId as an optional property
+  courseId?: number; // Add courseId as an optional property
 }
 
 // Renamed from lessonType to LessonType (PascalCase convention)
@@ -103,6 +106,8 @@ export interface ConfirmDeleteModalProps {
   onConfirm: () => void;
   onCancel: () => void;
 }
+
+
 
 export const ConfirmDeleteModal = ({
   visible,
@@ -220,7 +225,18 @@ function LessonManagement({ // Renamed to LessonManagement for consistency
     initialLessons.map(toLessonType) // Use renamed function
   );
   const [menuOpenId, setMenuOpenId] = useState<number | null>(null);
-  const [openQuiz, setOpenQuiz] = useState<number | null>(null);
+  // Define a type for the quiz resource that includes all required properties
+  type QuizResource = {
+    id: number;
+    name: string;
+    type: string;
+    quiz?: any;
+    lessonId: number;
+    courseId?: number;
+    quizId?: number;
+  };
+
+  const [openQuiz, setOpenQuiz] = useState<QuizResource | null>(null);
   const [deleteLesson] = useDeleteLessonMutation();
   const [toggleLessonLock] = useToggleLessonLockMutation();
   const [addResource] = useAddResourceMutation();
@@ -324,9 +340,8 @@ function LessonManagement({ // Renamed to LessonManagement for consistency
     };
   }, [menuOpenId, openResourceMenu]);
 
-  // Updated signature to receive data from child form
   const handleVideoLinkSubmit = async (lessonId: number, videoName: string, videoLink: string) => {
-    // Validation: Only check URL format here, input presence checked in form component
+
     try {
       new URL(videoLink);
     } catch {
@@ -406,15 +421,15 @@ function LessonManagement({ // Renamed to LessonManagement for consistency
     }
   };
 
-  // Updated signature to receive data from child form
+
   const handleQuizCreation = async (lessonId: number, quizName: string, quizDescription: string) => {
-    // Input presence check is now in the form component
     try {
       const { message } = await addResource({
         lessonId: lessonId,
+        courseId: courseId,
         title: quizName,
         type: "quiz",
-        description: quizDescription || "",
+        description: quizDescription,
       }).unwrap();
 
       // Close the form
@@ -497,18 +512,7 @@ function LessonManagement({ // Renamed to LessonManagement for consistency
     setModals({ showDeleteConfirm: false, showResourceDeleteConfirm: false });
   };
 
-  const handleQuizUpdate = (resourceId: number, updatedQuiz: any) => {
-    setLessons((prev) =>
-      prev.map((lesson) => ({
-        ...lesson,
-        resources: lesson.resources.map((resource) =>
-          resource.id === resourceId
-            ? { ...resource, quiz: updatedQuiz }
-            : resource
-        ),
-      }))
-    );
-  };
+
 
   // UI Components
   const ResourceTypeSelector = ({
@@ -783,9 +787,8 @@ const VideoLinkForm = ({ lessonId, onSubmit, onCancel }: {
   );
 
   // Find the currently open quiz resource
-  const currentQuizResource = openQuiz
-    ? lessons.flatMap((m) => m.resources).find((r) => r.id === openQuiz)
-    : null;
+ 
+
 
   return (
     <div className="w-full">
@@ -814,11 +817,15 @@ const VideoLinkForm = ({ lessonId, onSubmit, onCancel }: {
 
 
       {/* Quiz Editor Modal  */}
-      {openQuiz && currentQuizResource && (
+
+      {openQuiz && (
         <QuizEditor
-          resource={currentQuizResource}
+          resource={{
+            ...openQuiz,
+            courseId: courseId, // Ensure courseId is set
+            quizId: openQuiz.quiz?.id || openQuiz.id // Use quiz.id or fallback to openQuiz.id
+          }}
           onClose={() => setOpenQuiz(null)}
-          onUpdate={handleQuizUpdate}
         />
       )}
 
@@ -1027,7 +1034,14 @@ const VideoLinkForm = ({ lessonId, onSubmit, onCancel }: {
                                   {resource.type === "quiz" ? (
                                     <button
                                       onClick={() => {
-                                        setOpenQuiz(resource.id);
+                                        setOpenQuiz({
+                                          id: resource.id,
+                                          name: resource.name || 'Untitled Quiz',
+                                          type: 'quiz',
+                                          lessonId: resource.lessonId || 0, // Make sure to set the correct lessonId
+                                          quiz: resource.quiz,
+                                          quizId: resource.quiz?.id || resource.id
+                                        });
                                         setOpenResourceMenu(null);
                                       }}
                                       className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-3"

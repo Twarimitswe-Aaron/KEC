@@ -107,6 +107,7 @@ export interface AddResourceRequest {
   type: string;
   url?: string;
   description?: string;
+  courseId?: number;
 }
 
 export interface DeleteResourceRequest {
@@ -207,7 +208,7 @@ export const lessonApi = apiSlice.injectEndpoints({
 
     // Add resource to lesson
     addResource: builder.mutation<{message:string},AddResourceRequest>({
-      query: ({ lessonId, title, file, type, description,url }) => {
+      query: ({ lessonId, title, file, type, description, url, courseId }) => {
         if (file) {
           // File upload (PDF, Word)
           const formData = new FormData();
@@ -233,22 +234,16 @@ export const lessonApi = apiSlice.injectEndpoints({
             },
           };
         } else if (type === "quiz") {
-       
+          if (!courseId) {
+            throw new Error("Course ID is required to create a quiz");
+          }
+          
           return {
-            url: `/lesson/${lessonId}/quiz`,
+            url: `/module/course/${courseId}/lesson/${lessonId}/quiz`,
             method: "POST",
             body: {
               name: title,
-              description: description || "",
-              // questions: [
-              //   {
-              //     id: 1,
-              //     type: "multiple",
-              //     question: "Sample question - edit this quiz to add your questions",
-              //     options: ["Option 1", "Option 2", "Option 3", "Option 4"],
-              //     required: true,
-              //   }
-              // ]
+              description: description || ""
             },
           };
         } else {

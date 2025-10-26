@@ -29,14 +29,14 @@ import { ToggleLockDto } from './dto/toggle-lock.dto';
 import { AddResourceDto } from './dto/add-resource.dto';
 import { diskStorage } from 'multer';
 
+@Controller('module')
 @UseGuards(AuthGuard, RolesGuard)
 @Roles('admin', 'teacher')
-@Controller('lesson')
 export class ModuleController {
   constructor(private readonly svc: ModuleService) {}
 
   // Create new lesson
-  @Post()
+  @Post('lesson')
   async createLesson(@Body() dto: CreateLessonDto) {
     return this.svc.createLesson(dto);
   }
@@ -107,7 +107,6 @@ export class ModuleController {
     @Body() body: { title?: string; type: string; description?: string },
   ) {
     const { type } = body;
-    
 
     const allowedTypes = ['pdf', 'word', 'quiz', 'video'] as const;
     if (!allowedTypes.includes(type as any)) {
@@ -115,8 +114,6 @@ export class ModuleController {
         'Invalid resource type. Allowed: pdf, word, quiz, video',
       );
     }
-
- 
 
     if (!file)
       throw new BadRequestException('File is required for PDF or Word type');
@@ -135,7 +132,6 @@ export class ModuleController {
 
     return this.svc.addResource(lessonId, dto);
   }
-
 
   @Patch('lock/:id')
   async toggleLessonLock(
@@ -168,9 +164,19 @@ export class ModuleController {
   }
 
   // Duplicate lesson
-  @Post(':id/duplicate')
-  async duplicateLesson(@Param('id', ParseIntPipe) id: number) {
-    return this.svc.duplicateLesson(id);
+  // @Post(':id/duplicate')
+  // async duplicateLesson(@Param('id', ParseIntPipe) id: number) {
+  //   return this.svc.duplicateLesson(id);
+  // }
+
+  // Add quiz resource - more specific route first
+  @Post('course/:courseId/lesson/:lessonId/quiz')
+  async addQuizResource(
+    @Param('lessonId', ParseIntPipe) lessonId: number,
+    @Param('courseId', ParseIntPipe) courseId: number,
+    @Body() dto: CreateQuizDto,
+  ) {
+    return this.svc.addQuizResource(lessonId, courseId, dto);
   }
 
   // Add video resource (alternative endpoint for video links)
@@ -180,15 +186,6 @@ export class ModuleController {
     @Body() dto: CreateVideoDto,
   ) {
     return this.svc.addVideoResource(lessonId, dto);
-  }
-
-  // Add quiz resource
-  @Post(':lessonId/quiz')
-  async addQuizResource(
-    @Param('lessonId', ParseIntPipe) lessonId: number,
-    @Body() dto: CreateQuizDto,
-  ) {
-    return this.svc.addQuizResource(lessonId, dto);
   }
 
   // Submit quiz

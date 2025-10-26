@@ -4,12 +4,13 @@ import { apiSlice } from './apiSlice';
 
 export interface QuizQuestion {
   id?: number;
-  type: 'multiple' | 'checkbox' | 'truefalse' | 'short' | 'long' | 'number';
+  type: 'multiple' | 'checkbox' | 'truefalse' | 'short' | 'long' | 'number' | 'labeling';
   question: string;
   description?: string;
   options?: string[];
   correctAnswers?: (string | number)[]; // Array of correct answers (indices or values)
   correctAnswer?: string | number; // For single correct answer types
+  labelAnswers?: { label: string; answer: string }[]; // For labeling questions
   required?: boolean;
   points?: number;
   order?: number;
@@ -26,23 +27,20 @@ export interface QuizSettings {
 }
 
 export interface Quiz {
-  id: number;
+ 
   name: string;
   description?: string;
   questions: QuizQuestion[];
   settings?: QuizSettings;
-  resource?: any;
-  attempts?: any[];
   createdAt?: string;
   updatedAt?: string;
 }
 
 export interface CreateQuizRequest {
-    resourceId:number;
   name: string;
   description?: string;
-  questions: QuizQuestion[];
-  settings?: QuizSettings;
+  courseId: number;
+  lessonId: number;
 }
 
 export interface UpdateQuizRequest {
@@ -91,6 +89,12 @@ export interface CreateQuizResourceRequest {
   quizData: CreateQuizRequest;
 }
 
+export interface quizHelper{
+  courseId:number;
+  lessonId:number;
+  quizId:number;
+}
+
 export const quizApi = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
     // Quiz Management
@@ -109,12 +113,22 @@ export const quizApi = apiSlice.injectEndpoints({
         return response;
       },
     }),
+    getQuizDataByQuizId: builder.query<Quiz, quizHelper>({
+  query: (quizHelper) => ({
+    url: `quizzes/quiz/?courseId=${quizHelper.courseId}&lessonId=${quizHelper.lessonId}&quizId=${quizHelper.quizId}`,
+   
+  })
+})
+    ,
 
-    createQuiz: builder.mutation<{message:string}, CreateQuizRequest>({
+    createQuiz: builder.mutation<{message: string; id: number}, CreateQuizRequest>({
       query: (quizData) => ({
-        url: 'quizzes',
+        url: `quizzes?lessonId=${quizData.lessonId}&courseId=${quizData.courseId}`,
         method: 'POST',
-        body: quizData,
+        body: {
+          name: quizData.name,
+          description: quizData.description || ''
+        },
       }),
       invalidatesTags: ['Quiz'],
     }),
@@ -165,56 +179,32 @@ export const quizApi = apiSlice.injectEndpoints({
       ],
     }),
 
-    // Get quizzes by module/lesson
-    getQuizzesByModule: builder.query<Quiz[], number>({
-      query: (moduleId) => `quizzes?moduleId=${moduleId}`,
-      providesTags: (result) =>
-        result
-          ? [
-              ...result.map(({ id }) => ({ type: 'Quiz' as const, id })),
-              'Quiz',
-            ]
-          : ['Quiz'],
-      transformResponse: (response: any) => {
-        // Transform each quiz in the response
-        if (Array.isArray(response)) {
-          return response.map(quiz => ({
-            ...quiz,
-            questions: quiz.questions?.map((q: any) => ({
-              ...q,
-              correctAnswers: q.correctAnswers || [],
-              correctAnswer: q.correctAnswer !== undefined ? q.correctAnswer : undefined
-            })) || []
-          }));
-        }
-        return response;
-      },
-    }),
 
-    getQuizzesByLesson: builder.query<Quiz[], number>({
-      query: (lessonId) => `quizzes?lessonId=${lessonId}`,
-      providesTags: (result) =>
-        result
-          ? [
-              ...result.map(({ id }) => ({ type: 'Quiz' as const, id })),
-              'Quiz',
-            ]
-          : ['Quiz'],
-      transformResponse: (response: any) => {
-        // Transform each quiz in the response
-        if (Array.isArray(response)) {
-          return response.map(quiz => ({
-            ...quiz,
-            questions: quiz.questions?.map((q: any) => ({
-              ...q,
-              correctAnswers: q.correctAnswers || [],
-              correctAnswer: q.correctAnswer !== undefined ? q.correctAnswer : undefined
-            })) || []
-          }));
-        }
-        return response;
-      },
-    }),
+
+    // getQuizzesByLesson: builder.query<Quiz[], number>({
+    //   query: (lessonId) => `quizzes?lessonId=${lessonId}`,
+    //   providesTags: (result) =>
+    //     result
+    //       ? [
+    //           ...result.map(({ id }) => ({ type: 'Quiz' as const, id })),
+    //           'Quiz',
+    //         ]
+    //       : ['Quiz'],
+    //   transformResponse: (response: any) => {
+    //     // Transform each quiz in the response
+    //     if (Array.isArray(response)) {
+    //       return response.map(quiz => ({
+    //         ...quiz,
+    //         questions: quiz.questions?.map((q: any) => ({
+    //           ...q,
+    //           correctAnswers: q.correctAnswers || [],
+    //           correctAnswer: q.correctAnswer !== undefined ? q.correctAnswer : undefined
+    //         })) || []
+    //       }));
+    //     }
+    //     return response;
+    //   },
+    // }),
 
     // Create quiz with resource linkage
     createQuizResource: builder.mutation<Quiz, CreateQuizResourceRequest>({
@@ -225,6 +215,8 @@ export const quizApi = apiSlice.injectEndpoints({
       }),
       invalidatesTags: ['Quiz', 'Resource'],
     }),
+
+
 
     // Get quiz statistics
     getQuizStatistics: builder.query<{
@@ -263,15 +255,15 @@ export const quizApi = apiSlice.injectEndpoints({
       }),
     }),
 
-    // Duplicate quiz
-    duplicateQuiz: builder.mutation<Quiz, { id: number; name: string }>({
-      query: ({ id, name }) => ({
-        url: `quizzes/${id}/duplicate`,
-        method: 'POST',
-        body: { name },
-      }),
-      invalidatesTags: ['Quiz'],
-    }),
+    // // Duplicate quiz
+    // duplicateQuiz: builder.mutation<Quiz, { id: number; name: string }>({
+    //   query: ({ id, name }) => ({
+    //     url: `quizzes/${id}/duplicate`,
+    //     method: 'POST',
+    //     body: { name },
+    //   }),
+    //   invalidatesTags: ['Quiz'],
+    // }),
 
     // Bulk update questions
     bulkUpdateQuestions: builder.mutation<Quiz, { id: number; questions: QuizQuestion[] }>({
@@ -296,11 +288,11 @@ export const {
   useSubmitQuizAttemptMutation,
   useGetQuizAttemptsQuery,
   useGetUserQuizAttemptsQuery,
-  useGetQuizzesByModuleQuery,
-  useGetQuizzesByLessonQuery,
+  
+ 
   useCreateQuizResourceMutation,
   useGetQuizStatisticsQuery,
   useValidateQuizAnswersMutation,
-  useDuplicateQuizMutation,
+ useGetQuizDataByQuizIdQuery,
   useBulkUpdateQuestionsMutation,
 } = quizApi;

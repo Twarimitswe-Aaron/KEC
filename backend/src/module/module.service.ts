@@ -630,106 +630,106 @@ export class ModuleService {
     };
   }
 
-  async duplicateLesson(id: number) {
-    const originalLesson = await this.prisma.lesson.findUnique({
-      where: { id },
-      include: {
-        resources: {
-          include: {
-            form: {
-              include: {
-                quizzes: {
-                  include: {
-                    questions: true,
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
-    });
+  // async duplicateLesson(id: number) {
+  //   const originalLesson = await this.prisma.lesson.findUnique({
+  //     where: { id },
+  //     include: {
+  //       resources: {
+  //         include: {
+  //           form: {
+  //             include: {
+  //               quizzes: {
+  //                 include: {
+  //                   questions: true,
+  //                 },
+  //               },
+  //             },
+  //           },
+  //         },
+  //       },
+  //     },
+  //   });
 
-    if (!originalLesson) throw new NotFoundException('Lesson not found');
+  //   if (!originalLesson) throw new NotFoundException('Lesson not found');
 
-    const duplicatedLesson = await this.prisma.lesson.create({
-      data: {
-        title: `${originalLesson.title} (Copy)`,
-        description: originalLesson.description,
-        courseId: originalLesson.courseId,
-        isUnlocked: originalLesson.isUnlocked,
-      },
-    });
+  //   const duplicatedLesson = await this.prisma.lesson.create({
+  //     data: {
+  //       title: `${originalLesson.title} (Copy)`,
+  //       description: originalLesson.description,
+  //       courseId: originalLesson.courseId,
+  //       isUnlocked: originalLesson.isUnlocked,
+  //     },
+  //   });
 
-    await this.prisma.course.update({
-      where: { id: originalLesson.courseId },
-      data: {
-        no_lesson: { increment: 1 }
-      }
-    });
+  //   await this.prisma.course.update({
+  //     where: { id: originalLesson.courseId },
+  //     data: {
+  //       no_lesson: { increment: 1 }
+  //     }
+  //   });
 
-    for (const resource of originalLesson.resources) {
-      if (resource.type === 'quiz' && resource.form?.quizzes && resource.form.quizzes.length > 0) {
-        const quizToDuplicate = resource.form.quizzes[0];
-        const duplicatedQuiz = await this.prisma.quiz.create({
-          data: {
-            name: quizToDuplicate.name,
-            description: quizToDuplicate.description,
-            formId: resource.form.id,
-            questions: {
-              create: quizToDuplicate.questions.map(question => ({
-                type: question.type,
-                question: question.question,
-                options: question.options ? JSON.stringify(question.options) : null,
-                required: question.required,
-              })),
-            },
-          },
-        });
+  //   for (const resource of originalLesson.resources) {
+  //     if (resource.type === 'quiz' && resource.form?.quizzes && resource.form.quizzes.length > 0) {
+  //       const quizToDuplicate = resource.form.quizzes[0];
+  //       const duplicatedQuiz = await this.prisma.quiz.create({
+  //         data: {
+  //           name: quizToDuplicate.name,
+  //           description: quizToDuplicate.description,
+  //           formId: resource.form.id,
+  //           questions: {
+  //             create: quizToDuplicate.questions.map(question => ({
+  //               type: question.type,
+  //               question: question.question,
+  //               options: question.options ? JSON.stringify(question.options) : null,
+  //               required: question.required,
+  //             })),
+  //           },
+  //         },
+  //       });
 
-        await this.prisma.resource.create({
-          data: {
-            lessonId: duplicatedLesson.id,
-            name: resource.name,
-            type: resource.type,
-            url: resource.url,
-            size: resource.size,
-            uploadedAt: new Date(),
-            form: {
-              connect: { id: duplicatedQuiz.id },
-            },
-          },
-        });
-      } else {
-        await this.prisma.resource.create({
-          data: {
-            lessonId: duplicatedLesson.id,
-            name: resource.name,
-            type: resource.type,
-            url: resource.url,
-            size: resource.size,
-            uploadedAt: new Date(),
-          },
-        });
-      }
-    }
+  //       await this.prisma.resource.create({
+  //         data: {
+  //           lessonId: duplicatedLesson.id,
+  //           name: resource.name,
+  //           type: resource.type,
+  //           url: resource.url,
+  //           size: resource.size,
+  //           uploadedAt: new Date(),
+  //           form: {
+  //             connect: { id: duplicatedQuiz.id },
+  //           },
+  //         },
+  //       });
+  //     } else {
+  //       await this.prisma.resource.create({
+  //         data: {
+  //           lessonId: duplicatedLesson.id,
+  //           name: resource.name,
+  //           type: resource.type,
+  //           url: resource.url,
+  //           size: resource.size,
+  //           uploadedAt: new Date(),
+  //         },
+  //       });
+  //     }
+  //   }
 
-    return {
-      message: "Lesson duplicated successfully",
-      data: {
-        id: duplicatedLesson.id,
-        title: duplicatedLesson.title,
-        content: duplicatedLesson.description,
-        description: duplicatedLesson.description,
-        courseId: duplicatedLesson.courseId,
-        isUnlocked: duplicatedLesson.isUnlocked,
-        order: duplicatedLesson.id,
-        createdAt: duplicatedLesson.createdAt.toISOString(),
-        updatedAt: duplicatedLesson.createdAt.toISOString(),
-      },
-      success: true,
-    };
-  }
+  //   return {
+  //     message: "Lesson duplicated successfully",
+  //     data: {
+  //       id: duplicatedLesson.id,
+  //       title: duplicatedLesson.title,
+  //       content: duplicatedLesson.description,
+  //       description: duplicatedLesson.description,
+  //       courseId: duplicatedLesson.courseId,
+  //       isUnlocked: duplicatedLesson.isUnlocked,
+  //       order: duplicatedLesson.id,
+  //       createdAt: duplicatedLesson.createdAt.toISOString(),
+  //       updatedAt: duplicatedLesson.uploadedAt.toISOString(),
+  //     },
+  //     success: true,
+  //   };
+  // }
 
   async addVideoResource(lessonId: number, dto: CreateVideoDto) {
     const lesson = await this.prisma.lesson.findUnique({
@@ -751,74 +751,56 @@ export class ModuleService {
     return {message: "Video resource added successfully",};
   }
 
-async addQuizResource(lessonId: number, dto: CreateQuizDto) {
+async addQuizResource(lessonId: number, courseId: number, dto: CreateQuizDto) {
+  return this.prisma.$transaction(async (prisma) => {
+
+    const lesson = await prisma.lesson.findUnique({
+      where: { 
+        id: lessonId,
+        courseId: courseId
+      },
+      select: { 
+        id: true
+      }
+    });
+
+    if (!lesson) {
+      throw new NotFoundException('Lesson not found in the specified course');
+    }
+
  
-  const lesson = await this.prisma.lesson.findUnique({
-    where: { id: lessonId },
-  });
-
-  if (!lesson) {
-    throw new NotFoundException('Lesson not found');
-  }
-
-
-  let resource = await this.prisma.resource.findFirst({
-    where: {
-      lessonId,
-      name: dto.name,
-      type: 'quiz',
-    },
-    include: { form: { include: { quizzes: true } } },
-  });
-
-  if (!resource) {
-
-    resource = await this.prisma.resource.create({
+    const resource = await prisma.resource.create({
       data: {
         name: dto.name,
         type: 'quiz',
         lessonId,
-      },
-      include: { form: { include: { quizzes: true } } },
+       
+      }
     });
-  }
 
- 
-  let form = resource.form;
-  if (!form) {
-    form = await this.prisma.form.create({
-      data: {
-        resourceId: resource.id,
-        quizzes: {
-          create: {
-            name: dto.name,
-            description: dto.description || '',
-          },
-        },
-      },
-      include: { quizzes: true },
-    });
-  } else {
   
-    await this.prisma.quiz.create({
-      data: {
-        name: dto.name,
-        description: dto.description || '',
-        formId: form.id,
+    let form;
+    const formData = {
+      resource: {
+        connect: { id: resource.id }
       },
-    });
-  }
+      quizzes: {
+        create: {
+          name: dto.name,
+          description: dto.description || '',
+        }
+      }
+    };
 
-  return {
-    message: 'Quiz added successfully'
-
-  };
+    return { 
+      message: 'Quiz resource created successfully',
+  
+    };
+  });
 }
 
 
-
-
-
+// ... (rest of the code remains the same)
 async submitQuiz(quizId: number, responses: Array<{ questionId: number; answer: any }>): Promise<{ message: string; success: boolean }> {
     // First, verify all required questions are answered
     const quiz = await this.prisma.quiz.findUnique({

@@ -1,10 +1,7 @@
 // src/quiz/dto/create-quiz.dto.ts
 export class CreateQuizDto {
   name: string;
-  resourceId:number;
   description?: string;
-  questions: CreateQuizQuestionDto[];
-  settings?: QuizSettingsDto;
 }
 
 export class CreateQuizQuestionDto {
