@@ -29,7 +29,7 @@ import { ToggleLockDto } from './dto/toggle-lock.dto';
 import { AddResourceDto } from './dto/add-resource.dto';
 import { diskStorage } from 'multer';
 
-@Controller('module')
+@Controller('lesson')
 @UseGuards(AuthGuard, RolesGuard)
 @Roles('admin', 'teacher')
 export class ModuleController {

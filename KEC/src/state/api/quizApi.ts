@@ -123,7 +123,7 @@ export const quizApi = apiSlice.injectEndpoints({
 
     createQuiz: builder.mutation<{message: string; id: number}, CreateQuizRequest>({
       query: (quizData) => ({
-        url: `quizzes?lessonId=${quizData.lessonId}&courseId=${quizData.courseId}`,
+            url: `/lesson/course/${quizData.courseId}/lesson/${quizData.lessonId}/quiz`,
         method: 'POST',
         body: {
           name: quizData.name,

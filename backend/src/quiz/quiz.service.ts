@@ -10,145 +10,79 @@ import { create } from 'domain';
 export class QuizService {
   constructor(private prisma: PrismaService) {}
 
-  async createQuiz(createQuizDto: CreateQuizDto & { lessonId?: number; courseId?: number }) {
-    const { name, description } = createQuizDto;
-    const { lessonId, courseId } = createQuizDto;
 
-    // Validate inputs
-    if (!name) {
-      throw new Error('Quiz name is required');
-    }
 
-    if (!lessonId || !courseId) {
-      throw new Error('Both lessonId and courseId are required');
-    }
+async getQuizDataByQuiz({
+  quizId,
+  lessonId,
+  courseId
+}: {
+  quizId: number;
+  lessonId?: number;
+  courseId?: number;
+}) {
+  if (!quizId) throw new Error('Quiz ID is required');
 
-    // Verify lesson exists and belongs to the course
-    const lesson = await this.prisma.lesson.findFirst({
-      where: {
-        id: lessonId,
-        courseId: courseId
-      }
-    });
-
-    if (!lesson) {
-      throw new Error(`Lesson ${lessonId} not found in course ${courseId}`);
-    }
-
-    // Create a new resource for the quiz
-    const resource = await this.prisma.resource.create({
-      data: {
-        name: name,
-        type: 'quiz',
-        lesson: {
-          connect: { id: lessonId }
-        }
-      },
-      include: {
-        lesson: true
-      }
-    });
-
-    // Create the form for the quiz
-    const form = await this.prisma.form.create({
-      data: {
-        resource: {
-          connect: { id: resource.id }
-        },
-        createdAt: new Date(),
-        quizzes: {
-          create: {
-            name: name,
-            description: description || '',
-            settings: {},
-            questions: {
-              create: []
-            }
-          }
-        }
-      },
-      include: {
-        quizzes: {
-          include: {
-            questions: true
-          }
-        }
-      }
-    });
-
-    // Return the created quiz
-    const createdQuiz = form.quizzes[0];
-    return {
-      id: createdQuiz.id,
-      name: createdQuiz.name,
-      description: createdQuiz.description,
-      resourceId: resource.id,
-      lessonId: resource.lessonId,
-      courseId: resource.lesson?.courseId,
-      questions: [],
-      settings: {}
-    };
-  }
-
-async getQuizDataByQuiz({ quizId, lessonId, courseId }) {
-  try {
-    if (!quizId) {
-      throw new Error('Quiz ID is required');
-    }
-
-    // First, try to find the quiz directly
-    const quiz = await this.prisma.quiz.findUnique({
-      where: { id: quizId },
-      include: {
-        form: {
-          include: {
-            resource: {
-              include: {
-                lesson: {
-                  include: {
-                    course: true
+  // First, fetch the quiz with its basic relations
+  const quiz = await this.prisma.quiz.findUnique({
+    where: { id: quizId },
+    select: {
+      id: true,
+      name: true,
+      description: true,
+      settings: true,
+      questions: true,
+      form: {
+        select: {
+          resource: {
+            select: {
+              id: true,
+              lessonId: true,
+              lesson: {
+                select: {
+                  id: true,
+                  courseId: true,
+                  course: {
+                    select: {
+                      id: true,
+                      title: true
+                    }
                   }
                 }
               }
             }
           }
-        },
-        questions: true
+        }
       }
-    });
-
-    if (!quiz) {
-      throw new Error(`Quiz with ID ${quizId} not found`);
     }
+  });
 
-    // Verify the quiz belongs to the specified course/lesson
-    const resource = quiz.form?.resource;
-    if (!resource) {
-      throw new Error("Quiz is not associated with any resource");
-    }
-
-    if (courseId && resource.lesson?.courseId !== courseId) {
-      throw new Error("Quiz does not belong to the specified course");
-    }
-
-    if (lessonId && resource.lessonId !== lessonId) {
-      throw new Error("Quiz does not belong to the specified lesson");
-    }
-
-    // Transform the quiz data to match the expected format
-    return {
-      ...quiz,
-      settings: quiz.settings,
-      questions: quiz.questions.map(q => ({
-        ...q,
-        options: q.options ? JSON.parse(q.options) : [],
-        correctAnswers: q.correctAnswers ? JSON.parse(q.correctAnswers) : []
-      }))
-    };
-  } catch (error) {
-    console.error("Error fetching quiz data:", error.message);
-    throw new Error("Failed to fetch quiz data");
+  if (!quiz) {
+    throw new NotFoundException(`Quiz with ID ${quizId} not found`);
   }
+
+  const resource = quiz.form?.resource;
+  if (!resource) {
+    throw new Error("Quiz is not associated with any resource");
+  }
+
+  // Validate course and lesson relationships after fetching
+  if (courseId && resource.lesson?.courseId !== courseId) {
+    throw new Error("Quiz does not belong to the specified course");
+  }
+  
+  if (lessonId && resource.lessonId !== lessonId) {
+    throw new Error("Quiz does not belong to the specified lesson");
+  }
+
+  return {
+    ...quiz,
+    questions: quiz.questions.map(q => ({
+      ...q,
+      options: q.options ? JSON.parse(q.options) : [],
+      correctAnswers: q.correctAnswers ? JSON.parse(q.correctAnswers) : []
+    }))
+  };
 }
 
 

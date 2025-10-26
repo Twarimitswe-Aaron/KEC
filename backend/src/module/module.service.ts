@@ -769,31 +769,38 @@ async addQuizResource(lessonId: number, courseId: number, dto: CreateQuizDto) {
     }
 
  
-    const resource = await prisma.resource.create({
-      data: {
-        name: dto.name,
-        type: 'quiz',
-        lessonId,
-       
-      }
-    });
+  const resource = await prisma.resource.create({
+  data: {
+    name: dto.name,
+    type: 'quiz',
+    lessonId,
+  },
+});
 
-  
-    let form;
-    const formData = {
-      resource: {
-        connect: { id: resource.id }
+
+const form = await prisma.form.create({
+  data: {
+    resource: {
+      connect: { id: resource.id },
+    },
+    quizzes: {
+      create: {
+        name: dto.name,
+        description: dto.description || '',
+        settings: {},
       },
-      quizzes: {
-        create: {
-          name: dto.name,
-          description: dto.description || '',
-        }
-      }
-    };
+    },
+  },
+});
+
+return {
+  message: 'Quiz was created successfully',
+
+};
+
 
     return { 
-      message: 'Quiz resource created successfully',
+      message: 'Quiz was created successfully',
   
     };
   });

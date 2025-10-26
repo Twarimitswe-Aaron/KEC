@@ -23,18 +23,18 @@ import { CreateQuizAttemptDto } from './dto/quiz-attempt.dto';
 export class QuizController {
   constructor(private readonly quizService: QuizService) {}
 
-  @Post()
-  create(
-    @Body() createQuizDto: CreateQuizDto,
-    @Query('lessonId', ParseIntPipe) lessonId: number,
-    @Query('courseId', ParseIntPipe) courseId: number
-  ) {
-    return this.quizService.createQuiz({
-      ...createQuizDto,
-      lessonId,
-      courseId
-    });
-  }
+  // @Post()
+  // create(
+  //   @Body() createQuizDto: CreateQuizDto,
+  //   @Query('lessonId', ParseIntPipe) lessonId: number,
+  //   @Query('courseId', ParseIntPipe) courseId: number
+  // ) {
+  //   return this.quizService.createQuiz({
+  //     ...createQuizDto,
+  //     lessonId,
+  //     courseId
+  //   });
+  // }
 
   @Get('quiz/')
   findQuizDataByQuizId(

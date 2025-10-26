@@ -126,7 +126,7 @@ export const lessonApi = apiSlice.injectEndpoints({
     // Create new lesson
     createLesson: builder.mutation<ApiResponse<Lesson>, CreateLessonRequest>({
       query: ({ courseId, title, description }) => ({
-        url: `/lesson`,
+        url: `lesson/lesson`,
         method: "POST",
         body: { 
           courseId, 
@@ -239,7 +239,7 @@ export const lessonApi = apiSlice.injectEndpoints({
           }
           
           return {
-            url: `/module/course/${courseId}/lesson/${lessonId}/quiz`,
+            url: `/lesson/course/${courseId}/lesson/${lessonId}/quiz`,
             method: "POST",
             body: {
               name: title,
