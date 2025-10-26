@@ -30,6 +30,25 @@ import QuizEditor from "./QuizEditor";
 import { quizHelper } from "../state/api/quizApi";
 
 // --- Types ---
+export interface QuizItem {
+  id: number;
+  name: string;
+  description?: string;
+  settings?: Record<string, any>;
+  questions?: Array<{
+    id: number;
+    type: string;
+    question: string;
+    description?: string;
+    options?: string[];
+    correctAnswers?: (string | number)[];
+    required?: boolean;
+    points?: number;
+  }>;
+  lessonId?: number;
+  courseId?: number;
+}
+
 export interface ResourceType {
   id: number;
   uploadedAt: string;
@@ -39,9 +58,9 @@ export interface ResourceType {
   size?: string;
   duration?: string;
   description?: string;
-  quiz?: any;
-  lessonId?: number; // Add lessonId as an optional property
-  courseId?: number; // Add courseId as an optional property
+  quiz?: QuizItem[];
+  lessonId?: number;
+  courseId?: number;
 }
 
 // Renamed from lessonType to LessonType (PascalCase convention)
@@ -212,6 +231,7 @@ function LessonManagement({ // Renamed to LessonManagement for consistency
   courseId,
 }: lessonManagementProps) {
 
+
   const { searchQuery } = useContext(SearchContext)
   // State
   const [showAddResource, setShowAddResource] = useState<number | null>(null);
@@ -224,6 +244,12 @@ function LessonManagement({ // Renamed to LessonManagement for consistency
   const [lessons, setLessons] = useState<LessonType[]>(
     initialLessons.map(toLessonType) // Use renamed function
   );
+
+  console.log(lessons)
+
+  
+ 
+
   const [menuOpenId, setMenuOpenId] = useState<number | null>(null);
   // Define a type for the quiz resource that includes all required properties
   type QuizResource = {
@@ -236,7 +262,9 @@ function LessonManagement({ // Renamed to LessonManagement for consistency
     quizId?: number;
   };
 
-  const [openQuiz, setOpenQuiz] = useState<QuizResource | null>(null);
+  
+
+  const [openQuiz, setOpenQuiz] = useState<quizHelper | null>(null);
   const [deleteLesson] = useDeleteLessonMutation();
   const [toggleLessonLock] = useToggleLessonLockMutation();
   const [addResource] = useAddResourceMutation();
@@ -327,7 +355,6 @@ function LessonManagement({ // Renamed to LessonManagement for consistency
         setOpenResourceMenu(null);
         setOpenQuiz(null);
         setResourceType(null);
-        // Removed state resets for video/quiz names
       }
     };
 
@@ -615,12 +642,13 @@ const QuizForm = ({ lessonId, onSubmit, onCancel }: {
   const [localQuizDescription, setLocalQuizDescription] = useState("");
 
   const handleSubmit = () => {
-    if (!localQuizName.trim()) {
+    const trimmedName = localQuizName?.trim() || '';
+    if (!trimmedName) {
       toast.error("Please enter a quiz name");
       return;
     }
-    // Pass local state data up to the parent handler
-    onSubmit(lessonId, localQuizName, localQuizDescription); 
+    // Ensure we're always passing strings, not undefined
+    onSubmit(lessonId, trimmedName, localQuizDescription || '');
   };
     
   return (
@@ -642,7 +670,7 @@ const QuizForm = ({ lessonId, onSubmit, onCancel }: {
           <input
             id={`quiz-name-${lessonId}`}
             type="text"
-            value={localQuizName} // Controlled by local state
+            value={localQuizName || ''} // Ensure value is always a string
             onChange={(e) => setLocalQuizName(e.target.value)}
             placeholder="Enter quiz name"
             autoComplete="off"
@@ -658,7 +686,7 @@ const QuizForm = ({ lessonId, onSubmit, onCancel }: {
           </label>
           <textarea
             id={`quiz-description-${lessonId}`}
-            value={localQuizDescription} // Controlled by local state
+value={localQuizDescription || ''} // Ensure value is always a string
             onChange={(e) => setLocalQuizDescription(e.target.value)}
             placeholder="Describe what this quiz covers"
             rows={2}
@@ -669,14 +697,14 @@ const QuizForm = ({ lessonId, onSubmit, onCancel }: {
         <div className="flex gap-2 pt-2">
           <button
             type="button"
-            onClick={handleSubmit} // Use local handleSubmit
+            onClick={handleSubmit} 
             className="bg-[#034153] hover:bg-[#034153]/90 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
           >
             <FaCheck /> Create Quiz
           </button>
           <button
             type="button"
-            onClick={onCancel} // Use onCancel prop
+            onClick={onCancel} 
             className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
           >
             <FaTimes /> Cancel
@@ -822,8 +850,9 @@ const VideoLinkForm = ({ lessonId, onSubmit, onCancel }: {
         <QuizEditor
           resource={{
             ...openQuiz,
-            courseId: courseId, // Ensure courseId is set
-            quizId: openQuiz.quiz?.id || openQuiz.id // Use quiz.id or fallback to openQuiz.id
+            courseId: courseId, 
+            quizId: openQuiz.quizId!, 
+            lessonId:openQuiz.lessonId
           }}
           onClose={() => setOpenQuiz(null)}
         />
@@ -978,108 +1007,130 @@ const VideoLinkForm = ({ lessonId, onSubmit, onCancel }: {
               </div>
             )}
 
-            {/* Resources List */}
-            {lesson.resources.length > 0 && (
-              <div className="px-4 sm:px-6 pb-4 border-t border-gray-200">
-                <h3 className="font-medium text-gray-900 my-4 flex items-center gap-2">
-                  <FaFile className="text-gray-500" /> Resources ({lesson.resources.length})
-                </h3>
-                <div className="space-y-2">
-                  {lesson.resources.map((resource) => (
-                    <div
-                      key={resource.id}
-                      className="flex items-center justify-between gap-3 p-3 border border-gray-200 rounded-lg hover:border-gray-300 hover:shadow-sm transition-all"
-                    >
-                      <div className="flex items-center gap-3 min-w-0 flex-1">
-                        <div className="text-xl flex-shrink-0">
-                          {getResourceIcon(resource.type)}
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <h4 className="font-medium text-gray-900 text-sm truncate">
-                            {resource.name}
-                          </h4>
-                          <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500 mt-1">
-                            <span>{resource.uploadedAt}</span>
-                            {resource.size && <span>Size: {resource.size}</span>}
-                            {resource.duration && <span>Duration: {resource.duration}</span>}
-                            {resource.type === "quiz" && (
-                              <span className="bg-green-100 text-green-800 px-2 py-0.5 rounded-full font-medium">
-                                {resource.quiz?.length || 0} questions
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2 flex-shrink-0">
-                        <div
-                          className="relative"
-                          ref={(el) => {
-                            resourceMenuRefs.current[resource.id] = el;
-                          }}
-                        >
-                          <button
-                            onClick={() =>
-                              setOpenResourceMenu(
-                                openResourceMenu === resource.id ? null : resource.id
-                              )
-                            }
-                            className="text-gray-600 hover:text-gray-800 p-2 rounded-lg hover:bg-gray-100 transition-colors"
-                          >
-                            <FaEllipsisV className="text-gray-600" />
-                          </button>
-                          {openResourceMenu === resource.id && (
-                            <div className="absolute right-0 top-full mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-20">
-                              <ul className="py-1 text-sm">
-                                <li>
-                                  {resource.type === "quiz" ? (
-                                    <button
-                                      onClick={() => {
-                                        setOpenQuiz({
-                                          id: resource.id,
-                                          name: resource.name || 'Untitled Quiz',
-                                          type: 'quiz',
-                                          lessonId: resource.lessonId || 0, // Make sure to set the correct lessonId
-                                          quiz: resource.quiz,
-                                          quizId: resource.quiz?.id || resource.id
-                                        });
-                                        setOpenResourceMenu(null);
-                                      }}
-                                      className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-3"
-                                    >
-                                      <FaEdit /> <span>Edit Quiz</span>
-                                    </button>
-                                  ) : (
-                                    <a
-                                      href={resource.url}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-3"
-                                    >
-                                      <FaExternalLinkAlt /> <span>View Resource</span>
-                                    </a>
-                                  )}
-                                </li>
-                                <li>
-                                  <button
-                                    onClick={() => {
-                                      requestDeleteResource(lesson.id, resource.id);
-                                      setOpenResourceMenu(null);
-                                    }}
-                                    className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-3 text-red-600"
-                                  >
-                                    <FaTrash /> <span>Delete Resource</span>
-                                  </button>
-                                </li>
-                              </ul>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+           {/* Resources List */}
+{lesson.resources?.length > 0 && (
+  <div className="px-4 sm:px-6 pb-4 border-t border-gray-200">
+    <h3 className="font-medium text-gray-900 my-4 flex items-center gap-2">
+      <FaFile className="text-gray-500" /> Resources ({lesson.resources.length})
+    </h3>
+
+    <div className="space-y-2">
+      {lesson.resources.map((resource) => (
+        <div
+          key={resource.id}
+          className="flex items-center justify-between gap-3 p-3 border border-gray-200 rounded-lg hover:border-gray-300 hover:shadow-sm transition-all"
+        >
+          {/* Left side: icon + resource info */}
+          <div className="flex items-center gap-3 min-w-0 flex-1">
+            <div className="text-xl flex-shrink-0">
+              {getResourceIcon(resource.type)}
+            </div>
+            <div className="min-w-0 flex-1">
+              <h4 className="font-medium text-gray-900 text-sm truncate">
+                {resource.name}
+              </h4>
+              <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500 mt-1">
+                <span>{resource.uploadedAt}</span>
+                {resource.size && <span>Size: {resource.size}</span>}
+                {resource.duration && <span>Duration: {resource.duration}</span>}
+                {resource.type === "quiz" && (
+                  <span className="bg-green-100 text-green-800 px-2 py-0.5 rounded-full font-medium">
+                    {resource.quiz?.length || 0} questions
+                  </span>
+                )}
               </div>
-            )}
+            </div>
+          </div>
+
+          {/* Right side: menu */}
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <div
+              className="relative"
+              ref={(el) => {
+                resourceMenuRefs.current[resource.id] = el;
+              }}
+            >
+              <button
+                onClick={() =>
+                  setOpenResourceMenu(
+                    openResourceMenu === resource.id ? null : resource.id
+                  )
+                }
+                className="text-gray-600 hover:text-gray-800 p-2 rounded-lg hover:bg-gray-100 transition-colors"
+              >
+                <FaEllipsisV className="text-gray-600" />
+              </button>
+
+              {/* Dropdown menu */}
+              {openResourceMenu === resource.id && (
+                <div className="absolute right-0 top-full mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-20">
+                  <ul className="py-1 text-sm">
+                    <li>
+                      {resource.type === "quiz" ? (
+
+                        resource.quiz && resource.quiz.length > 0 ? (
+                          resource.quiz.map((quizItem: QuizItem) => (
+                            <button
+                              key={quizItem.id}
+                              onClick={() => {
+                                setOpenQuiz({
+                                  courseId: courseId,
+                                  lessonId: lesson.id!,
+                                  quizId: quizItem.id, // ✅ specific clicked quiz
+                                });
+                                setOpenResourceMenu(null);
+                              }}
+                              className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-3"
+                            >
+                              <FaEdit />
+                              <span>
+                                Edit Quiz
+                                {resource.quiz && resource.quiz.length > 1
+                                  ? ` #${quizItem.id}`
+                                  : ""}
+                              </span>
+                            </button>
+                          ))
+                        ) : (
+                          <p className="px-4 py-2 text-gray-400">
+                            No quiz found
+                          </p>
+                        )
+                      ) : (
+                        <a
+                          href={resource.url || "#"}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-3"
+                        >
+                          <FaExternalLinkAlt /> <span>View Resource</span>
+                        </a>
+                      )}
+                    </li>
+
+                    {/* Delete button */}
+                    <li>
+                      <button
+                        onClick={() => {
+                          requestDeleteResource(lesson.id, resource.id);
+                          setOpenResourceMenu(null);
+                        }}
+                        className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-3 text-red-600"
+                      >
+                        <FaTrash /> <span>Delete Resource</span>
+                      </button>
+                    </li>
+                  </ul>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+)}
+
           </div>
         ))}
       </div>

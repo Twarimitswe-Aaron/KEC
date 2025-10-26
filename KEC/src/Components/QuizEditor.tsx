@@ -91,9 +91,9 @@ const QuizEditor = ({ resource, onClose }: QuizEditorProps) => {
 
   
   const quizQueryParams: quizHelper = {
-    courseId: resource.courseId || 0,
-    lessonId: resource.lessonId || 0,
-    quizId: resource.quizId || resource.id
+    courseId: resource.courseId! ,
+    lessonId: resource.lessonId!,
+    quizId: resource.quizId!
   };
   
   const { 
@@ -102,9 +102,7 @@ const QuizEditor = ({ resource, onClose }: QuizEditorProps) => {
     error,
     refetch 
   } = useGetQuizDataByQuizIdQuery(quizQueryParams);
-if(!isLoading){
-    console.log(quizData,"printitn quiz data")
-}
+
 
   const [updateQuiz, { isLoading: isUpdating }] = useUpdateQuizMutation();
   // Quiz creation is not allowed - only editing existing quizzes
@@ -895,19 +893,19 @@ const SettingTextarea = ({ label, id, value, onChange, placeholder, rows }: any)
 
 interface ToggleSettingProps {
   label: string;
-  checked: boolean;
+  checked?: boolean; // Make checked optional
   onChange: (value: boolean) => void;
 }
 
-const ToggleSetting = ({ label, checked, onChange }: ToggleSettingProps) => (
+const ToggleSetting = ({ label, checked = false, onChange }: ToggleSettingProps) => (
   <div className="flex items-center justify-between border-t border-gray-200 pt-4">
     <span className="text-sm font-medium text-gray-700">{label}</span>
     <label className="relative inline-flex items-center cursor-pointer">
       <input
         type="checkbox"
         className="sr-only peer"
-        checked={checked}
-        onChange={(e) => onChange(e.target.checked)}
+checked={Boolean(checked)}
+        onChange={(e) => onChange(Boolean(e.target.checked))}
       />
       <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#034153]/30 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#034153] border border-gray-200 rounded-lg hover:border-gray-300"></div>
     </label>
