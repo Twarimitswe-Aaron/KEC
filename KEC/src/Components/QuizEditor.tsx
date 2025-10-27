@@ -68,7 +68,7 @@ interface QuizEditorProps {
   onClose: () => void;
 }
 
-// Constants
+
 const QUESTION_TYPES = [
   { value: "multiple", label: "Multiple Choice", icon: FaRegCircle, description: "Single select from options" },
   { value: "checkbox", label: "Checkbox", icon: CheckSquare, description: "Multiple select from options" },
@@ -112,7 +112,7 @@ const QuizEditor = ({ resource, onClose }: QuizEditorProps) => {
   console.log(quizData)
 
   const [updateQuiz, { isLoading: isUpdating }] = useUpdateQuizMutation();
-  // Quiz creation is not allowed - only editing existing quizzes
+
   const isCreating = false;
 
 
@@ -710,7 +710,7 @@ const QuizEditor = ({ resource, onClose }: QuizEditorProps) => {
     );
   }, [editingQuestion, getQuestionIcon, moveQuestion, deleteQuestion, questions.length, updateQuestion, toggleCorrectAnswer, addOption, updateOption, removeOption, setTextCorrectAnswer, updateLabelAnswer, addLabelKey, removeLabelKey, isOptionCorrect]);
 
-  // Loading and error states
+ 
   if (isLoading) {
     return <LoadingOverlay message="Loading quiz..." />;
   }
@@ -768,9 +768,9 @@ const QuizEditor = ({ resource, onClose }: QuizEditorProps) => {
   );
 };
 
-// Extracted Components for better organization
+
 const LoadingOverlay = ({ message }: { message: string }) => (
-  <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center">
+  <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center">
     <div className="bg-white  p-6 text-center border border-gray-200 rounded-lg hover:border-gray-300 hover:shadow-sm transition-all">
       <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#034153] mx-auto"></div>
       <p className="mt-4 text-gray-600">{message}</p>
@@ -837,20 +837,9 @@ const Sidebar = ({
         rows={3}
       />
 
-      <ToggleSetting
-        label="Shuffle Questions"
-        checked={quizSettings.shuffleQuestions}
-        onChange={(value: boolean) => onSettingsChange('shuffleQuestions', value)}
-      />
+  
 
-      <SettingInput
-        label="Time Limit (minutes, 0 for none)"
-        id="timeLimit"
-        type="number"
-        min="0"
-        value={quizSettings.timeLimit || 0}
-        onChange={(value) => onSettingsChange('timeLimit', parseInt(value) || 0)}
-      />
+
       
       <SettingInput
         label="Passing Score (%)"
@@ -967,7 +956,7 @@ const Header = ({
     <div className="flex items-center gap-3">
       <button 
         onClick={onToggleSidebar}
-        className="p-2 rounded-full text-[#034153] hover:bg-gray-100 lg:hidden border border-gray-200 rounded-lg hover:border-gray-300 hover:shadow-sm transition-all"
+        className="p-2  text-[#034153] hover:bg-gray-100 lg:hidden border border-gray-200 rounded-lg hover:border-gray-300 hover:shadow-sm transition-all"
         title="Open Settings"
       >
         <Menu size={20} />
@@ -985,7 +974,7 @@ const Header = ({
       <button
         // onClick={onManualSave}
         disabled={isSaveDisabled}
-        className={`px-4 py-2 rounded-lg font-semibold transition-colors flex items-center gap-2 border border-gray-200 rounded-lg hover:border-gray-300 hover:shadow-sm ${
+        className={`px-4 py-2 rounded-lg font-semibold transition-colors flex items-center gap-2 border border-gray-200  hover:border-gray-300 hover:shadow-sm ${
           isSaveDisabled 
             ? 'bg-gray-300 text-gray-600 cursor-not-allowed'
             : 'bg-[#034153] text-white '
@@ -996,7 +985,7 @@ const Header = ({
       </button>
       <button
         onClick={onClose}
-        className="p-2 rounded-full text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition-colors border border-gray-200 rounded-lg hover:border-gray-300 hover:shadow-sm"
+        className="p-2  text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition-colors border border-gray-200 rounded-lg hover:border-gray-300 hover:shadow-sm"
         title="Close Editor"
       >
         <X size={24} />
@@ -1063,7 +1052,7 @@ const QuestionOptionsEdit = ({ question, onToggleCorrectAnswer, onAddOption, onU
         <button
           type="button"
           onClick={() => onToggleCorrectAnswer(question.id, optIndex)}
-          className={`p-1.5 rounded-full transition-colors flex-shrink-0 border border-gray-200 rounded-lg hover:border-gray-300 ${
+          className={`p-1.5 transition-colors flex-shrink-0 border border-gray-200 rounded-lg hover:border-gray-300 ${
             isOptionCorrect(question, optIndex) 
               ? 'bg-green-100 text-green-600 hover:bg-green-200'
               : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
@@ -1109,67 +1098,106 @@ const QuestionOptionsEdit = ({ question, onToggleCorrectAnswer, onAddOption, onU
   </div>
 );
 
-const LabelingQuestionEdit = ({ question, onUpdate, onUpdateLabelAnswer, onAddLabelKey, onRemoveLabelKey }: any) => (
-  <div className="space-y-4 border-l-4 border-yellow-500 pl-4 py-2">
-    <h4 className="text-sm font-bold text-gray-700">Image and Label Setup</h4>
 
-    <label className="block text-sm font-medium text-gray-700">Image URL</label>
-    <input
-      type="url"
-      value={question.imageUrl || ''}
-      onChange={(e) => onUpdate(question.id, { imageUrl: e.target.value })}
-      placeholder="Paste image URL here"
-      className="w-full px-3 py-2 border border-gray-200 rounded-lg hover:border-gray-300 hover:shadow-sm transition-all focus:ring-2 focus:ring-yellow-500 text-sm"
-    />
 
-    {question.imageUrl && (
-      <div className="mt-2 border border-gray-200 rounded-lg hover:border-gray-300 hover:shadow-sm transition-all p-2 bg-gray-50">
-        <img src={question.imageUrl} alt="Preview" className="max-w-full h-auto max-h-48 object-contain mx-auto" />
-        <p className="text-xs text-gray-500 text-center mt-1">Ensure labels (A, B, C...) are visible on the image.</p>
-      </div>
-    )}
+const LabelingQuestionEdit = ({
+  question,
+  onUpdate,
+  onUpdateLabelAnswer,
+  onAddLabelKey,
+  onRemoveLabelKey,
+}: any) => {
+  // Handle file upload and convert to base64 (you can replace this with backend upload later)
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
 
-    <label className="block text-sm font-medium text-gray-700 mt-3">Define Label-Answer Key</label>
-    {(question.labelAnswers || []).map((la: any, index: number) => (
-      <div key={index} className="flex gap-2 items-center">
-        <input
-          type="text"
-          value={la.label}
-          onChange={(e) => onUpdateLabelAnswer(question.id, index, 'label', e.target.value)}
-          placeholder="Label (A, B, C)"
-          className="w-20 px-3 py-2 border border-gray-200 rounded-lg hover:border-gray-300 hover:shadow-sm transition-all focus:ring-2 focus:ring-yellow-500 text-sm font-semibold text-center flex-shrink-0"
-          maxLength={3}
-        />
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      onUpdate(question.id, { imageUrl: reader.result }); // store base64 string
+    };
+    reader.readAsDataURL(file);
+  };
 
-        <input
-          type="text"
-          value={la.answer}
-          onChange={(e) => onUpdateLabelAnswer(question.id, index, 'answer', e.target.value)}
-          placeholder="Correct Name of Labeled Part"
-          className="w-full px-3 py-2 border border-gray-200 rounded-lg hover:border-gray-300 hover:shadow-sm transition-all focus:ring-2 focus:ring-yellow-500 text-sm"
-        />
-        
-        {question.labelAnswers!.length > 1 && (
-          <button
-            type="button"
-            onClick={() => onRemoveLabelKey(question.id, index)}
-            className="p-1.5 rounded-full text-red-500 hover:bg-red-100 transition-colors flex-shrink-0 border border-gray-200 rounded-lg hover:border-gray-300"
-            title="Remove label"
-          >
-            <FaTimes size={14} />
-          </button>
-        )}
-      </div>
-    ))}
+  return (
+    <div className="space-y-4 border-l-4 border-yellow-500 pl-4 py-2">
+      <h4 className="text-sm font-bold text-gray-700">Image and Label Setup</h4>
 
-    <button
-      onClick={() => onAddLabelKey(question.id)}
-      className="text-yellow-600 hover:text-yellow-700 flex items-center gap-1 text-sm font-medium mt-2 border border-gray-200 rounded-lg hover:border-gray-300 hover:shadow-sm transition-all px-3 py-1"
-    >
-      <FaPlus size={12} /> Add Label Key
-    </button>
-  </div>
-);
+      <label className="block text-sm font-medium text-gray-700">
+        Upload Image
+      </label>
+      <input
+        type="file"
+        accept="image/*"
+        onChange={handleImageUpload}
+        className="w-full px-3 py-2 border border-gray-200 rounded-lg hover:border-gray-300 hover:shadow-sm transition-all focus:ring-2 focus:ring-yellow-500 text-sm cursor-pointer"
+      />
+
+      {question.imageUrl && (
+        <div className="mt-2 border border-gray-200 rounded-lg hover:border-gray-300 hover:shadow-sm transition-all p-2 bg-gray-50">
+          <img
+            src={question.imageUrl}
+            alt="Preview"
+            className="max-w-full h-auto max-h-48 object-contain mx-auto"
+          />
+          <p className="text-xs text-gray-500 text-center mt-1">
+            Ensure labels (A, B, C...) are visible on the image.
+          </p>
+        </div>
+      )}
+
+      <label className="block text-sm font-medium text-gray-700 mt-3">
+        Define Label-Answer Key
+      </label>
+
+      {(question.labelAnswers || []).map((la: any, index: number) => (
+        <div key={index} className="flex gap-2 items-center">
+          <input
+            type="text"
+            value={la.label}
+            onChange={(e) =>
+              onUpdateLabelAnswer(question.id, index, "label", e.target.value)
+            }
+            placeholder="Label (A, B, C)"
+            className="w-20 px-3 py-2 border border-gray-200 rounded-lg hover:border-gray-300 hover:shadow-sm transition-all focus:ring-2 focus:ring-yellow-500 text-sm font-semibold text-center flex-shrink-0"
+            maxLength={3}
+          />
+
+          <input
+            type="text"
+            value={la.answer}
+            onChange={(e) =>
+              onUpdateLabelAnswer(question.id, index, "answer", e.target.value)
+            }
+            placeholder="Correct Name of Labeled Part"
+            className="w-full px-3 py-2 border border-gray-200 rounded-lg hover:border-gray-300 hover:shadow-sm transition-all focus:ring-2 focus:ring-yellow-500 text-sm"
+          />
+
+          {question.labelAnswers!.length > 1 && (
+            <button
+              type="button"
+              onClick={() => onRemoveLabelKey(question.id, index)}
+              className="p-1.5  text-red-500 hover:bg-red-100 transition-colors flex-shrink-0 border border-gray-200 rounded-lg hover:border-gray-300"
+              title="Remove label"
+            >
+              <FaTimes size={14} />
+            </button>
+          )}
+        </div>
+      ))}
+
+      <button
+        onClick={() => onAddLabelKey(question.id)}
+        className="text-yellow-600 hover:text-yellow-700 flex items-center gap-1 text-sm font-medium mt-2 border border-gray-200 rounded-lg hover:border-gray-300 hover:shadow-sm transition-all px-3 py-1"
+      >
+        <FaPlus size={12} /> Add Label Key
+      </button>
+    </div>
+  );
+};
+
+
+
 
 const TextAnswerEdit = ({ question, onSetTextCorrectAnswer }: any) => (
   <div className="space-y-2 border-l-4 border-gray-100 pl-4 py-2">
@@ -1432,84 +1460,137 @@ const NewQuestionOptions = ({
   </div>
 );
 
-const NewLabelingQuestion = ({ newQuestion, onNewQuestionChange }: any) => (
-  <div className="space-y-4 border-l-4 border-yellow-500 pl-4 py-2">
-    <h4 className="text-sm font-bold text-gray-700">Image and Label Setup</h4>
-    
-    <label className="block text-sm font-medium text-gray-700">Image URL (Must be pre-labeled)</label>
-    <input
-      type="url"
-      value={newQuestion.imageUrl || ''}
-      onChange={(e) => onNewQuestionChange({ ...newQuestion, imageUrl: e.target.value })}
-      placeholder="Paste image URL here"
-      className="w-full px-3 py-2 border border-gray-200 rounded-lg hover:border-gray-300 hover:shadow-sm transition-all focus:ring-2 focus:ring-yellow-500 text-sm"
-    />
 
-    {newQuestion.imageUrl && (
-      <div className="mt-2 border border-gray-200 rounded-lg hover:border-gray-300 hover:shadow-sm transition-all p-2 bg-gray-50">
-        <img src={newQuestion.imageUrl} alt="Preview" className="max-w-full h-auto max-h-48 object-contain mx-auto" />
-        <p className="text-xs text-gray-500 text-center mt-1">Ensure labels (A, B, C...) are visible on the image.</p>
-      </div>
-    )}
 
-    <label className="block text-sm font-medium text-gray-700 mt-3">Define Label-Answer Key</label>
-    {(newQuestion.labelAnswers || [{ label: 'A', answer: '' }]).map((la: any, index: number) => (
-      <div key={index} className="flex gap-2 items-center">
-        <input
-          type="text"
-          value={la.label}
-          onChange={(e) => {
-            const newLabels = [...(newQuestion.labelAnswers || [])];
-            newLabels[index] = { ...newLabels[index], label: e.target.value.toUpperCase() };
-            onNewQuestionChange({ ...newQuestion, labelAnswers: newLabels });
-          }}
-          placeholder="Label (A, B, C)"
-          className="w-20 px-3 py-2 border border-gray-200 rounded-lg hover:border-gray-300 hover:shadow-sm transition-all focus:ring-2 focus:ring-yellow-500 text-sm font-semibold text-center flex-shrink-0"
-          maxLength={3}
-        />
+const NewLabelingQuestion = ({ newQuestion, onNewQuestionChange }: any) => {
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
 
-        <input
-          type="text"
-          value={la.answer}
-          onChange={(e) => {
-            const newLabels = [...(newQuestion.labelAnswers || [])];
-            newLabels[index] = { ...newLabels[index], answer: e.target.value };
-            onNewQuestionChange({ ...newQuestion, labelAnswers: newLabels });
-          }}
-          placeholder="Correct Name of Labeled Part"
-          className="w-full px-3 py-2 border border-gray-200 rounded-lg hover:border-gray-300 hover:shadow-sm transition-all focus:ring-2 focus:ring-yellow-500 text-sm"
-        />
-        
-        {newQuestion.labelAnswers && newQuestion.labelAnswers.length > 1 && (
-          <button
-            type="button"
-            onClick={() => {
-              const newLabels = newQuestion.labelAnswers!.filter((_: any, i: number) => i !== index);
-              onNewQuestionChange({ ...newQuestion, labelAnswers: newLabels });
-            }}
-            className="p-1.5 rounded-full text-red-500 hover:bg-red-100 transition-colors flex-shrink-0 border border-gray-200 rounded-lg hover:border-gray-300"
-            title="Remove label"
-          >
-            <FaTimes size={14} />
-          </button>
-        )}
-      </div>
-    ))}
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      onNewQuestionChange({ ...newQuestion, imageUrl: reader.result });
+    };
+    reader.readAsDataURL(file);
+  };
 
-    <button
-      onClick={() => {
-        const newLabel = String.fromCharCode(65 + (newQuestion.labelAnswers?.length || 0));
-        onNewQuestionChange({ 
-          ...newQuestion, 
-          labelAnswers: [...(newQuestion.labelAnswers || []), { label: newLabel, answer: '' }] 
-        });
-      }}
-      className="text-yellow-600 hover:text-yellow-700 flex items-center gap-1 text-sm font-medium mt-2 border border-gray-200 rounded-lg hover:border-gray-300 hover:shadow-sm transition-all px-3 py-1"
-    >
-      <FaPlus size={12} /> Add Label Key
-    </button>
-  </div>
-);
+  return (
+    <div className="space-y-4 border-l-4 border-yellow-500 pl-4 py-2">
+      <h4 className="text-sm font-bold text-gray-700">Image and Label Setup</h4>
+
+      <label className="block text-sm font-medium text-gray-700">
+        Upload Image (Must be pre-labeled)
+      </label>
+      <input
+        type="file"
+        accept="image/*"
+        onChange={handleImageUpload}
+        className="w-full px-3 py-2 border border-gray-200 rounded-lg hover:border-gray-300 hover:shadow-sm transition-all focus:ring-2 focus:ring-yellow-500 text-sm cursor-pointer"
+      />
+
+      {newQuestion.imageUrl && (
+        <div className="mt-2 border border-gray-200 rounded-lg hover:border-gray-300 hover:shadow-sm transition-all p-2 bg-gray-50">
+          <img
+            src={newQuestion.imageUrl}
+            alt="Preview"
+            className="max-w-full h-auto max-h-48 object-contain mx-auto"
+          />
+          <p className="text-xs text-gray-500 text-center mt-1">
+            Ensure labels (A, B, C...) are visible on the image.
+          </p>
+        </div>
+      )}
+
+      <label className="block text-sm font-medium text-gray-700 mt-3">
+        Define Label-Answer Key
+      </label>
+
+      {(newQuestion.labelAnswers || [{ label: "A", answer: "" }]).map(
+        (la: any, index: number) => (
+          <div key={index} className="flex gap-2 items-center">
+            <input
+              type="text"
+              value={la.label}
+              onChange={(e) => {
+                const newLabels = [...(newQuestion.labelAnswers || [])];
+                newLabels[index] = {
+                  ...newLabels[index],
+                  label: e.target.value.toUpperCase(),
+                };
+                onNewQuestionChange({
+                  ...newQuestion,
+                  labelAnswers: newLabels,
+                });
+              }}
+              placeholder="Label (A, B, C)"
+              className="w-20 px-3 py-2 border border-gray-200 rounded-lg hover:border-gray-300 hover:shadow-sm transition-all focus:ring-2 focus:ring-yellow-500 text-sm font-semibold text-center flex-shrink-0"
+              maxLength={3}
+            />
+
+            <input
+              type="text"
+              value={la.answer}
+              onChange={(e) => {
+                const newLabels = [...(newQuestion.labelAnswers || [])];
+                newLabels[index] = {
+                  ...newLabels[index],
+                  answer: e.target.value,
+                };
+                onNewQuestionChange({
+                  ...newQuestion,
+                  labelAnswers: newLabels,
+                });
+              }}
+              placeholder="Correct Name of Labeled Part"
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg hover:border-gray-300 hover:shadow-sm transition-all focus:ring-2 focus:ring-yellow-500 text-sm"
+            />
+
+            {newQuestion.labelAnswers &&
+              newQuestion.labelAnswers.length > 1 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const newLabels = newQuestion.labelAnswers!.filter(
+                      (_: any, i: number) => i !== index
+                    );
+                    onNewQuestionChange({
+                      ...newQuestion,
+                      labelAnswers: newLabels,
+                    });
+                  }}
+                  className="p-1.5 rounded-full text-red-500 hover:bg-red-100 transition-colors flex-shrink-0 border border-gray-200 rounded-lg hover:border-gray-300"
+                  title="Remove label"
+                >
+                  <FaTimes size={14} />
+                </button>
+              )}
+          </div>
+        )
+      )}
+
+      <button
+        onClick={() => {
+          const newLabel = String.fromCharCode(
+            65 + (newQuestion.labelAnswers?.length || 0)
+          );
+          onNewQuestionChange({
+            ...newQuestion,
+            labelAnswers: [
+              ...(newQuestion.labelAnswers || []),
+              { label: newLabel, answer: "" },
+            ],
+          });
+        }}
+        className="text-yellow-600 hover:text-yellow-700 flex items-center gap-1 text-sm font-medium mt-2 border border-gray-200 rounded-lg hover:border-gray-300 hover:shadow-sm transition-all px-3 py-1"
+      >
+        <FaPlus size={12} /> Add Label Key
+      </button>
+    </div>
+  );
+};
+
+
+
 
 const NewTextAnswer = ({ newQuestion, onNewQuestionChange }: any) => (
   <div className="space-y-2 border-l-4 border-gray-100 pl-4 py-2">
