@@ -86,172 +86,185 @@ async getQuizDataByQuiz({
 }
 
 
-//   async getQuizById(id: number) {
-//   const quiz = await this.prisma.quiz.findUnique({
-//     where: { id },
-//     include: {
-//       questions: {
-//         orderBy: { order: 'asc' },
-//       },
-//       attempts: {
-//         orderBy: { submittedAt: 'desc' },
-//         take: 10,
-//       },
-//       form: {
-//         include: {
-//           resource: {
-//             select: {
-//               id: true,
-//               name: true,
-//               type: true,
-//               url: true,
-//             },
-//           },
-//         },
-//       },
-//     },
-//   });
-
-//   if (!quiz) {
-//     throw new NotFoundException(`Quiz with ID ${id} not found`);
-//   }
-
-//   // Extract resourceId safely through the form relation
-//   const resourceId = quiz.form?.resource?.id ?? null;
-
-//   // Parse JSON fields for better frontend usability
-//   return {
-//     id: quiz.id,
-//     name: quiz.name,
-//     description: quiz.description,
-//     resourceId,
-//     resource: quiz.form?.resource ?? null,
-//     settings: quiz.settings ? JSON.parse(quiz.settings) : null,
-//     questions: quiz.questions.map(q => ({
-//       ...q,
-//       options: q.options ? JSON.parse(q.options) : null,
-//       correctAnswers: q.correctAnswers ? JSON.parse(q.correctAnswers) : [],
-//       correctAnswer: q.correctAnswer ?? undefined,
-//     })),
-//     attempts: quiz.attempts,
-//     createdAt: quiz.form?.createdAt ?? null,
-//   };
-// }
-
-
-  // async updateQuiz(id: number, updateQuizDto: UpdateQuizDto) {
-  //   // Find the existing quiz
-  //   const existingQuiz = await this.prisma.quiz.findUnique({
-  //     where: { id },
-  //     include: { questions: true },
-  //   });
-
-  //   if (!existingQuiz) {
-  //     throw new NotFoundException(`Quiz with ID ${id} not found`);
-  //   }
-
-  //   const { questions, settings, ...quizData } = updateQuizDto;
-    
-  //   // Filter out undefined values to only update provided fields
-  //   const updateData: any = {};
-    
-  //   // Only include fields that were actually provided in the DTO
-  //   if (quizData.name !== undefined) updateData.name = quizData.name;
-  //   if (quizData.description !== undefined) updateData.description = quizData.description;
-  //   if (settings !== undefined) updateData.settings = JSON.stringify(settings);
-
-  //   // Update quiz with only the provided fields
-  //   const updatedQuiz = await this.prisma.quiz.update({
-  //     where: { id },
-  //     data: updateData,
-  //     include: { questions: true },
-  //   });
-
-  //   // Handle questions update if provided
-  //   if (questions && questions.length > 0) {
-  //     await this.updateQuizQuestions(id, questions, existingQuiz);
-  //   }
-
-  //   return this.getQuizById(id);
-  // }
-
-
-  private async updateQuizQuestions(quizId: number, questions: any[], existingQuiz: any) {
-    // Delete questions not in the update
-    const existingQuestionIds = questions
-      .filter(q => q.id)
-      .map(q => q.id);
-
-    await this.prisma.quizQuestion.deleteMany({
-      where: {
-        quizId,
-        id: { notIn: existingQuestionIds },
+  async getQuizById(id: number) {
+  const quiz = await this.prisma.quiz.findUnique({
+    where: { id },
+    include: {
+      questions: {
+        orderBy: { order: 'asc' },
       },
-    });
+      attempts: {
+        orderBy: { submittedAt: 'desc' },
+        take: 10,
+      },
+      form: {
+        include: {
+          resource: {
+            select: {
+              id: true,
+              name: true,
+              type: true,
+              url: true,
+            },
+          },
+        },
+      },
+    },
+  });
 
-    // Update or create questions
-    for (const question of questions) {
-      const { id, ...questionData } = question;
-      
-      if (id) {
-        // Update existing question
-        await this.prisma.quizQuestion.update({
-          where: { id },
-          data: {
-            ...questionData,
-            options: questionData.options ? JSON.stringify(questionData.options) : null,
-            correctAnswers: questionData.correctAnswers ? JSON.stringify(questionData.correctAnswers) : null,
-          },
-        });
-      } else {
-        // Create new question
-        await this.prisma.quizQuestion.create({
-          data: {
-            ...questionData,
-            quizId,
-            options: questionData.options ? JSON.stringify(questionData.options) : null,
-            correctAnswers: questionData.correctAnswers ? JSON.stringify(questionData.correctAnswers) : null,
-          },
-        });
-      }
-    }
+  if (!quiz) {
+    throw new NotFoundException(`Quiz with ID ${id} not found`);
   }
 
-  // async patchQuiz(id: number, updateQuizDto: Partial<UpdateQuizDto>) {
-  //   // Find the existing quiz
-  //   const existingQuiz = await this.prisma.quiz.findUnique({
-  //     where: { id },
-  //     include: { questions: true },
-  //   });
+  // Extract resourceId safely through the form relation
+  const resourceId = quiz.form?.resource?.id ?? null;
 
-  //   if (!existingQuiz) {
-  //     throw new NotFoundException(`Quiz with ID ${id} not found`);
-  //   }
+  // Parse JSON fields for better frontend usability
+  return {
+    id: quiz.id,
+    name: quiz.name,
+    description: quiz.description,
+    resourceId,
+    resource: quiz.form?.resource ?? null,
+    settings: quiz.settings,
+    questions: quiz.questions.map(q => ({
+      ...q,
+      options: q.options ? JSON.parse(q.options) : null,
+      correctAnswers: q.correctAnswers ? JSON.parse(q.correctAnswers) : [],
+      correctAnswer: q.correctAnswer ?? undefined,
+    })),
+    attempts: quiz.attempts,
+    createdAt: quiz.form?.createdAt ?? null,
+  };
+}
 
-  //   const { questions, settings, ...quizData } = updateQuizDto;
+
+  async updateQuiz(id: number, updateQuizDto: UpdateQuizDto) {
+    // Find the existing quiz
+    const existingQuiz = await this.prisma.quiz.findUnique({
+      where: { id },
+      include: { questions: true },
+    });
+
+    if (!existingQuiz) {
+      throw new NotFoundException(`Quiz with ID ${id} not found`);
+    }
+
+    const { questions, settings, ...quizData } = updateQuizDto;
     
-  //   // Build update data object with only provided fields
-  //   const updateData: any = {};
+    // Filter out undefined values to only update provided fields
+    const updateData: any = {};
     
-  //   // Only include fields that were actually provided in the DTO
-  //   if (quizData.name !== undefined) updateData.name = quizData.name;
-  //   if (quizData.description !== undefined) updateData.description = quizData.description;
-  //   if (settings !== undefined) updateData.settings = JSON.stringify(settings);
+    // Only include fields that were actually provided in the DTO
+    if (quizData.name !== undefined) updateData.name = quizData.name;
+    if (quizData.description !== undefined) updateData.description = quizData.description;
+    if (settings !== undefined) updateData.settings = JSON.stringify(settings);
 
-  //   // Update quiz with only the provided fields
-  //   const updatedQuiz = await this.prisma.quiz.update({
-  //     where: { id },
-  //     data: updateData,
-  //     include: { questions: true },
-  //   });
+    // Update quiz with only the provided fields
+    const updatedQuiz = await this.prisma.quiz.update({
+      where: { id },
+      data: updateData,
+      include: { questions: true },
+    });
 
-  //   // Handle questions update if provided
-  //   if (questions && questions.length > 0) {
-  //     await this.updateQuizQuestions(id, questions, existingQuiz);
-  //   }
+    // Handle questions update if provided
+    if (questions && questions.length > 0) {
+      await this.updateQuizQuestions(id, questions, existingQuiz);
+    }
 
-  //   return this.getQuizById(id);
-  // }
+    return this.getQuizById(id);
+  }
+
+   async patchQuiz(id: number, updateQuizDto: Partial<UpdateQuizDto>) {
+    // Find the existing quiz
+    const existingQuiz = await this.prisma.quiz.findUnique({
+      where: { id },
+      include: { questions: true },
+    });
+
+    if (!existingQuiz) {
+      throw new NotFoundException(`Quiz with ID ${id} not found`);
+    }
+
+    const { questions, settings, ...quizData } = updateQuizDto;
+    
+    // Build update data object with only provided fields
+    const updateData: any = {};
+    
+    // Only include fields that were actually provided in the DTO
+    if (quizData.name !== undefined) updateData.name = quizData.name;
+    if (quizData.description !== undefined) updateData.description = quizData.description;
+    if (settings !== undefined) updateData.settings = JSON.stringify(settings);
+
+    // Update quiz with only the provided fields
+    const updatedQuiz = await this.prisma.quiz.update({
+      where: { id },
+      data: updateData,
+      include: { questions: true },
+    });
+
+    // Handle questions update if provided
+    if (questions && questions.length > 0) {
+      await this.updateQuizQuestions(id, questions, existingQuiz);
+    }
+
+    return this.getQuizById(id);
+  }
+
+
+// In quiz.service.ts - update the updateQuizQuestions method
+private async updateQuizQuestions(quizId: number, questions: any[], existingQuiz: any) {
+  // Delete questions not in the update
+  const existingQuestionIds = questions
+    .filter(q => q.id && typeof q.id === 'number')
+    .map(q => q.id);
+
+  await this.prisma.quizQuestion.deleteMany({
+    where: {
+      quizId,
+      id: { notIn: existingQuestionIds },
+    },
+  });
+
+  // Update or create questions
+  for (const [index, question] of questions.entries()) {
+    const { id, description, imageUrl, labelAnswers, ...questionData } = question;
+    
+    // Prepare the data for Prisma
+    const prismaQuestionData: any = {
+      ...questionData,
+      order: index,
+      orderIndex: index,
+      options: questionData.options ? JSON.stringify(questionData.options) : null,
+      correctAnswers: questionData.correctAnswers ? JSON.stringify(questionData.correctAnswers) : null,
+    };
+
+    // Handle correctAnswer field properly
+    if (questionData.correctAnswer !== undefined && questionData.correctAnswer !== null) {
+      prismaQuestionData.correctAnswer = questionData.correctAnswer;
+    } else {
+      prismaQuestionData.correctAnswer = null;
+    }
+
+    if (id && existingQuestionIds.includes(id)) {
+      // Update existing question
+      await this.prisma.quizQuestion.update({
+        where: { id },
+        data: prismaQuestionData,
+      });
+    } else {
+      // Create new question
+      await this.prisma.quizQuestion.create({
+        data: {
+          ...prismaQuestionData,
+          quizId,
+        },
+      });
+    }
+  }
+}
+
+ 
 
   async deleteQuiz(id: number) {
     const quiz = await this.prisma.quiz.findUnique({
