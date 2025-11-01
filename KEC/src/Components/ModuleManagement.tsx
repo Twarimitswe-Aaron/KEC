@@ -1036,6 +1036,7 @@ const VideoLinkForm = ({ lessonId, onSubmit, onCancel }: {
                 {resource.type === "quiz" && (
                   <span className="bg-green-100 text-green-800 px-2 py-0.5 rounded-full font-medium">
                     {resource.quiz?.length || 0} questions
+                    {console.log('Resource Quiz:', resource.quiz)}
                   </span>
                 )}
               </div>
