@@ -44,6 +44,15 @@ export class QuizController {
   ) {
     return this.quizService.getQuizDataByQuiz({ quizId, lessonId, courseId });
   }
+  @Patch('/quizzes/:id')
+  updateQuizBylessonId(
+    @Param('id',ParseIntPipe) id:number,
+
+
+    @Body() data:UpdateQuizDto
+  ){
+    return this.quizService.patchQuizByLessonId({id,data})
+  }
 
   @Get()
   findAll(@Query('lessonId') lessonId?: string) {
@@ -53,27 +62,10 @@ export class QuizController {
     return []; // Or implement general quiz listing if needed
   }
 
-  @Get(':id')
-  findOne(@Param('id', ParseIntPipe) id: number) {
-    return this.quizService.getQuizById(id);
-  }
 
-  @Put(':id')
-  update(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() updateQuizDto: UpdateQuizDto,
-  ) {
-    console.log("i am called to update this stuff")
-    return this.quizService.updateQuiz(id, updateQuizDto);
-  }
 
-  @Patch(':id')
-  patch(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() updateQuizDto: Partial<UpdateQuizDto>,
-  ) {
-    return this.quizService.patchQuiz(id, updateQuizDto);
-  }
+
+
 
 //   @Delete(':id')
 //   @HttpCode(HttpStatus.NO_CONTENT)

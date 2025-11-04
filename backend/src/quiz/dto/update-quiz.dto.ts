@@ -6,13 +6,15 @@ export class UpdateQuizDto {
   description?: string;
   questions?: UpdateQuizQuestionDto[];
   settings?: QuizSettingsDto;
-  courseId?: number;
-  lessonId?: number;
+  lessonId: number;
+  courseId: number;
+  
 }
 
 export class UpdateQuizQuestionDto {
-  id?: number;
-  type?: 'multiple' | 'checkbox' | 'truefalse' | 'short' | 'long' | 'number';
+  id: number;
+  type: 'multiple' | 'checkbox' | 'truefalse' | 'short' | 'long' | 'number';
+
   question?: string;
   description?: string;
   options?: string[];

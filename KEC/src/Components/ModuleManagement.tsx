@@ -126,8 +126,6 @@ export interface ConfirmDeleteModalProps {
   onCancel: () => void;
 }
 
-
-
 export const ConfirmDeleteModal = ({
   visible,
   title,
@@ -146,9 +144,7 @@ export const ConfirmDeleteModal = ({
         <h2 className="text-xl font-semibold mb-3 text-center text-gray-900">
           {title}
         </h2>
-        <p className="text-sm text-gray-600 mb-6 text-center">
-          {description}
-        </p>
+        <p className="text-sm text-gray-600 mb-6 text-center">{description}</p>
         <div className="flex gap-3">
           <button
             onClick={onConfirm}
@@ -207,7 +203,7 @@ const toLessonType = (lesson: Lesson): LessonType => ({
       id: resource.id,
       name: resource.name || "Untitled Resource",
       // Explicit type casting
-      type: (resource.type as ResourceType["type"]) || "pdf", 
+      type: (resource.type as ResourceType["type"]) || "pdf",
       url: resource.url,
       uploadedAt: resource.createdAt || "",
       size: resource.size,
@@ -217,38 +213,34 @@ const toLessonType = (lesson: Lesson): LessonType => ({
 });
 
 // Tailwind JIT fix: Map for safe class usage
-const colorMap: Record<"red" | "purple" | "blue" | "green", { bg: string; text: string }> = {
+const colorMap: Record<
+  "red" | "purple" | "blue" | "green",
+  { bg: string; text: string }
+> = {
   red: { bg: "bg-red-100", text: "text-red-600" },
   purple: { bg: "bg-purple-100", text: "text-purple-600" },
   blue: { bg: "bg-blue-100", text: "text-blue-600" },
   green: { bg: "bg-green-100", text: "text-green-600" },
 };
 
-
 // --- Main Component ---
-function LessonManagement({ // Renamed to LessonManagement for consistency
+function LessonManagement({
+  // Renamed to LessonManagement for consistency
   lessons: initialLessons,
   courseId,
 }: lessonManagementProps) {
-
-
-  const { searchQuery } = useContext(SearchContext)
+  const { searchQuery } = useContext(SearchContext);
   // State
   const [showAddResource, setShowAddResource] = useState<number | null>(null);
   const [resourceType, setResourceType] = useState<
     "pdf" | "video" | "word" | "quiz" | null
   >(null);
-  
+
   // Removed local state for form inputs to improve typing performance
 
   const [lessons, setLessons] = useState<LessonType[]>(
     initialLessons.map(toLessonType) // Use renamed function
   );
-
-
-
-  
- 
 
   const [menuOpenId, setMenuOpenId] = useState<number | null>(null);
   // Define a type for the quiz resource that includes all required properties
@@ -261,8 +253,6 @@ function LessonManagement({ // Renamed to LessonManagement for consistency
     courseId?: number;
     quizId?: number;
   };
-
-  
 
   const [openQuiz, setOpenQuiz] = useState<quizHelper | null>(null);
   const [deleteLesson] = useDeleteLessonMutation();
@@ -289,45 +279,45 @@ function LessonManagement({ // Renamed to LessonManagement for consistency
   // Handle initialLessons prop updates and SEARCH FILTERING
   useEffect(() => {
     const initialLessonTypes = initialLessons.map(toLessonType);
-    
+
     if (searchQuery && searchQuery.trim().length > 0) {
-        const query = searchQuery.toLowerCase();
+      const query = searchQuery.toLowerCase();
 
-        // Create a new array of filtered lessons
-        const filteredLessons = initialLessonTypes
-            .map(lesson => {
-                const lessonMatches = 
-                    lesson.title.toLowerCase().includes(query) ||
-                    lesson.description.toLowerCase().includes(query);
+      // Create a new array of filtered lessons
+      const filteredLessons = initialLessonTypes
+        .map((lesson) => {
+          const lessonMatches =
+            lesson.title.toLowerCase().includes(query) ||
+            lesson.description.toLowerCase().includes(query);
 
-                // Filter resources whose name matches the query
-                const filteredResources = lesson.resources.filter(resource =>
-                    resource.name.toLowerCase().includes(query)
-                );
-                
-                // If the lesson itself or any of its resources match, keep the lesson
-                if (lessonMatches || filteredResources.length > 0) {
-                    const resourcesToDisplay = lessonMatches ? lesson.resources : filteredResources;
+          // Filter resources whose name matches the query
+          const filteredResources = lesson.resources.filter((resource) =>
+            resource.name.toLowerCase().includes(query)
+          );
 
-                    return {
-                        ...lesson,
-                        resources: resourcesToDisplay
-                    };
-                }
-                // If neither the lesson nor its resources match, return null to be filtered out
-                return null;
-            })
-            // Filter out lessons that returned null
-            .filter((lesson): lesson is LessonType => lesson !== null);
+          // If the lesson itself or any of its resources match, keep the lesson
+          if (lessonMatches || filteredResources.length > 0) {
+            const resourcesToDisplay = lessonMatches
+              ? lesson.resources
+              : filteredResources;
 
-        setLessons(filteredLessons);
+            return {
+              ...lesson,
+              resources: resourcesToDisplay,
+            };
+          }
+          // If neither the lesson nor its resources match, return null to be filtered out
+          return null;
+        })
+        // Filter out lessons that returned null
+        .filter((lesson): lesson is LessonType => lesson !== null);
 
+      setLessons(filteredLessons);
     } else {
-        // Reset to initial lessons if searchQuery is empty or cleared
-        setLessons(initialLessonTypes);
+      // Reset to initial lessons if searchQuery is empty or cleared
+      setLessons(initialLessonTypes);
     }
   }, [initialLessons, searchQuery]);
-
 
   // Click outside handler
   useEffect(() => {
@@ -367,8 +357,11 @@ function LessonManagement({ // Renamed to LessonManagement for consistency
     };
   }, [menuOpenId, openResourceMenu]);
 
-  const handleVideoLinkSubmit = async (lessonId: number, videoName: string, videoLink: string) => {
-
+  const handleVideoLinkSubmit = async (
+    lessonId: number,
+    videoName: string,
+    videoLink: string
+  ) => {
     try {
       new URL(videoLink);
     } catch {
@@ -386,7 +379,7 @@ function LessonManagement({ // Renamed to LessonManagement for consistency
       }).unwrap();
 
       // Close the form
-      setResourceType(null); 
+      setResourceType(null);
       setShowAddResource(null);
       toast.success(message);
     } catch (error: any) {
@@ -448,8 +441,11 @@ function LessonManagement({ // Renamed to LessonManagement for consistency
     }
   };
 
-
-  const handleQuizCreation = async (lessonId: number, quizName: string, quizDescription: string) => {
+  const handleQuizCreation = async (
+    lessonId: number,
+    quizName: string,
+    quizDescription: string
+  ) => {
     try {
       const { message } = await addResource({
         lessonId: lessonId,
@@ -469,15 +465,19 @@ function LessonManagement({ // Renamed to LessonManagement for consistency
   };
 
   // Dedicated change handler for the hidden file input
-  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>, lessonId: number, type: "pdf" | "word") => {
+  const handleFileInputChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    lessonId: number,
+    type: "pdf" | "word"
+  ) => {
     const file = e.target.files?.[0];
     if (file) {
-        handleFileUpload(lessonId, file, type);
+      handleFileUpload(lessonId, file, type);
     }
     // Crucial: Reset input value so the same file can be selected again
-    e.target.value = '';
+    e.target.value = "";
   };
-  
+
   const handleFileSelect = (lessonId: number, type: "pdf" | "word") => {
     if (fileInputRef.current) {
       // Set the accept attribute and a data attribute to pass lessonId
@@ -539,8 +539,6 @@ function LessonManagement({ // Renamed to LessonManagement for consistency
     setModals({ showDeleteConfirm: false, showResourceDeleteConfirm: false });
   };
 
-
-
   // UI Components
   const ResourceTypeSelector = ({
     onSelect,
@@ -575,7 +573,7 @@ function LessonManagement({ // Renamed to LessonManagement for consistency
         },
       ].map(({ type, icon: Icon, color, label }) => {
         // Using the safe color map for Tailwind JIT
-        const colors = colorMap[color as keyof typeof colorMap]; 
+        const colors = colorMap[color as keyof typeof colorMap];
         return (
           <button
             key={type}
@@ -583,17 +581,17 @@ function LessonManagement({ // Renamed to LessonManagement for consistency
             className="flex flex-col items-center justify-center p-4 bg-white rounded-lg border border-gray-200 hover:border-blue-400 hover:shadow-sm transition-all"
           >
             {/* Using mapped classes */}
-            <div className={`w-12 h-12 rounded-full ${colors.bg} flex items-center justify-center mb-2`}>
+            <div
+              className={`w-12 h-12 rounded-full ${colors.bg} flex items-center justify-center mb-2`}
+            >
               <Icon className={`text-xl ${colors.text}`} />
             </div>
             <span className="font-medium text-gray-800 text-sm">{label}</span>
           </button>
-        )
+        );
       })}
     </div>
   );
-
-
 
   const FileUploadForm = ({
     lessonId,
@@ -604,7 +602,11 @@ function LessonManagement({ // Renamed to LessonManagement for consistency
   }) => (
     <div className="bg-white p-4 rounded-lg border border-gray-200">
       <div className="flex items-center gap-3 mb-4">
-        <div className={`w-10 h-10 rounded-full ${type === "pdf" ? "bg-red-100" : "bg-blue-100"} flex items-center justify-center`}>
+        <div
+          className={`w-10 h-10 rounded-full ${
+            type === "pdf" ? "bg-red-100" : "bg-blue-100"
+          } flex items-center justify-center`}
+        >
           {type === "pdf" ? (
             <FaFilePdf className="text-red-600 text-lg" />
           ) : (
@@ -632,182 +634,190 @@ function LessonManagement({ // Renamed to LessonManagement for consistency
     </div>
   );
 
-// Localized state to prevent parent re-renders on every keystroke
-const QuizForm = ({ lessonId, onSubmit, onCancel }: { 
+  // Localized state to prevent parent re-renders on every keystroke
+  const QuizForm = ({
+    lessonId,
+    onSubmit,
+    onCancel,
+  }: {
     lessonId: number;
-    onSubmit: (lessonId: number, name: string, description: string) => void; 
+    onSubmit: (lessonId: number, name: string, description: string) => void;
     onCancel: () => void;
-}) => {
-  const [localQuizName, setLocalQuizName] = useState("");
-  const [localQuizDescription, setLocalQuizDescription] = useState("");
+  }) => {
+    const [localQuizName, setLocalQuizName] = useState("");
+    const [localQuizDescription, setLocalQuizDescription] = useState("");
 
-  const handleSubmit = () => {
-    const trimmedName = localQuizName?.trim() || '';
-    if (!trimmedName) {
-      toast.error("Please enter a quiz name");
-      return;
-    }
-    // Ensure we're always passing strings, not undefined
-    onSubmit(lessonId, trimmedName, localQuizDescription || '');
-  };
-    
-  return (
-    <div className="bg-white p-4 rounded-lg border border-gray-200">
-      <div className="flex items-center gap-3 mb-4">
-        <div className="w-10 h-10 rounded-full bg-[#034153]/10 flex items-center justify-center">
-          <FaQuestionCircle className="text-[#034153]" />
+    const handleSubmit = () => {
+      const trimmedName = localQuizName?.trim() || "";
+      if (!trimmedName) {
+        toast.error("Please enter a quiz name");
+        return;
+      }
+      // Ensure we're always passing strings, not undefined
+      onSubmit(lessonId, trimmedName, localQuizDescription || "");
+    };
+
+    return (
+      <div className="bg-white p-4 rounded-lg border border-gray-200">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 rounded-full bg-[#034153]/10 flex items-center justify-center">
+            <FaQuestionCircle className="text-[#034153]" />
+          </div>
+          <h4 className="font-medium text-gray-800">Create Quiz</h4>
         </div>
-        <h4 className="font-medium text-gray-800">Create Quiz</h4>
+        <div className="space-y-3">
+          <div>
+            <label
+              htmlFor={`quiz-name-${lessonId}`}
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
+              Quiz Name
+            </label>
+            <input
+              id={`quiz-name-${lessonId}`}
+              type="text"
+              value={localQuizName || ""} // Ensure value is always a string
+              onChange={(e) => setLocalQuizName(e.target.value)}
+              placeholder="Enter quiz name"
+              autoComplete="off"
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#034153]"
+            />
+          </div>
+          <div>
+            <label
+              htmlFor={`quiz-description-${lessonId}`}
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
+              Description (Optional)
+            </label>
+            <textarea
+              id={`quiz-description-${lessonId}`}
+              value={localQuizDescription || ""} // Ensure value is always a string
+              onChange={(e) => setLocalQuizDescription(e.target.value)}
+              placeholder="Describe what this quiz covers"
+              rows={2}
+              autoComplete="off"
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#034153]"
+            />
+          </div>
+          <div className="flex gap-2 pt-2">
+            <button
+              type="button"
+              onClick={handleSubmit}
+              className="bg-[#034153] hover:bg-[#034153]/90 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
+            >
+              <FaCheck /> Create Quiz
+            </button>
+            <button
+              type="button"
+              onClick={onCancel}
+              className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
+            >
+              <FaTimes /> Cancel
+            </button>
+          </div>
+        </div>
       </div>
-      <div className="space-y-3">
-        <div>
-          <label 
-            htmlFor={`quiz-name-${lessonId}`}
-            className="block text-sm font-medium text-gray-700 mb-1"
-          >
-            Quiz Name
-          </label>
-          <input
-            id={`quiz-name-${lessonId}`}
-            type="text"
-            value={localQuizName || ''} // Ensure value is always a string
-            onChange={(e) => setLocalQuizName(e.target.value)}
-            placeholder="Enter quiz name"
-            autoComplete="off"
-            className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#034153]"
-          />
+    );
+  };
+
+  // Localized state to prevent parent re-renders on every keystroke
+  const VideoLinkForm = ({
+    lessonId,
+    onSubmit,
+    onCancel,
+  }: {
+    lessonId: number;
+    onSubmit: (lessonId: number, name: string, url: string) => void;
+    onCancel: () => void;
+  }) => {
+    const [localVideoLink, setLocalVideoLink] = useState("");
+    const [localVideoName, setLocalVideoName] = useState("");
+
+    const handleSubmit = () => {
+      // Basic validation
+      if (!localVideoLink.trim() || !localVideoName.trim()) {
+        toast.error("Please enter a title and a URL");
+        return;
+      }
+
+      try {
+        new URL(localVideoLink);
+      } catch {
+        toast.error("Please enter a valid URL format");
+        return;
+      }
+
+      // Pass local state data up to the parent handler
+      onSubmit(lessonId, localVideoName, localVideoLink);
+    };
+
+    return (
+      <div className="bg-white p-4 rounded-lg border border-gray-200">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 rounded-full bg-[#034153]/10 flex items-center justify-center">
+            <FaLink className="text-[#034153]" />
+          </div>
+          <h4 className="font-medium text-gray-800">Add Video Link</h4>
         </div>
-        <div>
-          <label 
-            htmlFor={`quiz-description-${lessonId}`}
-            className="block text-sm font-medium text-gray-700 mb-1"
-          >
-            Description (Optional)
-          </label>
-          <textarea
-            id={`quiz-description-${lessonId}`}
-value={localQuizDescription || ''} // Ensure value is always a string
-            onChange={(e) => setLocalQuizDescription(e.target.value)}
-            placeholder="Describe what this quiz covers"
-            rows={2}
-            autoComplete="off"
-            className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#034153]"
-          />
+
+        <div className="space-y-3">
+          <div>
+            <label
+              htmlFor={`video-title-${lessonId}`}
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
+              Video Title
+            </label>
+            <input
+              id={`video-title-${lessonId}`}
+              type="text"
+              value={localVideoName} // Controlled by local state
+              onChange={(e) => setLocalVideoName(e.target.value)}
+              placeholder="Enter video title"
+              autoComplete="off"
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#034153]"
+            />
+          </div>
+
+          <div>
+            <label
+              htmlFor={`video-url-${lessonId}`}
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
+              Video URL
+            </label>
+            <input
+              id={`video-url-${lessonId}`}
+              type="url"
+              value={localVideoLink} // Controlled by local state
+              onChange={(e) => setLocalVideoLink(e.target.value)}
+              placeholder="https://example.com/video.mp4"
+              autoComplete="off"
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#034153]"
+            />
+          </div>
         </div>
-        <div className="flex gap-2 pt-2">
+
+        <div className="flex gap-2 mt-4">
           <button
             type="button"
-            onClick={handleSubmit} 
+            onClick={handleSubmit} // Use local handleSubmit
             className="bg-[#034153] hover:bg-[#034153]/90 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
           >
-            <FaCheck /> Create Quiz
+            <FaCheck /> Add Video
           </button>
           <button
             type="button"
-            onClick={onCancel} 
+            onClick={onCancel} // Use onCancel prop
             className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
           >
             <FaTimes /> Cancel
           </button>
         </div>
       </div>
-    </div>
-  );
-};
-
-// Localized state to prevent parent re-renders on every keystroke
-const VideoLinkForm = ({ lessonId, onSubmit, onCancel }: { 
-    lessonId: number;
-    onSubmit: (lessonId: number, name: string, url: string) => void;
-    onCancel: () => void;
-}) => {
-  const [localVideoLink, setLocalVideoLink] = useState("");
-  const [localVideoName, setLocalVideoName] = useState("");
-
-  const handleSubmit = () => {
-    // Basic validation
-    if (!localVideoLink.trim() || !localVideoName.trim()) {
-      toast.error("Please enter a title and a URL");
-      return;
-    }
-
-    try {
-        new URL(localVideoLink);
-    } catch {
-        toast.error("Please enter a valid URL format");
-        return;
-    }
-    
-    // Pass local state data up to the parent handler
-    onSubmit(lessonId, localVideoName, localVideoLink);
+    );
   };
-
-  return (
-    <div className="bg-white p-4 rounded-lg border border-gray-200">
-      <div className="flex items-center gap-3 mb-4">
-        <div className="w-10 h-10 rounded-full bg-[#034153]/10 flex items-center justify-center">
-          <FaLink className="text-[#034153]" />
-        </div>
-        <h4 className="font-medium text-gray-800">Add Video Link</h4>
-      </div>
-
-      <div className="space-y-3">
-        <div>
-          <label 
-            htmlFor={`video-title-${lessonId}`}
-            className="block text-sm font-medium text-gray-700 mb-1"
-          >
-            Video Title
-          </label>
-          <input
-            id={`video-title-${lessonId}`}
-            type="text"
-            value={localVideoName} // Controlled by local state
-            onChange={(e) => setLocalVideoName(e.target.value)}
-            placeholder="Enter video title"
-            autoComplete="off"
-            className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#034153]"
-          />
-        </div>
-
-        <div>
-          <label 
-            htmlFor={`video-url-${lessonId}`}
-            className="block text-sm font-medium text-gray-700 mb-1"
-          >
-            Video URL
-          </label>
-          <input
-            id={`video-url-${lessonId}`}
-            type="url"
-            value={localVideoLink} // Controlled by local state
-            onChange={(e) => setLocalVideoLink(e.target.value)}
-            placeholder="https://example.com/video.mp4"
-            autoComplete="off"
-            className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#034153]"
-          />
-        </div>
-      </div>
-
-      <div className="flex gap-2 mt-4">
-        <button
-          type="button"
-          onClick={handleSubmit} // Use local handleSubmit
-          className="bg-[#034153] hover:bg-[#034153]/90 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
-        >
-          <FaCheck /> Add Video
-        </button>
-        <button
-          type="button"
-          onClick={onCancel} // Use onCancel prop
-          className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
-        >
-          <FaTimes /> Cancel
-        </button>
-      </div>
-    </div>
-  );
-};
 
   // Sort lessons by createdAt DESC (newest first = last created at bottom)
   const sortedLessons = [...lessons].sort(
@@ -815,16 +825,14 @@ const VideoLinkForm = ({ lessonId, onSubmit, onCancel }: {
   );
 
   // Find the currently open quiz resource
- 
-
 
   return (
     <div className="w-full">
       {/* Hidden File Input for File Uploads */}
-      <input 
-        type="file" 
-        ref={fileInputRef} 
-        style={{ display: "none" }} 
+      <input
+        type="file"
+        ref={fileInputRef}
+        style={{ display: "none" }}
         onChange={(e) => {
           const lessonIdStr = fileInputRef.current?.dataset.lessonId;
           const resourceTypeStr = fileInputRef.current?.dataset.resourceType;
@@ -832,32 +840,34 @@ const VideoLinkForm = ({ lessonId, onSubmit, onCancel }: {
 
           if (lessonIdStr && resourceTypeStr && file) {
             handleFileUpload(
-              parseInt(lessonIdStr, 10), 
-              file, 
+              parseInt(lessonIdStr, 10),
+              file,
               resourceTypeStr as "pdf" | "word"
             );
           }
           // Reset the input value to allow the same file to be selected again
-          e.target.value = '';
+          e.target.value = "";
           setResourceType(null); // Close selector after selection
         }}
       />
+    
 
-
-      {/* Quiz Editor Modal  */}
+   
 
       {openQuiz && (
         <QuizEditor
           resource={{
             ...openQuiz,
-            courseId: courseId, 
-            quizId: openQuiz.quizId!, 
-            lessonId:openQuiz.lessonId
+            courseId: courseId,
+            quizId: openQuiz.quizId,
+            lessonId: openQuiz.lessonId,
           }}
           onClose={() => setOpenQuiz(null)}
         />
+        
       )}
 
+      
       {/* Delete Confirmation Modals */}
       <ConfirmDeleteModal
         visible={modals.showDeleteConfirm}
@@ -874,7 +884,6 @@ const VideoLinkForm = ({ lessonId, onSubmit, onCancel }: {
         onConfirm={confirmDeleteResource}
         onCancel={cancelDelete}
       />
-
 
       <div className="space-y-4">
         {sortedLessons.map((lesson, index) => (
@@ -929,7 +938,9 @@ const VideoLinkForm = ({ lessonId, onSubmit, onCancel }: {
                           >
                             {lesson.isUnlocked ? <FaLock /> : <FaUnlock />}
                             <span>
-                              {lesson.isUnlocked ? "Lock Lesson" : "Unlock Lesson"}
+                              {lesson.isUnlocked
+                                ? "Lock Lesson"
+                                : "Unlock Lesson"}
                             </span>
                           </button>
                         </li>
@@ -989,16 +1000,16 @@ const VideoLinkForm = ({ lessonId, onSubmit, onCancel }: {
                   {resourceType === null ? (
                     <ResourceTypeSelector onSelect={setResourceType} />
                   ) : resourceType === "video" ? (
-                    <VideoLinkForm 
-                      lessonId={lesson.id} 
+                    <VideoLinkForm
+                      lessonId={lesson.id}
                       onSubmit={handleVideoLinkSubmit}
                       onCancel={() => setResourceType(null)}
                     />
                   ) : resourceType === "pdf" || resourceType === "word" ? (
                     <FileUploadForm lessonId={lesson.id} type={resourceType} />
                   ) : resourceType === "quiz" ? (
-                    <QuizForm 
-                      lessonId={lesson.id} 
+                    <QuizForm
+                      lessonId={lesson.id}
                       onSubmit={handleQuizCreation}
                       onCancel={() => setResourceType(null)}
                     />
@@ -1007,131 +1018,143 @@ const VideoLinkForm = ({ lessonId, onSubmit, onCancel }: {
               </div>
             )}
 
-           {/* Resources List */}
-{lesson.resources?.length > 0 && (
-  <div className="px-4 sm:px-6 pb-4 border-t border-gray-200">
-    <h3 className="font-medium text-gray-900 my-4 flex items-center gap-2">
-      <FaFile className="text-gray-500" /> Resources ({lesson.resources.length})
-    </h3>
+            {/* Resources List */}
+            {lesson.resources?.length > 0 && (
+              <div className="px-4 sm:px-6 pb-4 border-t border-gray-200">
+                <h3 className="font-medium text-gray-900 my-4 flex items-center gap-2">
+                  <FaFile className="text-gray-500" /> Resources (
+                  {lesson.resources.length})
+                </h3>
 
-    <div className="space-y-2">
-      {lesson.resources.map((resource) => (
-        <div
-          key={resource.id}
-          className="flex items-center justify-between gap-3 p-3 border border-gray-200 rounded-lg hover:border-gray-300 hover:shadow-sm transition-all"
-        >
-          {/* Left side: icon + resource info */}
-          <div className="flex items-center gap-3 min-w-0 flex-1">
-            <div className="text-xl flex-shrink-0">
-              {getResourceIcon(resource.type)}
-            </div>
-            <div className="min-w-0 flex-1">
-              <h4 className="font-medium text-gray-900 text-sm truncate">
-                {resource.name}
-              </h4>
-              <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500 mt-1">
-                <span>{resource.uploadedAt}</span>
-                {resource.size && <span>Size: {resource.size}</span>}
-                {resource.duration && <span>Duration: {resource.duration}</span>}
-                {resource.type === "quiz" && (
-                  <span className="bg-green-100 text-green-800 px-2 py-0.5 rounded-full font-medium">
-                    {resource.quiz?.length || 0} questions
-                    {console.log('Resource Quiz:', resource.quiz)}
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Right side: menu */}
-          <div className="flex items-center gap-2 flex-shrink-0">
-            <div
-              className="relative"
-              ref={(el) => {
-                resourceMenuRefs.current[resource.id] = el;
-              }}
-            >
-              <button
-                onClick={() =>
-                  setOpenResourceMenu(
-                    openResourceMenu === resource.id ? null : resource.id
-                  )
-                }
-                className="text-gray-600 hover:text-gray-800 p-2 rounded-lg hover:bg-gray-100 transition-colors"
-              >
-                <FaEllipsisV className="text-gray-600" />
-              </button>
-
-              {/* Dropdown menu */}
-              {openResourceMenu === resource.id && (
-                <div className="absolute right-0 top-full mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-20">
-                  <ul className="py-1 text-sm">
-                    <li>
-                      {resource.type === "quiz" ? (
-
-                        resource.quiz && resource.quiz.length > 0 ? (
-                          resource.quiz.map((quizItem: QuizItem) => (
-                            <button
-                              key={quizItem.id}
-                              onClick={() => {
-                                setOpenQuiz({
-                                  courseId: courseId,
-                                  lessonId: lesson.id!,
-                                  quizId: quizItem.id, // ✅ specific clicked quiz
-                                });
-                                setOpenResourceMenu(null);
-                              }}
-                              className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-3"
-                            >
-                              <FaEdit />
-                              <span>
-                                Edit Quiz
-                                {resource.quiz && resource.quiz.length > 1
-                                  ? ` #${quizItem.id}`
-                                  : ""}
+                <div className="space-y-2">
+                  {lesson.resources.map((resource) => (
+                    <div
+                      key={resource.id}
+                      className="flex items-center justify-between gap-3 p-3 border border-gray-200 rounded-lg hover:border-gray-300 hover:shadow-sm transition-all"
+                    >
+                      {/* Left side: icon + resource info */}
+                      <div className="flex items-center gap-3 min-w-0 flex-1">
+                        <div className="text-xl flex-shrink-0">
+                          {getResourceIcon(resource.type)}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <h4 className="font-medium text-gray-900 text-sm truncate">
+                            {resource.name}
+                          </h4>
+                          <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500 mt-1">
+                            <span>{resource.uploadedAt}</span>
+                            {resource.size && (
+                              <span>Size: {resource.size}</span>
+                            )}
+                            {resource.duration && (
+                              <span>Duration: {resource.duration}</span>
+                            )}
+                            {resource.type === "quiz" && (
+                              <span className="bg-green-100 text-green-800 px-2 py-0.5 rounded-full font-medium">
+                                {resource.quiz?.length || 0} questions
                               </span>
-                            </button>
-                          ))
-                        ) : (
-                          <p className="px-4 py-2 text-gray-400">
-                            No quiz found
-                          </p>
-                        )
-                      ) : (
-                        <a
-                          href={resource.url || "#"}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-3"
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Right side: menu */}
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <div
+                          className="relative"
+                          ref={(el) => {
+                            resourceMenuRefs.current[resource.id] = el;
+                          }}
                         >
-                          <FaExternalLinkAlt /> <span>View Resource</span>
-                        </a>
-                      )}
-                    </li>
+                          <button
+                            onClick={() =>
+                              setOpenResourceMenu(
+                                openResourceMenu === resource.id
+                                  ? null
+                                  : resource.id
+                              )
+                            }
+                            className="text-gray-600 hover:text-gray-800 p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                          >
+                            <FaEllipsisV className="text-gray-600" />
+                          </button>
 
-                    {/* Delete button */}
-                    <li>
-                      <button
-                        onClick={() => {
-                          requestDeleteResource(lesson.id, resource.id);
-                          setOpenResourceMenu(null);
-                        }}
-                        className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-3 text-red-600"
-                      >
-                        <FaTrash /> <span>Delete Resource</span>
-                      </button>
-                    </li>
-                  </ul>
+                          {/* Dropdown menu */}
+                          {openResourceMenu === resource.id && (
+                            <div className="absolute right-0 top-full mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-20">
+                              <ul className="py-1 text-sm">
+                                <li>
+                                  {resource.type === "quiz" ? (
+                                    resource.quiz &&
+                                    resource.quiz.length > 0 ? (
+                                      resource.quiz.map(
+                                        (quizItem: QuizItem) => (
+                                          <button
+                                            key={quizItem.id}
+                                            onClick={() => {
+                                              setOpenQuiz({
+                                                courseId: courseId,
+                                                lessonId: lesson.id!,
+                                                quizId: quizItem.id, // ✅ specific clicked quiz
+                                              });
+                                              setOpenResourceMenu(null);
+                                            }}
+                                            className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-3"
+                                          >
+                                            <FaEdit />
+                                            <span>
+                                              Edit Quiz
+                                              {resource.quiz &&
+                                              resource.quiz.length > 1
+                                                ? ` #${quizItem.id}`
+                                                : ""}
+                                            </span>
+                                          </button>
+                                        )
+                                      )
+                                    ) : (
+                                      <p className="px-4 py-2 text-gray-400">
+                                        No quiz found
+                                      </p>
+                                    )
+                                  ) : (
+                                    <a
+                                      href={resource.url || "#"}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-3"
+                                    >
+                                      <FaExternalLinkAlt />{" "}
+                                      <span>View Resource</span>
+                                    </a>
+                                  )}
+                                </li>
+
+                                {/* Delete button */}
+                                <li>
+                                  <button
+                                    onClick={() => {
+                                      requestDeleteResource(
+                                        lesson.id,
+                                        resource.id
+                                      );
+                                      setOpenResourceMenu(null);
+                                    }}
+                                    className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-3 text-red-600"
+                                  >
+                                    <FaTrash /> <span>Delete Resource</span>
+                                  </button>
+                                </li>
+                              </ul>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              )}
-            </div>
-          </div>
-        </div>
-      ))}
-    </div>
-  </div>
-)}
-
+              </div>
+            )}
           </div>
         ))}
       </div>
@@ -1139,4 +1162,4 @@ const VideoLinkForm = ({ lessonId, onSubmit, onCancel }: {
   );
 }
 
-export default LessonManagement; 
+export default LessonManagement;

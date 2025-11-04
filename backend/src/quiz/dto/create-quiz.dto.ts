@@ -19,7 +19,6 @@ export class QuizSettingsDto {
   title: string;
   description?: string;
   shuffleQuestions?: boolean;
-  timeLimit?: number;
   showResults?: boolean;
   allowRetakes?: boolean;
   passingScore?: number;

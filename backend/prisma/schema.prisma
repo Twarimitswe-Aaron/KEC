@@ -78,7 +78,6 @@ model Course {
 
   lesson     Lesson[]
   assignment Assignment[]
- 
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -109,10 +108,8 @@ model Lesson {
   resources Resource[]
 }
 
-
-
 model Resource {
-  id       Int     @id @default(autoincrement())
+  id Int @id @default(autoincrement())
 
   lessonId Int
   lesson   Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade, onUpdate: Cascade)
@@ -126,8 +123,6 @@ model Resource {
   form       Form?
 }
 
-
-
 model QuizQuestion {
   id             Int     @id @default(autoincrement())
   quizId         Int
@@ -137,10 +132,8 @@ model QuizQuestion {
   correctAnswer  Int?
   correctAnswers String?
   required       Boolean @default(false)
-  orderIndex     Int     @default(0)
-  order          Int     @default(0)
-  points         Int     @default(1)
-  quiz           Quiz    @relation(fields: [quizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  points Int  @default(1)
+  quiz   Quiz @relation(fields: [quizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 }
 
 model QuizAttempt {
@@ -154,28 +147,28 @@ model QuizAttempt {
   quiz            Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 }
 
-
 model Quiz {
   id          Int            @id @default(autoincrement())
   name        String
   description String?
-  settings    Json?  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  settings    Json?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
   questions   QuizQuestion[]
   attempts    QuizAttempt[]
-  formId     Int?
-  form       Form?    @relation(fields: [formId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  formId      Int?
+  form        Form?          @relation(fields: [formId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 }
+
 model Form {
-  id          Int        @id @default(autoincrement())
-  questions   Question[]
-  createdAt   DateTime   @default(now())
-  
-  responses   Response[]
-  quizzes     Quiz[]
-  resourceId  Int        @unique
-  resource    Resource   @relation(fields: [resourceId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  id        Int        @id @default(autoincrement())
+  questions Question[]
+  createdAt DateTime   @default(now())
+
+  responses  Response[]
+  quizzes    Quiz[]
+  resourceId Int        @unique
+  resource   Resource   @relation(fields: [resourceId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 }
 
 model Question {
