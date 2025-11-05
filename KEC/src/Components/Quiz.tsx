@@ -3,7 +3,7 @@ import { FaTimes, FaPlus, FaTrash, FaCheck, FaEllipsisV, FaArrowUp, FaArrowDown 
 
 type Question = {
   id: number;
-  type: "multiple" | "checkbox" | "truefalse" | "short";
+  type: "multiple" | "checkbox" | "truefalse";
   question: string;
   options?: string[];
   required?: boolean;

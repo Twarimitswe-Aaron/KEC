@@ -15,7 +15,7 @@ interface Quiz {
 
 interface QuizQuestion {
   id: number;
-  type: 'multiple' | 'checkbox' | 'truefalse' | 'short' | 'long' | 'number';
+  type: 'multiple' | 'checkbox' | 'truefalse' | 'labeling';
   question: string;
   description?: string;
   options?: string[]; // For multiple choice, checkbox, true/false

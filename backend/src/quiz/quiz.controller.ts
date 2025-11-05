@@ -13,7 +13,12 @@ import {
   HttpStatus,
   Patch,
   Req,
+  UseGuards,
+  UseInterceptors,
+  UploadedFiles,
+  UploadedFile,
 } from '@nestjs/common';
+import { FileInterceptor, FilesInterceptor, FileFieldsInterceptor } from '@nestjs/platform-express';
 import { QuizService } from './quiz.service';
 import { CreateQuizDto } from './dto/create-quiz.dto';
 import { UpdateQuizDto } from './dto/update-quiz.dto';
@@ -44,23 +49,57 @@ export class QuizController {
   ) {
     return this.quizService.getQuizDataByQuiz({ quizId, lessonId, courseId });
   }
-  @Patch('/quizzes/:id')
-  updateQuizBylessonId(
-    @Param('id',ParseIntPipe) id:number,
-
-
-    @Body() data:UpdateQuizDto
-  ){
-    return this.quizService.patchQuizByLessonId({id,data})
-  }
-
-  @Get()
-  findAll(@Query('lessonId') lessonId?: string) {
-    if (lessonId) {
-      return this.quizService.getQuizzesByLesson(parseInt(lessonId));
+  @Patch(':id')
+  @UseInterceptors(FileFieldsInterceptor([
+    { name: 'image', maxCount: 1 },
+    { name: 'question-*-image', maxCount: 1 },
+  ]))
+  async updateQuiz(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() updateQuizDto: UpdateQuizDto,
+    @UploadedFiles() files: { 
+      image?: Express.Multer.File[];
+      [key: string]: Express.Multer.File[] | undefined;
+    } = {},
+  ) {
+    // Handle main quiz image
+    if (files?.image?.[0]) {
+      updateQuizDto.imageUrl = `/uploads/quiz-images/${files.image[0].filename}`;
     }
-    return []; // Or implement general quiz listing if needed
+
+    // Handle question images
+    if (files) {
+      const questionImages = Object.entries(files as Record<string, Express.Multer.File[]>)
+        .filter(([key]) => key.startsWith('question-') && key.endsWith('-image'))
+        .reduce<Record<number, Express.Multer.File>>((acc, [key, fileArray]) => {
+          if (fileArray?.[0]) {
+            const match = key.match(/question-(\d+)-image/);
+            if (match) {
+              const index = parseInt(match[1], 10);
+              acc[index] = fileArray[0];
+            }
+          }
+          return acc;
+        }, {});
+
+      if (updateQuizDto.questions) {
+        updateQuizDto.questions = updateQuizDto.questions.map((q, index) => ({
+          ...q,
+          imageFile: questionImages[index],
+        }));
+      }
+    }
+
+    return this.quizService.updateQuiz({ id, data: updateQuizDto });
   }
+
+  // @Get()
+  // findAll(@Query('lessonId') lessonId?: string) {
+  //   if (lessonId) {
+  //     return this.quizService.getQuizzesByLesson(parseInt(lessonId));
+  //   }
+  //   return []; // Or implement general quiz listing if needed
+  // }
 
 
 

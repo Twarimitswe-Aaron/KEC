@@ -28,7 +28,10 @@ export interface CourseSummary {
 
 export interface LessonResource {
   id: number;
-  url: string | null;
+  type: 'multiple' | 'checkbox' | 'truefalse' | 'labeling';
+  title: string;
+  content: string;
+  resources: LessonResource[];
 }
 
 export interface LessonData {

@@ -180,7 +180,7 @@ export const quizApi = apiSlice.injectEndpoints({
       }
     >({
       query: ({  id, data }) => ({
-        url: `quizzes/quizzes/${id}`,
+        url: `quizzes/${id}`,
         method: "PATCH",
         body: data,
       }),

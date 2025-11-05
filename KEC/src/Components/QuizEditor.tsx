@@ -1,6 +1,7 @@
 // src/components/QuizEditor.tsx
 import { useState, useEffect } from "react";
 import { toast } from "react-toastify";
+import QuestionEditForm from "./QuizEditorComponents/QuestionEditForm.tsx";
 import {
   FaCheckCircle,
   FaCheckSquare,
@@ -40,9 +41,6 @@ interface Question {
     | "multiple"
     | "checkbox"
     | "truefalse"
-    | "short"
-    | "long"
-    | "number"
     | "labeling";
   question: string;
   description?: string;
@@ -50,10 +48,13 @@ interface Question {
   correctAnswers?: (string | number)[];
   correctAnswer?: string | number;
   imageUrl?: string;
+  imageFile?: File; // For handling file uploads
   labelAnswers?: { label: string; answer: string }[];
   required: boolean;
   points: number;
 }
+
+
 
 interface QuizSettings {
   title: string;
@@ -199,8 +200,6 @@ const QuizEditor = ({ onClose, resource }: QuizEditorProps) => {
     }
   }, [quizData, resource]);
 
-  // Simple state updates
-  // Simplified question management functions
   const updateQuestion = (questionId: number, updates: Partial<Question>) => {
     setQuestions((prev) =>
       prev.map((q) => (q.id === questionId ? { ...q, ...updates } : q))
@@ -279,8 +278,6 @@ const QuizEditor = ({ onClose, resource }: QuizEditorProps) => {
     setHasChanges(true);
   };
 
-  // Question operations
-  // Simplified new question functions
   const addQuestion = () => {
     if (!newQuestion.question?.trim()) {
       toast.error("Please enter a question");
@@ -517,20 +514,7 @@ const QuizEditor = ({ onClose, resource }: QuizEditorProps) => {
 
   // Reset new question when type changes
   useEffect(() => {
-    if (
-      newQuestion.type === "short" ||
-      newQuestion.type === "long" ||
-      newQuestion.type === "number"
-    ) {
-      setNewQuestion((prev) => ({
-        ...prev,
-        options: undefined,
-        correctAnswers: [],
-        correctAnswer: undefined,
-        imageUrl: undefined,
-        labelAnswers: undefined,
-      }));
-    } else if (newQuestion.type === "labeling") {
+     if (newQuestion.type === "labeling") {
       setNewQuestion((prev) => ({
         ...prev,
         options: undefined,
@@ -599,15 +583,14 @@ const QuizEditor = ({ onClose, resource }: QuizEditorProps) => {
           onNewQuestionRemoveOption={newQuestionRemoveOption}
           onNewQuestionToggleCorrectAnswer={newQuestionToggleCorrectAnswer}
           isNewOptionCorrect={isNewOptionCorrect}
+          courseId={resource.courseId}
+          lessonId={resource.lessonId}
+          quizId={resource.quizId}
         />
       </div>
     </div>
   );
 };
-
-// All UI components remain exactly the same (no changes below this line)
-// LoadingOverlay, ErrorOverlay, Sidebar, Header, QuestionEditForm, etc.
-// ... [Keep all the existing UI components exactly as they are]
 
 const LoadingOverlay = ({ message }: { message: string }) => (
   <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center">
@@ -712,9 +695,6 @@ const Sidebar = ({
   </div>
 );
 
-// ... [Keep all other UI components exactly as they were]
-// SettingInput, SettingTextarea, ToggleSetting, Header, QuestionEditForm, etc.
-
 interface SettingInputProps {
   label: string;
   id: string;
@@ -725,6 +705,314 @@ interface SettingInputProps {
   min?: number | string;
   max?: number | string;
 }
+
+
+//questions
+
+
+interface QuestionListProps {
+  questions: any[];
+  editingQuestion: number | null;
+  setEditingQuestion: (id: number | null) => void;
+  updateQuestion: (questionId: number, updates: any) => void;
+  deleteQuestion: (questionId: number) => void;
+  moveQuestion: (index: number, direction: 'up' | 'down') => void;
+  toggleCorrectAnswer: (questionId: number, optionIndex: number) => void;
+  addOption: (questionId: number) => void;
+  updateOption: (questionId: number, optionIndex: number, value: string) => void;
+  removeOption: (questionId: number, optionIndex: number) => void;
+  updateLabelAnswer: (questionId: number, index: number, field: 'label' | 'answer', value: string) => void;
+  addLabelKey: (questionId: number) => void;
+  removeLabelKey: (questionId: number, index: number) => void;
+  isOptionCorrect: (question: any, optionIndex: number) => boolean;
+  getQuestionIcon: (type: string) => any;
+  newQuestion: any;
+  onNewQuestionChange: (updates: any) => void;
+  onAddQuestion: () => void;
+  onNewQuestionAddOption: () => void;
+  onNewQuestionUpdateOption: (index: number, value: string) => void;
+  onNewQuestionRemoveOption: (index: number) => void;
+  onNewQuestionToggleCorrectAnswer: (optionIndex: number) => void;
+  isNewOptionCorrect: (optionIndex: number) => boolean;
+  courseId: number;
+  lessonId: number;
+  quizId: number;
+}
+
+const QuestionList = ({
+  questions,
+  editingQuestion,
+  setEditingQuestion,
+  updateQuestion,
+  deleteQuestion,
+  moveQuestion,
+  toggleCorrectAnswer,
+  addOption,
+  updateOption,
+  removeOption,
+  updateLabelAnswer,
+  addLabelKey,
+  removeLabelKey,
+  isOptionCorrect,
+  getQuestionIcon,
+  newQuestion,
+  onNewQuestionChange,
+  onAddQuestion,
+  onNewQuestionAddOption,
+  onNewQuestionUpdateOption,
+  onNewQuestionRemoveOption,
+  onNewQuestionToggleCorrectAnswer,
+  isNewOptionCorrect,
+  courseId,
+  lessonId,
+  quizId,
+}: QuestionListProps) => {
+  const [editingStates, setEditingStates] = useState<{[key: number]: any}>({});
+
+  // Start editing a question - store current state
+  const handleStartEdit = (question: any) => {
+    setEditingStates(prev => ({
+      ...prev,
+      [question.id]: { ...question }
+    }));
+    setEditingQuestion(question.id);
+  };
+
+  // Cancel editing - restore original state
+  const handleCancelEdit = (questionId: number) => {
+    const originalQuestion = editingStates[questionId];
+    if (originalQuestion) {
+      updateQuestion(questionId, originalQuestion);
+    }
+    setEditingQuestion(null);
+    setEditingStates(prev => {
+      const newState = { ...prev };
+      delete newState[questionId];
+      return newState;
+    });
+  };
+
+  // Save edited question - prepare data for backend
+  const handleSaveEdit = (questionId: number, updatedQuestion: any) => {
+    const questionData = {
+      questionId,
+      quizId,
+      lessonId,
+      courseId,
+      updates: {
+        type: updatedQuestion.type,
+        question: updatedQuestion.question,
+        description: updatedQuestion.description,
+        options: updatedQuestion.options,
+        correctAnswers: updatedQuestion.correctAnswers,
+        correctAnswer: updatedQuestion.correctAnswer,
+        imageUrl: updatedQuestion.imageUrl,
+        labelAnswers: updatedQuestion.labelAnswers,
+        required: updatedQuestion.required,
+        points: updatedQuestion.points,
+      }
+    };
+
+    // Update local state immediately
+    updateQuestion(questionId, updatedQuestion);
+    
+    // Clear editing state
+    setEditingQuestion(null);
+    setEditingStates(prev => {
+      const newState = { ...prev };
+      delete newState[questionId];
+      return newState;
+    });
+
+    // TODO: Integrate with backend API
+    console.log('Saving question updates:', questionData);
+    // await updateQuestionAPI(questionData);
+  };
+
+  // Update question during editing
+  const handleQuestionUpdate = (questionId: number, updates: any) => {
+    const currentQuestion = questions.find(q => q.id === questionId);
+    if (!currentQuestion) return;
+
+    const updatedQuestion = { ...currentQuestion, ...updates };
+    
+    // Update the editing state
+    setEditingStates(prev => ({
+      ...prev,
+      [questionId]: updatedQuestion
+    }));
+  };
+
+  return (
+    <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
+      <h2 className="text-xl font-bold text-gray-800">
+        Questions ({questions.length})
+      </h2>
+
+      <div className="space-y-6">
+        {questions.map((question: any, index: number) => (
+          <div key={question.id} className="relative">
+            {editingQuestion === question.id ? (
+              // Editing Mode
+              <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-lg font-semibold text-blue-800">
+                    Editing Question {index + 1}
+                  </h3>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleSaveEdit(question.id, editingStates[question.id] || question)}
+                      className="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700 transition-colors"
+                    >
+                      Save
+                    </button>
+                    <button
+                      onClick={() => handleCancelEdit(question.id)}
+                      className="bg-gray-600 text-white px-3 py-1 rounded text-sm hover:bg-gray-700 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+                
+                <QuestionEditForm
+                  question={editingStates[question.id] || question}
+                  onUpdate={(updates) => handleQuestionUpdate(question.id, updates)}
+                  onToggleCorrectAnswer={toggleCorrectAnswer}
+                  onAddOption={addOption}
+                  onUpdateOption={updateOption}
+                  onRemoveOption={removeOption}
+                  onUpdateLabelAnswer={updateLabelAnswer}
+                  onAddLabelKey={addLabelKey}
+                  onRemoveLabelKey={removeLabelKey}
+                  isOptionCorrect={(q, optionIndex) => isOptionCorrect(q, optionIndex)}
+                />
+              </div>
+            ) : (
+              // View Mode
+              <QuestionCard
+                question={question}
+                index={index}
+                questions={questions}
+                onEdit={() => handleStartEdit(question)}
+                onDelete={() => deleteQuestion(question.id)}
+                onMove={moveQuestion}
+                isOptionCorrect={isOptionCorrect}
+                getQuestionIcon={getQuestionIcon}
+              />
+            )}
+          </div>
+        ))}
+      </div>
+
+      <hr className="my-8 border-t border-gray-200" />
+
+      <NewQuestionForm
+        newQuestion={newQuestion}
+        onNewQuestionChange={onNewQuestionChange}
+        onAddQuestion={onAddQuestion}
+        onNewQuestionAddOption={onNewQuestionAddOption}
+        onNewQuestionUpdateOption={onNewQuestionUpdateOption}
+        onNewQuestionRemoveOption={onNewQuestionRemoveOption}
+        onNewQuestionToggleCorrectAnswer={onNewQuestionToggleCorrectAnswer}
+        isNewOptionCorrect={isNewOptionCorrect}
+      />
+    </div>
+  );
+};
+
+
+
+
+// Text Answer Edit Component
+const TextAnswerEdit = ({ question, onSetTextCorrectAnswer }: any) => (
+  <div className="space-y-2 border-l-4 border-purple-500 pl-4 py-2">
+    <label className="block text-sm font-medium text-gray-700">
+      Correct Answer
+    </label>
+    <input
+      type="text"
+      value={question.correctAnswer || ''}
+      onChange={(e) => onSetTextCorrectAnswer(e.target.value)}
+      placeholder="Enter the correct answer..."
+      className="w-full px-3 py-2 border border-gray-200 rounded-lg hover:border-gray-300 hover:shadow-sm transition-all focus:ring-2 focus:ring-purple-500 text-sm"
+    />
+  </div>
+);
+
+// Question Card Component (for view mode)
+const QuestionCard = ({
+  question,
+  index,
+  questions,
+  onEdit,
+  onDelete,
+  onMove,
+  isOptionCorrect,
+  getQuestionIcon,
+}: any) => {
+  const Icon = getQuestionIcon(question.type);
+
+  return (
+    <div className="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition-all">
+      <div className="p-4">
+        <div className="flex items-start justify-between">
+          <div className="flex items-start gap-3">
+            <Icon className="h-5 w-5 text-[#034153] mt-0.5 flex-shrink-0" />
+            <div>
+              <h3 className="font-medium text-gray-900">
+                {question.question || `Question ${index + 1}`}
+              </h3>
+              {question.description && (
+                <p className="text-sm text-gray-500 mt-1">
+                  {question.description}
+                </p>
+              )}
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => onMove(index, "up")}
+              disabled={index === 0}
+              className="text-gray-400 hover:text-[#034153] disabled:opacity-30"
+              title="Move up"
+            >
+              <FaArrowUp />
+            </button>
+            <button
+              onClick={() => onMove(index, "down")}
+              disabled={index === questions.length - 1}
+              className="text-gray-400 hover:text-[#034153] disabled:opacity-30"
+              title="Move down"
+            >
+              <FaArrowDown />
+            </button>
+            <button
+              onClick={onEdit}
+              className="text-gray-400 hover:text-blue-500"
+              title="Edit"
+            >
+              <FaEdit />
+            </button>
+            <button
+              onClick={onDelete}
+              className="text-gray-400 hover:text-red-500"
+              title="Delete"
+            >
+              <FaTrashAlt />
+            </button>
+          </div>
+        </div>
+
+        <QuestionViewMode
+          question={question}
+          isOptionCorrect={isOptionCorrect}
+        />
+      </div>
+    </div>
+  );
+};
+
 
 const SettingInput = ({
   label,
@@ -871,55 +1159,7 @@ const Header = ({
   </div>
 );
 
-const QuestionEditForm = ({
-  question,
-  onUpdate,
-  onToggleCorrectAnswer,
-  onAddOption,
-  onUpdateOption,
-  onRemoveOption,
-  onSetTextCorrectAnswer,
-  onUpdateLabelAnswer,
-  onAddLabelKey,
-  onRemoveLabelKey,
-  isOptionCorrect,
-}: any) => (
-  <div className="space-y-4">
-    <textarea
-      value={question.question}
-      onChange={(e) => onUpdate(question.id, { question: e.target.value })}
-      placeholder="Enter your question here..."
-      rows={2}
-      className="w-full px-3 py-2 border border-gray-200 rounded-lg hover:border-gray-300 hover:shadow-sm transition-all focus:ring-2 focus:ring-[#034153] focus:border-transparent resize-none text-sm sm:text-base font-semibold"
-    />
 
-    {question.options ? (
-      <QuestionOptionsEdit
-        question={question}
-        onToggleCorrectAnswer={onToggleCorrectAnswer}
-        onAddOption={onAddOption}
-        onUpdateOption={onUpdateOption}
-        onRemoveOption={onRemoveOption}
-        isOptionCorrect={isOptionCorrect}
-      />
-    ) : question.type === "labeling" ? (
-      <LabelingQuestionEdit
-        question={question}
-        onUpdate={onUpdate}
-        onUpdateLabelAnswer={onUpdateLabelAnswer}
-        onAddLabelKey={onAddLabelKey}
-        onRemoveLabelKey={onRemoveLabelKey}
-      />
-    ) : (
-      <TextAnswerEdit
-        question={question}
-        onSetTextCorrectAnswer={onSetTextCorrectAnswer}
-      />
-    )}
-
-    <QuestionSettings question={question} onUpdate={onUpdate} />
-  </div>
-);
 
 const QuestionOptionsEdit = ({
   question,
@@ -992,23 +1232,47 @@ const QuestionOptionsEdit = ({
   </div>
 );
 
+interface LabelingQuestionEditProps {
+  question: Question;
+  onUpdate: (updates: Partial<Question>) => void;
+  onUpdateLabelAnswer: (questionId: number, index: number, field: 'label' | 'answer', value: string) => void;
+  onAddLabelKey: (questionId: number) => void;
+  onRemoveLabelKey: (questionId: number, index: number) => void;
+  disabled?: boolean;
+}
+
 const LabelingQuestionEdit = ({
   question,
   onUpdate,
   onUpdateLabelAnswer,
   onAddLabelKey,
   onRemoveLabelKey,
-}: any) => {
-  // Handle file upload and convert to base64 (you can replace this with backend upload later)
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  disabled = false,
+}: LabelingQuestionEditProps) => {
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      onUpdate(question.id, { imageUrl: reader.result }); // store base64 string
-    };
-    reader.readAsDataURL(file);
+    // Check file type and size
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please upload an image file');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) { // 5MB limit
+      toast.error('Image size should be less than 5MB');
+      return;
+    }
+
+    // Create a temporary URL for preview
+    const tempUrl = URL.createObjectURL(file);
+    
+    // Update the UI immediately with the temp URL
+    onUpdate({ 
+      ...question, 
+      imageUrl: tempUrl,
+      imageFile: file  // We'll send this to the backend
+    });
   };
 
   return (
@@ -1088,23 +1352,23 @@ const LabelingQuestionEdit = ({
   );
 };
 
-const TextAnswerEdit = ({ question, onSetTextCorrectAnswer }: any) => (
-  <div className="space-y-2 border-l-4 border-gray-100 pl-4 py-2">
-    <label className="block text-sm font-medium text-gray-700">
-      Correct Answer
-    </label>
-    <input
-      type={question.type === "number" ? "number" : "text"}
-      value={question.correctAnswer || ""}
-      onChange={(e) => onSetTextCorrectAnswer(question.id, e.target.value)}
-      placeholder="Enter the correct answer"
-      className="w-full px-3 py-2 border border-gray-200 rounded-lg hover:border-gray-300 hover:shadow-sm transition-all focus:ring-2 focus:ring-[#034153] text-sm"
-    />
-    <p className="text-xs text-gray-500 mt-1">
-      Note: For text answers, only an exact match will be graded as correct.
-    </p>
-  </div>
-);
+// const TextAnswerEdit = ({ question, onSetTextCorrectAnswer }: any) => (
+//   <div className="space-y-2 border-l-4 border-gray-100 pl-4 py-2">
+//     <label className="block text-sm font-medium text-gray-700">
+//       Correct Answer
+//     </label>
+//     <input
+//       type={question.type === "number" ? "number" : "text"}
+//       value={question.correctAnswer || ""}
+//       onChange={(e) => onSetTextCorrectAnswer(question.id, e.target.value)}
+//       placeholder="Enter the correct answer"
+//       className="w-full px-3 py-2 border border-gray-200 rounded-lg hover:border-gray-300 hover:shadow-sm transition-all focus:ring-2 focus:ring-[#034153] text-sm"
+//     />
+//     <p className="text-xs text-gray-500 mt-1">
+//       Note: For text answers, only an exact match will be graded as correct.
+//     </p>
+//   </div>
+// );
 
 const QuestionSettings = ({ question, onUpdate }: any) => (
   <div className="flex justify-end items-center gap-4 pt-3 border-t border-gray-100">
@@ -1217,138 +1481,138 @@ interface QuestionCardProps {
   ) => React.ComponentType<{ className?: string }>;
 }
 
-const QuestionCard = ({
-  question,
-  questions,
-  index,
-  onEdit,
-  onDelete,
-  onMove,
-  isOptionCorrect,
-  getQuestionIcon,
-}: QuestionCardProps) => {
-  const Icon = getQuestionIcon(question.type);
+// const QuestionCard = ({
+//   question,
+//   questions,
+//   index,
+//   onEdit,
+//   onDelete,
+//   onMove,
+//   isOptionCorrect,
+//   getQuestionIcon,
+// }: QuestionCardProps) => {
+//   const Icon = getQuestionIcon(question.type);
 
-  return (
-    <div className="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-      <div className="p-4">
-        <div className="flex items-start justify-between">
-          <div className="flex items-start gap-3">
-            <Icon className="h-5 w-5 text-[#034153] mt-0.5 flex-shrink-0" />
-            <div>
-              <h3 className="font-medium text-gray-900">
-                {question.question || `Question ${index + 1}`}
-              </h3>
-              {question.description && (
-                <p className="text-sm text-gray-500 mt-1">
-                  {question.description}
-                </p>
-              )}
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => onMove(index, "up")}
-              disabled={index === 0}
-              className="text-gray-400 hover:text-[#034153] disabled:opacity-30"
-              title="Move up"
-            >
-              <FaArrowUp />
-            </button>
-            <button
-              onClick={() => onMove(index, "down")}
-              disabled={index === questions.length - 1}
-              className="text-gray-400 hover:text-[#034153] disabled:opacity-30"
-              title="Move down"
-            >
-              <FaArrowDown />
-            </button>
-            <button
-              onClick={() => onEdit(question)}
-              className="text-gray-400 hover:text-blue-500"
-              title="Edit"
-            >
-              <FaEdit />
-            </button>
-            <button
-              onClick={() => onDelete(question.id)}
-              className="text-gray-400 hover:text-red-500"
-              title="Delete"
-            >
-              <FaTrashAlt />
-            </button>
-          </div>
-        </div>
+//   return (
+//     <div className="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+//       <div className="p-4">
+//         <div className="flex items-start justify-between">
+//           <div className="flex items-start gap-3">
+//             <Icon className="h-5 w-5 text-[#034153] mt-0.5 flex-shrink-0" />
+//             <div>
+//               <h3 className="font-medium text-gray-900">
+//                 {question.question || `Question ${index + 1}`}
+//               </h3>
+//               {question.description && (
+//                 <p className="text-sm text-gray-500 mt-1">
+//                   {question.description}
+//                 </p>
+//               )}
+//             </div>
+//           </div>
+//           <div className="flex items-center gap-2">
+//             <button
+//               onClick={() => onMove(index, "up")}
+//               disabled={index === 0}
+//               className="text-gray-400 hover:text-[#034153] disabled:opacity-30"
+//               title="Move up"
+//             >
+//               <FaArrowUp />
+//             </button>
+//             <button
+//               onClick={() => onMove(index, "down")}
+//               disabled={index === questions.length - 1}
+//               className="text-gray-400 hover:text-[#034153] disabled:opacity-30"
+//               title="Move down"
+//             >
+//               <FaArrowDown />
+//             </button>
+//             <button
+//               onClick={() => onEdit(question)}
+//               className="text-gray-400 hover:text-blue-500"
+//               title="Edit"
+//             >
+//               <FaEdit />
+//             </button>
+//             <button
+//               onClick={() => onDelete(question.id)}
+//               className="text-gray-400 hover:text-red-500"
+//               title="Delete"
+//             >
+//               <FaTrashAlt />
+//             </button>
+//           </div>
+//         </div>
 
-        <QuestionViewMode
-          question={question}
-          isOptionCorrect={isOptionCorrect}
-        />
-      </div>
-    </div>
-  );
-};
+//         <QuestionViewMode
+//           question={question}
+//           isOptionCorrect={isOptionCorrect}
+//         />
+//       </div>
+//     </div>
+//   );
+// };
 
-const QuestionList = ({
-  questions,
-  editingQuestion,
-  setEditingQuestion,
-  updateQuestion,
-  deleteQuestion,
-  moveQuestion,
-  toggleCorrectAnswer,
-  addOption,
-  updateOption,
-  removeOption,
-  updateLabelAnswer,
-  addLabelKey,
-  removeLabelKey,
-  isOptionCorrect,
-  getQuestionIcon,
-  newQuestion,
-  onNewQuestionChange,
-  onAddQuestion,
-  onNewQuestionAddOption,
-  onNewQuestionUpdateOption,
-  onNewQuestionRemoveOption,
-  onNewQuestionToggleCorrectAnswer,
-  isNewOptionCorrect,
-}: any) => (
-  <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
-    <h2 className="text-xl font-bold text-gray-800">
-      Questions ({questions.length})
-    </h2>
+// const QuestionList = ({
+//   questions,
+//   editingQuestion,
+//   setEditingQuestion,
+//   updateQuestion,
+//   deleteQuestion,
+//   moveQuestion,
+//   toggleCorrectAnswer,
+//   addOption,
+//   updateOption,
+//   removeOption,
+//   updateLabelAnswer,
+//   addLabelKey,
+//   removeLabelKey,
+//   isOptionCorrect,
+//   getQuestionIcon,
+//   newQuestion,
+//   onNewQuestionChange,
+//   onAddQuestion,
+//   onNewQuestionAddOption,
+//   onNewQuestionUpdateOption,
+//   onNewQuestionRemoveOption,
+//   onNewQuestionToggleCorrectAnswer,
+//   isNewOptionCorrect,
+// }: any) => (
+//   <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
+//     <h2 className="text-xl font-bold text-gray-800">
+//       Questions ({questions.length})
+//     </h2>
 
-    <div className="space-y-6">
-      {questions.map((question: Question, index: number) => (
-        <QuestionCard
-          key={question.id}
-          question={question}
-          index={index}
-          questions={questions}
-          onEdit={setEditingQuestion}
-          onDelete={() => deleteQuestion(question.id)}
-          onMove={moveQuestion}
-          isOptionCorrect={isOptionCorrect}
-          getQuestionIcon={getQuestionIcon}
-        />
-      ))}
-    </div>
+//     <div className="space-y-6">
+//       {questions.map((question: Question, index: number) => (
+//         <QuestionCard
+//           key={question.id}
+//           question={question}
+//           index={index}
+//           questions={questions}
+//           onEdit={setEditingQuestion}
+//           onDelete={() => deleteQuestion(question.id)}
+//           onMove={moveQuestion}
+//           isOptionCorrect={isOptionCorrect}
+//           getQuestionIcon={getQuestionIcon}
+//         />
+//       ))}
+//     </div>
 
-    <hr className="my-8 border-t border-gray-200" />
+//     <hr className="my-8 border-t border-gray-200" />
 
-    <NewQuestionForm
-      newQuestion={newQuestion}
-      onNewQuestionChange={onNewQuestionChange}
-      onAddQuestion={onAddQuestion}
-      onNewQuestionAddOption={onNewQuestionAddOption}
-      onNewQuestionUpdateOption={onNewQuestionUpdateOption}
-      onNewQuestionRemoveOption={onNewQuestionRemoveOption}
-      onNewQuestionToggleCorrectAnswer={onNewQuestionToggleCorrectAnswer}
-      isNewOptionCorrect={isNewOptionCorrect}
-    />
-  </div>
-);
+//     <NewQuestionForm
+//       newQuestion={newQuestion}
+//       onNewQuestionChange={onNewQuestionChange}
+//       onAddQuestion={onAddQuestion}
+//       onNewQuestionAddOption={onNewQuestionAddOption}
+//       onNewQuestionUpdateOption={onNewQuestionUpdateOption}
+//       onNewQuestionRemoveOption={onNewQuestionRemoveOption}
+//       onNewQuestionToggleCorrectAnswer={onNewQuestionToggleCorrectAnswer}
+//       isNewOptionCorrect={isNewOptionCorrect}
+//     />
+//   </div>
+// );
 
 const NewQuestionForm = ({
   newQuestion,

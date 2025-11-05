@@ -5,7 +5,7 @@ export class CreateQuizDto {
 }
 
 export class CreateQuizQuestionDto {
-  type: 'multiple' | 'checkbox' | 'truefalse' | 'short' | 'long' | 'number';
+  type: 'multiple' | 'checkbox' | 'truefalse' | 'labeling';
   question: string;
   description?: string;
   options?: string[];
@@ -16,6 +16,7 @@ export class CreateQuizQuestionDto {
 }
 
 export class QuizSettingsDto {
+  [key: string]: any;  // Index signature for JSON serialization
   title: string;
   description?: string;
   shuffleQuestions?: boolean;
