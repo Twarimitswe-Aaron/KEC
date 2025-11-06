@@ -12,6 +12,7 @@ import { toast } from "react-toastify";
 import { SearchContext } from "../SearchContext";
 
 interface CourseData {
+
   id: number;
   title: string;
   description: string;
@@ -31,8 +32,77 @@ interface Lesson {
 
 interface Resource {
   id: number;
+  type?: 'multiple' | 'checkbox' | 'truefalse' | 'labeling';
+  title: string;
+  description?: string;
   url: string;
 }
+
+interface Lesson {
+  id: number;
+  title: string;
+  content: string;
+  resources: Resource[];
+}
+
+interface CourseData {
+  id: number;
+  title: string;
+  description: string;
+  image_url: string;
+  price: string;
+  maximum: number;
+  open: boolean;
+  lesson: Lesson[];
+}
+
+// Type guard to check if data matches CourseData structure
+function isCourseData(data: any): data is CourseData {
+  return (
+    data &&
+    typeof data === 'object' &&
+    Array.isArray(data.lesson) &&
+    data.lesson.every((lesson: any) => 
+      lesson && 
+      typeof lesson.id === 'number' &&
+      typeof lesson.title === 'string' &&
+      typeof lesson.content === 'string' &&
+      Array.isArray(lesson.resources)
+    )
+  );
+}
+
+// Function to transform API response to CourseData
+const transformToCourseData = (data: any): CourseData => {
+  if (!data) return { 
+    id: 0, 
+    title: '', 
+    description: '', 
+    image_url: '', 
+    price: '0', 
+    maximum: 0, 
+    open: false, 
+    lesson: [] 
+  };
+  
+  return {
+    ...data,
+    lesson: Array.isArray(data.lesson) 
+      ? data.lesson.map((l: any) => ({
+          ...l,
+          resources: Array.isArray(l.resources) 
+            ? l.resources.map((r: any) => ({
+                id: r.id || 0,
+                type: r.type,
+                title: r.title || '',
+                description: r.description,
+                url: r.url || ''
+              }))
+            : []
+        }))
+      : []
+  };
+};
 
 const INITIAL_FORM_STATE = {
   lesson: { title: "", description: "" },
@@ -75,7 +145,9 @@ const LessonsView = () => {
     showAddResource: null,
   });
   const [forms, setForms] = useState(INITIAL_FORM_STATE); // -------------------------------------------------------- // ✨ SEARCH IMPLEMENTATION START // -------------------------------------------------------- // 1. Get the base list of lessons
-  const baseLessons = (courseData as CourseData)?.lesson || [];
+  // Transform and validate course data
+  const transformedCourseData = transformToCourseData(courseData);
+  const baseLessons = isCourseData(transformedCourseData) ? transformedCourseData.lesson : [];
   // 2. Filter the lessons based on the searchQuery, memoized for performance
   const filteredLessons = useMemo(() => {
     // If no search, return all
