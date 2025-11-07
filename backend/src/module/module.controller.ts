@@ -47,12 +47,6 @@ export class ModuleController {
     return this.svc.getLessonsByCourse(courseId);
   }
 
-  // Get single lesson by ID
-  @Get(':id')
-  async getLessonById(@Param('id', ParseIntPipe) id: number) {
-    return this.svc.getLessonById(id);
-  }
-
   // Delete lesson
   @Delete(':id')
   async deleteLesson(@Param('id', ParseIntPipe) id: number) {
@@ -150,25 +144,6 @@ export class ModuleController {
     return this.svc.deleteResource(lessonId, resourceId);
   }
 
-  // Reorder lessons
-  @Put('reorder/:courseId')
-  async reorderLessons(
-    @Param('courseId', ParseIntPipe) courseId: number,
-    @Body('lessonIds') lessonIds: number[],
-  ) {
-    if (!lessonIds || !Array.isArray(lessonIds)) {
-      throw new BadRequestException('lessonIds must be an array');
-    }
-
-    return this.svc.reorderLessons(courseId, lessonIds);
-  }
-
-  // Duplicate lesson
-  // @Post(':id/duplicate')
-  // async duplicateLesson(@Param('id', ParseIntPipe) id: number) {
-  //   return this.svc.duplicateLesson(id);
-  // }
-
   // Add quiz resource - more specific route first
   @Post('course/:courseId/lesson/:lessonId/quiz')
   async addQuizResource(
@@ -186,15 +161,6 @@ export class ModuleController {
     @Body() dto: CreateVideoDto,
   ) {
     return this.svc.addVideoResource(lessonId, dto);
-  }
-
-  // Submit quiz
-  @Post('quiz/:quizId/submit')
-  async submitQuiz(
-    @Param('quizId', ParseIntPipe) quizId: number,
-    @Body() dto: SubmitQuizDto,
-  ) {
-    return this.svc.submitQuiz(quizId, dto.responses);
   }
 
   // Module-specific endpoints (alias for lesson endpoints)

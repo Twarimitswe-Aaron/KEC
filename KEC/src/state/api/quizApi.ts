@@ -126,7 +126,7 @@ export const quizApi = apiSlice.injectEndpoints({
           description: response.description || "",
           questions: Array.isArray(response.questions)
             ? response.questions.map((q: any) => ({
-                id: q.id || Date.now(),
+                id: q.id ,
                 type: q.type || "multiple",
                 question: q.question || "",
                 description: q.description || "",
