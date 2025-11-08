@@ -148,6 +148,7 @@ const LessonsView = () => {
   const [forms, setForms] = useState(INITIAL_FORM_STATE); // -------------------------------------------------------- // ✨ SEARCH IMPLEMENTATION START // -------------------------------------------------------- // 1. Get the base list of lessons
   // Transform and validate course data
   const transformedCourseData = transformToCourseData(courseData);
+  console.log(courseData,"courseData");
   const baseLessons = isCourseData(transformedCourseData)
     ? transformedCourseData.lesson
     : [];

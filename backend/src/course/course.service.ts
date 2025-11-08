@@ -25,14 +25,32 @@ export class CourseService {
     });
   }
 
-  async getCourseById(id: number) {
-  console.log("Fetching course with ID:", id);
+ async getCourseById(id: number) {
+  console.log('Fetching course with ID:', id);
 
   const course = await this.prisma.course.findUnique({
     where: { id },
     include: {
-      lesson: { include: { resources: true } },
-      uploader: { include: { profile: true } },
+      lesson: {
+        include: {
+          resources: {
+            include: {
+              form: {
+                include: {
+                  quizzes: {
+                    include: {
+                      questions: true, // include quiz questions
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      uploader: {
+        include: { profile: true },
+      },
     },
   });
 
@@ -40,7 +58,7 @@ export class CourseService {
     return { message: 'Course not found' };
   }
 
-  // Helper function to format dates
+  // Helper function for date formatting
   const formatDate = (date: Date) =>
     new Date(date).toLocaleString('en-US', {
       weekday: 'short',
@@ -51,50 +69,78 @@ export class CourseService {
       minute: '2-digit',
     });
 
-    console.log(formatDate(new Date()));
+  return {
+    id: course.id,
+    title: course.title,
+    description: course.description,
+    price: course.coursePrice,
+    image_url: course.image_url,
+    no_lessons: course.lesson?.length || 0,
+    open: course.open,
+    isConfirmed: course.isConfirmed,
+    maximum: course.maximum,
+    createdAt: formatDate(course.createdAt),
+    updatedAt: formatDate(course.updatedAt),
 
- 
- return {
-  id: course.id,
-  title: course.title,
-  description: course.description,
-  price: course.coursePrice,
-  image_url: course.image_url,
-  no_lessons: course.lesson?.length || 0,
-  open: course.open,
-  isConfirmed: course.isConfirmed,
-  maximum: course.maximum,
-  createdAt: formatDate(course.createdAt),
-  updatedAt: formatDate(course.updatedAt),
+    lesson: course.lesson.map((l) => ({
+      id: l.id,
+      title: l.title,
+      description: l.description,
+      isUnlocked: l.isUnlocked,
+      createdAt: formatDate(l.createdAt),
 
-  lesson: course.lesson.map((l) => ({
-    id: l.id,
-    title: l.title,
-    description: l.description,
-    isUnlocked: l.isUnlocked,
-    createdAt: formatDate(l.createdAt),
+      resources: l.resources.map((r) => {
+        const resourceData: any = {
+          id: r.id,
+          name: r.name,
+          lessonId: r.lessonId,
+          type: r.type,
+          size: r.size,
+          createdAt: formatDate(r.uploadedAt),
+          url: r.url,
+        };
 
-  
-    resources: l.resources.map((r) => ({
-      id: r.id,
-      name: r.name,
-      lessonId: r.lessonId,
-      type: r.type,
-      size: r.size,
-      createdAt: formatDate(r.uploadedAt),
-      duration: r.duration,
-      url: r.url,
+        // ✅ If resource has a form, include it with quizzes
+        if (r.form) {
+          resourceData.form = {
+            id: r.form.id,
+            createdAt: formatDate(r.form.createdAt),
+
+            quizzes: r.form.quizzes?.map((q) => ({
+              id: q.id,
+              name: q.name,
+              description: q.description,
+              createdAt: formatDate(q.createdAt),
+              updatedAt: formatDate(q.updatedAt),
+
+              // include quiz questions
+              questions: q.questions?.map((qq) => ({
+                id: qq.id,
+                type: qq.type,
+                question: qq.question,
+                options: qq.options ? JSON.parse(qq.options) : [],
+                correctAnswer: qq.correctAnswer,
+                correctAnswers: qq.correctAnswers
+                  ? JSON.parse(qq.correctAnswers)
+                  : [],
+                required: qq.required,
+                points: qq.points,
+              })),
+            })),
+          };
+        }
+
+        return resourceData;
+      }),
     })),
-  })),
 
-  uploader: {
-    id: course.uploaderId,
-    name: `${course.uploader?.firstName} ${course.uploader?.lastName}`,
-    email: course.uploader?.email,
-    avatar_url: course.uploader?.profile?.avatar || '',
-  },
-};
-
+    uploader: {
+      id: course.uploaderId,
+      name: `${course.uploader?.firstName ?? ''} ${course.uploader?.lastName ?? ''}`.trim(),
+      email: course.uploader?.email,
+      avatar_url: course.uploader?.profile?.avatar || '',
+    },
+  };
 }
 
 
@@ -144,7 +190,6 @@ export class CourseService {
       include: { uploader: { include: { profile: true } } },
     });
 
-
     return getAllUploaded.map((course) => ({
       id: course.id,
       title: course.title,
@@ -162,8 +207,9 @@ export class CourseService {
     }));
   }
 
-  async updateCourse( updateCourseDto: UpdateCourseDto) {
-    const { title, description, price, image_url, maximum,open } = updateCourseDto;
+  async updateCourse(updateCourseDto: UpdateCourseDto) {
+    const { title, description, price, image_url, maximum, open } =
+      updateCourseDto;
     await this.prisma.course.update({
       where: { id: Number(updateCourseDto.id) },
       data: {
@@ -172,24 +218,10 @@ export class CourseService {
         coursePrice: price,
         image_url,
         maximum: Number(maximum),
-        open:Boolean(open)
-        
+        open: Boolean(open),
       },
     });
-    return { message: 'Course updated successfully'}
-    }
-
-  
-
-  findOne(id: number) {
-    return `This action returns a #${id} course`;
+    return { message: 'Course updated successfully' };
   }
 
-  update(id: number, updateCourseDto: UpdateCourseDto) {
-    return `This action updates a #${id} course`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} course`;
-  }
 }
