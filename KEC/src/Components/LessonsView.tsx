@@ -286,12 +286,15 @@ const LessonsView = () => {
     courseFormData.append("coursePrice", course.price.trim());
     courseFormData.append("maximum", String(course.maxStudents));
     courseFormData.append("open", String(course.isOpen));
-    courseFormData.append("image", course.imageFile || "");
-    courseFormData.append(
-      course.imageFile ? "imageChanged" : "image_url",
-      course.imageFile ? "true" : course.image
-    );
-    courseFormData.append("imageChanged", course.imageFile ? "true" : "false");
+    
+    // Only append image file if it exists
+    if (course.imageFile) {
+      courseFormData.append("image", course.imageFile);
+      courseFormData.append("imageChanged", "true");
+    } else if (course.image) {
+      courseFormData.append("image_url", course.image);
+      courseFormData.append("imageChanged", "false");
+    }
 
     try {
       const { message } = await updateCourse(courseFormData).unwrap();

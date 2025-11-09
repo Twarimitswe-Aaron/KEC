@@ -1,6 +1,5 @@
 import { apiSlice } from "./apiSlice";
 
-
 export interface CreateCourseDto {
   title: string;
   description: string;
@@ -8,7 +7,6 @@ export interface CreateCourseDto {
   price: string;
   uploader: { id: number };
 }
-
 
 export interface UploaderInfo {
   id: number;
@@ -37,21 +35,28 @@ export interface Quiz {
   questions: QuizQuestion[];
 }
 
-export interface FormData {
+// FormData can be either the form fields or a browser FormData for file uploads
+export type FormData = {
   id: number;
-  createdAt: string;
-  quizzes: Quiz[];
-}
+  title: string;
+  description: string;
+  coursePrice: string;
+  maximum?: number | null;
+  open: boolean;
+  image?: File | string;
+  imageChanged?: string;
+  image_url?: string;
+} | globalThis.FormData;
 
 export interface LessonResource {
   id: number;
   name: string;
   lessonId: number;
-  type: string; // could be 'VIDEO' | 'PDF' | 'QUIZ' | etc.
+  type: string;
   size?: string;
   createdAt: string;
   url?: string;
-  form?: FormData; // present if resource type is QUIZ
+  form?: FormData;
 }
 
 export interface LessonData {
@@ -62,7 +67,6 @@ export interface LessonData {
   createdAt: string;
   resources: LessonResource[];
 }
-
 
 export interface CourseSummary {
   id: number;
@@ -83,10 +87,8 @@ export interface CourseDetails extends CourseSummary {
   updatedAt: string;
 }
 
-
 export const courseApi = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
-    // Create Course
     createCourse: builder.mutation<{ message: string }, CreateCourseDto>({
       query: (body) => ({
         url: "/course/create-course",
@@ -97,7 +99,10 @@ export const courseApi = apiSlice.injectEndpoints({
     }),
 
     // Get All Courses
-    getCourses: builder.query<CourseSummary[], { unconfirmed?: boolean } | void>({
+    getCourses: builder.query<
+      CourseSummary[],
+      { unconfirmed?: boolean } | void
+    >({
       query: (params) =>
         params?.unconfirmed
           ? "/course/get-unconfirmed-courses"
@@ -139,15 +144,39 @@ export const courseApi = apiSlice.injectEndpoints({
 
     // Update Course
     updateCourse: builder.mutation<{ message: string }, FormData>({
-      query: (formData) => ({
-        url: "/course/update-course",
-        method: "PUT",
-        body: formData,
-      }),
-      invalidatesTags: (result, error, formData) => {
-        const id = formData.id;
+      query: (formData) => {
+        // If it's already a FormData object, use it directly
+        if (formData instanceof globalThis.FormData) {
+          return {
+            url: "/course/update-course",
+            method: "PUT",
+            body: formData,
+            // Important: Don't set Content-Type, let the browser set it with the correct boundary
+            headers: {},
+          };
+        }
+        
+        // Otherwise, send as JSON
+        return {
+          url: "/course/update-course",
+          method: "PUT",
+          body: formData,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        };
+      },
+      invalidatesTags: (_result, _error, formData) => {
+        // Handle both FormData object and our custom form data type
+        const id = formData instanceof globalThis.FormData 
+          ? formData.get('id')
+          : formData.id;
+        
         return [
-          { type: "Course", id: typeof id === "string" || typeof id === "number" ? id : "LIST" },
+          {
+            type: "Course" as const,
+            id: id ? String(id) : "LIST",
+          },
         ];
       },
     }),
@@ -156,7 +185,10 @@ export const courseApi = apiSlice.injectEndpoints({
       query: (id) => `/course/course/${id}`,
       providesTags: (result, error, id) => [
         { type: "Course", id },
-        ...(result?.lesson.map((lesson) => ({ type: "Lesson" as const, id: lesson.id })) || []),
+        ...(result?.lesson.map((lesson) => ({
+          type: "Lesson" as const,
+          id: lesson.id,
+        })) || []),
       ],
     }),
   }),
@@ -170,4 +202,3 @@ export const {
   useUpdateCourseMutation,
   useGetCourseDataQuery,
 } = courseApi;
-
