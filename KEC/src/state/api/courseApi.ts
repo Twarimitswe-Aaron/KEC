@@ -1,4 +1,5 @@
 import { apiSlice } from "./apiSlice";
+import { AddResourceRequest } from "./lessonApi";
 
 export interface CreateCourseDto {
   title: string;
@@ -56,7 +57,25 @@ export interface LessonResource {
   size?: string;
   createdAt: string;
   url?: string;
-  form?: FormData;
+  form?: FormDataQuiz;
+}
+
+export interface FormDataQuiz{
+  id:number;
+  name:string;
+  description:string;
+  createdAt:string;
+  updatedAt:string;
+  questions:QuestionProp[];
+}
+
+export interface QuestionProp{
+  id:number;
+  type:string;
+  question:string;
+  options:any[];
+  points:number;
+  required:boolean;
 }
 
 export interface LessonData {
@@ -85,6 +104,43 @@ export interface CourseDetails extends CourseSummary {
   lesson: LessonData[];
   createdAt: string;
   updatedAt: string;
+}
+
+export interface Resources{
+  id:number;
+  name:string;
+  type:string;
+  size:string;
+  createdAt:string;
+  url?:string;
+  form?:FormData;
+ 
+
+}
+
+export interface Lessons{
+  id:number;
+  title:string;
+  description:string;
+  isUnlocked:string;
+  createdAt:string;
+  resources:Resources[];
+
+}
+export interface CourseData{
+  id:number;
+  title:string;
+  description:string;
+  price:string;
+  image_url:string;
+  no_lessons:string;
+  open:boolean;
+  isConfirmed:boolean;
+  maximum:number;
+  createdAt:string;
+  updatedAt:string;
+  lesson:Lessons[];
+   uploader:UploaderInfo;
 }
 
 export const courseApi = apiSlice.injectEndpoints({
@@ -181,7 +237,7 @@ export const courseApi = apiSlice.injectEndpoints({
       },
     }),
 
-    getCourseData: builder.query<CourseDetails, number>({
+    getCourseData: builder.query<CourseData, number>({
       query: (id) => `/course/course/${id}`,
       providesTags: (result, error, id) => [
         { type: "Course", id },

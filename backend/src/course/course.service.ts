@@ -26,7 +26,7 @@ export class CourseService {
   }
 
  async getCourseById(id: number) {
-  console.log('Fetching course with ID:', id);
+
 
   const course = await this.prisma.course.findUnique({
     where: { id },
@@ -68,6 +68,8 @@ export class CourseService {
       hour: '2-digit',
       minute: '2-digit',
     });
+
+    console.log(course)
 
   return {
     id: course.id,

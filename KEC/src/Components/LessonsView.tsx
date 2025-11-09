@@ -72,7 +72,7 @@ function isCourseData(data: any): data is CourseData {
   );
 }
 
-// Function to transform API response to CourseData
+
 const transformToCourseData = (data: any): CourseData => {
   if (!data)
     return {
@@ -138,6 +138,8 @@ const LessonsView = () => {
   const [deleteCourse, { isLoading: isDeletingCourse }] =
     useDeleteCourseMutation();
 
+    console.log(courseData,"now let me check")
+
   const [modals, setModals] = useState({
     showAddModule: false,
     showCourseOptions: false,
@@ -145,23 +147,22 @@ const LessonsView = () => {
     showDeleteConfirm: false,
     showAddResource: null,
   });
-  const [forms, setForms] = useState(INITIAL_FORM_STATE); // -------------------------------------------------------- // ✨ SEARCH IMPLEMENTATION START // -------------------------------------------------------- // 1. Get the base list of lessons
-  // Transform and validate course data
+  const [forms, setForms] = useState(INITIAL_FORM_STATE); 
+
   const transformedCourseData = transformToCourseData(courseData);
-  console.log(courseData,"courseData");
   const baseLessons = isCourseData(transformedCourseData)
-    ? transformedCourseData.lesson
-    : [];
-  // 2. Filter the lessons based on the searchQuery, memoized for performance
+  ? transformedCourseData.lesson
+  : [];
+
+
+
   const filteredLessons = useMemo(() => {
-    // If no search, return all
     if (!searchQuery || searchQuery.trim() === "") {
       return baseLessons;
     }
 
     const lowerCaseQuery = searchQuery.toLowerCase().trim();
-
-    // Perform filtering
+ 
     const filtered = baseLessons.filter((lesson) => {
       const title = lesson.title?.toLowerCase() || "";
       const content = lesson.content?.toLowerCase() || "";
@@ -169,7 +170,7 @@ const LessonsView = () => {
       const titleMatch = title.includes(lowerCaseQuery);
       const contentMatch = content.includes(lowerCaseQuery);
 
-      // Optional: search inside resources safely
+     
       const resourceMatch = Array.isArray(lesson.resources)
         ? lesson.resources.some((resource) =>
             resource.url?.toLowerCase().includes(lowerCaseQuery)
@@ -181,10 +182,10 @@ const LessonsView = () => {
     });
 
     return filtered;
-  }, [baseLessons, searchQuery]); // 3. The `lessons` variable now uses the filtered list
+  }, [baseLessons, searchQuery]); 
 
-  const lessons = filteredLessons; // -------------------------------------------------------- // ✨ SEARCH IMPLEMENTATION END // --------------------------------------------------------
-
+  const lessons = filteredLessons; 
+  console.log(lessons, "filteredLessons");
   const updateModals = (updates: any) =>
     setModals((prev) => ({ ...prev, ...updates }));
   const updateForm = (form: FormKey, updates: any) =>
@@ -286,7 +287,7 @@ const LessonsView = () => {
     courseFormData.append("coursePrice", course.price.trim());
     courseFormData.append("maximum", String(course.maxStudents));
     courseFormData.append("open", String(course.isOpen));
-    
+
     // Only append image file if it exists
     if (course.imageFile) {
       courseFormData.append("image", course.imageFile);
@@ -318,7 +319,7 @@ const LessonsView = () => {
     else if (type === "boolean" && "checked" in e.target)
       value = (e.target as HTMLInputElement).checked;
     updateForm("course", { [key]: value });
-  }; // The lessons variable is now the filtered/searchable list
+  };
 
   const unlockedCount = lessons.length;
   const totalResources = lessons.reduce(
@@ -329,7 +330,7 @@ const LessonsView = () => {
   const LessonsViewSkeleton = () => {
     return (
       <div className="relative">
-              {/* Header Section Skeleton */}   
+              
         <div className="mb-8 bg-gray-100 rounded-2xl p-6 border border-gray-200">
                
           <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
@@ -525,7 +526,7 @@ const LessonsView = () => {
               <span className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-lg shadow-sm">
                 <BookOpen className="w-4 h-4 text-green-500" />
                 <span className="font-semibold text-gray-700">
-                  {unlockedCount}{" "}
+                  {courseData?.no_lessons}{" "}
                   <span className="sm:inline hidden">Lessons</span>
                 </span>
               </span>
