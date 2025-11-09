@@ -138,7 +138,7 @@ const LessonsView = () => {
   const [deleteCourse, { isLoading: isDeletingCourse }] =
     useDeleteCourseMutation();
 
-    console.log(courseData,"now let me check")
+  
 
   const [modals, setModals] = useState({
     showAddModule: false,
@@ -153,6 +153,7 @@ const LessonsView = () => {
   const baseLessons = isCourseData(transformedCourseData)
   ? transformedCourseData.lesson
   : [];
+  console.log(baseLessons,"now let me check")
 
 
 
@@ -184,7 +185,9 @@ const LessonsView = () => {
     return filtered;
   }, [baseLessons, searchQuery]); 
 
-  const lessons = filteredLessons; 
+  //tomorrow i weill start from here ineed you to help me to be working with this next
+
+  const lessons = courseData?.lesson; 
   console.log(lessons, "filteredLessons");
   const updateModals = (updates: any) =>
     setModals((prev) => ({ ...prev, ...updates }));
