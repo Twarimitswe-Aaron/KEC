@@ -28,6 +28,7 @@ import {
 import { Trash2 } from "lucide-react";
 import QuizEditor from "./QuizEditor";
 import { quizHelper } from "../state/api/quizApi";
+import { Lessons } from "../state/api/courseApi";
 
 // --- Types ---
 export interface QuizItem {
@@ -114,7 +115,7 @@ export interface Lesson {
 }
 
 export interface lessonManagementProps {
-  lessons: Lesson[];
+  lessons: Lessons[];
   courseId: number;
 }
 
@@ -212,6 +213,34 @@ const toLessonType = (lesson: Lesson): LessonType => ({
     })) || [],
 });
 
+// Function to handle both Lesson and Lessons types
+const mapToLessonType = (lesson: Lesson | Lessons): LessonType => {
+  // If it's already a LessonType, return it as is
+  if ('isUnlocked' in lesson && typeof lesson.isUnlocked === 'boolean') {
+    return lesson as unknown as LessonType;
+  }
+  
+  // Otherwise convert from Lessons type
+  return {
+    id: lesson.id,
+    title: lesson.title,
+    description: lesson.description || '',
+    isUnlocked: lesson.isUnlocked === 'true', // Convert string to boolean
+    order: 0, // Add default order
+    createdAt: (lesson as any).createdAt || '',
+    resources: (lesson as any).resources?.map((resource: any) => ({
+      id: resource.id,
+      name: resource.title || resource.name || 'Untitled Resource',
+      type: (resource.type as ResourceType['type']) || 'pdf',
+      url: resource.url || '',
+      uploadedAt: resource.uploadedAt || resource.createdAt || '',
+      size: resource.size,
+      duration: resource.duration,
+      quiz: resource.quiz || [],
+    })) || [],
+  };
+};
+
 // Tailwind JIT fix: Map for safe class usage
 const colorMap: Record<
   "red" | "purple" | "blue" | "green",
@@ -239,7 +268,7 @@ function LessonManagement({
   // Removed local state for form inputs to improve typing performance
 
   const [lessons, setLessons] = useState<LessonType[]>(
-    initialLessons.map(toLessonType) // Use renamed function
+    initialLessons.map(mapToLessonType)
   );
 
   const [menuOpenId, setMenuOpenId] = useState<number | null>(null);
@@ -278,7 +307,7 @@ function LessonManagement({
 
   // Handle initialLessons prop updates and SEARCH FILTERING
   useEffect(() => {
-    const initialLessonTypes = initialLessons.map(toLessonType);
+    const initialLessonTypes = initialLessons.map(mapToLessonType);
 
     if (searchQuery && searchQuery.trim().length > 0) {
       const query = searchQuery.toLowerCase();

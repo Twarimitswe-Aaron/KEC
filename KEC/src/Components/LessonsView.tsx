@@ -72,7 +72,6 @@ function isCourseData(data: any): data is CourseData {
   );
 }
 
-
 const transformToCourseData = (data: any): CourseData => {
   if (!data)
     return {
@@ -138,8 +137,6 @@ const LessonsView = () => {
   const [deleteCourse, { isLoading: isDeletingCourse }] =
     useDeleteCourseMutation();
 
-  
-
   const [modals, setModals] = useState({
     showAddModule: false,
     showCourseOptions: false,
@@ -147,15 +144,12 @@ const LessonsView = () => {
     showDeleteConfirm: false,
     showAddResource: null,
   });
-  const [forms, setForms] = useState(INITIAL_FORM_STATE); 
+  const [forms, setForms] = useState(INITIAL_FORM_STATE);
 
   const transformedCourseData = transformToCourseData(courseData);
   const baseLessons = isCourseData(transformedCourseData)
-  ? transformedCourseData.lesson
-  : [];
-  console.log(baseLessons,"now let me check")
-
-
+    ? transformedCourseData.lesson
+    : [];
 
   const filteredLessons = useMemo(() => {
     if (!searchQuery || searchQuery.trim() === "") {
@@ -163,7 +157,7 @@ const LessonsView = () => {
     }
 
     const lowerCaseQuery = searchQuery.toLowerCase().trim();
- 
+
     const filtered = baseLessons.filter((lesson) => {
       const title = lesson.title?.toLowerCase() || "";
       const content = lesson.content?.toLowerCase() || "";
@@ -171,7 +165,6 @@ const LessonsView = () => {
       const titleMatch = title.includes(lowerCaseQuery);
       const contentMatch = content.includes(lowerCaseQuery);
 
-     
       const resourceMatch = Array.isArray(lesson.resources)
         ? lesson.resources.some((resource) =>
             resource.url?.toLowerCase().includes(lowerCaseQuery)
@@ -183,12 +176,12 @@ const LessonsView = () => {
     });
 
     return filtered;
-  }, [baseLessons, searchQuery]); 
+  }, [baseLessons, searchQuery]);
 
   //tomorrow i weill start from here ineed you to help me to be working with this next
 
-  const lessons = courseData?.lesson; 
-  console.log(lessons, "filteredLessons");
+  const lessons = courseData?.lesson;
+  // console.log(lessons, "filteredLessons");
   const updateModals = (updates: any) =>
     setModals((prev) => ({ ...prev, ...updates }));
   const updateForm = (form: FormKey, updates: any) =>
@@ -324,8 +317,8 @@ const LessonsView = () => {
     updateForm("course", { [key]: value });
   };
 
-  const unlockedCount = lessons.length;
-  const totalResources = lessons.reduce(
+  const unlockedCount = lessons?.length;
+  const totalResources = lessons?.reduce(
     (acc, l) => acc + (l.resources?.length || 0),
     0
   );
@@ -333,7 +326,7 @@ const LessonsView = () => {
   const LessonsViewSkeleton = () => {
     return (
       <div className="relative">
-              
+             
         <div className="mb-8 bg-gray-100 rounded-2xl p-6 border border-gray-200">
                
           <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
@@ -933,7 +926,7 @@ const LessonsView = () => {
                
         </div>
       )}
-            <ModuleManagement courseId={Number(id)} lessons={lessons} /> 
+            <ModuleManagement courseId={Number(id)} lessons={lessons || []} /> 
     </div>
   );
 };
