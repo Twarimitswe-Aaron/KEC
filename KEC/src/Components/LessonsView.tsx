@@ -6,6 +6,7 @@ import {
   useGetCourseDataQuery,
   useUpdateCourseMutation,
   useDeleteCourseMutation,
+  CourseToUpdate,
 } from "../state/api/courseApi";
 import { X, Edit3, Trash2, Image, BookOpen, Users } from "lucide-react";
 import { toast } from "react-toastify";
@@ -276,25 +277,27 @@ const LessonsView = () => {
       return;
     }
 
-    const courseFormData = new FormData();
-    courseFormData.append("id", String(id));
-    courseFormData.append("title", course.title.trim());
-    courseFormData.append("description", course.description.trim());
-    courseFormData.append("coursePrice", course.price.trim());
-    courseFormData.append("maximum", String(course.maxStudents));
-    courseFormData.append("open", String(course.isOpen));
+    // Create a properly typed CourseToUpdate object
+    const courseUpdateData: CourseToUpdate & { image_url?: string; imageChanged?: string } = {
+      id: Number(id),
+      title: course.title.trim(),
+      description: course.description.trim(),
+      coursePrice: course.price.trim(),
+      open: course.isOpen,
+      maximum: course.maxStudents
+    };
 
-    // Only append image file if it exists
+    // Handle image updates
     if (course.imageFile) {
-      courseFormData.append("image", course.imageFile);
-      courseFormData.append("imageChanged", "true");
+      courseUpdateData.image = course.imageFile;
+      courseUpdateData.imageChanged = "true";
     } else if (course.image) {
-      courseFormData.append("image_url", course.image);
-      courseFormData.append("imageChanged", "false");
+      courseUpdateData.image_url = course.image;
+      courseUpdateData.imageChanged = "false";
     }
 
     try {
-      const { message } = await updateCourse(courseFormData).unwrap();
+      const { message } = await updateCourse(courseUpdateData).unwrap();
       toast.success(message || "Course updated successfully");
       updateModals({ showEditForm: false });
       refetchCourse();

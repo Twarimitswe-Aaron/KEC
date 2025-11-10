@@ -28,43 +28,14 @@ import {
 import { Trash2 } from "lucide-react";
 import QuizEditor from "./QuizEditor";
 import { quizHelper } from "../state/api/quizApi";
-import { Lessons } from "../state/api/courseApi";
+import {  FormDataQuiz, Lessons, QuestionProp } from "../state/api/courseApi";
 
-// --- Types ---
-export interface QuizItem {
-  id: number;
-  name: string;
-  description?: string;
-  settings?: Record<string, any>;
-  questions?: Array<{
-    id: number;
-    type: string;
-    question: string;
-    description?: string;
-    options?: string[];
-    correctAnswers?: (string | number)[];
-    required?: boolean;
-    points?: number;
-  }>;
-  lessonId?: number;
-  courseId?: number;
+export interface QuizItem extends QuestionProp {
 }
 
-export interface ResourceType {
-  id: number;
-  uploadedAt: string;
-  name: string;
-  type: "pdf" | "word" | "video" | "quiz";
-  url: string;
-  size?: string;
-  duration?: string;
-  description?: string;
-  quiz?: QuizItem[];
-  lessonId?: number;
-  courseId?: number;
+export interface ResourceType extends Lessons {
 }
 
-// Renamed from lessonType to LessonType (PascalCase convention)
 export type LessonType = {
   id: number;
   title: string;
@@ -96,9 +67,9 @@ export type IncomingResource = {
   name?: string;
   type?: string;
   size?: string;
-  duration?: string;
+
   createdAt?: string;
-  quiz?: any;
+    form?: FormDataQuiz;
 };
 
 export interface Lesson {
@@ -111,7 +82,7 @@ export interface Lesson {
   createdAt?: string;
   updatedAt?: string;
   isUnlocked?: boolean;
-  order?: number;
+
 }
 
 export interface lessonManagementProps {
@@ -270,6 +241,8 @@ function LessonManagement({
   const [lessons, setLessons] = useState<LessonType[]>(
     initialLessons.map(mapToLessonType)
   );
+
+  console.log(initialLessons,"lessons in lessons")
 
   const [menuOpenId, setMenuOpenId] = useState<number | null>(null);
   // Define a type for the quiz resource that includes all required properties
@@ -1114,8 +1087,8 @@ function LessonManagement({
                               <ul className="py-1 text-sm">
                                 <li>
                                   {resource.type === "quiz" ? (
-                                    resource.quiz &&
-                                    resource.quiz.length > 0 ? (
+                                    resource.form &&
+                                    resource.form?.quizzes?.length > 0 ? (
                                       resource.quiz.map(
                                         (quizItem: QuizItem) => (
                                           <button

@@ -451,7 +451,6 @@ export class ModuleService {
     });
     if (!lesson) throw new NotFoundException('Lesson not found');
 
-    // Delete all resources first (including quizzes)
     const resources = await this.prisma.resource.findMany({
       where: { lessonId: id },
       include: {

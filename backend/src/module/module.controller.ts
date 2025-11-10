@@ -35,25 +35,24 @@ import { diskStorage } from 'multer';
 export class ModuleController {
   constructor(private readonly svc: ModuleService) {}
 
-  // Create new lesson
+
   @Post('lesson')
   async createLesson(@Body() dto: CreateLessonDto) {
     return this.svc.createLesson(dto);
   }
 
-  // Get all lessons by course ID
   @Get('lesson-by-course/:courseId')
   async getLessonsByCourse(@Param('courseId', ParseIntPipe) courseId: number) {
     return this.svc.getLessonsByCourse(courseId);
   }
 
-  // Delete lesson
+
   @Delete(':id')
   async deleteLesson(@Param('id', ParseIntPipe) id: number) {
     return this.svc.deleteLesson(id);
   }
 
-  // Update existing lesson
+//not yet implemented
   @Put(':id')
   async updateLesson(
     @Param('id', ParseIntPipe) id: number,
@@ -62,7 +61,7 @@ export class ModuleController {
     return this.svc.updateLesson(id, dto);
   }
 
-  // Add resource to lesson - Main endpoint for file uploads
+
   @Post(':lessonId/resources')
   @UseInterceptors(
     FileInterceptor('file', {
@@ -135,7 +134,7 @@ export class ModuleController {
     return this.svc.toggleLessonLock(id, dto);
   }
 
-  // Delete resource from lesson
+
   @Delete(':lessonId/resources/:resourceId')
   async deleteResource(
     @Param('lessonId', ParseIntPipe) lessonId: number,
@@ -144,7 +143,6 @@ export class ModuleController {
     return this.svc.deleteResource(lessonId, resourceId);
   }
 
-  // Add quiz resource - more specific route first
   @Post('course/:courseId/lesson/:lessonId/quiz')
   async addQuizResource(
     @Param('lessonId', ParseIntPipe) lessonId: number,
@@ -154,7 +152,6 @@ export class ModuleController {
     return this.svc.addQuizResource(lessonId, courseId, dto);
   }
 
-  // Add video resource (alternative endpoint for video links)
   @Post(':lessonId/video')
   async addVideoResource(
     @Param('lessonId', ParseIntPipe) lessonId: number,
@@ -163,7 +160,6 @@ export class ModuleController {
     return this.svc.addVideoResource(lessonId, dto);
   }
 
-  // Module-specific endpoints (alias for lesson endpoints)
   @Post('module/:courseId')
   async createModule(
     @Body() dto: CreateLessonDto,

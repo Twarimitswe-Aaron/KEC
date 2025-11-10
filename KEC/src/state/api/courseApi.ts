@@ -15,53 +15,16 @@ export interface UploaderInfo {
   name: string;
   avatar_url: string;
 }
-
-export interface QuizQuestion {
+export interface QuestionProp {
   id: number;
   type: string;
   question: string;
-  options: string[];
-  correctAnswer?: number;
-  correctAnswers?: string[];
-  required: boolean;
+  correctAnswers?:(string|number)[];
+  options?: string[];
   points: number;
+  required: boolean;
+  quizId:number;
 }
-
-export interface Quiz {
-  id: number;
-  name: string;
-  description?: string;
-  createdAt: string;
-  updatedAt: string;
-  questions: QuizQuestion[];
-}
-
-// FormData can be either the form fields or a browser FormData for file uploads
-export type FormData =
-  | {
-      id: number;
-      title: string;
-      description: string;
-      coursePrice: string;
-      maximum?: number | null;
-      open: boolean;
-      image?: File | string;
-      imageChanged?: string;
-      image_url?: string;
-    }
-  | globalThis.FormData;
-
-export interface LessonResource {
-  id: number;
-  name: string;
-  lessonId: number;
-  type: string;
-  size?: string;
-  createdAt: string;
-  url?: string;
-  form?: FormDataQuiz;
-}
-
 export interface FormDataQuiz {
   id: number;
   name: string;
@@ -71,51 +34,17 @@ export interface FormDataQuiz {
   questions: QuestionProp[];
 }
 
-export interface QuestionProp {
-  id: number;
-  type: string;
-  question: string;
-  options: any[];
-  points: number;
-  required: boolean;
-}
 
-export interface LessonData {
-  id: number;
-  title: string;
-  description: string;
-  isUnlocked: boolean;
-  createdAt: string;
-  resources: LessonResource[];
-}
 
-export interface CourseSummary {
-  id: number;
-  title: string;
-  description: string;
-  price: string;
-  image_url: string;
-  no_lessons: number | string;
-  open?: boolean;
-  uploader: UploaderInfo;
-}
-
-export interface CourseDetails extends CourseSummary {
-  isConfirmed: boolean;
-  maximum?: number | null;
-  lesson: LessonData[];
-  createdAt: string;
-  updatedAt: string;
-}
 
 export interface Resources {
   id: number;
   name: string;
   type: string;
-  size: string;
+  size?: string;
   createdAt: string;
   url?: string;
-  form?: FormData;
+  form?: FormDataQuiz;
 }
 
 export interface Lessons {
@@ -125,6 +54,7 @@ export interface Lessons {
   isUnlocked: string;
   createdAt: string;
   resources: Resources[];
+  courseId?:number;
 }
 export interface CourseData {
   id: number;
@@ -142,6 +72,17 @@ export interface CourseData {
   uploader: UploaderInfo;
 }
 
+export interface CourseToUpdate{
+  id:number;
+  title:string;
+  description:string;
+  coursePrice:string;
+  maximum?:number;
+  open:boolean;
+  image?:File ;
+}
+
+
 export const courseApi = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
     createCourse: builder.mutation<{ message: string }, CreateCourseDto>({
@@ -155,7 +96,7 @@ export const courseApi = apiSlice.injectEndpoints({
 
     // Get All Courses
     getCourses: builder.query<
-      CourseSummary[],
+      CourseData[],
       { unconfirmed?: boolean } | void
     >({
       query: (params) =>
@@ -198,35 +139,17 @@ export const courseApi = apiSlice.injectEndpoints({
     }),
 
     // Update Course
-    updateCourse: builder.mutation<{ message: string }, FormData>({
+    updateCourse: builder.mutation<{ message: string }, CourseToUpdate>({
       query: (formData) => {
-        // If it's already a FormData object, use it directly
-        if (formData instanceof globalThis.FormData) {
-          return {
-            url: "/course/update-course",
-            method: "PUT",
-            body: formData,
-            // Important: Don't set Content-Type, let the browser set it with the correct boundary
-            headers: {},
-          };
-        }
-
-        // Otherwise, send as JSON
         return {
           url: "/course/update-course",
           method: "PUT",
           body: formData,
-          headers: {
-            "Content-Type": "application/json",
-          },
         };
+
       },
       invalidatesTags: (_result, _error, formData) => {
-        // Handle both FormData object and our custom form data type
-        const id =
-          formData instanceof globalThis.FormData
-            ? formData.get("id")
-            : formData.id;
+        const id =formData.id;
 
         return [
           {
