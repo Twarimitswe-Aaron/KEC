@@ -28,7 +28,7 @@ import {
 import { Trash2 } from "lucide-react";
 import QuizEditor from "./QuizEditor";
 import { quizHelper } from "../state/api/quizApi";
-import {  FormDataQuiz, Lessons, QuestionProp, QuizData } from "../state/api/courseApi";
+import { Lessons, QuestionProp, QuizData } from "../state/api/courseApi";
 
 export interface QuizItem extends QuestionProp {
 }
@@ -143,7 +143,7 @@ function LessonManagement({
 
   const [lessons, setLessons] = useState<Lessons[]>(initialLessons);
 
-  console.log(initialLessons,"lessons in lessons")
+
 
   const [menuOpenId, setMenuOpenId] = useState<number | null>(null);
   // Define a type for the quiz resource that includes all required properties
@@ -725,16 +725,19 @@ function LessonManagement({
    
 
       {openQuiz && (
-        <QuizEditor
-          resource={{
-            ...openQuiz,
-            courseId: courseId,
-            quizId: openQuiz.quizId,
-            lessonId: openQuiz.lessonId,
-          }}
-          onClose={() => setOpenQuiz(null)}
-        />
-        
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+            <QuizEditor
+              resource={{
+                courseId: openQuiz.courseId,
+                lessonId: openQuiz.lessonId,
+                quizId: openQuiz.quizId,
+                formId: openQuiz.formId
+              }}
+              onClose={() => setOpenQuiz(null)}
+            />
+          </div>
+        </div>
       )}
 
       
@@ -918,7 +921,7 @@ function LessonManagement({
                             )}
                             {resource.type === "quiz" && (
                               <span className="bg-green-100 text-green-800 px-2 py-0.5 rounded-full font-medium">
-                                {resource.form?.quizzes?.length || 0} Quizzes
+                                {resource.form?.quizzes?.length || 0} Quizz{(resource.form?.quizzes?.length || 0) > 1 ? "es" : ""}
                               </span>
                             )}
                           </div>
@@ -963,6 +966,7 @@ function LessonManagement({
                                                 courseId: courseId,
                                                 lessonId: lesson.id!,
                                                 quizId: quizItem.id, 
+                                                formId: resource.form!.id,
                                               });
                                               setOpenResourceMenu(null);
                                             }}
@@ -971,10 +975,6 @@ function LessonManagement({
                                             <FaEdit />
                                             <span>
                                               Edit Quiz
-                                              {resource.form &&
-                                              resource.form.quizzes.length > 1
-                                                ? ` #${quizItem.id}`
-                                                : ""}
                                             </span>
                                           </button>
                                         )

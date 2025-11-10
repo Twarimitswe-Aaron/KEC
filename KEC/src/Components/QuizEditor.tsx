@@ -31,27 +31,13 @@ import {
 import {
   useUpdateQuizMutation,
   useGetQuizDataByQuizIdQuery,
-  quizHelper,
+
 } from "../state/api/quizApi";
+import { QuestionProp } from "../state/api/courseApi";
 
 // Types (simplified)
-interface Question {
-  id: number;
-  type:
-    | "multiple"
-    | "checkbox"
-    | "truefalse"
-    | "labeling";
-  question: string;
-  description?: string;
-  options?: string[];
-  correctAnswers?: (string | number)[];
-  correctAnswer?: string | number;
-  imageUrl?: string;
-  imageFile?: File; // For handling file uploads
-  labelAnswers?: { label: string; answer: string }[];
-  required: boolean;
-  points: number;
+interface Question extends QuestionProp {
+  imageFile?: File;
 }
 
 
@@ -68,6 +54,7 @@ interface QuizProps {
   courseId: number;
   lessonId: number;
   quizId: number;
+  formId: number;
 
 }
 
@@ -142,6 +129,7 @@ const QuizEditor = ({ onClose, resource }: QuizEditorProps) => {
     courseId: resource.courseId,
     lessonId: resource.lessonId,
     quizId: resource.quizId!,
+    formId: resource.quizId!,
   });
 
   const [updateQuiz, { isLoading: isUpdating }] = useUpdateQuizMutation();
@@ -171,9 +159,7 @@ const QuizEditor = ({ onClose, resource }: QuizEditorProps) => {
           description: q.description || "",
           options:
             q.options ||
-            (q.type !== "short" &&
-            q.type !== "long" &&
-            q.type !== "number" &&
+            (
             q.type !== "labeling"
               ? [""]
               : undefined),
@@ -183,6 +169,7 @@ const QuizEditor = ({ onClose, resource }: QuizEditorProps) => {
           points: q.points || 1,
           imageUrl: q.imageUrl,
           labelAnswers: q.labelAnswers,
+          quizId: q.quizId || resource.quizId, // Add quizId from question or fall back to resource.quizId
         })) || []
       );
 
@@ -254,10 +241,10 @@ const QuizEditor = ({ onClose, resource }: QuizEditorProps) => {
           if (q.type === "multiple" || q.type === "truefalse") {
             return {
               ...q,
-              correctAnswer:
-                q.correctAnswer === optionIndex ? undefined : optionIndex,
               correctAnswers:
-                q.correctAnswer === optionIndex ? [] : [optionIndex],
+                q.correctAnswers?.includes(optionIndex) 
+                  ? q.correctAnswers.filter(i => i !== optionIndex) 
+                  : [...(q.correctAnswers || []), optionIndex],
             };
           } else if (q.type === "checkbox") {
             const currentAnswers = q.correctAnswers || [];
@@ -285,14 +272,14 @@ const QuizEditor = ({ onClose, resource }: QuizEditorProps) => {
     }
 
     const question: Question = {
-      id: Date.now(),
+      id: -Math.abs(Date.now()), // Negative ID for new questions (temporary until saved)
       type: newQuestion.type!,
       question: newQuestion.question.trim(),
       required: newQuestion.required || false,
       points: newQuestion.points || 1,
       options: newQuestion.options?.filter((opt) => opt.trim()),
       correctAnswers: newQuestion.correctAnswers || [],
-      correctAnswer: newQuestion.correctAnswer,
+      quizId: resource.quizId!, // This will be set by the parent component or API
     };
 
     setQuestions((prev) => [...prev, question]);
@@ -334,10 +321,7 @@ const QuizEditor = ({ onClose, resource }: QuizEditorProps) => {
       if (prev.type === "multiple" || prev.type === "truefalse") {
         return {
           ...prev,
-          correctAnswer:
-            prev.correctAnswer === optionIndex ? undefined : optionIndex,
-          correctAnswers:
-            prev.correctAnswer === optionIndex ? [] : [optionIndex],
+          correctAnswers: prev.correctAnswers?.[0] === optionIndex ? [] : [optionIndex],
         };
       } else if (prev.type === "checkbox") {
         const current = prev.correctAnswers || [];
@@ -424,7 +408,14 @@ const QuizEditor = ({ onClose, resource }: QuizEditorProps) => {
     const submissionQuestions = questions
       .filter((q) => q.question?.trim() !== "")
       .map((q, index) => {
-        const questionData: any = {
+        // For new questions (negative IDs), don't include the id field
+        const questionData: any = q.id < 0 ? {
+          type: q.type,
+          question: q.question.trim(),
+          required: q.required || false,
+          points: q.points || 1,
+        } : {
+          // For existing questions, include the id
           id: q.id,
           type: q.type,
           question: q.question.trim(),
@@ -439,18 +430,10 @@ const QuizEditor = ({ onClose, resource }: QuizEditorProps) => {
 
         // Handle correct answers depending on type
         if (q.type === "multiple" || q.type === "truefalse") {
-          questionData.correctAnswer = q.correctAnswer ?? null;
           questionData.correctAnswers = q.correctAnswers || [];
         } else if (q.type === "checkbox") {
-          questionData.correctAnswer = null;
           questionData.correctAnswers = q.correctAnswers || [];
-        } else if (
-          ["short", "long", "number"].includes(q.type)
-        ) {
-          questionData.correctAnswer = q.correctAnswer ?? null;
-          questionData.correctAnswers = [];
         } else if (q.type === "labeling") {
-          questionData.correctAnswer = null;
           questionData.correctAnswers = q.labelAnswers || [];
         }
 
@@ -464,6 +447,8 @@ const QuizEditor = ({ onClose, resource }: QuizEditorProps) => {
       settings: quizSettings,
         courseId:resource.courseId!,
       lessonId:resource.lessonId!,
+      quizId:resource.quizId!,
+      formId:resource.formId!,
     };
 
     console.log("Submitting quiz:", submissionData);
@@ -491,7 +476,7 @@ const QuizEditor = ({ onClose, resource }: QuizEditorProps) => {
 
   const isOptionCorrect = (question: Question, optionIndex: number) => {
     if (question.type === "multiple" || question.type === "truefalse") {
-      return question.correctAnswer === optionIndex;
+      return question.correctAnswers?.[0] === optionIndex;
     } else if (question.type === "checkbox") {
       return (question.correctAnswers || []).includes(optionIndex);
     }
@@ -505,7 +490,7 @@ const QuizEditor = ({ onClose, resource }: QuizEditorProps) => {
 
   const isNewOptionCorrect = (optionIndex: number) => {
     if (newQuestion.type === "multiple" || newQuestion.type === "truefalse") {
-      return newQuestion.correctAnswer === optionIndex;
+      return (newQuestion.correctAnswers || [])[0] === optionIndex;
     } else if (newQuestion.type === "checkbox") {
       return (newQuestion.correctAnswers || []).includes(optionIndex);
     }
@@ -1927,5 +1912,6 @@ const NewTextAnswer = ({ newQuestion, onNewQuestionChange }: any) => (
     </p>
   </div>
 );
+
 
 export default QuizEditor;

@@ -1,5 +1,4 @@
 import { apiSlice } from "./apiSlice";
-import { AddResourceRequest } from "./lessonApi";
 
 export interface CreateCourseDto {
   title: string;
@@ -17,13 +16,16 @@ export interface UploaderInfo {
 }
 export interface QuestionProp {
   id: number;
-  type: string;
+  type: "multiple" | "checkbox" | "truefalse" | "labeling";
   question: string;
-  correctAnswers?:(string|number)[];
+  description?: string;
+  correctAnswers?: (string|number)[];
   options?: string[];
   points: number;
   required: boolean;
-  quizId:number;
+  quizId: number;
+  imageUrl?: string;
+  labelAnswers?: { label: string; answer: string }[];
 }
 export interface FormDataQuiz {
   id: number;
@@ -34,20 +36,15 @@ export interface FormDataQuiz {
   quizzes: QuizData[];
 }
 
-export interface QuizData{
-  id:number;
-  name:string;
-  description:string;
-  createdAt:string;
-  required:boolean;
-  points:number;
-  questions:QuestionProp[];
-
+export interface QuizData {
+  id: number;
+  name: string;
+  description: string;
+  createdAt: string;
+  required: boolean;
+  points: number;
+  questions: QuestionProp[];
 }
-
-
-
-
 export interface Resources {
   id: number;
   name: string;
@@ -65,7 +62,7 @@ export interface Lessons {
   isUnlocked: boolean;
   createdAt: string;
   resources: Resources[];
-  courseId?:number;
+  courseId?: number;
 }
 export interface CourseData {
   id: number;
@@ -83,16 +80,15 @@ export interface CourseData {
   uploader: UploaderInfo;
 }
 
-export interface CourseToUpdate{
-  id:number;
-  title:string;
-  description:string;
-  coursePrice:string;
-  maximum?:number;
-  open:boolean;
-  image?:File ;
+export interface CourseToUpdate {
+  id: number;
+  title: string;
+  description: string;
+  coursePrice: string;
+  maximum?: number;
+  open: boolean;
+  image?: File;
 }
-
 
 export const courseApi = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
@@ -105,11 +101,7 @@ export const courseApi = apiSlice.injectEndpoints({
       invalidatesTags: [{ type: "Course", id: "LIST" }],
     }),
 
-    // Get All Courses
-    getCourses: builder.query<
-      CourseData[],
-      { unconfirmed?: boolean } | void
-    >({
+    getCourses: builder.query<CourseData[], { unconfirmed?: boolean } | void>({
       query: (params) =>
         params?.unconfirmed
           ? "/course/get-unconfirmed-courses"
@@ -123,7 +115,6 @@ export const courseApi = apiSlice.injectEndpoints({
           : [{ type: "Course", id: "LIST" }],
     }),
 
-    // Confirm Course
     confirmCourse: builder.mutation<{ message: string }, number>({
       query: (id) => ({
         url: "/course/confirm-course",
@@ -136,7 +127,6 @@ export const courseApi = apiSlice.injectEndpoints({
       ],
     }),
 
-    // Delete Course
     deleteCourse: builder.mutation<{ message: string }, number>({
       query: (id) => ({
         url: "/course/delete-course",
@@ -149,7 +139,6 @@ export const courseApi = apiSlice.injectEndpoints({
       ],
     }),
 
-    // Update Course
     updateCourse: builder.mutation<{ message: string }, CourseToUpdate>({
       query: (formData) => {
         return {
@@ -157,10 +146,9 @@ export const courseApi = apiSlice.injectEndpoints({
           method: "PUT",
           body: formData,
         };
-
       },
       invalidatesTags: (_result, _error, formData) => {
-        const id =formData.id;
+        const id = formData.id;
 
         return [
           {
