@@ -13,16 +13,12 @@ import {
   FaPlus,
   FaRegCircle,
   FaRegSquare,
-  FaTrash,
   FaArrowUp,
   FaArrowDown,
   FaTrashAlt,
 } from "react-icons/fa";
 import {
   X,
-  Eye,
-  Hash,
-  Type,
   List as ListIcon,
   CheckSquare,
   ToggleLeft,
@@ -31,36 +27,18 @@ import {
 import {
   useUpdateQuizMutation,
   useGetQuizDataByQuizIdQuery,
+  QuizIdentifiers,
+  QuizSettings,
 
 } from "../state/api/quizApi";
 import { QuestionProp } from "../state/api/courseApi";
-
-// Types (simplified)
 interface Question extends QuestionProp {
   imageFile?: File;
 }
-
-
-
-interface QuizSettings {
-  title: string;
-  description?: string;
-  showResults?: boolean;
-  allowRetakes?: boolean;
-  passingScore?: number;
+interface QuizProps extends QuizIdentifiers  {
 }
-
-interface QuizProps {
-  courseId: number;
-  lessonId: number;
-  quizId: number;
-  formId: number;
-
-}
-
 interface QuizEditorProps {
   resource: QuizProps;
-
   onClose: () => void;
 }
 
@@ -85,24 +63,6 @@ const QUESTION_TYPES = [
     description: "True or false selection",
   },
   {
-    value: "short",
-    label: "Short Answer",
-    icon: Type,
-    description: "Short text response",
-  },
-  {
-    value: "long",
-    label: "Paragraph",
-    icon: ListIcon,
-    description: "Long text response",
-  },
-  {
-    value: "number",
-    label: "Number",
-    icon: Hash,
-    description: "Numeric response",
-  },
-  {
     value: "labeling",
     label: "Image Labeling",
     icon: FaList,
@@ -114,11 +74,13 @@ const INITIAL_NEW_QUESTION: Partial<Question> = {
   type: "multiple",
   question: "",
   options: ["", ""],
+  correctAnswers: [],
   required: false,
   points: 1,
+  imageUrl:"",
+  labelAnswers:[],
 };
 
-// Main Component
 const QuizEditor = ({ onClose, resource }: QuizEditorProps) => {
   const {
     data: quizData,
@@ -134,7 +96,6 @@ const QuizEditor = ({ onClose, resource }: QuizEditorProps) => {
 
   const [updateQuiz, { isLoading: isUpdating }] = useUpdateQuizMutation();
 
-  // State
   const [questions, setQuestions] = useState<Question[]>([]);
   const [quizSettings, setQuizSettings] = useState<QuizSettings>({
     title: "",
@@ -148,38 +109,32 @@ const QuizEditor = ({ onClose, resource }: QuizEditorProps) => {
   const [showSidebar, setShowSidebar] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
 
-  // Initialize from API data
   useEffect(() => {
     if (quizData) {
       setQuestions(
         quizData.questions?.map((q: any, index: number) => ({
-          id: q.id || Date.now() + index,
-          type: q.type || "multiple",
-          question: q.question || "",
-          description: q.description || "",
-          options:
-            q.options ||
-            (
-            q.type !== "labeling"
-              ? [""]
-              : undefined),
-          correctAnswers: q.correctAnswers || [],
+          id: q.id,
+          type: q.type,
+          question: q.question,
+          description: q.description,
+          options:q.options,
+          correctAnswers: q.correctAnswers,
           correctAnswer: q.correctAnswer,
-          required: q.required || false,
-          points: q.points || 1,
+          required: q.required,
+          points: q.points,
           imageUrl: q.imageUrl,
           labelAnswers: q.labelAnswers,
-          quizId: q.quizId || resource.quizId, // Add quizId from question or fall back to resource.quizId
+          quizId: q.quizId,
         })) || []
       );
 
       setQuizSettings(
-        quizData.settings || {
+        (quizData.settings as QuizSettings) || {
           title: quizData.name ,
           description: quizData.description,
-          showResults: true,
-          allowRetakes: false,
-          passingScore: 0,
+          showResults: quizData.settings?.showResults,
+          allowRetakes: quizData.settings?.allowRetakes,
+          passingScore: quizData.settings?.passingScore,
         }
       );
 
@@ -272,20 +227,22 @@ const QuizEditor = ({ onClose, resource }: QuizEditorProps) => {
     }
 
     const question: Question = {
-      id: -Math.abs(Date.now()), // Negative ID for new questions (temporary until saved)
+      id: -Math.abs(Date.now()),
       type: newQuestion.type!,
       question: newQuestion.question.trim(),
       required: newQuestion.required || false,
       points: newQuestion.points || 1,
       options: newQuestion.options?.filter((opt) => opt.trim()),
       correctAnswers: newQuestion.correctAnswers || [],
-      quizId: resource.quizId!, // This will be set by the parent component or API
+      quizId: resource.quizId!,
+      imageUrl: "",
+      labelAnswers: [],
     };
 
     setQuestions((prev) => [...prev, question]);
     setNewQuestion(INITIAL_NEW_QUESTION);
     setHasChanges(true);
-    toast.success("Question added!");
+    toast.info("Question added!");
   };
 
   const newQuestionAddOption = () => {
@@ -395,7 +352,7 @@ const QuizEditor = ({ onClose, resource }: QuizEditorProps) => {
   };
 
 
-  const saveQuiz = async () => {
+const saveQuiz = async () => {
   if (!quizData?.id) return;
 
   try {
@@ -405,53 +362,46 @@ const QuizEditor = ({ onClose, resource }: QuizEditorProps) => {
       return;
     }
 
-    const submissionQuestions = questions
-      .filter((q) => q.question?.trim() !== "")
-      .map((q, index) => {
-        // For new questions (negative IDs), don't include the id field
-        const questionData: any = q.id < 0 ? {
-          type: q.type,
-          question: q.question.trim(),
-          required: q.required || false,
-          points: q.points || 1,
-        } : {
-          // For existing questions, include the id
-          id: q.id,
+    const newQuestions = questions
+      .filter((q) => q.id < 0 && q.question?.trim() !== "")
+      .map((q) => {
+        const questionData: any = {
           type: q.type,
           question: q.question.trim(),
           required: q.required || false,
           points: q.points || 1,
         };
 
-        // Handle options
-        if (Array.isArray(q.options) && q.options.length) {
+  
+        if (Array.isArray(q.options) && q.options.length > 0) {
           questionData.options = q.options.filter((opt) => opt && opt.trim());
         }
 
-        // Handle correct answers depending on type
-        if (q.type === "multiple" || q.type === "truefalse") {
-          questionData.correctAnswers = q.correctAnswers || [];
-        } else if (q.type === "checkbox") {
+        if (["multiple", "truefalse", "checkbox"].includes(q.type)) {
           questionData.correctAnswers = q.correctAnswers || [];
         } else if (q.type === "labeling") {
           questionData.correctAnswers = q.labelAnswers || [];
+
+          if (q.imageFile) {
+            questionData.imageFile = q.imageFile;
+          }
         }
 
         return questionData;
       });
 
     const submissionData = {
-      name: quizTitle,
+      name: quizTitle.trim(),
       description: quizSettings.description?.trim() || "",
-      questions: submissionQuestions,
+      questions: newQuestions,
       settings: quizSettings,
-        courseId:resource.courseId!,
-      lessonId:resource.lessonId!,
-      quizId:resource.quizId!,
-      formId:resource.formId!,
+      courseId: resource.courseId!,
+      lessonId: resource.lessonId!,
+      quizId: resource.quizId!,
+      formId: resource.formId!,
     };
 
-    console.log("Submitting quiz:", submissionData);
+    console.log("Submitting only new quiz questions:", submissionData);
 
     const { message } = await updateQuiz({
       id: quizData.id,
@@ -466,6 +416,8 @@ const QuizEditor = ({ onClose, resource }: QuizEditorProps) => {
     toast.error(error?.data?.message || error?.message || "Failed to save quiz");
   }
 };
+
+
 
   // Simple helper functions
   const getQuestionIcon = (type: string) => {

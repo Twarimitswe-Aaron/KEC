@@ -27,7 +27,7 @@ import {
 } from "../state/api/lessonApi";
 import { Trash2 } from "lucide-react";
 import QuizEditor from "./QuizEditor";
-import { quizHelper } from "../state/api/quizApi";
+import { QuizIdentifiers } from "../state/api/quizApi";
 import { Lessons, QuestionProp, QuizData } from "../state/api/courseApi";
 
 export interface QuizItem extends QuestionProp {
@@ -94,22 +94,6 @@ export const ConfirmDeleteModal = ({
   );
 };
 
-// --- Constants ---
-const SAMPLE_QUIZ: Question[] = [
-  {
-    id: 1,
-    type: "multiple",
-    question: "What is the primary purpose of React in web development?",
-    options: [
-      "Database management",
-      "Building user interfaces",
-      "Server-side rendering only",
-      "Styling components",
-    ],
-    required: true,
-  },
-];
-
 const getResourceIcon = (type: string) => {
   const icons = {
     pdf: <FaFilePdf className="text-red-500" />,
@@ -139,25 +123,9 @@ function LessonManagement({
   const [resourceType, setResourceType] = useState<
     "pdf" | "video" | "word" | "quiz" | null
   >(null);
-
-
   const [lessons, setLessons] = useState<Lessons[]>(initialLessons);
-
-
-
   const [menuOpenId, setMenuOpenId] = useState<number | null>(null);
-  // Define a type for the quiz resource that includes all required properties
-  type QuizResource = {
-    id: number;
-    name: string;
-    type: string;
-    quiz?: any;
-    lessonId: number;
-    courseId?: number;
-    quizId?: number;
-  };
-
-  const [openQuiz, setOpenQuiz] = useState<quizHelper | null>(null);
+  const [openQuiz, setOpenQuiz] = useState<QuizIdentifiers | null>(null);
   const [deleteLesson] = useDeleteLessonMutation();
   const [toggleLessonLock] = useToggleLessonLockMutation();
   const [addResource] = useAddResourceMutation();
@@ -605,7 +573,6 @@ function LessonManagement({
     const [localVideoName, setLocalVideoName] = useState("");
 
     const handleSubmit = () => {
-      // Basic validation
       if (!localVideoLink.trim() || !localVideoName.trim()) {
         toast.error("Please enter a title and a URL");
         return;
@@ -617,8 +584,6 @@ function LessonManagement({
         toast.error("Please enter a valid URL format");
         return;
       }
-
-      // Pass local state data up to the parent handler
       onSubmit(lessonId, localVideoName, localVideoLink);
     };
 
@@ -660,7 +625,7 @@ function LessonManagement({
             <input
               id={`video-url-${lessonId}`}
               type="url"
-              value={localVideoLink} // Controlled by local state
+              value={localVideoLink}
               onChange={(e) => setLocalVideoLink(e.target.value)}
               placeholder="https://example.com/video.mp4"
               autoComplete="off"
@@ -672,14 +637,14 @@ function LessonManagement({
         <div className="flex gap-2 mt-4">
           <button
             type="button"
-            onClick={handleSubmit} // Use local handleSubmit
+            onClick={handleSubmit} 
             className="bg-[#034153] hover:bg-[#034153]/90 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
           >
             <FaCheck /> Add Video
           </button>
           <button
             type="button"
-            onClick={onCancel} // Use onCancel prop
+            onClick={onCancel} 
             className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
           >
             <FaTimes /> Cancel
@@ -689,16 +654,12 @@ function LessonManagement({
     );
   };
 
-  // Sort lessons by createdAt DESC (newest first = last created at bottom)
+
   const sortedLessons = [...lessons].sort(
     (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
   );
-
-  // Find the currently open quiz resource
-
   return (
     <div className="w-full">
-      {/* Hidden File Input for File Uploads */}
       <input
         type="file"
         ref={fileInputRef}
@@ -715,15 +676,10 @@ function LessonManagement({
               resourceTypeStr as "pdf" | "word"
             );
           }
-          // Reset the input value to allow the same file to be selected again
           e.target.value = "";
-          setResourceType(null); // Close selector after selection
+          setResourceType(null); 
         }}
       />
-    
-
-   
-
       {openQuiz && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -740,8 +696,6 @@ function LessonManagement({
         </div>
       )}
 
-      
-      {/* Delete Confirmation Modals */}
       <ConfirmDeleteModal
         visible={modals.showDeleteConfirm}
         title="Delete Lesson"
@@ -764,7 +718,6 @@ function LessonManagement({
             key={lesson.id}
             className="bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow"
           >
-            {/* Header */}
             <div className="p-4 sm:p-6 flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3">
               <div className="flex-1 min-w-0">
                 <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">
@@ -849,7 +802,6 @@ function LessonManagement({
               </div>
             </div>
 
-            {/* Add Resource Section */}
             {showAddResource === lesson.id && (
               <div className="px-4 sm:px-6 pb-4 bg-gray-50 border-t border-gray-200">
                 <div className="pt-4">
@@ -859,7 +811,6 @@ function LessonManagement({
                     </h3>
                   </div>
 
-                  {/* Back to Options Button */}
                   {resourceType !== null && (
                     <button
                       onClick={() => setResourceType(null)}
@@ -869,7 +820,6 @@ function LessonManagement({
                     </button>
                   )}
 
-                  {/* Resource Forms */}
                   {resourceType === null ? (
                     <ResourceTypeSelector onSelect={setResourceType} />
                   ) : resourceType === "video" ? (
@@ -891,7 +841,7 @@ function LessonManagement({
               </div>
             )}
 
-            {/* Resources List */}
+
             {lesson.resources?.length > 0 && (
               <div className="px-4 sm:px-6 pb-4 border-t border-gray-200">
                 <h3 className="font-medium text-gray-900 my-4 flex items-center gap-2">
@@ -905,7 +855,6 @@ function LessonManagement({
                       key={resource.id}
                       className="flex items-center justify-between gap-3 p-3 border border-gray-200 rounded-lg hover:border-gray-300 hover:shadow-sm transition-all"
                     >
-                      {/* Left side: icon + resource info */}
                       <div className="flex items-center gap-3 min-w-0 flex-1">
                         <div className="text-xl flex-shrink-0">
                           {getResourceIcon(resource.type)}
@@ -928,7 +877,6 @@ function LessonManagement({
                         </div>
                       </div>
 
-                      {/* Right side: menu */}
                       <div className="flex items-center gap-2 flex-shrink-0">
                         <div
                           className="relative"
@@ -949,7 +897,6 @@ function LessonManagement({
                             <FaEllipsisV className="text-gray-600" />
                           </button>
 
-                          {/* Dropdown menu */}
                           {openResourceMenu === resource.id && (
                             <div className="absolute right-0 top-full mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-20">
                               <ul className="py-1 text-sm">
@@ -997,7 +944,6 @@ function LessonManagement({
                                   )}
                                 </li>
 
-                                {/* Delete button */}
                                 <li>
                                   <button
                                     onClick={() => {

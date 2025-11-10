@@ -251,7 +251,7 @@ export class ModuleService {
                       id: q.id,
                       type: q.type,
                       question: q.question,
-                      options: q.options ? JSON.parse(q.options) : null,
+                      options: q.options,
                       required: q.required,
                     })) || [],
                   attempts: quiz.attempts || [],
@@ -275,104 +275,6 @@ export class ModuleService {
     } catch (error) {
       console.error('Error fetching lessons:', error);
       throw new Error('Failed to fetch lessons');
-    }
-  }
-
-  async getLessonById(id: number) {
-    type LessonWithResources = Prisma.LessonGetPayload<{
-      include: {
-        resources: {
-          include: {
-            form: {
-              include: {
-                questions: true;
-                quizzes: {
-                  include: {
-                    questions: true;
-                    attempts: true;
-                  };
-                };
-              };
-            };
-          };
-        };
-      };
-    }>;
-
-    try {
-      const lesson = await this.prisma.lesson.findUnique({
-        where: { id },
-        include: {
-          resources: {
-            include: {
-              form: {
-                include: {
-                  questions: true,
-                  quizzes: {
-                    include: {
-                      questions: true,
-                      attempts: true,
-                    },
-                  },
-                },
-              },
-            },
-          },
-        },
-      });
-
-      if (!lesson) {
-        throw new NotFoundException('Lesson not found');
-      }
-
-      // Type assertion since we've already included all necessary relations
-      const typedLesson = lesson as unknown as LessonWithResources;
-
-      return {
-        id: typedLesson.id,
-        title: typedLesson.title,
-        content: typedLesson.description,
-        description: typedLesson.description,
-        courseId: typedLesson.courseId,
-        isUnlocked: typedLesson.isUnlocked,
-        order: typedLesson.id,
-        resources: typedLesson.resources.map((resource) => {
-          const quiz = resource.form?.quizzes?.[0];
-          const resourceData = {
-            id: resource.id,
-            url: resource.url || null,
-            title: resource.name || 'Untitled Resource',
-            type: resource.type,
-            size: resource.size || null,
-            duration: resource.duration || null,
-            uploadedAt: resource.uploadedAt?.toISOString() || null,
-          };
-
-          if (quiz) {
-            return {
-              ...resourceData,
-              quiz: {
-                id: quiz.id,
-                name: quiz.name,
-                description: quiz.description,
-                questions:
-                  quiz.questions?.map((q) => ({
-                    id: q.id,
-                    type: q.type,
-                    question: q.question,
-                    options: q.options ? JSON.parse(q.options) : null,
-                    required: q.required,
-                  })) || [],
-                attempts: quiz.attempts || [],
-              },
-            };
-          }
-          return resourceData;
-        }),
-      };
-    } catch (error) {
-      console.error('Error fetching lesson:', error);
-      throw new Error('Failed to fetch lesson');
     }
   }
 

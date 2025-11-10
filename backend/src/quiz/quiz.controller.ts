@@ -51,12 +51,10 @@ export class QuizController {
       [key: string]: Express.Multer.File[] | undefined;
     } = {},
   ) {
-    // Handle main quiz image
     if (files?.image?.[0]) {
       updateQuizDto.imageUrl = `/uploads/quiz-images/${files.image[0].filename}`;
     }
 
-    // Handle question images
     if (files) {
       const questionImages = Object.entries(files as Record<string, Express.Multer.File[]>)
         .filter(([key]) => key.startsWith('question-') && key.endsWith('-image'))

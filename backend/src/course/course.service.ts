@@ -101,8 +101,6 @@ export class CourseService {
           createdAt: formatDate(r.uploadedAt),
           url: r.url,
         };
-
-        // ✅ If resource has a form, include it with quizzes
         if (r.form) {
           resourceData.form = {
             id: r.form.id,
@@ -120,11 +118,6 @@ export class CourseService {
                 id: qq.id,
                 type: qq.type,
                 question: qq.question,
-                options: qq.options ? JSON.parse(qq.options) : [],
-                correctAnswer: qq.correctAnswer,
-                correctAnswers: qq.correctAnswers
-                  ? JSON.parse(qq.correctAnswers)
-                  : [],
                 required: qq.required,
                 points: qq.points,
               })),

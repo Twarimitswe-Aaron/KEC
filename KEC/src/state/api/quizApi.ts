@@ -1,9 +1,17 @@
 // frontend/src/api/quizApi.ts
 import { apiSlice } from "./apiSlice";
-import { FormDataQuiz, QuestionProp, QuizData } from "./courseApi";
+import { QuestionProp } from "./courseApi";
 
-export interface QuizQuestion extends  QuestionProp {
+export interface QuizIdentifiers {
+  courseId: number;
+  lessonId: number;
+  quizId: number;
+  formId: number;
 }
+
+
+export interface QuizQuestion extends QuestionProp {}
+
 
 export interface QuizSettings {
   title: string;
@@ -13,42 +21,42 @@ export interface QuizSettings {
   passingScore?: number;
 }
 
-export interface Quiz  extends QuizData,quizHelper{
-  settings?: QuizSettings;
-}
-
-
-export interface UpdateQuizRequest extends quizHelper  {
-  name?: string;
+export interface Quiz {
+  id: number;
+  name: string;
   description?: string;
+  courseId: number;
+  lessonId: number;
+  formId: number;
   questions?: QuizQuestion[];
   settings?: QuizSettings;
 }
 
-export interface quizHelper {
+export interface UpdateQuizRequest {
+  name?: string;
+  description?: string;
   courseId: number;
   lessonId: number;
   quizId: number;
-  formId:number;
+  formId: number;
+  questions?: QuizQuestion[];
+  settings?: QuizSettings;
 }
-
 export const quizApi = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
-    getQuizDataByQuizId: builder.query<Quiz, quizHelper>({
-      query: (quizHelper) => ({
-        url: `quizzes/quiz/?courseId=${quizHelper.courseId}&lessonId=${quizHelper.lessonId}&quizId=${quizHelper.quizId}&formId=${quizHelper.formId}`,
-      })
+    // Get quiz data by identifiers
+    getQuizDataByQuizId: builder.query<Quiz, QuizIdentifiers>({
+      query: ({ courseId, lessonId, quizId, formId }) => ({
+        url: `quizzes/quiz/?courseId=${courseId}&lessonId=${lessonId}&quizId=${quizId}&formId=${formId}`,
+      }),
     }),
 
+    // Update an existing quiz
     updateQuiz: builder.mutation<
       { message: string },
-      {
-        id: number;
-      
-        data: UpdateQuizRequest;
-      }
+      { id: number; data: UpdateQuizRequest }
     >({
-      query: ({  id, data }) => ({
+      query: ({ id, data }) => ({
         url: `quizzes/${id}`,
         method: "PATCH",
         body: data,
@@ -58,15 +66,11 @@ export const quizApi = apiSlice.injectEndpoints({
         "Quiz",
       ],
     }),
-
   }),
 });
 
+
 export const {
-
   useUpdateQuizMutation,
-
-
   useGetQuizDataByQuizIdQuery,
-
 } = quizApi;

@@ -9,6 +9,7 @@ export class UpdateQuizDto {
   lessonId: number;
   courseId: number;
   imageUrl?: string; // For quiz cover image
+ 
 }
 
 export class UpdateQuizQuestionDto {

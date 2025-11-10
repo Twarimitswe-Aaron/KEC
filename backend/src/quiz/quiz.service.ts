@@ -6,10 +6,8 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateQuizDto } from './dto/create-quiz.dto';
 import { UpdateQuizDto, UpdateQuizQuestionDto } from './dto/update-quiz.dto';
-import { CreateQuizAttemptDto } from './dto/quiz-attempt.dto';
-import { create } from 'domain';
+
 
 @Injectable()
 export class QuizService {
@@ -18,73 +16,91 @@ export class QuizService {
   ) {}
 
   async updateQuiz({ id, data }: { id: number; data: UpdateQuizDto }) {
-    // Handle image uploads first if any
-    if (data.questions) {
-      for (const question of data.questions) {
-        if (question.imageFile) {
-          // The file has already been saved by the FileInterceptor
-          // Just update the imageUrl to point to the saved file
-          question.imageUrl = question.imageFile.path;
-          delete question.imageFile; // Remove the file object
-        }
+  if (data.questions) {
+    for (const question of data.questions) {
+      if (question.imageFile && question.type === "labeling") {
+        question.imageUrl = question.imageFile.path;
       }
+      delete question.imageFile;
     }
+  }
 
-    // Prepare update data
-    const updateData: any = {
-      name: data.name,
-      description: data.description,
-      settings: data.settings,
-    };
+  console.log("Updating quiz with data:", data.questions);
 
-    // Only include imageUrl if it's provided
-    if (data.imageUrl) {
-      updateData.imageUrl = data.imageUrl;
-    }
+  const updateData: any = {
+    name: data.name,
+    description: data.description,
+    settings: data.settings,
+  };
 
-    // First, update the quiz with basic information
-    const updatedQuiz = await this.prisma.quiz.update({
+  if (data.imageUrl) {
+    updateData.imageUrl = data.imageUrl;
+  }
+
+  const updatedQuiz = await this.prisma.quiz.update({
+    where: { id },
+    data: updateData,
+    include: {
+      questions: true,
+    },
+  });
+
+
+  if (data.questions!.length > 0) {
+
+
+    await this.prisma.quiz.update({
       where: { id },
-      data: updateData,
-      include: {
-        questions: true,
+      data: {
+        questions: {
+          create: data.questions!.map(q => {
+            if (!q.question?.trim()) {
+              throw new BadRequestException("Question text is required for all questions");
+            }
+
+            // Ensure options and correctAnswers are properly formatted as arrays
+            const questionData: any = {
+              type: q.type,
+              question: q.question.trim(),
+              options: Array.isArray(q.options) ? q.options : [],
+              required: q.required ?? false,
+              points: q.points ?? 1,
+            };
+
+            // Handle correctAnswers based on question type
+            if (q.type === 'multiple' && q.correctAnswers) {
+              questionData.correctAnswers = Array.isArray(q.correctAnswers) 
+                ? q.correctAnswers 
+                : [q.correctAnswers];
+            } else if ((q.type === 'checkbox' || q.type === 'labeling') && q.correctAnswers) {
+              questionData.correctAnswers = Array.isArray(q.correctAnswers)
+                ? q.correctAnswers
+                : [q.correctAnswers];
+            } else {
+              questionData.correctAnswers = [];
+            }
+
+            if (q.type === 'labeling' && q.imageUrl) {
+              questionData.imageUrl = q.imageUrl;
+            }
+
+            return questionData;
+          }),
+        },
       },
     });
-
-    // Then, create new questions if any
-    const newQuestions = data.questions?.filter(q => !q.id) || [];
-    if (newQuestions.length > 0) {
-      await this.prisma.quiz.update({
-        where: { id },
-        data: {
-          questions: {
-            create: newQuestions.map(q => {
-              // Validate required fields
-              if (!q.question) {
-                throw new BadRequestException('Question text is required for all questions');
-              }
-              
-              return {
-                type: q.type,
-                question: q.question,
-                description: q.description,
-                options: q.options ? JSON.stringify(q.options) : null,
-                correctAnswer: q.type === 'truefalse' || q.type === 'multiple' ? 
-                  (typeof q.correctAnswer === 'number' ? q.correctAnswer : null) : 
-                  null,
-                correctAnswers: q.correctAnswers ? JSON.stringify(q.correctAnswers) : null,
-                required: q.required ?? false,
-                points: q.points ?? 1,
-                imageUrl: q.imageUrl,
-              };
-            }),
-          },
-        },
-      });
-    }
-
-    return updatedQuiz;
   }
+
+  const message =
+    data.questions?.length === 0
+      ? "Quiz updated successfully"
+      : data.questions?.length === 1
+      ? "Question created successfully"
+      : "Questions created successfully";
+
+  return { message };
+}
+
 
   async getQuizDataByQuiz({
   quizId,
@@ -136,17 +152,35 @@ export class QuizService {
     throw new Error('Quiz does not belong to the specified lesson');
   }
 
-  // Format questions properly
-  const formattedQuestions = quiz.questions.map((q) => ({
-    id: q.id,
-    type: q.type,
-    question: q.question,
-    correctAnswers: q.correctAnswer || [],
-    options: q.options || [],
-    points: q.points,
-    required: q.required,
-    quizId: quiz.id,
-  }));
+  const formattedQuestions = quiz.questions.map((q) => {
+    // Parse options from JSON string if it's a string
+    const options = typeof q.options === 'string' 
+      ? JSON.parse(q.options) 
+      : Array.isArray(q.options) 
+        ? q.options 
+        : [];
+
+    // Parse correctAnswers from JSON string if it's a string
+    let correctAnswers = [];
+    if (q.correctAnswers) {
+      correctAnswers = typeof q.correctAnswers === 'string' 
+        ? JSON.parse(q.correctAnswers)
+        : Array.isArray(q.correctAnswers)
+          ? q.correctAnswers
+          : [];
+    }
+
+    return {
+      id: q.id,
+      type: q.type,
+      question: q.question,
+      correctAnswers: correctAnswers,
+      options: options,
+      points: q.points,
+      required: q.required,
+      quizId: quiz.id,
+    };
+  });
 
   const totalPoints = formattedQuestions.reduce((sum, q) => sum + q.points, 0);
   const hasRequired = formattedQuestions.some((q) => q.required);

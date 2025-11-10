@@ -124,16 +124,16 @@ model Resource {
 }
 
 model QuizQuestion {
-  id             Int     @id @default(autoincrement())
+  id             Int      @id @default(autoincrement())
   quizId         Int
   type           String
   question       String
-  options        String?
-  correctAnswer  Int?
-  correctAnswers String?
-  required       Boolean @default(false)
-  points Int  @default(1)
-  quiz   Quiz @relation(fields: [quizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  options       Json?
+  correctAnswers Json?
+  required       Boolean   @default(false)
+  points         Int       @default(1)
+  imageUrl       String?
+  quiz           Quiz      @relation(fields: [quizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 }
 
 model QuizAttempt {
