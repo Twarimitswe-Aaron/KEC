@@ -424,8 +424,8 @@ const QuizEditor = ({ onClose, resource }: QuizEditorProps) => {
         };
 
         // Handle options
-        if (q.options?.length) {
-          questionData.options = q.options.filter((opt) => opt.trim());
+        if (Array.isArray(q.options) && q.options.length) {
+          questionData.options = q.options.filter((opt) => opt && opt.trim());
         }
 
         // Handle correct answers depending on type
@@ -1413,7 +1413,7 @@ const QuestionViewMode = ({ question, isOptionCorrect }: any) => (
           ))}
         </div>
       </div>
-    ) : question.options ? (
+    ) : Array.isArray(question.options) ? (
       <ul className="space-y-1 text-sm">
         {question.options.map((option: string, optIndex: number) => (
           <li
