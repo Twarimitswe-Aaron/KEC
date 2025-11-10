@@ -42,36 +42,46 @@ export class QuizService {
       updateData.imageUrl = data.imageUrl;
     }
 
-    // Update the quiz
+    // First, update the quiz with basic information
     const updatedQuiz = await this.prisma.quiz.update({
       where: { id },
-      data: {
-        ...updateData,
-        questions: {
-          // Update existing questions
-          update: data.questions?.map(q => ({
-            where: { id: q.id },
-            data: {
-              type: q.type,
-              question: q.question,
-              description: q.description,
-              options: q.options ? JSON.stringify(q.options) : null,
-              correctAnswer: q.type === 'truefalse' || q.type === 'multiple' ? 
-                (typeof q.correctAnswer === 'number' ? q.correctAnswer : null) : 
-                null,
-              correctAnswers: q.type === 'checkbox' && q.correctAnswers ? 
-                JSON.stringify(q.correctAnswers) : null,
-              required: q.required,
-              points: q.points,
-              imageUrl: q.imageUrl,
-            },
-          })) || [],
-        },
-      },
+      data: updateData,
       include: {
         questions: true,
       },
     });
+
+    // Then, create new questions if any
+    const newQuestions = data.questions?.filter(q => !q.id) || [];
+    if (newQuestions.length > 0) {
+      await this.prisma.quiz.update({
+        where: { id },
+        data: {
+          questions: {
+            create: newQuestions.map(q => {
+              // Validate required fields
+              if (!q.question) {
+                throw new BadRequestException('Question text is required for all questions');
+              }
+              
+              return {
+                type: q.type,
+                question: q.question,
+                description: q.description,
+                options: q.options ? JSON.stringify(q.options) : null,
+                correctAnswer: q.type === 'truefalse' || q.type === 'multiple' ? 
+                  (typeof q.correctAnswer === 'number' ? q.correctAnswer : null) : 
+                  null,
+                correctAnswers: q.correctAnswers ? JSON.stringify(q.correctAnswers) : null,
+                required: q.required ?? false,
+                points: q.points ?? 1,
+                imageUrl: q.imageUrl,
+              };
+            }),
+          },
+        },
+      });
+    }
 
     return updatedQuiz;
   }
