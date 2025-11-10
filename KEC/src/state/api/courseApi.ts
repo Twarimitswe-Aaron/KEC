@@ -31,7 +31,18 @@ export interface FormDataQuiz {
   description: string;
   createdAt: string;
   updatedAt: string;
-  questions: QuestionProp[];
+  quizzes: QuizData[];
+}
+
+export interface QuizData{
+  id:number;
+  name:string;
+  description:string;
+  createdAt:string;
+  required:boolean;
+  points:number;
+  questions:QuestionProp[];
+
 }
 
 
@@ -42,7 +53,7 @@ export interface Resources {
   name: string;
   type: string;
   size?: string;
-  createdAt: string;
+  uploadedAt: string;
   url?: string;
   form?: FormDataQuiz;
 }
@@ -51,7 +62,7 @@ export interface Lessons {
   id: number;
   title: string;
   description: string;
-  isUnlocked: string;
+  isUnlocked: boolean;
   createdAt: string;
   resources: Resources[];
   courseId?:number;

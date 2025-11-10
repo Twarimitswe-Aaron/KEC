@@ -28,23 +28,10 @@ import {
 import { Trash2 } from "lucide-react";
 import QuizEditor from "./QuizEditor";
 import { quizHelper } from "../state/api/quizApi";
-import {  FormDataQuiz, Lessons, QuestionProp } from "../state/api/courseApi";
+import {  FormDataQuiz, Lessons, QuestionProp, QuizData } from "../state/api/courseApi";
 
 export interface QuizItem extends QuestionProp {
 }
-
-export interface ResourceType extends Lessons {
-}
-
-export type LessonType = {
-  id: number;
-  title: string;
-  description: string;
-  isUnlocked: boolean;
-  order: number;
-  createdAt: string;
-  resources: ResourceType[];
-};
 
 export type Question = {
   id: number;
@@ -55,35 +42,6 @@ export type Question = {
   required?: boolean;
   points?: number;
 };
-
-export type QuizResponse = {
-  questionId: number;
-  answer: string | string[];
-};
-
-export type IncomingResource = {
-  id: number;
-  url: string;
-  name?: string;
-  type?: string;
-  size?: string;
-
-  createdAt?: string;
-    form?: FormDataQuiz;
-};
-
-export interface Lesson {
-  id: number;
-  title: string;
-  content: string;
-  description?: string;
-  courseId?: number;
-  resources?: IncomingResource[];
-  createdAt?: string;
-  updatedAt?: string;
-  isUnlocked?: boolean;
-
-}
 
 export interface lessonManagementProps {
   lessons: Lessons[];
@@ -162,57 +120,6 @@ const getResourceIcon = (type: string) => {
   return icons[type as keyof typeof icons] || <FaFile />;
 };
 
-// Convert Lesson to LessonType (Renamed function for clarity)
-const toLessonType = (lesson: Lesson): LessonType => ({
-  id: lesson.id,
-  title: lesson.title,
-  description: lesson.description || lesson.content || "",
-  isUnlocked: lesson.isUnlocked ?? true,
-  order: lesson.order || lesson.id,
-  createdAt: lesson.createdAt || "",
-  resources:
-    lesson.resources?.map((resource) => ({
-      id: resource.id,
-      name: resource.name || "Untitled Resource",
-      // Explicit type casting
-      type: (resource.type as ResourceType["type"]) || "pdf",
-      url: resource.url,
-      uploadedAt: resource.createdAt || "",
-      size: resource.size,
-      duration: resource.duration,
-      quiz: resource.quiz || SAMPLE_QUIZ,
-    })) || [],
-});
-
-// Function to handle both Lesson and Lessons types
-const mapToLessonType = (lesson: Lesson | Lessons): LessonType => {
-  // If it's already a LessonType, return it as is
-  if ('isUnlocked' in lesson && typeof lesson.isUnlocked === 'boolean') {
-    return lesson as unknown as LessonType;
-  }
-  
-  // Otherwise convert from Lessons type
-  return {
-    id: lesson.id,
-    title: lesson.title,
-    description: lesson.description || '',
-    isUnlocked: lesson.isUnlocked === 'true', // Convert string to boolean
-    order: 0, // Add default order
-    createdAt: (lesson as any).createdAt || '',
-    resources: (lesson as any).resources?.map((resource: any) => ({
-      id: resource.id,
-      name: resource.title || resource.name || 'Untitled Resource',
-      type: (resource.type as ResourceType['type']) || 'pdf',
-      url: resource.url || '',
-      uploadedAt: resource.uploadedAt || resource.createdAt || '',
-      size: resource.size,
-      duration: resource.duration,
-      quiz: resource.quiz || [],
-    })) || [],
-  };
-};
-
-// Tailwind JIT fix: Map for safe class usage
 const colorMap: Record<
   "red" | "purple" | "blue" | "green",
   { bg: string; text: string }
@@ -223,24 +130,18 @@ const colorMap: Record<
   green: { bg: "bg-green-100", text: "text-green-600" },
 };
 
-// --- Main Component ---
 function LessonManagement({
-  // Renamed to LessonManagement for consistency
   lessons: initialLessons,
   courseId,
 }: lessonManagementProps) {
   const { searchQuery } = useContext(SearchContext);
-  // State
   const [showAddResource, setShowAddResource] = useState<number | null>(null);
   const [resourceType, setResourceType] = useState<
     "pdf" | "video" | "word" | "quiz" | null
   >(null);
 
-  // Removed local state for form inputs to improve typing performance
 
-  const [lessons, setLessons] = useState<LessonType[]>(
-    initialLessons.map(mapToLessonType)
-  );
+  const [lessons, setLessons] = useState<Lessons[]>(initialLessons);
 
   console.log(initialLessons,"lessons in lessons")
 
@@ -273,58 +174,46 @@ function LessonManagement({
     resourceId: number;
   } | null>(null);
 
-  // Refs
   const menuWrapperRefs = useRef<Record<number, HTMLDivElement | null>>({});
   const resourceMenuRefs = useRef<Record<number, HTMLDivElement | null>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // Handle initialLessons prop updates and SEARCH FILTERING
   useEffect(() => {
-    const initialLessonTypes = initialLessons.map(mapToLessonType);
-
     if (searchQuery && searchQuery.trim().length > 0) {
       const query = searchQuery.toLowerCase();
-
-      // Create a new array of filtered lessons
-      const filteredLessons = initialLessonTypes
+      const filteredLessons = initialLessons
         .map((lesson) => {
           const lessonMatches =
             lesson.title.toLowerCase().includes(query) ||
-            lesson.description.toLowerCase().includes(query);
+            (lesson.description || '').toLowerCase().includes(query);
 
-          // Filter resources whose name matches the query
-          const filteredResources = lesson.resources.filter((resource) =>
+          const resourceMatches = lesson.resources?.some((resource) =>
             resource.name.toLowerCase().includes(query)
           );
 
-          // If the lesson itself or any of its resources match, keep the lesson
-          if (lessonMatches || filteredResources.length > 0) {
-            const resourcesToDisplay = lessonMatches
-              ? lesson.resources
-              : filteredResources;
-
+          if (lessonMatches || resourceMatches) {
             return {
               ...lesson,
-              resources: resourcesToDisplay,
+              resources: resourceMatches
+                ? lesson.resources?.filter((resource) =>
+                    resource.name.toLowerCase().includes(query)
+                  )
+                : lesson.resources,
             };
           }
-          // If neither the lesson nor its resources match, return null to be filtered out
+
           return null;
         })
-        // Filter out lessons that returned null
-        .filter((lesson): lesson is LessonType => lesson !== null);
+
+        .filter((lesson): lesson is Lessons => lesson !== null);
 
       setLessons(filteredLessons);
     } else {
-      // Reset to initial lessons if searchQuery is empty or cleared
-      setLessons(initialLessonTypes);
+      setLessons(initialLessons);
     }
   }, [initialLessons, searchQuery]);
 
-  // Click outside handler
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      // Close lesson menu
       if (menuOpenId !== null) {
         const wrapper = menuWrapperRefs.current[menuOpenId];
         if (wrapper && !wrapper.contains(event.target as Node)) {
@@ -332,7 +221,6 @@ function LessonManagement({
         }
       }
 
-      // Close resource menu
       if (openResourceMenu !== null) {
         const wrapper = resourceMenuRefs.current[openResourceMenu];
         if (wrapper && !wrapper.contains(event.target as Node)) {
@@ -380,8 +268,7 @@ function LessonManagement({
         url: videoLink,
       }).unwrap();
 
-      // Close the form
-      setResourceType(null);
+        setResourceType(null);
       setShowAddResource(null);
       toast.success(message);
     } catch (error: any) {
@@ -457,7 +344,7 @@ function LessonManagement({
         description: quizDescription,
       }).unwrap();
 
-      // Close the form
+   
       setResourceType(null);
       setShowAddResource(null);
       toast.success(message);
@@ -466,23 +353,8 @@ function LessonManagement({
     }
   };
 
-  // Dedicated change handler for the hidden file input
-  const handleFileInputChange = (
-    e: React.ChangeEvent<HTMLInputElement>,
-    lessonId: number,
-    type: "pdf" | "word"
-  ) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      handleFileUpload(lessonId, file, type);
-    }
-    // Crucial: Reset input value so the same file can be selected again
-    e.target.value = "";
-  };
-
   const handleFileSelect = (lessonId: number, type: "pdf" | "word") => {
     if (fileInputRef.current) {
-      // Set the accept attribute and a data attribute to pass lessonId
       fileInputRef.current.accept = type === "pdf" ? ".pdf" : ".doc,.docx";
       fileInputRef.current.dataset.lessonId = lessonId.toString();
       fileInputRef.current.dataset.resourceType = type;
@@ -541,7 +413,6 @@ function LessonManagement({
     setModals({ showDeleteConfirm: false, showResourceDeleteConfirm: false });
   };
 
-  // UI Components
   const ResourceTypeSelector = ({
     onSelect,
   }: {
@@ -574,7 +445,6 @@ function LessonManagement({
           label: "Quiz",
         },
       ].map(({ type, icon: Icon, color, label }) => {
-        // Using the safe color map for Tailwind JIT
         const colors = colorMap[color as keyof typeof colorMap];
         return (
           <button
@@ -582,7 +452,7 @@ function LessonManagement({
             onClick={() => onSelect(type)}
             className="flex flex-col items-center justify-center p-4 bg-white rounded-lg border border-gray-200 hover:border-blue-400 hover:shadow-sm transition-all"
           >
-            {/* Using mapped classes */}
+
             <div
               className={`w-12 h-12 rounded-full ${colors.bg} flex items-center justify-center mb-2`}
             >
@@ -636,7 +506,7 @@ function LessonManagement({
     </div>
   );
 
-  // Localized state to prevent parent re-renders on every keystroke
+
   const QuizForm = ({
     lessonId,
     onSubmit,
@@ -655,7 +525,6 @@ function LessonManagement({
         toast.error("Please enter a quiz name");
         return;
       }
-      // Ensure we're always passing strings, not undefined
       onSubmit(lessonId, trimmedName, localQuizDescription || "");
     };
 
@@ -723,7 +592,6 @@ function LessonManagement({
     );
   };
 
-  // Localized state to prevent parent re-renders on every keystroke
   const VideoLinkForm = ({
     lessonId,
     onSubmit,
@@ -1048,12 +916,9 @@ function LessonManagement({
                             {resource.size && (
                               <span>Size: {resource.size}</span>
                             )}
-                            {resource.duration && (
-                              <span>Duration: {resource.duration}</span>
-                            )}
                             {resource.type === "quiz" && (
                               <span className="bg-green-100 text-green-800 px-2 py-0.5 rounded-full font-medium">
-                                {resource.quiz?.length || 0} questions
+                                {resource.form?.quizzes?.length || 0} Quizzes
                               </span>
                             )}
                           </div>
@@ -1089,15 +954,15 @@ function LessonManagement({
                                   {resource.type === "quiz" ? (
                                     resource.form &&
                                     resource.form?.quizzes?.length > 0 ? (
-                                      resource.quiz.map(
-                                        (quizItem: QuizItem) => (
+                                      resource.form.quizzes.map(
+                                        (quizItem: QuizData) => (
                                           <button
                                             key={quizItem.id}
                                             onClick={() => {
                                               setOpenQuiz({
                                                 courseId: courseId,
                                                 lessonId: lesson.id!,
-                                                quizId: quizItem.id, // ✅ specific clicked quiz
+                                                quizId: quizItem.id, 
                                               });
                                               setOpenResourceMenu(null);
                                             }}
@@ -1106,8 +971,8 @@ function LessonManagement({
                                             <FaEdit />
                                             <span>
                                               Edit Quiz
-                                              {resource.quiz &&
-                                              resource.quiz.length > 1
+                                              {resource.form &&
+                                              resource.form.quizzes.length > 1
                                                 ? ` #${quizItem.id}`
                                                 : ""}
                                             </span>
