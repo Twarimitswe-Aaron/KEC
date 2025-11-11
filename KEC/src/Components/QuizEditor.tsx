@@ -238,6 +238,7 @@ const QuizEditor = ({ onClose, resource }: QuizEditorProps) => {
       quizId: resource.quizId!,
       imageUrl: "",
       labelAnswers: [],
+      order: questions.length, // Set the order to the current number of questions
     };
 
     setQuestions((prev) => [...prev, question]);
@@ -308,8 +309,14 @@ const QuizEditor = ({ onClose, resource }: QuizEditorProps) => {
     const newIndex = direction === "up" ? index - 1 : index + 1;
     setQuestions((prev) => {
       const updated = [...prev];
+      // Swap the questions
       [updated[index], updated[newIndex]] = [updated[newIndex], updated[index]];
-      return updated;
+      
+      // Update the order property for all questions
+      return updated.map((q, i) => ({
+        ...q,
+        order: i
+      }));
     });
     setHasChanges(true);
   };
@@ -365,12 +372,13 @@ const saveQuiz = async () => {
 
     const newQuestions = questions
       .filter((q) => q.id < 0 && q.question?.trim() !== "")
-      .map((q) => {
+      .map((q, index) => {
         const questionData: any = {
           type: q.type,
           question: q.question.trim(),
           required: q.required !== undefined ? q.required : true, // Default to true if not set
           points: q.points || 1,
+          order: q.order !== undefined ? q.order : index, // Use existing order or current index
         };
   
         if (Array.isArray(q.options) && q.options.length > 0) {

@@ -1,19 +1,31 @@
-import React, { useState } from 'react'
-import QuestionEditForm from './QuestionEditForm';
-import { Question } from '../ModuleManagement';
-import { FaCheckCircle, FaCheckSquare, FaEdit, FaTimes, FaTrashAlt } from 'react-icons/fa';
-import { FaArrowDown, FaArrowUp, FaPlus, FaRegCircle, FaRegSquare } from 'react-icons/fa6';
-import { QUESTION_TYPES } from '../QuizEditor';
+import React, { useState } from "react";
+import QuestionEditForm from "./QuestionEditForm";
+import { Question } from "../ModuleManagement";
+import {
+  FaCheckCircle,
+  FaCheckSquare,
+  FaEdit,
+  FaTimes,
+  FaTrashAlt,
+} from "react-icons/fa";
+import {
+  FaArrowDown,
+  FaArrowUp,
+  FaPlus,
+  FaRegCircle,
+  FaRegSquare,
+} from "react-icons/fa6";
+import { QUESTION_TYPES } from "../QuizEditor";
 
 // Question Settings Component
-const QuestionSettings = ({ 
-  question, 
-  onUpdate, 
-  disabled = false 
-}: { 
-  question: any; 
-  onUpdate: (updates: Partial<Question>) => void; 
-  disabled?: boolean 
+const QuestionSettings = ({
+  question,
+  onUpdate,
+  disabled = false,
+}: {
+  question: any;
+  onUpdate: (updates: Partial<Question>) => void;
+  disabled?: boolean;
 }) => (
   <div className="flex justify-end items-center gap-4 pt-3 border-t border-gray-100">
     <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
@@ -39,9 +51,7 @@ const QuestionSettings = ({
         type="number"
         min="1"
         value={question.points}
-        onChange={(e) =>
-          onUpdate({ points: parseInt(e.target.value) || 1 })
-        }
+        onChange={(e) => onUpdate({ points: parseInt(e.target.value) || 1 })}
         disabled={disabled}
         className="w-16 px-2 py-1 border border-gray-200 rounded-lg hover:border-gray-300 hover:shadow-sm transition-all focus:ring-2 focus:ring-[#034153] text-sm"
       />
@@ -55,12 +65,21 @@ interface QuestionListProps {
   setEditingQuestion: (id: number | null) => void;
   updateQuestion: (questionId: number, updates: any) => void;
   deleteQuestion: (questionId: number) => void;
-  moveQuestion: (index: number, direction: 'up' | 'down') => void;
+  moveQuestion: (index: number, direction: "up" | "down") => void;
   toggleCorrectAnswer: (questionId: number, optionIndex: number) => void;
   addOption: (questionId: number) => void;
-  updateOption: (questionId: number, optionIndex: number, value: string) => void;
+  updateOption: (
+    questionId: number,
+    optionIndex: number,
+    value: string
+  ) => void;
   removeOption: (questionId: number, optionIndex: number) => void;
-  updateLabelAnswer: (questionId: number, index: number, field: 'label' | 'answer', value: string) => void;
+  updateLabelAnswer: (
+    questionId: number,
+    index: number,
+    field: "label" | "answer",
+    value: string
+  ) => void;
   addLabelKey: (questionId: number) => void;
   removeLabelKey: (questionId: number, index: number) => void;
   isOptionCorrect: (question: any, optionIndex: number) => boolean;
@@ -119,32 +138,31 @@ const QuestionList = ({
   lessonId,
   quizId,
 }: QuestionListProps) => {
-  const [editingStates, setEditingStates] = useState<{[key: number]: any}>({});
+  const [editingStates, setEditingStates] = useState<{ [key: number]: any }>(
+    {}
+  );
 
-  // Start editing a question - store current state
   const handleStartEdit = (question: any) => {
-    setEditingStates(prev => ({
+    setEditingStates((prev) => ({
       ...prev,
-      [question.id]: { ...question }
+      [question.id]: { ...question },
     }));
     setEditingQuestion(question.id);
   };
 
-  // Cancel editing - restore original state
   const handleCancelEdit = (questionId: number) => {
     const originalQuestion = editingStates[questionId];
     if (originalQuestion) {
       updateQuestion(questionId, originalQuestion);
     }
     setEditingQuestion(null);
-    setEditingStates(prev => {
+    setEditingStates((prev) => {
       const newState = { ...prev };
       delete newState[questionId];
       return newState;
     });
   };
 
-  // Save edited question - prepare data for backend
   const handleSaveEdit = (questionId: number, updatedQuestion: any) => {
     const questionData = {
       questionId,
@@ -162,36 +180,31 @@ const QuestionList = ({
         labelAnswers: updatedQuestion.labelAnswers,
         required: updatedQuestion.required,
         points: updatedQuestion.points,
-      }
+      },
     };
 
-    // Update local state immediately
     updateQuestion(questionId, updatedQuestion);
-    
-    // Clear editing state
+
     setEditingQuestion(null);
-    setEditingStates(prev => {
+    setEditingStates((prev) => {
       const newState = { ...prev };
       delete newState[questionId];
       return newState;
     });
 
-    // TODO: Integrate with backend API
-    console.log('Saving question updates:', questionData);
+    console.log("Saving question updates:", questionData);
     // await updateQuestionAPI(questionData);
   };
 
-  // Update question during editing
   const handleQuestionUpdate = (questionId: number, updates: any) => {
-    const currentQuestion = questions.find(q => q.id === questionId);
+    const currentQuestion = questions.find((q) => q.id === questionId);
     if (!currentQuestion) return;
 
     const updatedQuestion = { ...currentQuestion, ...updates };
-    
-    // Update the editing state
-    setEditingStates(prev => ({
+
+    setEditingStates((prev) => ({
       ...prev,
-      [questionId]: updatedQuestion
+      [questionId]: updatedQuestion,
     }));
   };
 
@@ -205,7 +218,6 @@ const QuestionList = ({
         {questions.map((question: any, index: number) => (
           <div key={question.id} className="relative">
             {editingQuestion === question.id ? (
-              // Editing Mode
               <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4">
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="text-lg font-semibold text-blue-800">
@@ -213,7 +225,12 @@ const QuestionList = ({
                   </h3>
                   <div className="flex gap-2">
                     <button
-                      onClick={() => handleSaveEdit(question.id, editingStates[question.id] || question)}
+                      onClick={() =>
+                        handleSaveEdit(
+                          question.id,
+                          editingStates[question.id] || question
+                        )
+                      }
                       className="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700 transition-colors"
                     >
                       Save
@@ -226,10 +243,12 @@ const QuestionList = ({
                     </button>
                   </div>
                 </div>
-                
+
                 <QuestionEditForm
                   question={editingStates[question.id] || question}
-                  onUpdate={(updates) => handleQuestionUpdate(question.id, updates)}
+                  onUpdate={(updates) =>
+                    handleQuestionUpdate(question.id, updates)
+                  }
                   onToggleCorrectAnswer={toggleCorrectAnswer}
                   onAddOption={addOption}
                   onUpdateOption={updateOption}
@@ -237,16 +256,19 @@ const QuestionList = ({
                   onUpdateLabelAnswer={updateLabelAnswer}
                   onAddLabelKey={addLabelKey}
                   onRemoveLabelKey={removeLabelKey}
-                  isOptionCorrect={(q, optionIndex) => isOptionCorrect(q, optionIndex)}
+                  isOptionCorrect={(q, optionIndex) =>
+                    isOptionCorrect(q, optionIndex)
+                  }
                 />
                 <QuestionSettings
                   question={editingStates[question.id] || question}
-                  onUpdate={(updates) => handleQuestionUpdate(question.id, updates)}
+                  onUpdate={(updates) =>
+                    handleQuestionUpdate(question.id, updates)
+                  }
                   disabled={false}
                 />
               </div>
             ) : (
-              // View Mode
               <QuestionCard
                 question={question}
                 index={index}
@@ -278,7 +300,6 @@ const QuestionList = ({
   );
 };
 
-
 const QuestionCard = ({
   question,
   index,
@@ -291,13 +312,33 @@ const QuestionCard = ({
 }: any) => {
   const Icon = getQuestionIcon(question.type);
 
+  const handleMoveUp = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onMove(index, "up");
+  };
+
+  const handleMoveDown = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onMove(index, "down");
+  };
+
+  const handleEdit = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onEdit();
+  };
+
+  const handleDelete = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onDelete();
+  };
+
   return (
     <div className="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition-all">
       <div className="p-4">
         <div className="flex items-start justify-between">
           <div className="flex items-start gap-3">
             <Icon className="h-5 w-5 text-[#034153] mt-0.5 flex-shrink-0" />
-            <div>
+            <div className="flex-1">
               <h3 className="font-medium text-gray-900">
                 {question.question || `Question ${index + 1}`}
               </h3>
@@ -306,38 +347,56 @@ const QuestionCard = ({
                   {question.description}
                 </p>
               )}
+              <div className="mt-2 flex items-center gap-2 text-sm text-gray-500">
+                <span className="px-2 py-0.5 bg-gray-100 rounded-full">
+                  {question.points || 1} point{question.points !== 1 ? "s" : ""}
+                </span>
+                {question.required && (
+                  <span className="px-2 py-0.5 bg-red-50 text-red-600 rounded-full">
+                    Required
+                  </span>
+                )}
+              </div>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
             <button
-              onClick={() => onMove(index, "up")}
+              onClick={handleMoveUp}
               disabled={index === 0}
-              className="text-gray-400 hover:text-[#034153] disabled:opacity-30"
+              className={`p-1.5 rounded-md ${
+                index === 0
+                  ? "text-gray-200 cursor-not-allowed"
+                  : "text-gray-500 hover:bg-gray-100 hover:text-[#034153]"
+              }`}
               title="Move up"
             >
-              <FaArrowUp />
+              <FaArrowUp size={14} />
             </button>
             <button
-              onClick={() => onMove(index, "down")}
+              onClick={handleMoveDown}
               disabled={index === questions.length - 1}
-              className="text-gray-400 hover:text-[#034153] disabled:opacity-30"
+              className={`p-1.5 rounded-md ${
+                index === questions.length - 1
+                  ? "text-gray-200 cursor-not-allowed"
+                  : "text-gray-500 hover:bg-gray-100 hover:text-[#034153]"
+              }`}
               title="Move down"
             >
-              <FaArrowDown />
+              <FaArrowDown size={14} />
             </button>
             <button
-              onClick={onEdit}
-              className="text-gray-400 hover:text-blue-500"
-              title="Edit"
+              onClick={handleEdit}
+              className="p-1.5 text-gray-500 hover:bg-blue-50 hover:text-blue-600 rounded-md transition-colors"
+              title="Edit question"
             >
-              <FaEdit />
+              <FaEdit size={14} />
             </button>
             <button
-              onClick={onDelete}
-              className="text-gray-400 hover:text-red-500"
-              title="Delete"
+              onClick={handleDelete}
+              className="p-1.5 text-gray-500 hover:bg-red-50 hover:text-red-600 rounded-md transition-colors"
+              title="Delete question"
             >
-              <FaTrashAlt />
+              <FaTrashAlt size={14} />
             </button>
           </div>
         </div>
@@ -416,7 +475,6 @@ const QuestionViewMode = ({ question, isOptionCorrect }: any) => (
   </div>
 );
 
-
 const NewQuestionForm = ({
   newQuestion,
   onNewQuestionChange,
@@ -473,9 +531,13 @@ const NewQuestionForm = ({
         />
       </div>
 
-      {newQuestion.type === "multiple" ||
-      newQuestion.type === "checkbox" ||
-      newQuestion.type === "truefalse" ? (
+      {newQuestion.type === "truefalse" ? (
+        <TrueFalseOptions
+          newQuestion={newQuestion}
+          onNewQuestionToggleCorrectAnswer={onNewQuestionToggleCorrectAnswer}
+          isNewOptionCorrect={isNewOptionCorrect}
+        />
+      ) : newQuestion.type === "multiple" || newQuestion.type === "checkbox" ? (
         <NewQuestionOptions
           newQuestion={newQuestion}
           onNewQuestionAddOption={onNewQuestionAddOption}
@@ -489,12 +551,16 @@ const NewQuestionForm = ({
           newQuestion={newQuestion}
           onNewQuestionChange={onNewQuestionChange}
         />
-      ) 
-    
-    :null}
+      ) : null}
+
+      {/* Question Settings */}
+      <QuestionSettings
+        question={newQuestion}
+        onUpdate={onNewQuestionChange}
+        disabled={false}
+      />
 
       <div className="flex justify-end pt-4 border-t border-gray-100">
-     
         <button
           onClick={onAddQuestion}
           className="bg-[#034153] text-white px-6 py-2 rounded-lg font-semibold hover:bg-[#004e64] transition-colors flex items-center gap-2 border border-gray-200 rounded-lg hover:border-gray-300 hover:shadow-sm"
@@ -578,134 +644,258 @@ const NewQuestionOptions = ({
   </div>
 );
 
+const TrueFalseOptions = ({
+  newQuestion,
+  onNewQuestionToggleCorrectAnswer,
+  isNewOptionCorrect,
+}: any) => (
+  <div className="space-y-2 border-l-4 border-gray-100 pl-4 py-2">
+    <label className="block text-sm font-medium text-gray-700">
+      Select the correct answer
+    </label>
+    {["True", "False"].map((option, index) => (
+      <div key={index} className="flex gap-2 items-center">
+        <button
+          type="button"
+          onClick={() => onNewQuestionToggleCorrectAnswer(index)}
+          className={`p-1.5 transition-colors flex-shrink-0 border border-gray-200 rounded-lg hover:border-gray-300 ${
+            isNewOptionCorrect(index)
+              ? "bg-green-100 text-green-600 hover:bg-green-200"
+              : "text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+          }`}
+          title="Mark as correct"
+        >
+          {isNewOptionCorrect(index) ? (
+            <FaCheckCircle size={14} />
+          ) : (
+            <FaRegCircle size={14} />
+          )}
+        </button>
+
+        <div
+          className={`w-full px-3 py-2 border rounded-lg text-sm ${
+            isNewOptionCorrect(index)
+              ? "bg-green-50 border-green-300"
+              : "border-gray-200 bg-gray-50"
+          }`}
+        >
+          {option}
+        </div>
+      </div>
+    ))}
+  </div>
+);
+
 const NewLabelingQuestion = ({ newQuestion, onNewQuestionChange }: any) => {
+  // Initialize labelAnswers if it doesn't exist
+  const labelAnswers = newQuestion.labelAnswers || [];
+
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      onNewQuestionChange({ ...newQuestion, imageUrl: reader.result });
+    // Create a preview URL for the image
+    const imageUrl = URL.createObjectURL(file);
+
+    // Update the question with the new image file and URL
+    onNewQuestionChange({
+      ...newQuestion,
+      imageFile: file,
+      imageUrl: imageUrl,
+      // Keep existing label answers
+      labelAnswers: [...labelAnswers],
+    });
+  };
+
+  const handleLabelChange = (
+    index: number,
+    field: "label" | "answer",
+    value: string
+  ) => {
+    const updatedLabels = [...labelAnswers];
+
+    if (!updatedLabels[index]) {
+      updatedLabels[index] = { label: "", answer: "" };
+    }
+
+    updatedLabels[index] = {
+      ...updatedLabels[index],
+      [field]: field === "label" ? value.toUpperCase() : value,
     };
-    reader.readAsDataURL(file);
+
+    // Update the question with new labels and prepare options/correctAnswers
+    onNewQuestionChange({
+      ...newQuestion,
+      labelAnswers: updatedLabels,
+      // Store labels in options array
+      options: updatedLabels.map((la) => la.label).filter(Boolean),
+      // Store answers in correctAnswers array
+      correctAnswers: updatedLabels.map((la) => la.answer).filter(Boolean),
+    });
+  };
+
+  const addLabel = () => {
+    const newLabel = String.fromCharCode(65 + labelAnswers.length); // A, B, C, ...
+    handleLabelChange(labelAnswers.length, "label", newLabel);
+  };
+
+  const removeLabel = (index: number) => {
+    const updatedLabels = labelAnswers.filter(
+      (_: any, i: number) => i !== index
+    );
+    onNewQuestionChange({
+      ...newQuestion,
+      labelAnswers: updatedLabels,
+      options: updatedLabels
+        .map((la: { label: string; answer: string }) => la.label)
+        .filter(Boolean),
+      correctAnswers: updatedLabels
+        .map((la: { label: string; answer: string }) => la.answer)
+        .filter(Boolean),
+    });
   };
 
   return (
     <div className="space-y-4 border-l-4 border-yellow-500 pl-4 py-2">
       <h4 className="text-sm font-bold text-gray-700">Image and Label Setup</h4>
 
-      <label className="block text-sm font-medium text-gray-700">
-        Upload Image (Must be pre-labeled)
-      </label>
-      <input
-        type="file"
-        accept="image/*"
-        onChange={handleImageUpload}
-        className="w-full px-3 py-2 border border-gray-200 rounded-lg hover:border-gray-300 hover:shadow-sm transition-all focus:ring-2 focus:ring-yellow-500 text-sm cursor-pointer"
-      />
-
-      {newQuestion.imageUrl && (
-        <div className="mt-2 border border-gray-200 rounded-lg hover:border-gray-300 hover:shadow-sm transition-all p-2 bg-gray-50">
-          <img
-            src={newQuestion.imageUrl}
-            alt="Preview"
-            className="max-w-full h-auto max-h-48 object-contain mx-auto"
-          />
-          <p className="text-xs text-gray-500 text-center mt-1">
-            Ensure labels (A, B, C...) are visible on the image.
-          </p>
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Upload Labeled Image
+        </label>
+        <div className="flex items-center gap-2">
+          <label className="cursor-pointer bg-white border border-gray-200 rounded-lg hover:border-yellow-400 hover:shadow-sm transition-all px-4 py-2 text-sm font-medium text-gray-700">
+            {newQuestion.imageUrl || newQuestion.imageFile
+              ? "Change Image"
+              : "Select Image"}
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleImageUpload}
+              className="hidden"
+            />
+          </label>
+          {newQuestion.imageFile && (
+            <span className="text-sm text-gray-600">
+              {newQuestion.imageFile.name || "Uploaded image"}
+            </span>
+          )}
         </div>
-      )}
+        {!newQuestion.imageUrl && !newQuestion.imageFile && (
+          <p className="mt-1 text-xs text-gray-500">
+            Upload a pre-labeled image with markers (A, B, C, etc.)
+          </p>
+        )}
+      </div>
 
-      <label className="block text-sm font-medium text-gray-700 mt-3">
-        Define Label-Answer Key
-      </label>
-
-      {(newQuestion.labelAnswers || [{ label: "A", answer: "" }]).map(
-        (la: any, index: number) => (
-          <div key={index} className="flex gap-2 items-center">
-            <input
-              type="text"
-              value={la.label}
-              onChange={(e) => {
-                const newLabels = [...(newQuestion.labelAnswers || [])];
-                newLabels[index] = {
-                  ...newLabels[index],
-                  label: e.target.value.toUpperCase(),
-                };
-                onNewQuestionChange({
-                  ...newQuestion,
-                  labelAnswers: newLabels,
-                });
-              }}
-              placeholder="Label (A, B, C)"
-              className="w-20 px-3 py-2 border border-gray-200 rounded-lg hover:border-gray-300 hover:shadow-sm transition-all focus:ring-2 focus:ring-yellow-500 text-sm font-semibold text-center flex-shrink-0"
-              maxLength={3}
-            />
-
-            <input
-              type="text"
-              value={la.answer}
-              onChange={(e) => {
-                const newLabels = [...(newQuestion.labelAnswers || [])];
-                newLabels[index] = {
-                  ...newLabels[index],
-                  answer: e.target.value,
-                };
-                onNewQuestionChange({
-                  ...newQuestion,
-                  labelAnswers: newLabels,
-                });
-              }}
-              placeholder="Correct Name of Labeled Part"
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg hover:border-gray-300 hover:shadow-sm transition-all focus:ring-2 focus:ring-yellow-500 text-sm"
-            />
-
-            {newQuestion.labelAnswers &&
-              newQuestion.labelAnswers.length > 1 && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    const newLabels = newQuestion.labelAnswers!.filter(
-                      (_: any, i: number) => i !== index
-                    );
-                    onNewQuestionChange({
-                      ...newQuestion,
-                      labelAnswers: newLabels,
-                    });
-                  }}
-                  className="p-1.5 text-red-500 hover:bg-red-100 transition-colors flex-shrink-0 border border-gray-200 rounded-lg hover:border-gray-300"
-                  title="Remove label"
-                >
-                  <FaTimes size={14} />
-                </button>
-              )}
+      {newQuestion.imageUrl || newQuestion.imageFile ? (
+        <div className="flex flex-col md:flex-row gap-6 mt-4">
+          {/* Image on left (or top on mobile) */}
+          <div className="md:w-1/2">
+            <div className="border border-gray-200 rounded-lg overflow-hidden bg-gray-50 p-2">
+              <img
+                src={
+                  newQuestion.imageUrl ||
+                  URL.createObjectURL(newQuestion.imageFile)
+                }
+                alt="Question content preview"
+                className="w-full h-auto max-h-64 object-contain mx-auto"
+              />
+            </div>
           </div>
-        )
-      )}
 
-      <button
-        onClick={() => {
-          const newLabel = String.fromCharCode(
-            65 + (newQuestion.labelAnswers?.length || 0)
-          );
-          onNewQuestionChange({
-            ...newQuestion,
-            labelAnswers: [
-              ...(newQuestion.labelAnswers || []),
-              { label: newLabel, answer: "" },
-            ],
-          });
-        }}
-        className="text-yellow-600 hover:text-yellow-700 flex items-center gap-1 text-sm font-medium mt-2 border border-gray-200 rounded-lg hover:border-gray-300 hover:shadow-sm transition-all px-3 py-1"
-      >
-        <FaPlus size={12} /> Add Label Key
-      </button>
+          {/* Labels and answers on right (or bottom on mobile) */}
+          <div className="md:w-1/2">
+            <div className="flex justify-between items-center mb-3">
+              <label className="block text-sm font-medium text-gray-700">
+                Labels and Answers
+              </label>
+              <button
+                type="button"
+                onClick={addLabel}
+                className="inline-flex items-center px-3 py-1 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-yellow-600 hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500"
+              >
+                <FaPlus className="mr-1" /> Add Label
+              </button>
+            </div>
+
+            <div className="space-y-3 max-h-64 overflow-y-auto pr-2">
+              {labelAnswers.length > 0 ? (
+                labelAnswers.map((item: any, index: number) => (
+                  <div key={index} className="flex items-center gap-3 group">
+                    <div className="flex-1 grid grid-cols-12 gap-2 items-center">
+                      <div className="col-span-2">
+                        <input
+                          type="text"
+                          value={item.label || ""}
+                          onChange={(e) =>
+                            handleLabelChange(index, "label", e.target.value)
+                          }
+                          placeholder="A"
+                          className="block w-full text-center rounded-md border-gray-300 shadow-sm focus:border-yellow-500 focus:ring-yellow-500 text-sm"
+                          maxLength={1}
+                          size={1}
+                        />
+                      </div>
+                      <div className="col-span-9">
+                        <input
+                          type="text"
+                          value={item.answer || ""}
+                          onChange={(e) =>
+                            handleLabelChange(index, "answer", e.target.value)
+                          }
+                          placeholder="Enter the answer for this label"
+                          className="block w-full rounded-md border-gray-300 shadow-sm focus:border-yellow-500 focus:ring-yellow-500 text-sm"
+                        />
+                      </div>
+                      <div className="col-span-1 flex justify-end">
+                        <button
+                          type="button"
+                          onClick={() => removeLabel(index)}
+                          className="text-gray-400 hover:text-red-500 focus:outline-none opacity-0 group-hover:opacity-100 transition-opacity"
+                          title="Remove label"
+                        >
+                          <FaTimes />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-4 text-sm text-gray-500 border-2 border-dashed border-gray-200 rounded-lg">
+                  No labels added yet. Click 'Add Label' to get started.
+                </div>
+              )}
+            </div>
+
+            <div className="mt-3 text-xs text-gray-500">
+              <p>
+                • Labels will be automatically converted to uppercase (A, B, C,
+                etc.)
+              </p>
+              <p>• Add labels that match the markers on your image</p>
+            </div>
+          </div>
+        </div>
+      ) : labelAnswers.length > 0 ? (
+        <div className="mt-4 space-y-3">
+          <h5 className="text-sm font-medium text-gray-700">
+            Labels (upload an image to see the full editor)
+          </h5>
+          <div className="space-y-2">
+            {labelAnswers.map((item: any, index: number) => (
+              <div key={index} className="flex items-center gap-2">
+                <span className="font-mono bg-gray-100 px-2 py-1 rounded text-sm">
+                  {item.label || "?"}:
+                </span>
+                <span>{item.answer || "No answer provided"}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 };
 
-
-
-
-export default QuestionList
+export default QuestionList;

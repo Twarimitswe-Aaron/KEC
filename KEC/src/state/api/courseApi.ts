@@ -26,6 +26,7 @@ export interface QuestionProp {
   quizId: number;
   imageUrl?: string;
   labelAnswers?: { label: string; answer: string }[];
+  order?: number;
 }
 export interface FormDataQuiz {
   id: number;

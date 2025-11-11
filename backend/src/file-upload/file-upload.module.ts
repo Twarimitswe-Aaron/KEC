@@ -1,6 +1,5 @@
-// src/file-upload/file-upload.module.ts
 import { Module } from '@nestjs/common';
-import { ConfigModule, ConfigService } from '@nestjs/config';
+import { FileUploadService } from './file-upload.service';
 import { MulterModule } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname, join } from 'path';
@@ -8,41 +7,33 @@ import { existsSync, mkdirSync } from 'fs';
 
 @Module({
   imports: [
-    MulterModule.registerAsync({
-      imports: [ConfigModule],
-      useFactory: async (configService: ConfigService) => {
-        // Create uploads directory if it doesn't exist
-        const uploadDir = join(process.cwd(), 'uploads/quiz-images');
-        if (!existsSync(uploadDir)) {
-          mkdirSync(uploadDir, { recursive: true });
+    MulterModule.register({
+      storage: diskStorage({
+        destination: (req, file, cb) => {
+          const uploadDir = join(process.cwd(), 'uploads/quiz-images');
+          if (!existsSync(uploadDir)) {
+            mkdirSync(uploadDir, { recursive: true });
+          }
+          cb(null, uploadDir);
+        },
+        filename: (req, file, cb) => {
+          const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+          const ext = extname(file.originalname);
+          cb(null, `quiz-${uniqueSuffix}${ext}`);
+        },
+      }),
+      fileFilter: (req, file, cb) => {
+        if (!file.originalname.match(/\.(jpg|jpeg|png|gif)$/)) {
+          return cb(new Error('Only image files are allowed!'), false);
         }
-
-        return {
-          storage: diskStorage({
-            destination: uploadDir,
-            filename: (req, file, cb) => {
-              const randomName = Array(32)
-                .fill(null)
-                .map(() => Math.round(Math.random() * 16).toString(16))
-                .join('');
-              return cb(null, `${randomName}${extname(file.originalname)}`);
-            },
-          }),
-          limits: {
-            fileSize: 5 * 1024 * 1024, // 5MB
-          },
-          fileFilter: (req, file, cb) => {
-            if (file.mimetype.match(/\/(jpg|jpeg|png|gif)$/)) {
-              cb(null, true);
-            } else {
-              cb(new Error('Only image files are allowed!'), false);
-            }
-          },
-        };
+        cb(null, true);
       },
-      inject: [ConfigService],
+      limits: {
+        fileSize: 5 * 1024 * 1024, // 5MB limit
+      },
     }),
   ],
-  exports: [MulterModule],
+  providers: [FileUploadService],
+  exports: [FileUploadService, MulterModule],
 })
 export class FileUploadModule {}

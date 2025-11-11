@@ -12,6 +12,11 @@ export class UpdateQuizDto {
  
 }
 
+export class LabelAnswerPair {
+  label: string;
+  answer: string;
+}
+
 export class UpdateQuizQuestionDto {
   id: number;
   type: 'multiple' | 'checkbox' | 'truefalse' | 'labeling';
@@ -25,4 +30,5 @@ export class UpdateQuizQuestionDto {
   points?: number;
   imageUrl?: string; // For storing the URL of the uploaded image
   imageFile?: any; // This will be used for upload but not stored in DB
+  labelAnswers?: LabelAnswerPair[]; // For labeling questions
 }
