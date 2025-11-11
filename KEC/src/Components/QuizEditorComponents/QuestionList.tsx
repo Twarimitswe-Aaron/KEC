@@ -19,7 +19,6 @@ import {
 } from "react-icons/fa6";
 import { QUESTION_TYPES } from "../questionTypes";
 
-// Question Settings Component
 const QuestionSettings = ({
   question,
   onUpdate,
@@ -182,7 +181,6 @@ const QuestionList = ({
     });
 
     console.log("Saving question updates:", questionData);
-    // await updateQuestionAPI(questionData);
   };
 
   const handleQuestionUpdate = (questionId: number, updates: any) => {
@@ -678,22 +676,18 @@ const TrueFalseOptions = ({
 
 
 const NewLabelingQuestion = ({ newQuestion, onNewQuestionChange }: any) => {
-  // Initialize labelAnswers if it doesn't exist
   const labelAnswers = newQuestion.labelAnswers || [];
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Create a preview URL for the image
     const imageUrl = URL.createObjectURL(file);
 
-    // Update the question with the new image file and URL
     onNewQuestionChange({
       ...newQuestion,
       imageFile: file,
       imageUrl: imageUrl,
-      // Keep existing label answers
       labelAnswers: [...labelAnswers],
     });
   };
@@ -714,13 +708,10 @@ const NewLabelingQuestion = ({ newQuestion, onNewQuestionChange }: any) => {
       [field]: field === "label" ? value.toUpperCase() : value,
     };
 
-    // Update the question with new labels and prepare options/correctAnswers
     onNewQuestionChange({
       ...newQuestion,
       labelAnswers: updatedLabels,
-      // Store labels in options array
       options: updatedLabels.map((la) => la.label).filter(Boolean),
-      // Store answers in correctAnswers array
       correctAnswers: updatedLabels.map((la) => la.answer).filter(Boolean),
     });
   };
@@ -747,17 +738,17 @@ const NewLabelingQuestion = ({ newQuestion, onNewQuestionChange }: any) => {
   };
 
   return (
-    <div className="relative bg-yellow-50 rounded-xl border-2 border-yellow-300 shadow-sm p-6 space-y-6">
+    <div className="relative bg- rounded-xl border-2 border-[#034153] shadow-sm p-6 space-y-6">
       {/* Decorative accent */}
-      <div className="absolute top-0 left-0 w-1.5 h-full bg-yellow-500 rounded-l-xl"></div>
+      <div className="absolute top-0 left-0 w-1.5 h-full bg-[#034153] rounded-l-xl"></div>
       
       {/* Header */}
       <div className="flex items-center gap-3">
-        <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-yellow-500 text-white shadow-md">
+        <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-[#034153] text-white shadow-md">
           <FaTag className="text-lg" />
         </div>
         <div>
-          <h4 className="text-lg font-bold text-gray-800">Image Labeling Setup</h4>
+          <h4 className="text-lg font-bold text-[#034153]">Image Labeling Setup</h4>
           <p className="text-sm text-gray-600">Upload an image and define labels</p>
         </div>
       </div>
@@ -765,13 +756,13 @@ const NewLabelingQuestion = ({ newQuestion, onNewQuestionChange }: any) => {
       {/* Image Upload Section */}
       <div className="bg-white rounded-lg p-5 shadow-sm border border-gray-200">
         <label className="block text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-          <FaImage className="text-yellow-500" />
+          <FaImage className="text-[#034153]" />
           Upload Labeled Image
         </label>
         <div className="flex items-center gap-3">
-          <label className="group cursor-pointer bg-yellow-500 hover:bg-yellow-600 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 px-6 py-3 text-sm font-semibold text-white">
+          <label className="group cursor-pointer bg-[#034153] hover:bg-[#004e64] rounded-lg shadow-md hover:shadow-lg transition-all duration-200 px-6 py-3 text-sm font-semibold text-white">
             <span className="flex items-center gap-2">
-              <FaImage />
+              <FaImage className="text-[#034153]"/>
               {newQuestion.imageUrl || newQuestion.imageFile
                 ? "Change Image"
                 : "Select Image"}
@@ -826,7 +817,7 @@ const NewLabelingQuestion = ({ newQuestion, onNewQuestionChange }: any) => {
           {/* Labels Editor */}
           <div className="lg:w-1/2">
             <div className="bg-white rounded-lg shadow-md border-2 border-gray-200 overflow-hidden">
-              <div className="bg-yellow-500 px-5 py-3 flex justify-between items-center">
+              <div className="bg-[#034153] px-5 py-3 flex justify-between items-center">
                 <label className="text-sm font-bold text-white flex items-center gap-2">
                   <FaTag />
                   Labels and Answers
@@ -834,7 +825,7 @@ const NewLabelingQuestion = ({ newQuestion, onNewQuestionChange }: any) => {
                 <button
                   type="button"
                   onClick={addLabel}
-                  className="inline-flex items-center px-4 py-2 bg-white text-yellow-600 text-sm font-semibold rounded-lg hover:bg-yellow-50 transition-all duration-200 shadow-md hover:shadow-lg"
+                  className="inline-flex items-center px-4 py-2 bg-white text-[#034153] text-sm font-semibold rounded-lg hover:bg-[#004e64] transition-all duration-200 shadow-md hover:shadow-lg"
                 >
                   <FaPlus className="mr-2" /> Add Label
                 </button>
@@ -843,7 +834,7 @@ const NewLabelingQuestion = ({ newQuestion, onNewQuestionChange }: any) => {
               <div className="p-5 space-y-3 max-h-96 overflow-y-auto">
                 {labelAnswers.length > 0 ? (
                   labelAnswers.map((item: any, index: number) => (
-                    <div key={index} className="group bg-gray-50 hover:bg-gray-100 rounded-lg p-3 border border-gray-200 hover:border-yellow-400 transition-all duration-200">
+                    <div key={index} className="group bg-gray-50 hover:bg-gray-100 rounded-lg p-3 border border-gray-200 hover:border-[#004e64] transition-all duration-200">
                       <div className="flex items-center gap-3">
                         {/* Label Input */}
                         <div className="flex-shrink-0">
@@ -854,7 +845,7 @@ const NewLabelingQuestion = ({ newQuestion, onNewQuestionChange }: any) => {
                               handleLabelChange(index, "label", e.target.value)
                             }
                             placeholder="A"
-                            className="block w-12 h-12 text-center text-lg font-bold rounded-lg border-2 border-gray-300 focus:border-yellow-500 focus:ring-2 focus:ring-yellow-200 bg-white shadow-sm"
+                            className="block w-12 h-12 text-center text-lg font-bold rounded-lg border-2 border-gray-300 focus:border-[#004e64] focus:ring-2 focus:ring-[#004e64] bg-white shadow-sm"
                             maxLength={1}
                           />
                         </div>
@@ -868,7 +859,7 @@ const NewLabelingQuestion = ({ newQuestion, onNewQuestionChange }: any) => {
                               handleLabelChange(index, "answer", e.target.value)
                             }
                             placeholder="Enter the answer for this label..."
-                            className="block w-full rounded-lg border-2 border-gray-300 focus:border-yellow-500 focus:ring-2 focus:ring-yellow-200 px-4 py-2.5 text-sm bg-white shadow-sm"
+                            className="block w-full rounded-lg border-2 border-gray-300 focus:border-[#034153] focus:ring-2 focus:ring-[#034153] px-4 py-2.5 text-sm bg-white shadow-sm"
                           />
                         </div>
                         

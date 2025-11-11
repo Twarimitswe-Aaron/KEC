@@ -182,7 +182,6 @@ const LessonsView = () => {
   //tomorrow i weill start from here ineed you to help me to be working with this next
 
   const lessons = courseData?.lesson;
-  // console.log(lessons, "filteredLessons");
   const updateModals = (updates: any) =>
     setModals((prev) => ({ ...prev, ...updates }));
   const updateForm = (form: FormKey, updates: any) =>

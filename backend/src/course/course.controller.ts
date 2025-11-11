@@ -65,7 +65,6 @@ export class CourseController {
         ? `${this.configService.get('BACKEND_URL')}/uploads/course_url/${file.filename}`
         : '';
     }
-    console.log(createCourseDto.image_url);
 
     return this.courseService.create(createCourseDto);
   }

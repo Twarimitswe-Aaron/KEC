@@ -69,8 +69,6 @@ export class CourseService {
       minute: '2-digit',
     });
 
-    console.log(course)
-
   return {
     id: course.id,
     title: course.title,

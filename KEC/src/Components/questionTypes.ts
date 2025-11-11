@@ -20,18 +20,6 @@ export const QUESTION_TYPES = [
     description: "Simple true or false question"
   },
   {
-    value: "shortanswer",
-    label: "Short Answer",
-    icon: FaEdit,
-    description: "Short text response"
-  },
-  {
-    value: "essay",
-    label: "Essay",
-    icon: FaEdit,
-    description: "Long form written response"
-  },
-  {
     value: "labeling",
     label: "Labeling",
     icon: FaList,
@@ -41,7 +29,7 @@ export const QUESTION_TYPES = [
 
 export type QuestionType = typeof QUESTION_TYPES[number]['value'];
 
-// Helper function to get question type by value
+
 export const getQuestionType = (value: string) => {
   return QUESTION_TYPES.find(type => type.value === value);
 };

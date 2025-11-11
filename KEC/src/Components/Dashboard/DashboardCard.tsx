@@ -147,7 +147,7 @@ const DashboardCard: React.FC<DashboardCardProps> = ({
       <form
         onSubmit={(e) => {
           e.preventDefault();
-          console.log("Enrolling in:", enrollingCourse.title);
+
           setEnrollingCourse(null);
         }}
         className="space-y-2"
