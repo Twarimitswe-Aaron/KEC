@@ -1,23 +1,9 @@
 // src/components/QuizEditor.tsx
 import { useState, useEffect } from "react";
 import { toast } from "react-toastify";
-import QuestionEditForm from "./QuizEditorComponents/QuestionEditForm.tsx";
 import QuestionList from "./QuizEditorComponents/QuestionList";
-import {
-  FaCheckCircle,
-  FaCheckSquare,
-  FaEdit,
-  FaQuestionCircle,
-  FaTimes,
-  FaCheck,
-  FaList,
-  FaPlus,
-  FaRegCircle,
-  FaRegSquare,
-  FaArrowUp,
-  FaArrowDown,
-  FaTrashAlt,
-} from "react-icons/fa";
+import { FaCheckCircle, FaCheckSquare, FaEdit, FaQuestionCircle, FaTimes, FaCheck, FaPlus, FaRegCircle, FaRegSquare, FaArrowUp, FaArrowDown, FaTrashAlt } from "react-icons/fa";
+import { QUESTION_TYPES } from "./questionTypes";
 import {
   X,
   List as ListIcon,
@@ -42,34 +28,6 @@ interface QuizEditorProps {
   resource: QuizProps;
   onClose: () => void;
 }
-
-// Constants
-export const QUESTION_TYPES = [
-  {
-    value: "multiple",
-    label: "Multiple Choice",
-    icon: FaRegCircle,
-    description: "Single select from options",
-  },
-  {
-    value: "checkbox",
-    label: "Checkbox",
-    icon: CheckSquare,
-    description: "Multiple select from options",
-  },
-  {
-    value: "truefalse",
-    label: "True/False",
-    icon: ToggleLeft,
-    description: "True or false selection",
-  },
-  {
-    value: "labeling",
-    label: "Image Labeling",
-    icon: FaList,
-    description: "Identify pre-labeled parts on an image",
-  },
-] as const;
 
 const INITIAL_NEW_QUESTION: Partial<Question> = {
   type: "multiple",

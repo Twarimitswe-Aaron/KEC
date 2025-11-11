@@ -11,11 +11,13 @@ import {
 import {
   FaArrowDown,
   FaArrowUp,
+  FaImage,
   FaPlus,
   FaRegCircle,
   FaRegSquare,
+  FaTag,
 } from "react-icons/fa6";
-import { QUESTION_TYPES } from "../QuizEditor";
+import { QUESTION_TYPES } from "../questionTypes";
 
 // Question Settings Component
 const QuestionSettings = ({
@@ -95,19 +97,6 @@ interface QuestionListProps {
   courseId: number;
   lessonId: number;
   quizId: number;
-}
-
-interface QuestionCardProps {
-  question: Question;
-  questions: Question[];
-  index: number;
-  onEdit: (question: Question) => void;
-  onDelete: (id: number) => void;
-  onMove: (index: number, direction: "up" | "down") => void;
-  isOptionCorrect: (questionId: number, optionIndex: number) => boolean;
-  getQuestionIcon: (
-    type: string
-  ) => React.ComponentType<{ className?: string }>;
 }
 
 const QuestionList = ({
@@ -686,6 +675,8 @@ const TrueFalseOptions = ({
   </div>
 );
 
+
+
 const NewLabelingQuestion = ({ newQuestion, onNewQuestionChange }: any) => {
   // Initialize labelAnswers if it doesn't exist
   const labelAnswers = newQuestion.labelAnswers || [];
@@ -756,18 +747,35 @@ const NewLabelingQuestion = ({ newQuestion, onNewQuestionChange }: any) => {
   };
 
   return (
-    <div className="space-y-4 border-l-4 border-yellow-500 pl-4 py-2">
-      <h4 className="text-sm font-bold text-gray-700">Image and Label Setup</h4>
+    <div className="relative bg-yellow-50 rounded-xl border-2 border-yellow-300 shadow-sm p-6 space-y-6">
+      {/* Decorative accent */}
+      <div className="absolute top-0 left-0 w-1.5 h-full bg-yellow-500 rounded-l-xl"></div>
+      
+      {/* Header */}
+      <div className="flex items-center gap-3">
+        <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-yellow-500 text-white shadow-md">
+          <FaTag className="text-lg" />
+        </div>
+        <div>
+          <h4 className="text-lg font-bold text-gray-800">Image Labeling Setup</h4>
+          <p className="text-sm text-gray-600">Upload an image and define labels</p>
+        </div>
+      </div>
 
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
+      {/* Image Upload Section */}
+      <div className="bg-white rounded-lg p-5 shadow-sm border border-gray-200">
+        <label className="block text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+          <FaImage className="text-yellow-500" />
           Upload Labeled Image
         </label>
-        <div className="flex items-center gap-2">
-          <label className="cursor-pointer bg-white border border-gray-200 rounded-lg hover:border-yellow-400 hover:shadow-sm transition-all px-4 py-2 text-sm font-medium text-gray-700">
-            {newQuestion.imageUrl || newQuestion.imageFile
-              ? "Change Image"
-              : "Select Image"}
+        <div className="flex items-center gap-3">
+          <label className="group cursor-pointer bg-yellow-500 hover:bg-yellow-600 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 px-6 py-3 text-sm font-semibold text-white">
+            <span className="flex items-center gap-2">
+              <FaImage />
+              {newQuestion.imageUrl || newQuestion.imageFile
+                ? "Change Image"
+                : "Select Image"}
+            </span>
             <input
               type="file"
               accept="image/*"
@@ -776,119 +784,144 @@ const NewLabelingQuestion = ({ newQuestion, onNewQuestionChange }: any) => {
             />
           </label>
           {newQuestion.imageFile && (
-            <span className="text-sm text-gray-600">
-              {newQuestion.imageFile.name || "Uploaded image"}
-            </span>
+            <div className="flex items-center gap-2 bg-green-50 border border-green-300 rounded-lg px-4 py-2">
+              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+              <span className="text-sm text-green-700 font-medium">
+                {newQuestion.imageFile.name || "Uploaded image"}
+              </span>
+            </div>
           )}
         </div>
         {!newQuestion.imageUrl && !newQuestion.imageFile && (
-          <p className="mt-1 text-xs text-gray-500">
-            Upload a pre-labeled image with markers (A, B, C, etc.)
-          </p>
+          <div className="mt-3 bg-blue-50 border border-blue-300 rounded-lg p-3">
+            <p className="text-xs text-blue-800">
+              💡 <strong>Tip:</strong> Upload a pre-labeled image with markers (A, B, C, etc.)
+            </p>
+          </div>
         )}
       </div>
 
+      {/* Image and Labels Section */}
       {newQuestion.imageUrl || newQuestion.imageFile ? (
-        <div className="flex flex-col md:flex-row gap-6 mt-4">
-          {/* Image on left (or top on mobile) */}
-          <div className="md:w-1/2">
-            <div className="border border-gray-200 rounded-lg overflow-hidden bg-gray-50 p-2">
-              <img
-                src={
-                  newQuestion.imageUrl ||
-                  URL.createObjectURL(newQuestion.imageFile)
-                }
-                alt="Question content preview"
-                className="w-full h-auto max-h-64 object-contain mx-auto"
-              />
+        <div className="flex flex-col lg:flex-row gap-6">
+          {/* Image Preview */}
+          <div className="lg:w-1/2">
+            <div className="bg-white rounded-lg shadow-md overflow-hidden border-2 border-gray-200">
+              <div className="bg-gray-100 px-4 py-2 border-b border-gray-200">
+                <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Image Preview</p>
+              </div>
+              <div className="p-4 bg-gray-50">
+                <img
+                  src={
+                    newQuestion.imageUrl ||
+                    URL.createObjectURL(newQuestion.imageFile)
+                  }
+                  alt="Question content preview"
+                  className="w-full h-auto max-h-80 object-contain mx-auto rounded-lg shadow-sm"
+                />
+              </div>
             </div>
           </div>
 
-          {/* Labels and answers on right (or bottom on mobile) */}
-          <div className="md:w-1/2">
-            <div className="flex justify-between items-center mb-3">
-              <label className="block text-sm font-medium text-gray-700">
-                Labels and Answers
-              </label>
-              <button
-                type="button"
-                onClick={addLabel}
-                className="inline-flex items-center px-3 py-1 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-yellow-600 hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500"
-              >
-                <FaPlus className="mr-1" /> Add Label
-              </button>
-            </div>
+          {/* Labels Editor */}
+          <div className="lg:w-1/2">
+            <div className="bg-white rounded-lg shadow-md border-2 border-gray-200 overflow-hidden">
+              <div className="bg-yellow-500 px-5 py-3 flex justify-between items-center">
+                <label className="text-sm font-bold text-white flex items-center gap-2">
+                  <FaTag />
+                  Labels and Answers
+                </label>
+                <button
+                  type="button"
+                  onClick={addLabel}
+                  className="inline-flex items-center px-4 py-2 bg-white text-yellow-600 text-sm font-semibold rounded-lg hover:bg-yellow-50 transition-all duration-200 shadow-md hover:shadow-lg"
+                >
+                  <FaPlus className="mr-2" /> Add Label
+                </button>
+              </div>
 
-            <div className="space-y-3 max-h-64 overflow-y-auto pr-2">
-              {labelAnswers.length > 0 ? (
-                labelAnswers.map((item: any, index: number) => (
-                  <div key={index} className="flex items-center gap-3 group">
-                    <div className="flex-1 grid grid-cols-12 gap-2 items-center">
-                      <div className="col-span-2">
-                        <input
-                          type="text"
-                          value={item.label || ""}
-                          onChange={(e) =>
-                            handleLabelChange(index, "label", e.target.value)
-                          }
-                          placeholder="A"
-                          className="block w-full text-center rounded-md border-gray-300 shadow-sm focus:border-yellow-500 focus:ring-yellow-500 text-sm"
-                          maxLength={1}
-                          size={1}
-                        />
-                      </div>
-                      <div className="col-span-9">
-                        <input
-                          type="text"
-                          value={item.answer || ""}
-                          onChange={(e) =>
-                            handleLabelChange(index, "answer", e.target.value)
-                          }
-                          placeholder="Enter the answer for this label"
-                          className="block w-full rounded-md border-gray-300 shadow-sm focus:border-yellow-500 focus:ring-yellow-500 text-sm"
-                        />
-                      </div>
-                      <div className="col-span-1 flex justify-end">
+              <div className="p-5 space-y-3 max-h-96 overflow-y-auto">
+                {labelAnswers.length > 0 ? (
+                  labelAnswers.map((item: any, index: number) => (
+                    <div key={index} className="group bg-gray-50 hover:bg-gray-100 rounded-lg p-3 border border-gray-200 hover:border-yellow-400 transition-all duration-200">
+                      <div className="flex items-center gap-3">
+                        {/* Label Input */}
+                        <div className="flex-shrink-0">
+                          <input
+                            type="text"
+                            value={item.label || ""}
+                            onChange={(e) =>
+                              handleLabelChange(index, "label", e.target.value)
+                            }
+                            placeholder="A"
+                            className="block w-12 h-12 text-center text-lg font-bold rounded-lg border-2 border-gray-300 focus:border-yellow-500 focus:ring-2 focus:ring-yellow-200 bg-white shadow-sm"
+                            maxLength={1}
+                          />
+                        </div>
+                        
+                        {/* Answer Input */}
+                        <div className="flex-1">
+                          <input
+                            type="text"
+                            value={item.answer || ""}
+                            onChange={(e) =>
+                              handleLabelChange(index, "answer", e.target.value)
+                            }
+                            placeholder="Enter the answer for this label..."
+                            className="block w-full rounded-lg border-2 border-gray-300 focus:border-yellow-500 focus:ring-2 focus:ring-yellow-200 px-4 py-2.5 text-sm bg-white shadow-sm"
+                          />
+                        </div>
+                        
+                        {/* Remove Button */}
                         <button
                           type="button"
                           onClick={() => removeLabel(index)}
-                          className="text-gray-400 hover:text-red-500 focus:outline-none opacity-0 group-hover:opacity-100 transition-opacity"
+                          className="flex-shrink-0 w-10 h-10 flex items-center justify-center text-gray-400 hover:text-white hover:bg-red-500 rounded-lg transition-all duration-200 opacity-0 group-hover:opacity-100"
                           title="Remove label"
                         >
-                          <FaTimes />
+                          <FaTimes className="text-lg" />
                         </button>
                       </div>
                     </div>
+                  ))
+                ) : (
+                  <div className="text-center py-12 border-2 border-dashed border-gray-300 rounded-lg bg-gray-50">
+                    <FaTag className="mx-auto text-4xl text-gray-300 mb-3" />
+                    <p className="text-sm text-gray-500 font-medium">No labels added yet</p>
+                    <p className="text-xs text-gray-400 mt-1">Click 'Add Label' to get started</p>
                   </div>
-                ))
-              ) : (
-                <div className="text-center py-4 text-sm text-gray-500 border-2 border-dashed border-gray-200 rounded-lg">
-                  No labels added yet. Click 'Add Label' to get started.
-                </div>
-              )}
-            </div>
+                )}
+              </div>
 
-            <div className="mt-3 text-xs text-gray-500">
-              <p>
-                • Labels will be automatically converted to uppercase (A, B, C,
-                etc.)
-              </p>
-              <p>• Add labels that match the markers on your image</p>
+              <div className="bg-blue-50 px-5 py-4 border-t border-gray-200">
+                <div className="space-y-2 text-xs text-gray-700">
+                  <p className="flex items-start gap-2">
+                    <span className="text-blue-500 font-bold">•</span>
+                    <span>Labels will be automatically converted to uppercase (A, B, C, etc.)</span>
+                  </p>
+                  <p className="flex items-start gap-2">
+                    <span className="text-blue-500 font-bold">•</span>
+                    <span>Add labels that match the markers on your image</span>
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       ) : labelAnswers.length > 0 ? (
-        <div className="mt-4 space-y-3">
-          <h5 className="text-sm font-medium text-gray-700">
-            Labels (upload an image to see the full editor)
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-5">
+          <h5 className="text-sm font-semibold text-gray-700 mb-4 flex items-center gap-2">
+            <FaTag className="text-yellow-500" />
+            Current Labels
+            <span className="ml-auto text-xs font-normal text-gray-500">(upload an image to see the full editor)</span>
           </h5>
           <div className="space-y-2">
             {labelAnswers.map((item: any, index: number) => (
-              <div key={index} className="flex items-center gap-2">
-                <span className="font-mono bg-gray-100 px-2 py-1 rounded text-sm">
-                  {item.label || "?"}:
+              <div key={index} className="flex items-center gap-3 bg-gray-50 rounded-lg p-3 border border-gray-200">
+                <span className="flex items-center justify-center w-8 h-8 font-bold bg-yellow-100 text-yellow-700 rounded-lg border border-yellow-300 text-sm">
+                  {item.label || "?"}
                 </span>
-                <span>{item.answer || "No answer provided"}</span>
+                <span className="text-sm text-gray-700">{item.answer || "No answer provided"}</span>
               </div>
             ))}
           </div>
@@ -897,5 +930,6 @@ const NewLabelingQuestion = ({ newQuestion, onNewQuestionChange }: any) => {
     </div>
   );
 };
+
 
 export default QuestionList;
