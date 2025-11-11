@@ -1,15 +1,18 @@
 // src/quiz/dto/update-quiz.dto.ts
 import { QuizSettingsDto } from './create-quiz.dto';
+import { Express } from 'express';
 
 export class UpdateQuizDto {
   name?: string;
   description?: string;
   questions?: UpdateQuizQuestionDto[];
-  settings?: QuizSettingsDto;
+  settings?: any; // Changed from QuizSettingsDto to any to be more flexible
   lessonId: number;
   courseId: number;
+  quizId?: number;
+  formId?: number;
   imageUrl?: string; // For quiz cover image
- 
+  imageFile?: Express.Multer.File; // For file upload
 }
 
 export class LabelAnswerPair {
@@ -29,6 +32,6 @@ export class UpdateQuizQuestionDto {
   required?: boolean;
   points?: number;
   imageUrl?: string; // For storing the URL of the uploaded image
-  imageFile?: any; // This will be used for upload but not stored in DB
+  imageFile?: Express.Multer.File; // For file upload
   labelAnswers?: LabelAnswerPair[]; // For labeling questions
 }

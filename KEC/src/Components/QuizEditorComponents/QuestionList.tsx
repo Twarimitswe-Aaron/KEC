@@ -324,7 +324,7 @@ const QuestionCard = ({
       <div className="p-4">
         <div className="flex items-start justify-between">
           <div className="flex items-start gap-3">
-            <Icon className="h-5 w-5 text-[#034153] mt-0.5 flex-shrink-0" />
+            {React.createElement(Icon, { className: "h-5 w-5 text-[#034153] mt-0.5 flex-shrink-0 inline mr-1" })}
             <div className="flex-1">
               <h3 className="font-medium text-gray-900">
                 {question.question || `Question ${index + 1}`}
@@ -682,12 +682,10 @@ const NewLabelingQuestion = ({ newQuestion, onNewQuestionChange }: any) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const imageUrl = URL.createObjectURL(file);
-
     onNewQuestionChange({
       ...newQuestion,
       imageFile: file,
-      imageUrl: imageUrl,
+      imageUrl: URL.createObjectURL(file),
       labelAnswers: [...labelAnswers],
     });
   };
@@ -711,8 +709,10 @@ const NewLabelingQuestion = ({ newQuestion, onNewQuestionChange }: any) => {
     onNewQuestionChange({
       ...newQuestion,
       labelAnswers: updatedLabels,
-      options: updatedLabels.map((la) => la.label).filter(Boolean),
-      correctAnswers: updatedLabels.map((la) => la.answer).filter(Boolean),
+      correctAnswers: updatedLabels.map(la => ({
+        label: la.label,
+        answer: la.answer
+      }))
     });
   };
 
@@ -722,18 +722,14 @@ const NewLabelingQuestion = ({ newQuestion, onNewQuestionChange }: any) => {
   };
 
   const removeLabel = (index: number) => {
-    const updatedLabels = labelAnswers.filter(
-      (_: any, i: number) => i !== index
-    );
+    const updatedLabels = labelAnswers.filter((_: unknown, i: number) => i !== index);
     onNewQuestionChange({
       ...newQuestion,
       labelAnswers: updatedLabels,
-      options: updatedLabels
-        .map((la: { label: string; answer: string }) => la.label)
-        .filter(Boolean),
-      correctAnswers: updatedLabels
-        .map((la: { label: string; answer: string }) => la.answer)
-        .filter(Boolean),
+      correctAnswers: updatedLabels.map((la: { label: string; answer: string }) => ({
+        label: la.label,
+        answer: la.answer
+      }))
     });
   };
 

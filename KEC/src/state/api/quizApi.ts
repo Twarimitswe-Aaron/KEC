@@ -56,11 +56,28 @@ export const quizApi = apiSlice.injectEndpoints({
       { message: string },
       { id: number; data: UpdateQuizRequest }
     >({
-      query: ({ id, data }) => ({
-        url: `quizzes/${id}`,
-        method: "PATCH",
-        body: data,
-      }),
+      query: ({ id, data }) => {
+        const formData = new FormData();
+        
+        // Append all fields to formData
+        Object.entries(data).forEach(([key, value]) => {
+          if (key === 'questions' || key === 'settings') {
+            // Stringify objects and arrays
+            formData.append(key, JSON.stringify(value));
+          } else if (value !== undefined && value !== null) {
+            // Convert other values to strings
+            formData.append(key, String(value));
+          }
+        });
+
+        return {
+          url: `quizzes/${id}`,
+          method: 'PATCH',
+          body: formData,
+          // Don't set Content-Type header - let the browser set it with the correct boundary
+          headers: {},
+        };
+      },
       invalidatesTags: (result, error, { id }) => [
         { type: "Quiz", id },
         "Quiz",

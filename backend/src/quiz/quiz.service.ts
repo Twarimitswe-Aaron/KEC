@@ -4,102 +4,114 @@ import {
   ForbiddenException,
   Injectable,
   NotFoundException,
+  Logger,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { UpdateQuizDto, UpdateQuizQuestionDto } from './dto/update-quiz.dto';
-
+import { Express } from 'express';
 
 @Injectable()
 export class QuizService {
+  private readonly logger = new Logger(QuizService.name);
+
   constructor(
     private prisma: PrismaService,
   ) {}
 
-  async updateQuiz({ id, data }: { id: number; data: UpdateQuizDto }) {
+async updateQuiz({ id, data }: { id: number; data: UpdateQuizDto }) {
+  // 1️⃣ Handle question images if provided
   if (data.questions) {
     for (const question of data.questions) {
-      if (question.imageFile && question.type === "labeling") {
-        question.imageUrl = question.imageFile.path;
+      if (question.imageFile) {
+        try {
+          // The file was saved by the interceptor, update the URL
+          question.imageUrl = `/uploads/quiz-images/${question.imageFile.filename}`;
+        } catch (error) {
+          this.logger.error('Error processing question image:', error);
+          throw new BadRequestException('Error processing image upload');
+        }
+        delete question.imageFile; // not needed for DB
       }
-      delete question.imageFile;
     }
   }
 
-  console.log("Updating quiz with data:", data.questions);
+  this.logger.debug('Updating quiz with data:', { 
+    quizId: id,
+    questionCount: data.questions?.length || 0 
+  });
 
+  // 2️⃣ Prepare quiz update data
   const updateData: any = {
     name: data.name,
     description: data.description,
     settings: data.settings,
   };
 
-  if (data.imageUrl) {
-    updateData.imageUrl = data.imageUrl;
-  }
+  if (data.imageUrl) updateData.imageUrl = data.imageUrl;
 
-  const updatedQuiz = await this.prisma.quiz.update({
-    where: { id },
-    data: updateData,
-    include: {
-      questions: true,
-    },
-  });
-
-
-  if (data.questions!.length > 0) {
-
-
-    await this.prisma.quiz.update({
+  // 3️⃣ Start transaction for consistency
+  return this.prisma.$transaction(async (tx) => {
+    // Update quiz basic info
+    const updatedQuiz = await tx.quiz.update({
       where: { id },
-      data: {
-        questions: {
-          create: data.questions!.map(q => {
-            if (!q.question?.trim()) {
-              throw new BadRequestException("Question text is required for all questions");
-            }
-
-            // Ensure options and correctAnswers are properly formatted as arrays
-            const questionData: any = {
-              type: q.type,
-              question: q.question.trim(),
-              options: Array.isArray(q.options) ? q.options : [],
-              required: q.required ?? false,
-              points: q.points ?? 1,
-            };
-
-            // Handle correctAnswers based on question type
-            if (q.type === 'multiple' && q.correctAnswers) {
-              questionData.correctAnswers = Array.isArray(q.correctAnswers) 
-                ? q.correctAnswers 
-                : [q.correctAnswers];
-            } else if ((q.type === 'checkbox' || q.type === 'labeling') && q.correctAnswers) {
-              questionData.correctAnswers = Array.isArray(q.correctAnswers)
-                ? q.correctAnswers
-                : [q.correctAnswers];
-            } else {
-              questionData.correctAnswers = [];
-            }
-
-            if (q.type === 'labeling' && q.imageUrl) {
-              questionData.imageUrl = q.imageUrl;
-            }
-
-            return questionData;
-          }),
-        },
-      },
+      data: updateData,
+      include: { questions: true },
     });
-  }
 
-  const message =
-    data.questions?.length === 0
-      ? "Quiz updated successfully"
-      : data.questions?.length === 1
-      ? "Question created successfully"
-      : "Questions created successfully";
+    // ✅ Case 1: No questions provided → only update quiz info
+    if (!data.questions || data.questions.length === 0) {
+      return {
+        message: "Quiz updated successfully",
+      };
+    }
 
-  return { message };
+
+    // First delete all existing questions for this quiz
+    // Delete all existing questions for this quiz
+    await tx.quizQuestion.deleteMany({ where: { quizId: id } });
+
+    // Create new questions
+    await tx.quizQuestion.createMany({
+      data: data.questions.map((q) => {
+        if (!q.question?.trim()) {
+          throw new BadRequestException("Question text is required for all questions");
+        }
+
+        const questionData: any = {
+          quizId: id,
+          type: q.type,
+          question: q.question.trim(),
+          options: Array.isArray(q.options) ? q.options : [],
+          required: q.required ?? false,
+          points: q.points ?? 1,
+          correctAnswers: Array.isArray(q.correctAnswers)
+            ? q.correctAnswers
+            : q.correctAnswers
+            ? [q.correctAnswers]
+            : [],
+        };
+
+        if (q.imageUrl) questionData.imageUrl = q.imageUrl;
+        return questionData;
+      }),
+    });
+
+    // Fetch the full quiz again after question updates
+    const finalQuiz = await tx.quiz.findUnique({
+      where: { id },
+      include: { questions: true },
+    });
+
+    // Choose message dynamically
+    const message =
+      data.questions.length === 1
+        ? 'Question created successfully'
+        : 'Questions created successfully';
+
+    return { message };
+  });
 }
+
 
 
   async getQuizDataByQuiz({

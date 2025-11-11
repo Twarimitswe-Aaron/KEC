@@ -2,8 +2,8 @@
 import { useState, useEffect } from "react";
 import { toast } from "react-toastify";
 import QuestionList from "./QuizEditorComponents/QuestionList";
-import { FaCheckCircle, FaCheckSquare, FaEdit, FaQuestionCircle, FaTimes, FaCheck, FaPlus, FaRegCircle, FaRegSquare, FaArrowUp, FaArrowDown, FaTrashAlt } from "react-icons/fa";
-import { QUESTION_TYPES } from "./questionTypes";
+import { FaCheckCircle, FaCheckSquare, FaEdit, FaQuestionCircle, FaTimes, FaCheck, FaPlus, FaRegCircle, FaRegSquare, FaArrowUp, FaArrowDown, FaTrashAlt, FaListUl } from "react-icons/fa";
+import { QUESTION_TYPES, getQuestionType } from "./questionTypes";
 import {
   X,
   List as ListIcon,
@@ -19,6 +19,7 @@ import {
 
 } from "../state/api/quizApi";
 import { QuestionProp } from "../state/api/courseApi";
+import { FaTag } from "react-icons/fa6";
 interface Question extends QuestionProp {
   imageFile?: File;
 }
@@ -38,6 +39,25 @@ const INITIAL_NEW_QUESTION: Partial<Question> = {
   points: 1,
   imageUrl:"",
   labelAnswers:[],
+};
+
+const getQuestionIcon = (type: string) => {
+  switch (type) {
+    case 'multiple':
+      return FaCheckSquare;
+    case 'single':
+      return FaRegCircle;
+    case 'truefalse':
+      return FaCheckCircle;
+    case 'shortanswer':
+      return FaEdit;
+    case 'labeling':
+      return FaTag;
+    case 'matching':
+      return FaListUl;
+    default:
+      return FaQuestionCircle;
+  }
 };
 
 const QuizEditor = ({ onClose, resource }: QuizEditorProps) => {
@@ -67,6 +87,7 @@ const QuizEditor = ({ onClose, resource }: QuizEditorProps) => {
   const [editingQuestion, setEditingQuestion] = useState<number | null>(null);
   const [showSidebar, setShowSidebar] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     if (quizData) {
@@ -189,15 +210,23 @@ const QuizEditor = ({ onClose, resource }: QuizEditorProps) => {
       id: -Math.abs(Date.now()),
       type: newQuestion.type!,
       question: newQuestion.question.trim(),
-      required: newQuestion.required !== undefined ? newQuestion.required : true, // Default to true if not set
+      required: newQuestion.required !== undefined ? newQuestion.required : true,
       points: newQuestion.points || 1,
-      options: newQuestion.options?.filter((opt) => opt.trim()),
-      correctAnswers: newQuestion.correctAnswers || [],
       quizId: resource.quizId!,
-      imageUrl: "",
-      labelAnswers: [],
-      order: questions.length, // Set the order to the current number of questions
+      order: questions.length,
     };
+
+    // Handle different question types
+    if (newQuestion.type === 'labeling') {
+      question.labelAnswers = [...(newQuestion.labelAnswers || [])];
+      // Map just the answer strings to correctAnswers
+      question.correctAnswers = question.labelAnswers.map(la => la.answer);
+      question.imageFile = newQuestion.imageFile;
+      question.imageUrl = newQuestion.imageUrl;
+    } else {
+      question.options = newQuestion.options?.filter((opt: string) => opt.trim());
+      question.correctAnswers = newQuestion.correctAnswers || [];
+    }
 
     setQuestions((prev) => [...prev, question]);
     setNewQuestion(INITIAL_NEW_QUESTION);
@@ -317,99 +346,124 @@ const QuizEditor = ({ onClose, resource }: QuizEditorProps) => {
     });
   };
 
+  const saveQuiz = async () => {
+    if (!quizData?.id) return;
+    setIsSaving(true);
 
-const saveQuiz = async () => {
-  if (!quizData?.id) return;
+    try {
+      const quizTitle = quizSettings.title || quizData.name;
+      
+      // First, handle any file uploads and prepare questions data
+      const updatedQuestions = await Promise.all(questions.map(async (q, index) => {
+        // Process options to ensure they're strings and remove empty ones
+        const options = (q.options || [])
+          .map(opt => (typeof opt === 'string' ? opt.trim() : String(opt)))
+          .filter(opt => opt);
+        
+        // Process correctAnswers based on question type
+        let correctAnswers = [...(q.correctAnswers || [])];
+        
+        // For multiple/checkbox questions, ensure correctAnswers are numbers (indices)
+        if (q.type === 'multiple' || q.type === 'checkbox') {
+          correctAnswers = correctAnswers
+            .map(ca => (typeof ca === 'string' ? parseInt(ca, 10) : ca))
+            .filter(ca => !isNaN(ca as number) && (ca as number) < options.length);
+        }
+        
+        // For labeling questions, ensure labelAnswers is properly formatted
+        const labelAnswers = q.type === 'labeling' 
+          ? (q.labelAnswers || []).filter(la => la?.label && la?.answer)
+          : undefined;
 
-  try {
-    const quizTitle = quizSettings.title || quizData.name;
-    if (!quizTitle?.trim()) {
-      toast.error("Quiz title is required");
-      return;
-    }
-
-    const newQuestions = questions
-      .filter((q) => q.id < 0 && q.question?.trim() !== "")
-      .map((q, index) => {
-        const questionData: any = {
+        const questionData = {
+          id: q.id,
           type: q.type,
           question: q.question.trim(),
-          required: q.required !== undefined ? q.required : true, // Default to true if not set
+          description: q.description?.trim() || '',
+          required: q.required !== undefined ? q.required : true,
           points: q.points || 1,
-          order: q.order !== undefined ? q.order : index, // Use existing order or current index
+          order: q.order !== undefined ? q.order : index,
+          options,
+          correctAnswers,
+          labelAnswers,
+          imageUrl: q.imageUrl // Keep existing image URL if no new file is uploaded
         };
-  
-        if (Array.isArray(q.options) && q.options.length > 0) {
-          questionData.options = q.options.filter((opt) => opt && opt.trim());
-        }
 
-        if (["multiple", "truefalse", "checkbox"].includes(q.type)) {
-          questionData.correctAnswers = q.correctAnswers || [];
-        } else if (q.type === "labeling") {
-          questionData.correctAnswers = q.labelAnswers || [];
-
-          if (q.imageFile) {
-            questionData.imageFile = q.imageFile;
+        // If there's a new image file, upload it first
+        if (q.imageFile) {
+          const imageFormData = new FormData();
+          imageFormData.append('image', q.imageFile);
+          
+          try {
+            const uploadResponse = await fetch('/api/upload-question-image', {
+              method: 'POST',
+              body: imageFormData,
+            });
+            const uploadedImage = await uploadResponse.json();
+            questionData.imageUrl = uploadedImage.url;
+          } catch (error) {
+            console.error("Error uploading image:", error);
           }
         }
 
         return questionData;
-      });
+      }));
 
-    const submissionData = {
-      name: quizTitle.trim(),
-      description: quizSettings.description?.trim() || "",
-      questions: newQuestions,
-      settings: quizSettings,
-      courseId: resource.courseId!,
-      lessonId: resource.lessonId!,
-      quizId: resource.quizId!,
-      formId: resource.formId!,
-    };
+      const updateData = {
+        courseId: resource.courseId,
+        lessonId: resource.lessonId,
+        quizId: resource.quizId,
+        formId: resource.formId,
+        name: quizTitle.trim(),
+        description: quizSettings.description?.trim() || '',
+        questions: updatedQuestions.map(question => ({
+          ...question,
+          quizId: resource.quizId
+        })),
+        settings: quizSettings
+      };
 
+      console.log('Sending update data:', updateData);
 
-    const { message } = await updateQuiz({
-      id: quizData.id,
-      data: submissionData,
-    }).unwrap();
+      // Call the updateQuiz mutation
+      const { message } = await updateQuiz({
+        id: quizData.id,
+        data: updateData,
+      }).unwrap();
 
-    toast.success(message);
-    setHasChanges(false);
-    await refetch();
-  } catch (error: any) {
-    console.error("Save quiz error:", error);
-    toast.error(error?.data?.message || error?.message || "Failed to save quiz");
-  }
-};
-
-
-
-  const getQuestionIcon = (type: string) => {
-    return (
-      QUESTION_TYPES.find((t) => t.value === type)?.icon || FaQuestionCircle
-    );
-  };
-
-  const isOptionCorrect = (question: Question, optionIndex: number) => {
-    if (question.type === "multiple" || question.type === "truefalse") {
-      return question.correctAnswers?.[0] === optionIndex;
-    } else if (question.type === "checkbox") {
-      return (question.correctAnswers || []).includes(optionIndex);
+      toast.success(message || 'Quiz updated successfully');
+      setHasChanges(false);
+      await refetch();
+    } catch (error: any) {
+      console.error("Error saving quiz:", error);
+      toast.error(error?.data?.message || error?.message || "Failed to save quiz");
+    } finally {
+      setIsSaving(false);
     }
-    return false;
   };
 
   const handleNewQuestionChange = (updates: Partial<Question>) => {
-    setNewQuestion((prev) => ({ ...prev, ...updates }));
+    setNewQuestion((prev) => {
+      // If we're updating the image file, also update the imageUrl
+      if (updates.imageFile) {
+        return { 
+          ...prev, 
+          ...updates,
+          imageUrl: URL.createObjectURL(updates.imageFile)
+        };
+      }
+      return { ...prev, ...updates };
+    });
+  };
+
+  const isOptionCorrect = (question: any, optionIndex: number) => {
+    if (!question.correctAnswers) return false;
+    return question.correctAnswers.includes(optionIndex);
   };
 
   const isNewOptionCorrect = (optionIndex: number) => {
-    if (newQuestion.type === "multiple" || newQuestion.type === "truefalse") {
-      return (newQuestion.correctAnswers || [])[0] === optionIndex;
-    } else if (newQuestion.type === "checkbox") {
-      return (newQuestion.correctAnswers || []).includes(optionIndex);
-    }
-    return false;
+    if (!newQuestion.correctAnswers) return false;
+    return newQuestion.correctAnswers.includes(optionIndex);
   };
 
   useEffect(() => {
@@ -489,7 +543,8 @@ const saveQuiz = async () => {
       </div>
     </div>
   );
-};
+  };
+
 
 const LoadingOverlay = ({ message }: { message: string }) => (
   <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center">

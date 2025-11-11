@@ -1,8 +1,5 @@
 // src/quiz/quiz.controller.ts
-import {
-  Controller,
-  Get,
-  Post,
+import { Controller, Get, Post,
   Put,
   Delete,
   Body,
@@ -17,17 +14,53 @@ import {
   UseInterceptors,
   UploadedFiles,
   UploadedFile,
+  BadRequestException,
+  Logger,
 } from '@nestjs/common';
-import { FileInterceptor, FilesInterceptor, FileFieldsInterceptor } from '@nestjs/platform-express';
+import { FileInterceptor, FilesInterceptor, FileFieldsInterceptor, AnyFilesInterceptor } from '@nestjs/platform-express';
+import { Express } from 'express';
 import { QuizService } from './quiz.service';
 import { CreateQuizDto } from './dto/create-quiz.dto';
-import { UpdateQuizDto } from './dto/update-quiz.dto';
+import { UpdateQuizDto, UpdateQuizQuestionDto } from './dto/update-quiz.dto';
 import { CreateQuizAttemptDto } from './dto/quiz-attempt.dto';
+import { diskStorage } from 'multer';
+import { extname } from 'path';
+import { v4 as uuidv4 } from 'uuid';
+import * as fs from 'fs';
+import * as path from 'path';
+
+// Configure multer for file uploads
+const quizImageStorage = diskStorage({
+  destination: (req, file, cb) => {
+    const uploadDir = path.join(process.cwd(), 'uploads', 'quiz-images');
+    
+    // Create uploads directory if it doesn't exist
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    // Generate a unique filename with original extension
+    const randomName = uuidv4();
+    cb(null, `${randomName}${extname(file.originalname)}`);
+  },
+});
+
+const quizImageFilter = (req, file, cb) => {
+  // Accept images only
+  if (!file.originalname.match(/\.(jpg|jpeg|png|gif)$/)) {
+    return cb(new Error('Only image files are allowed!'), false);
+  }
+  cb(null, true);
+};
 
 @Controller('quizzes')
 export class QuizController {
-  constructor(private readonly quizService: QuizService) {}
+  private readonly logger = new Logger(QuizController.name);
 
+  constructor(private readonly quizService: QuizService) {}
 
   @Get('quiz/')
   findQuizDataByQuizId(
@@ -38,43 +71,62 @@ export class QuizController {
   ) {
     return this.quizService.getQuizDataByQuiz({ quizId, lessonId, courseId, formId });
   }
+
   @Patch(':id')
-  @UseInterceptors(FileFieldsInterceptor([
-    { name: 'image', maxCount: 1 },
-    { name: 'question-*-image', maxCount: 1 },
-  ]))
+  @UseInterceptors(AnyFilesInterceptor({
+    storage: quizImageStorage,
+    fileFilter: quizImageFilter,
+    limits: {
+      fileSize: 5 * 1024 * 1024, // 5MB limit
+      files: 10, // Maximum number of files
+    },
+    preservePath: false
+  }))
   async updateQuiz(
     @Param('id', ParseIntPipe) id: number,
-    @Body() updateQuizDto: UpdateQuizDto,
-    @UploadedFiles() files: { 
-      image?: Express.Multer.File[];
-      [key: string]: Express.Multer.File[] | undefined;
-    } = {},
+    @UploadedFiles() files: any[] = [],
+    @Req() req: any,
   ) {
-    if (files?.image?.[0]) {
-      updateQuizDto.imageUrl = `/uploads/quiz-images/${files.image[0].filename}`;
+    // Parse the form data
+    const updateQuizDto: UpdateQuizDto = {
+      name: req.body.name,
+      description: req.body.description,
+      questions: JSON.parse(req.body.questions || '[]'),
+      settings: JSON.parse(req.body.settings || '{}'),
+      courseId: parseInt(req.body.courseId, 10),
+      lessonId: parseInt(req.body.lessonId, 10),
+      quizId: req.body.quizId ? parseInt(req.body.quizId, 10) : undefined,
+      formId: req.body.formId ? parseInt(req.body.formId, 10) : undefined,
+    };
+
+    // Handle the main quiz image
+    const mainImage = files.find(f => f.fieldname === 'image');
+    if (mainImage) {
+      updateQuizDto.imageUrl = `/uploads/quiz-images/${mainImage.filename}`;
     }
 
-    if (files) {
-      const questionImages = Object.entries(files as Record<string, Express.Multer.File[]>)
-        .filter(([key]) => key.startsWith('question-') && key.endsWith('-image'))
-        .reduce<Record<number, Express.Multer.File>>((acc, [key, fileArray]) => {
-          if (fileArray?.[0]) {
-            const match = key.match(/question-(\d+)-image/);
-            if (match) {
-              const index = parseInt(match[1], 10);
-              acc[index] = fileArray[0];
-            }
-          }
-          return acc;
-        }, {});
+    // Process question images
+    const questionImages = files
+      .filter(f => f.fieldname.startsWith('question-') && f.fieldname.endsWith('-image'))
+      .reduce((acc, file) => {
+        const match = file.fieldname.match(/question-(\d+)-image/);
+        if (match) {
+          const index = parseInt(match[1], 10);
+          acc[index] = file;
+        }
+        return acc;
+      }, {});
 
-      if (updateQuizDto.questions) {
-        updateQuizDto.questions = updateQuizDto.questions.map((q, index) => ({
-          ...q,
-          imageFile: questionImages[index],
-        }));
-      }
+    // Update questions with their respective images
+    if (updateQuizDto.questions) {
+      updateQuizDto.questions = updateQuizDto.questions.map((q, index) => ({
+        ...q,
+        imageFile: questionImages[index],
+        // Preserve existing image URL if no new file is uploaded
+        imageUrl: questionImages[index] 
+          ? `/uploads/quiz-images/${questionImages[index].filename}`
+          : q.imageUrl
+      }));
     }
 
     return this.quizService.updateQuiz({ id, data: updateQuizDto });
