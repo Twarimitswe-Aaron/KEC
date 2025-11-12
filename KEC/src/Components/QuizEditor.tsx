@@ -410,20 +410,11 @@ const QuizEditor = ({ onClose, resource }: QuizEditorProps) => {
         // Include existing imageUrl if no new image file
         if (q.imageUrl && !q.imageFile) {
           questionData.imageUrl = q.imageUrl;
-          console.log(`Frontend - Question ${index} preserving existing imageUrl:`, q.imageUrl);
         }
 
         // Include imageFile for FormData processing if it exists
         if (q.imageFile) {
           questionData.imageFile = q.imageFile;
-          console.log(`Frontend - Question ${index} has imageFile:`, q.imageFile.name);
-        } else {
-          console.log(`Frontend - Question ${index} has NO imageFile`);
-        }
-
-        // Log what imageUrl we're including
-        if (q.imageUrl) {
-          console.log(`Frontend - Question ${index} existing imageUrl:`, q.imageUrl);
         }
 
         return questionData;
@@ -443,8 +434,6 @@ const QuizEditor = ({ onClose, resource }: QuizEditorProps) => {
         settings: quizSettings
       };
 
-      console.log('Sending update data:', updateData);
-
       // Call the updateQuiz mutation
       const { message } = await updateQuiz({
         id: quizData.id,
@@ -455,7 +444,6 @@ const QuizEditor = ({ onClose, resource }: QuizEditorProps) => {
       setHasChanges(false);
       await refetch();
     } catch (error: any) {
-      console.error("Error saving quiz:", error);
       toast.error(error?.data?.message || error?.message || "Failed to save quiz");
     } finally {
       setIsSaving(false);
@@ -483,6 +471,13 @@ const QuizEditor = ({ onClose, resource }: QuizEditorProps) => {
         options: undefined,
         correctAnswer: undefined,
         correctAnswers: prev.correctAnswers?.length ? prev.correctAnswers : [{ label: "A", answer: "" }] as any,
+      }));
+    } else if (newQuestion.type === "truefalse") {
+      setNewQuestion((prev) => ({
+        ...prev,
+        options: ["True", "False"],
+        correctAnswers: [],
+        correctAnswer: undefined,
       }));
     } else if (!newQuestion.options || newQuestion.options.length < 2) {
       setNewQuestion((prev) => ({

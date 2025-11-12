@@ -179,8 +179,6 @@ const QuestionList = ({
       delete newState[questionId];
       return newState;
     });
-
-    console.log("Saving question updates:", questionData);
   };
 
   const handleQuestionUpdate = (questionId: number, updates: any) => {
@@ -536,13 +534,22 @@ const NewQuestionForm = ({
 
     const isOptionBased = newQuestion.type !== 'labeling';
     if (isOptionBased) {
-        const hasEnoughOptions = newQuestion.options && newQuestion.options.length >= 2;
-        if (!hasEnoughOptions) {
-            newErrors.options = "Please add at least two answer options";
-        } else {
-            const hasCorrectAnswer = newQuestion.options.some((_: any, index: number) => isNewOptionCorrect(index));
+        if (newQuestion.type === 'truefalse') {
+            // For true/false questions, just check if an answer is selected
+            const hasCorrectAnswer = newQuestion.correctAnswers && newQuestion.correctAnswers.length > 0;
             if (!hasCorrectAnswer) {
-                newErrors.options = "Please select at least one correct answer option";
+                newErrors.options = "Please select whether True or False is correct";
+            }
+        } else {
+            // For other option-based questions (multiple choice, checkbox)
+            const hasEnoughOptions = newQuestion.options && newQuestion.options.length >= 2;
+            if (!hasEnoughOptions) {
+                newErrors.options = "Please add at least two answer options";
+            } else {
+                const hasCorrectAnswer = newQuestion.options.some((_: any, index: number) => isNewOptionCorrect(index));
+                if (!hasCorrectAnswer) {
+                    newErrors.options = "Please select at least one correct answer option";
+                }
             }
         }
     }
@@ -621,6 +628,7 @@ const NewQuestionForm = ({
             
             {/* Only show warning when needed - don't show any validation initially */}
             {newQuestion.type !== 'labeling' && 
+             newQuestion.type !== 'truefalse' && 
              (newQuestion.text || newQuestion.question) && // Only show when question name is entered
              newQuestion.options && 
              (newQuestion.options.length < 2 ? (
@@ -645,13 +653,27 @@ const NewQuestionForm = ({
                 </div>
               )
             )}
+            
+            {/* Special validation for true/false questions */}
+            {newQuestion.type === 'truefalse' && 
+             (newQuestion.text || newQuestion.question) && 
+             (!newQuestion.correctAnswers || newQuestion.correctAnswers.length === 0) && (
+              <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3 mt-2">
+                <p className="text-sm text-yellow-700 flex items-center gap-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
+                  Please select whether True or False is the correct answer
+                </p>
+              </div>
+            )}
 
             <div className="flex justify-end mt-4">
               <button
                 onClick={handleAddQuestion}
                 disabled={
                   (!newQuestion.text && !newQuestion.question) || 
-                  (newQuestion.type !== 'labeling' && 
+                  (newQuestion.type !== 'labeling' && newQuestion.type !== 'truefalse' &&
                    (!newQuestion.options || newQuestion.options.length < 2)) ||
                   (newQuestion.type !== 'labeling' && 
                    (!newQuestion.correctAnswers || newQuestion.correctAnswers.length === 0))
@@ -679,6 +701,59 @@ const NewQuestionOptions = ({
 }: any) => {
   const hasMinOptions = newQuestion.options && newQuestion.options.length >= 2;
   const hasCorrectAnswer = newQuestion.options && newQuestion.options.some((_: any, index: number) => isNewOptionCorrect(index));
+  
+  // For true/false questions, show static options
+  if (newQuestion.type === "truefalse") {
+    const trueFalseOptions = ["True", "False"];
+    const hasCorrectTF = newQuestion.correctAnswers && newQuestion.correctAnswers.length > 0;
+    
+    return (
+      <div className="space-y-2 border-l-4 border-blue-100 pl-4 py-2">
+        <div className="flex justify-between items-center">
+          <label className="block text-sm font-medium text-gray-700">
+            Select the Correct Answer
+          </label>
+          <span className="text-xs text-gray-500">
+            {!hasCorrectTF && 
+              <span className="text-orange-500 font-medium">• Select True or False</span>}
+          </span>
+        </div>
+        
+        <div className="space-y-2">
+          {trueFalseOptions.map((option: string, index: number) => (
+            <div key={index} className="flex gap-2 items-center">
+              <button
+                type="button"
+                onClick={() => onNewQuestionToggleCorrectAnswer(index)}
+                className={`p-1.5 transition-colors flex-shrink-0 border rounded-lg hover:border-gray-300 ${
+                  isNewOptionCorrect(index)
+                    ? "bg-green-100 text-green-600 hover:bg-green-200 border-green-300"
+                    : "text-gray-400 hover:text-gray-600 hover:bg-gray-100 border-gray-200"
+                }`}
+                title="Select as correct answer"
+              >
+                {isNewOptionCorrect(index) ? (
+                  <FaCheckCircle size={14} />
+                ) : (
+                  <FaRegCircle size={14} />
+                )}
+              </button>
+
+              <div
+                className={`w-full px-3 py-2 border rounded-lg text-sm font-medium ${
+                  isNewOptionCorrect(index)
+                    ? "bg-green-50 border-green-300 text-green-700"
+                    : "border-gray-200 text-gray-700"
+                }`}
+              >
+                {option}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
   
   return (
   <div className="space-y-2 border-l-4 border-gray-100 pl-4 py-2">

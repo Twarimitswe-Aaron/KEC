@@ -177,10 +177,6 @@ export class QuizController {
           ? `${this.configService.get('BACKEND_URL')}/uploads/course_url/${questionImages[index].filename}`
           : q.imageUrl;
         
-        console.log(`Controller - Question ${index}: ${q.question?.substring(0, 30)}`);
-        console.log(`  - Has new file: ${!!questionImages[index]}`);
-        console.log(`  - Existing imageUrl: ${q.imageUrl}`);
-        console.log(`  - Final imageUrl: ${newImageUrl}`);
         
         return {
           ...q,

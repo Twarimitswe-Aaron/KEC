@@ -44,7 +44,6 @@ async updateQuiz({ id, data }: { id: number; data: UpdateQuizDto }) {
   };
 
   if (data.imageUrl) updateData.imageUrl = data.imageUrl;
-  console.log(updateData,"updateData")
 
   // 3️⃣ Start transaction for consistency
   return this.prisma.$transaction(async (tx) => {
@@ -101,9 +100,6 @@ async updateQuiz({ id, data }: { id: number; data: UpdateQuizDto }) {
 
         if (q.imageUrl) {
           questionData.imageUrl = q.imageUrl;
-          console.log(`Question ${q.question?.substring(0, 50)} - Setting imageUrl:`, q.imageUrl);
-        } else {
-          console.log(`Question ${q.question?.substring(0, 50)} - No imageUrl provided`);
         }
         return questionData;
       }),
