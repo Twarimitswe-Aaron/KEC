@@ -37,7 +37,6 @@ const INITIAL_NEW_QUESTION: Partial<Question> = {
   required: false,
   points: 1,
   imageUrl: "",
-  labelAnswers:[],
 };
 
 const getQuestionIcon = (type: string) => {
@@ -101,8 +100,8 @@ const QuizEditor = ({ onClose, resource }: QuizEditorProps) => {
           correctAnswer: q.correctAnswer,
           required: q.required,
           points: q.points,
-          labelAnswers: q.labelAnswers,
           quizId: q.quizId,
+          imageUrl: q.imageUrl, // Include existing imageUrl
         })) || []
       );
 
@@ -215,7 +214,7 @@ const QuizEditor = ({ onClose, resource }: QuizEditorProps) => {
     }
 
     // For labeling questions, ensure there's at least one label-answer pair
-    if (newQuestion.type === 'labeling' && (!newQuestion.labelAnswers || newQuestion.labelAnswers.length === 0)) {
+    if (newQuestion.type === 'labeling' && (!newQuestion.correctAnswers || newQuestion.correctAnswers.length === 0)) {
       toast.error("Please add at least one label-answer pair");
       return;
     }
@@ -238,20 +237,13 @@ const QuizEditor = ({ onClose, resource }: QuizEditorProps) => {
 
     // Handle different question types
     if (newQuestion.type === 'labeling') {
-      // Store full label-answer objects
-      question.labelAnswers = [...(newQuestion.labelAnswers || [])];
-      
       // Store labels as options for consistent API format
-      question.options = (newQuestion.labelAnswers || []).map(la => la.label);
+      question.options = (newQuestion.correctAnswers || []).map(la => 
+        typeof la === 'object' && la && 'label' in la ? (la as any).label : String(la)
+      );
       
-      // Store correctAnswers in appropriate format
-      // First convert to JSON-friendly format and then parse back
-      // This ensures compatibility with backend storage
-      const labelAnswersStr = JSON.stringify((newQuestion.labelAnswers || []).map(la => ({
-        label: la.label,
-        answer: la.answer
-      })));
-      question.correctAnswers = JSON.parse(labelAnswersStr);
+      // Store correctAnswers directly (already contains label-answer pairs)
+      question.correctAnswers = [...(newQuestion.correctAnswers || [])];
       
       // Handle image
       question.imageFile = newQuestion.imageFile;
@@ -348,33 +340,34 @@ const QuizEditor = ({ onClose, resource }: QuizEditorProps) => {
     value: string
   ) => {
     const question = questions.find((q) => q.id === questionId);
-    if (!question?.labelAnswers) return;
+    if (!question?.correctAnswers) return;
 
-    const newLabelAnswers = [...question.labelAnswers];
+    const newLabelAnswers = [...question.correctAnswers];
+    const currentItem = newLabelAnswers[index];
     newLabelAnswers[index] = {
-      ...newLabelAnswers[index],
+      ...(typeof currentItem === 'object' && currentItem ? currentItem as any : {}),
       [field]: field === "label" ? value.toUpperCase() : value,
-    };
-    updateQuestion(questionId, { labelAnswers: newLabelAnswers });
+    } as any;
+    updateQuestion(questionId, { correctAnswers: newLabelAnswers });
   };
 
   const addLabelKey = (questionId: number) => {
     const question = questions.find((q) => q.id === questionId);
     if (!question) return;
 
-    const currentLabels = question.labelAnswers || [];
+    const currentLabels = question.correctAnswers || [];
     const newLabel = String.fromCharCode(65 + currentLabels.length);
     updateQuestion(questionId, {
-      labelAnswers: [...currentLabels, { label: newLabel, answer: "" }],
+      correctAnswers: [...currentLabels, { label: newLabel, answer: "" }] as any,
     });
   };
 
   const removeLabelKey = (questionId: number, index: number) => {
     const question = questions.find((q) => q.id === questionId);
-    if (!question?.labelAnswers || question.labelAnswers.length <= 1) return;
+    if (!question?.correctAnswers || question.correctAnswers.length <= 1) return;
 
     updateQuestion(questionId, {
-      labelAnswers: question.labelAnswers.filter((_, i) => i !== index),
+      correctAnswers: question.correctAnswers.filter((_, i) => i !== index),
     });
   };
 
@@ -385,7 +378,7 @@ const QuizEditor = ({ onClose, resource }: QuizEditorProps) => {
     try {
       const quizTitle = quizSettings.title || quizData.name;
       
-      // First, handle any file uploads and prepare questions data
+
       const updatedQuestions = await Promise.all(questions.map(async (q, index) => {
         // Process options to ensure they're strings and remove empty ones
         const options = (q.options || [])
@@ -402,11 +395,6 @@ const QuizEditor = ({ onClose, resource }: QuizEditorProps) => {
             .filter(ca => !isNaN(ca as number) && (ca as number) < options.length);
         }
         
-        // For labeling questions, ensure labelAnswers is properly formatted
-        const labelAnswers = q.type === 'labeling' 
-          ? (q.labelAnswers || []).filter(la => la?.label && la?.answer)
-          : undefined;
-
         const questionData: any = {
           id: q.id,
           type: q.type,
@@ -416,13 +404,26 @@ const QuizEditor = ({ onClose, resource }: QuizEditorProps) => {
           points: q.points || 1,
           order: q.order !== undefined ? q.order : index,
           options,
-          correctAnswers,
-          labelAnswers,
+          correctAnswers, // For labeling questions, this contains the label answers
         };
+
+        // Include existing imageUrl if no new image file
+        if (q.imageUrl && !q.imageFile) {
+          questionData.imageUrl = q.imageUrl;
+          console.log(`Frontend - Question ${index} preserving existing imageUrl:`, q.imageUrl);
+        }
 
         // Include imageFile for FormData processing if it exists
         if (q.imageFile) {
           questionData.imageFile = q.imageFile;
+          console.log(`Frontend - Question ${index} has imageFile:`, q.imageFile.name);
+        } else {
+          console.log(`Frontend - Question ${index} has NO imageFile`);
+        }
+
+        // Log what imageUrl we're including
+        if (q.imageUrl) {
+          console.log(`Frontend - Question ${index} existing imageUrl:`, q.imageUrl);
         }
 
         return questionData;
@@ -480,9 +481,8 @@ const QuizEditor = ({ onClose, resource }: QuizEditorProps) => {
       setNewQuestion((prev) => ({
         ...prev,
         options: undefined,
-        correctAnswers: [],
         correctAnswer: undefined,
-        labelAnswers: prev.labelAnswers || [{ label: "A", answer: "" }],
+        correctAnswers: prev.correctAnswers?.length ? prev.correctAnswers : [{ label: "A", answer: "" }] as any,
       }));
     } else if (!newQuestion.options || newQuestion.options.length < 2) {
       setNewQuestion((prev) => ({
@@ -490,7 +490,6 @@ const QuizEditor = ({ onClose, resource }: QuizEditorProps) => {
         options: ["", ""],
         correctAnswers: [],
         correctAnswer: undefined,
-        labelAnswers: undefined,
       }));
     }
   }, [newQuestion.type]);
@@ -814,192 +813,11 @@ const Header = ({
 
 
 
-const QuestionOptionsEdit = ({
-  question,
-  onToggleCorrectAnswer,
-  onAddOption,
-  onUpdateOption,
-  onRemoveOption,
-  isOptionCorrect,
-}: any) => (
-  <div className="space-y-2 border-l-4 border-gray-100 pl-4 py-2">
-    <label className="block text-sm font-medium text-gray-700">Options</label>
-    {question.options.map((option: string, optIndex: number) => (
-      <div key={optIndex} className="flex gap-2 items-center">
-        <button
-          type="button"
-          onClick={() => onToggleCorrectAnswer(question.id, optIndex)}
-          className={`p-1.5 transition-colors flex-shrink-0 border border-gray-200 rounded-lg hover:border-gray-300 ${
-            isOptionCorrect(question, optIndex)
-              ? "bg-green-100 text-green-600 hover:bg-green-200"
-              : "text-gray-400 hover:text-gray-600 hover:bg-gray-100"
-          }`}
-          title="Mark as correct"
-        >
-          {question.type === "multiple" || question.type === "truefalse" ? (
-            isOptionCorrect(question, optIndex) ? (
-              <FaCheckCircle size={14} />
-            ) : (
-              <FaRegCircle size={14} />
-            )
-          ) : isOptionCorrect(question, optIndex) ? (
-            <FaCheckSquare size={14} />
-          ) : (
-            <FaRegSquare size={14} />
-          )}
-        </button>
 
-        <input
-          type="text"
-          value={option}
-          onChange={(e) =>
-            onUpdateOption(question.id, optIndex, e.target.value)
-          }
-          placeholder={`Option ${optIndex + 1}`}
-          className={`w-full px-3 py-2 border rounded-lg hover:border-gray-300 hover:shadow-sm transition-all focus:ring-2 focus:ring-[#034153] text-sm ${
-            isOptionCorrect(question, optIndex)
-              ? "bg-green-50 border-green-300"
-              : "border-gray-200"
-          }`}
-        />
 
-        {question.options.length > 1 && (
-          <button
-            type="button"
-            onClick={() => onRemoveOption(question.id, optIndex)}
-            className="p-1.5 rounded-full text-red-500 hover:bg-red-100 transition-colors flex-shrink-0 border border-gray-200 rounded-lg hover:border-gray-300"
-            title="Remove option"
-          >
-            <FaTimes size={14} />
-          </button>
-        )}
-      </div>
-    ))}
 
-    <button
-      onClick={() => onAddOption(question.id)}
-      className="text-[#034153] hover:text-[#004e64] flex items-center gap-1 text-sm font-medium mt-2 border border-gray-200 rounded-lg hover:border-gray-300 hover:shadow-sm transition-all px-3 py-1"
-    >
-      <FaPlus size={12} /> Add Option
-    </button>
-  </div>
-);
 
-interface LabelingQuestionEditProps {
-  question: Question;
-  onUpdate: (updates: Partial<Question>) => void;
-  onUpdateLabelAnswer: (questionId: number, index: number, field: 'label' | 'answer', value: string) => void;
-  onAddLabelKey: (questionId: number) => void;
-  onRemoveLabelKey: (questionId: number, index: number) => void;
-  disabled?: boolean;
-}
 
-const LabelingQuestionEdit = ({
-  question,
-  onUpdate,
-  onUpdateLabelAnswer,
-  onAddLabelKey,
-  onRemoveLabelKey,
-  disabled = false,
-}: LabelingQuestionEditProps) => {
-
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    // Check file type and size
-    if (!file.type.startsWith('image/')) {
-      toast.error('Please upload an image file');
-      return;
-    }
-    if (file.size > 5 * 1024 * 1024) { // 5MB limit
-      toast.error('Image size should be less than 5MB');
-      return;
-    }
-
-    // Update the UI immediately with the file
-    onUpdate({ 
-      ...question, 
-      imageFile: file  // We'll send this to the backend
-    });
-  };
-
-  return (
-    <div className="space-y-4 border-l-4 border-yellow-500 pl-4 py-2">
-      <h4 className="text-sm font-bold text-gray-700">Image and Label Setup</h4>
-
-      <label className="block text-sm font-medium text-gray-700">
-        Upload Image
-      </label>
-      <input
-        type="file"
-        accept="image/*"
-        onChange={handleImageUpload}
-        className="w-full px-3 py-2 border border-gray-200 rounded-lg hover:border-gray-300 hover:shadow-sm transition-all focus:ring-2 focus:ring-yellow-500 text-sm cursor-pointer"
-      />
-
-      {question.imageFile && (
-        <div className="mt-2 border border-gray-200 rounded-lg hover:border-gray-300 hover:shadow-sm transition-all p-2 bg-gray-50">
-          <img
-            src={URL.createObjectURL(question.imageFile)}
-            alt="Preview"
-            className="max-w-full h-auto max-h-48 object-contain mx-auto"
-          />
-          <p className="text-xs text-gray-500 text-center mt-1">
-            Ensure labels (A, B, C...) are visible on the image.
-          </p>
-        </div>
-      )}
-
-      <label className="block text-sm font-medium text-gray-700 mt-3">
-        Define Label-Answer Key
-      </label>
-
-      {(question.labelAnswers || []).map((la: any, index: number) => (
-        <div key={index} className="flex gap-2 items-center">
-          <input
-            type="text"
-            value={la.label}
-            onChange={(e) =>
-              onUpdateLabelAnswer(question.id, index, "label", e.target.value)
-            }
-            placeholder="Label (A, B, C)"
-            className="w-20 px-3 py-2 border border-gray-200 rounded-lg hover:border-gray-300 hover:shadow-sm transition-all focus:ring-2 focus:ring-yellow-500 text-sm font-semibold text-center flex-shrink-0"
-            maxLength={3}
-          />
-
-          <input
-            type="text"
-            value={la.answer}
-            onChange={(e) =>
-              onUpdateLabelAnswer(question.id, index, "answer", e.target.value)
-            }
-            placeholder="Correct Name of Labeled Part"
-            className="w-full px-3 py-2 border border-gray-200 rounded-lg hover:border-gray-300 hover:shadow-sm transition-all focus:ring-2 focus:ring-yellow-500 text-sm"
-          />
-
-          {question.labelAnswers!.length > 1 && (
-            <button
-              type="button"
-              onClick={() => onRemoveLabelKey(question.id, index)}
-              className="p-1.5  text-red-500 hover:bg-red-100 transition-colors flex-shrink-0 border border-gray-200 rounded-lg hover:border-gray-300"
-              title="Remove label"
-            >
-              <FaTimes size={14} />
-            </button>
-          )}
-        </div>
-      ))}
-
-      <button
-        onClick={() => onAddLabelKey(question.id)}
-        className="text-yellow-600 hover:text-yellow-700 flex items-center gap-1 text-sm font-medium mt-2 border border-gray-200 rounded-lg hover:border-gray-300 hover:shadow-sm transition-all px-3 py-1"
-      >
-        <FaPlus size={12} /> Add Label Key
-      </button>
-    </div>
-  );
-};
 
 
 

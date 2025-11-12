@@ -44,6 +44,7 @@ async updateQuiz({ id, data }: { id: number; data: UpdateQuizDto }) {
   };
 
   if (data.imageUrl) updateData.imageUrl = data.imageUrl;
+  console.log(updateData,"updateData")
 
   // 3️⃣ Start transaction for consistency
   return this.prisma.$transaction(async (tx) => {
@@ -89,18 +90,21 @@ async updateQuiz({ id, data }: { id: number; data: UpdateQuizDto }) {
         
         // Handle labeling question specifics
         if (q.type === 'labeling') {
-          // Store label-answer pairs in correctAnswers for labeling questions
-          if (Array.isArray(q.labelAnswers) && q.labelAnswers.length > 0) {
-            questionData.correctAnswers = q.labelAnswers;
-          }
-          
+          // For labeling questions, correctAnswers contains the label-answer pairs
           // Make sure options contains labels for labeling questions
-          if (!questionData.options.length && Array.isArray(q.labelAnswers)) {
-            questionData.options = q.labelAnswers.map(la => la.label || '');
+          if (!questionData.options.length && Array.isArray(q.correctAnswers)) {
+            questionData.options = q.correctAnswers.map(la => 
+              typeof la === 'object' && la && 'label' in la ? (la as any).label : String(la)
+            );
           }
         }
 
-        if (q.imageUrl) questionData.imageUrl = q.imageUrl;
+        if (q.imageUrl) {
+          questionData.imageUrl = q.imageUrl;
+          console.log(`Question ${q.question?.substring(0, 50)} - Setting imageUrl:`, q.imageUrl);
+        } else {
+          console.log(`Question ${q.question?.substring(0, 50)} - No imageUrl provided`);
+        }
         return questionData;
       }),
     });
@@ -202,18 +206,28 @@ async updateQuiz({ id, data }: { id: number; data: UpdateQuizDto }) {
       quizId: quiz.id,
     };
 
-    // Add imageUrl if present
+    // Add imageUrl if present - ensure it's a full URL
     if (q.imageUrl) {
-      questionData.imageUrl = q.imageUrl;
+      // Check if it's already a full URL (starts with http/https)
+      if (q.imageUrl.startsWith('http://') || q.imageUrl.startsWith('https://')) {
+        questionData.imageUrl = q.imageUrl;
+      } else {
+        // If it's a relative URL, construct the full URL
+        const baseUrl = this.configService.get('BACKEND_URL');
+        questionData.imageUrl = q.imageUrl.startsWith('/') 
+          ? `${baseUrl}${q.imageUrl}`
+          : `${baseUrl}/${q.imageUrl}`;
+         
+      }
     }
 
-    // For labeling questions, also provide labelAnswers for frontend compatibility
-    if (q.type === 'labeling' && correctAnswers.length > 0) {
-      questionData.labelAnswers = correctAnswers;
-    }
+    
+
+    // For labeling questions, correctAnswers already contains the label-answer pairs
 
     return questionData;
   });
+
 
   const totalPoints = formattedQuestions.reduce((sum, q) => sum + q.points, 0);
   const hasRequired = formattedQuestions.some((q) => q.required);
@@ -231,6 +245,8 @@ async updateQuiz({ id, data }: { id: number; data: UpdateQuizDto }) {
     lessonId: quiz.form?.resource.lessonId,
     formId: quiz.form?.id,
   };
+
+
 
   return quizData;
 }
@@ -293,7 +309,6 @@ async updateQuiz({ id, data }: { id: number; data: UpdateQuizDto }) {
           type: q.type!,
           question: q.question!,
           options: q.options ? JSON.stringify(q.options) : null,
-          correctAnswer: q.correctAnswer ?? null,
           correctAnswers: q.correctAnswers
             ? JSON.stringify(q.correctAnswers)
             : null,
@@ -312,7 +327,9 @@ async updateQuiz({ id, data }: { id: number; data: UpdateQuizDto }) {
       include: { questions: true },
     });
 
-    return updatedQuiz;
+    console.log(quizUpdateData,"updatedQuiz")
+
+    return {updatedQuiz};
   }
 
 }

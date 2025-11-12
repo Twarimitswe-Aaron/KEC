@@ -74,6 +74,10 @@ export const quizApi = apiSlice.injectEndpoints({
             formData.append(`question-${index}-image`, question.imageFile);
             delete processedQuestion.imageFile; // Remove from question data
             delete processedQuestion.imageUrl;  // Remove preview URL (backend will generate proper URL)
+          } else {
+            // If no new image file, preserve existing imageUrl for backend
+            // Remove imageFile key even if it doesn't exist to keep data clean
+            delete processedQuestion.imageFile;
           }
           
           return processedQuestion;

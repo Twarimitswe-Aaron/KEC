@@ -395,10 +395,6 @@ const AdminCourseManagementLayout: React.FC = () => {
     }
   };
 
-  // ----------------------------------------------------------------------
-  // 4. COMPONENT JSX
-  // ----------------------------------------------------------------------
-
   return (
     <div className="flex flex-col h-screen font-sans bg-gradient-to-br from-[#f9fafb] via-white to-[#f0fafa]">
       <header className="sticky top-20 z-30 bg-white/80 backdrop-blur-md py-6 px-4 shadow-lg border-b rounded-b-md border-[#004e64]/10">

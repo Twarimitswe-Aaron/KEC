@@ -15,8 +15,6 @@ import {
   FaTags,
   FaUpload,
   FaTrashAlt,
-  FaList,
-  FaSave,
 } from "react-icons/fa";
 import { QUESTION_TYPES } from "../questionTypes";
 import QuestionEditForm from "./QuestionEditForm";
@@ -168,7 +166,6 @@ const QuestionList = ({
         correctAnswers: updatedQuestion.correctAnswers,
         correctAnswer: updatedQuestion.correctAnswer,
         imageUrl: updatedQuestion.imageUrl,
-        labelAnswers: updatedQuestion.labelAnswers,
         required: updatedQuestion.required,
         points: updatedQuestion.points,
       },
@@ -409,15 +406,15 @@ const QuestionViewMode = ({ question, isOptionCorrect }: any) => (
     {question.type === "labeling" ? (
       <div className="bg-gray-50 p-3  border border-gray-200 rounded-lg hover:border-gray-300 hover:shadow-sm transition-all">
         <h4 className="text-sm font-medium text-gray-700 mb-2">Answer Key:</h4>
-        {question.imageUrl && (
+        {(question.imageUrl || question.imageFile) && (
           <img
-            src={question.imageUrl}
+            src={question.imageUrl || (question.imageFile ? URL.createObjectURL(question.imageFile) : '')}
             alt="Labeled Diagram"
             className="max-w-full h-auto max-h-32 object-contain mb-3 border border-gray-200 rounded-lg"
           />
         )}
         <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
-          {(question.labelAnswers || []).map((la: any, laIndex: number) => (
+          {(question.correctAnswers || []).map((la: any, laIndex: number) => (
             <div key={laIndex} className="flex gap-2">
               <span className="font-bold text-[#034153]">{la.label}:</span>
               <span className="text-gray-800">{la.answer}</span>
@@ -487,91 +484,7 @@ const NewQuestionForm = ({
   isNewOptionCorrect,
 }: NewQuestionFormProps) => {
   const [errors, setErrors] = useState<{ text?: string; options?: string }>({});
-  const [tempQuestions, setTempQuestions] = useState<any[]>([]);
-  const [showTempList, setShowTempList] = useState<boolean>(false);
 
-  // Function to add a question to the temporary list
-  const handleAddToList = () => {
-    // Validation (same as handleAddQuestion)
-    const newErrors: { text?: string; options?: string } = {};
-
-    const questionText = newQuestion.text || newQuestion.question;
-    if (!questionText || questionText.trim() === "") {
-      newErrors.text = "Please enter question name";
-    }
-
-    const isOptionBased = newQuestion.type !== 'labeling';
-    if (isOptionBased) {
-      const hasEnoughOptions = newQuestion.options && newQuestion.options.length >= 2;
-      if (!hasEnoughOptions) {
-        newErrors.options = "Please add at least two answer options";
-      } else {
-        const hasCorrectAnswer = newQuestion.options.some((_: any, index: number) => isNewOptionCorrect(index));
-        if (!hasCorrectAnswer) {
-          newErrors.options = "Please select at least one correct answer option";
-        }
-      }
-    }
-
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
-      return;
-    }
-    
-    // Create a temporary question with a unique temp ID
-    const tempQuestion = {
-      ...newQuestion,
-      id: `temp-${Date.now()}`, // Temporary ID to identify it
-      timestamp: Date.now(),
-    };
-
-    setTempQuestions(prev => [...prev, tempQuestion]);
-    setShowTempList(true);
-    
-    // Clear form for next question or keep current values based on preference
-    // Uncomment to clear form after adding to temp list:
-    // onNewQuestionChange({
-    //   ...newQuestion,
-    //   text: "",
-    //   question: "",
-    // });
-    
-    setErrors({});
-    toast.success("Question added to list");
-  };
-  
-  // Function to remove a question from the temporary list
-  const removeTempQuestion = (id: string) => {
-    setTempQuestions(prev => prev.filter(q => q.id !== id));
-    if (tempQuestions.length <= 1) {
-      setShowTempList(false);
-    }
-  };
-  
-  // Function to edit a question in the temporary list
-  const editTempQuestion = (id: string) => {
-    const questionToEdit = tempQuestions.find(q => q.id === id);
-    if (questionToEdit) {
-      onNewQuestionChange(questionToEdit);
-      removeTempQuestion(id);
-    }
-  };
-
-  // Function to add all temporary questions to the quiz
-  const addAllTempQuestions = () => {
-    // For each temp question, convert to actual question and add
-    tempQuestions.forEach(tempQuestion => {
-      const questionToAdd = { ...tempQuestion };
-      delete questionToAdd.id; // Remove temp ID
-      onNewQuestionChange(questionToAdd);
-      onAddQuestion();
-    });
-    
-    // Clear temporary list
-    setTempQuestions([]);
-    setShowTempList(false);
-    toast.success("All questions added to quiz");
-  };
 
   if (newQuestion.type === 'labeling') {
     return (
@@ -591,7 +504,7 @@ const NewQuestionForm = ({
                 return;
               }
               
-              if (!newQuestion.labelAnswers || newQuestion.labelAnswers.length === 0) {
+              if (!newQuestion.correctAnswers || newQuestion.correctAnswers.length === 0) {
                 toast.error("Please add at least one label-answer pair");
                 return;
               }
@@ -609,72 +522,6 @@ const NewQuestionForm = ({
           </button>
         </div>
         
-        {/* Temporary Questions List - Same code as above */}
-        {showTempList && tempQuestions.length > 0 && (
-          <div className="mt-8 border-t-2 border-gray-100 pt-6">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-medium text-gray-800 flex items-center gap-2">
-                <FaList className="text-[#034153]" />
-                Questions to Add ({tempQuestions.length})
-              </h3>
-              <button
-                onClick={addAllTempQuestions}
-                className="flex items-center gap-1 text-sm bg-green-600 text-white px-3 py-1.5 rounded-md hover:bg-green-700 transition-all"
-              >
-                <FaSave size={14} /> Add All to Quiz
-              </button>
-            </div>
-
-            <div className="space-y-3 max-h-64 overflow-auto pr-2">
-              {tempQuestions.map((question) => (
-                <div
-                  key={question.id}
-                  className="bg-white border border-gray-200 rounded-md p-3 shadow-sm hover:shadow-md transition-all"
-                >
-                  <div className="flex justify-between">
-                    <div className="flex-1">
-                      <div className="font-medium text-gray-800">{question.text || question.question}</div>
-                      <div className="flex items-center gap-1 text-xs text-gray-500 mt-1">
-                        <span className="px-2 py-0.5 bg-gray-100 rounded-full">
-                          {question.type === 'multiple' && 'Multiple Choice'}
-                          {question.type === 'checkbox' && 'Multiple Select'}
-                          {question.type === 'truefalse' && 'True/False'}
-                          {question.type === 'labeling' && 'Labeling'}
-                        </span>
-                        {question.type === 'labeling' && (
-                          <span className="px-2 py-0.5 bg-blue-50 rounded-full">
-                            {(question.labelAnswers || []).length} labels
-                          </span>
-                        )}
-                        {question.type !== 'labeling' && (
-                          <span className="px-2 py-0.5 bg-blue-50 rounded-full">
-                            {(question.options || []).length} options
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex gap-2 items-start">
-                      <button
-                        onClick={() => editTempQuestion(question.id)}
-                        className="text-blue-600 hover:text-blue-800 p-1 rounded-md hover:bg-blue-50"
-                        title="Edit this question"
-                      >
-                        <FaEdit size={16} />
-                      </button>
-                      <button
-                        onClick={() => removeTempQuestion(question.id)}
-                        className="text-red-600 hover:text-red-800 p-1 rounded-md hover:bg-red-50"
-                        title="Remove from list"
-                      >
-                        <FaTrash size={16} />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
     );
   }
@@ -799,26 +646,7 @@ const NewQuestionForm = ({
               )
             )}
 
-            <div className="flex justify-end mt-4 space-x-3">
-              <button
-                onClick={() => {
-                  // Add to temporary list for review
-                  handleAddToList();
-                }}
-                disabled={
-                  (!newQuestion.text && !newQuestion.question) || 
-                  (newQuestion.type !== 'labeling' && 
-                   (!newQuestion.options || newQuestion.options.length < 2)) ||
-                  (newQuestion.type !== 'labeling' && 
-                   (!newQuestion.correctAnswers || newQuestion.correctAnswers.length === 0))
-                }
-                className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-[#034153] bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#034153] disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                </svg>
-                Add to List
-              </button>
+            <div className="flex justify-end mt-4">
               <button
                 onClick={handleAddQuestion}
                 disabled={
@@ -834,72 +662,6 @@ const NewQuestionForm = ({
               </button>
             </div>
 
-            {/* Temporary Questions List */}
-            {showTempList && tempQuestions.length > 0 && (
-              <div className="mt-8 border-t-2 border-gray-100 pt-6">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-lg font-medium text-gray-800 flex items-center gap-2">
-                    <FaList className="text-[#034153]" />
-                    Questions to Add ({tempQuestions.length})
-                  </h3>
-                  <button
-                    onClick={addAllTempQuestions}
-                    className="flex items-center gap-1 text-sm bg-green-600 text-white px-3 py-1.5 rounded-md hover:bg-green-700 transition-all"
-                  >
-                    <FaSave size={14} /> Add All to Quiz
-                  </button>
-                </div>
-
-                <div className="space-y-3 max-h-64 overflow-auto pr-2">
-                  {tempQuestions.map((question) => (
-                    <div
-                      key={question.id}
-                      className="bg-white border border-gray-200 rounded-md p-3 shadow-sm hover:shadow-md transition-all"
-                    >
-                      <div className="flex justify-between">
-                        <div className="flex-1">
-                          <div className="font-medium text-gray-800">{question.text || question.question}</div>
-                          <div className="flex items-center gap-1 text-xs text-gray-500 mt-1">
-                            <span className="px-2 py-0.5 bg-gray-100 rounded-full">
-                              {question.type === 'multiple' && 'Multiple Choice'}
-                              {question.type === 'checkbox' && 'Multiple Select'}
-                              {question.type === 'truefalse' && 'True/False'}
-                              {question.type === 'labeling' && 'Labeling'}
-                            </span>
-                            {question.type === 'labeling' && (
-                              <span className="px-2 py-0.5 bg-blue-50 rounded-full">
-                                {(question.labelAnswers || []).length} labels
-                              </span>
-                            )}
-                            {question.type !== 'labeling' && (
-                              <span className="px-2 py-0.5 bg-blue-50 rounded-full">
-                                {(question.options || []).length} options
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                        <div className="flex gap-2 items-start">
-                          <button
-                            onClick={() => editTempQuestion(question.id)}
-                            className="text-blue-600 hover:text-blue-800 p-1 rounded-md hover:bg-blue-50"
-                            title="Edit this question"
-                          >
-                            <FaEdit size={16} />
-                          </button>
-                          <button
-                            onClick={() => removeTempQuestion(question.id)}
-                            className="text-red-600 hover:text-red-800 p-1 rounded-md hover:bg-red-50"
-                            title="Remove from list"
-                          >
-                            <FaTrash size={16} />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
           </>
         )}
       </div>
@@ -994,7 +756,7 @@ const NewQuestionOptions = ({
 };
 
 const NewLabelingQuestion = ({ newQuestion, onNewQuestionChange }: any) => {
-  const labelAnswers = newQuestion.labelAnswers || [];
+  const labelAnswers = newQuestion.correctAnswers || [];
 
   // Generate letter labels (A, B, C, D, etc.)
   const generateNextLabel = (index: number): string => {
@@ -1035,12 +797,8 @@ const NewLabelingQuestion = ({ newQuestion, onNewQuestionChange }: any) => {
 
     onNewQuestionChange({
       ...newQuestion,
-      labelAnswers: updatedLabels,
       options: updatedLabels.map(la => la.label),
-      correctAnswers: updatedLabels.map(la => ({
-        label: la.label,
-        answer: la.answer
-      }))
+      correctAnswers: updatedLabels
     });
   };
 
@@ -1054,7 +812,7 @@ const NewLabelingQuestion = ({ newQuestion, onNewQuestionChange }: any) => {
         ...newQuestion, 
         imageFile: file,                    // File object for backend
         imageUrl: previewUrl,               // Blob URL for preview only
-        labelAnswers: [...labelAnswers]
+        correctAnswers: [...labelAnswers]
       });
     }
   };
@@ -1074,12 +832,8 @@ const NewLabelingQuestion = ({ newQuestion, onNewQuestionChange }: any) => {
     
     onNewQuestionChange({ 
       ...newQuestion, 
-      labelAnswers: newLabelAnswers,
       options: newLabelAnswers.map(la => la.label),
-      correctAnswers: newLabelAnswers.map(la => ({
-        label: la.label,
-        answer: la.answer
-      }))
+      correctAnswers: newLabelAnswers
     });
   };
 
@@ -1089,12 +843,8 @@ const NewLabelingQuestion = ({ newQuestion, onNewQuestionChange }: any) => {
     
     onNewQuestionChange({ 
       ...newQuestion, 
-      labelAnswers: newLabelAnswers,
       options: newLabelAnswers.map(la => la.label),
-      correctAnswers: newLabelAnswers.map(la => ({
-        label: la.label,
-        answer: la.answer
-      }))
+      correctAnswers: newLabelAnswers
     });
   };
 

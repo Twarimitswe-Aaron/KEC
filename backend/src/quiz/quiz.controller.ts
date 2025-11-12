@@ -38,7 +38,7 @@ import * as path from 'path';
 // Configure multer for file uploads
 const quizImageStorage = diskStorage({
   destination: (req, file, cb) => {
-    const uploadDir = path.join(process.cwd(), 'uploads', 'quiz-images');
+    const uploadDir = path.join(process.cwd(), 'uploads', 'course_url');
     
     // Create uploads directory if it doesn't exist
     if (!fs.existsSync(uploadDir)) {
@@ -48,9 +48,11 @@ const quizImageStorage = diskStorage({
     cb(null, uploadDir);
   },
   filename: (req, file, cb) => {
-    // Generate a unique filename with original extension
-    const randomName = uuidv4();
-    cb(null, `${randomName}${extname(file.originalname)}`);
+    // Generate filename with timestamp and random number pattern
+    const timestamp = Date.now();
+    const randomNumber = Math.floor(Math.random() * 1000000000);
+    const extension = extname(file.originalname);
+    cb(null, `quiz_image-${timestamp}-${randomNumber}${extension}`);
   },
 });
 
@@ -65,7 +67,7 @@ const quizImageFilter = (req, file, cb) => {
 // Configure multer for question image uploads
 const questionImageStorage = diskStorage({
   destination: (req, file, cb) => {
-    const uploadDir = path.join(process.cwd(), 'uploads', 'question-images');
+    const uploadDir = path.join(process.cwd(), 'uploads', 'course_url');
     
     // Create uploads directory if it doesn't exist
     if (!fs.existsSync(uploadDir)) {
@@ -75,9 +77,11 @@ const questionImageStorage = diskStorage({
     cb(null, uploadDir);
   },
   filename: (req, file, cb) => {
-    // Generate a unique filename with original extension
-    const randomName = uuidv4();
-    cb(null, `${randomName}${extname(file.originalname)}`);
+    // Generate filename with timestamp and random number pattern
+    const timestamp = Date.now();
+    const randomNumber = Math.floor(Math.random() * 1000000000);
+    const extension = extname(file.originalname);
+    cb(null, `question_image-${timestamp}-${randomNumber}${extension}`);
   },
 });
 
@@ -104,13 +108,9 @@ export class QuizController {
       throw new BadRequestException('No file uploaded');
     }
 
-    // Get the base URL from the request
-    const protocol = request.protocol || 'http';
-    const host = request.get('host');
-    const baseUrl = `${protocol}://${host}`;
-
+    // Return relative URL for consistency
     return {
-      url: `${baseUrl}/uploads/question-images/${file.filename}`,
+      url: `/uploads/course_url/${file.filename}`,
       filename: file.filename,
     };
   }
@@ -155,7 +155,7 @@ export class QuizController {
     // Handle the main quiz image
     const mainImage = files.find(f => f.fieldname === 'image');
     if (mainImage) {
-      updateQuizDto.imageUrl = `/uploads/quiz-images/${mainImage.filename}`;
+      updateQuizDto.imageUrl = `/uploads/course_url/${mainImage.filename}`;
     }
 
     // Process question images
@@ -172,14 +172,23 @@ export class QuizController {
 
     // Update questions with their respective images
     if (updateQuizDto.questions) {
-      updateQuizDto.questions = updateQuizDto.questions.map((q, index) => ({
-        ...q,
-        imageFile: questionImages[index],
-        // Preserve existing image URL if no new file is uploaded
-        imageUrl: questionImages[index] 
-          ? `${this.configService.get('BACKEND_URL')}/uploads/quiz-images/${questionImages[index].filename}`
-          : q.imageUrl
-      }));
+      updateQuizDto.questions = updateQuizDto.questions.map((q, index) => {
+        const newImageUrl = questionImages[index] 
+          ? `${this.configService.get('BACKEND_URL')}/uploads/course_url/${questionImages[index].filename}`
+          : q.imageUrl;
+        
+        console.log(`Controller - Question ${index}: ${q.question?.substring(0, 30)}`);
+        console.log(`  - Has new file: ${!!questionImages[index]}`);
+        console.log(`  - Existing imageUrl: ${q.imageUrl}`);
+        console.log(`  - Final imageUrl: ${newImageUrl}`);
+        
+        return {
+          ...q,
+          imageFile: questionImages[index],
+          // Preserve existing image URL if no new file is uploaded
+          imageUrl: newImageUrl
+        };
+      });
     }
 
     return this.quizService.updateQuiz({ id, data: updateQuizDto });
