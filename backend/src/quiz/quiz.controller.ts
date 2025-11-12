@@ -1,24 +1,30 @@
 // src/quiz/quiz.controller.ts
-import { Controller, Get, Post,
+import { BadRequestException, Logger } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
   Put,
   Delete,
+  Req,
+  UseInterceptors,
+  ClassSerializerInterceptor,
   Body,
   Param,
   Query,
   ParseIntPipe,
   HttpCode,
+  UploadedFile,
   HttpStatus,
   Patch,
-  Req,
   UseGuards,
-  UseInterceptors,
   UploadedFiles,
-  UploadedFile,
-  BadRequestException,
-  Logger,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import type { Request } from 'express';
 import { FileInterceptor, FilesInterceptor, FileFieldsInterceptor, AnyFilesInterceptor } from '@nestjs/platform-express';
-import { Express } from 'express';
+import type { Express } from 'express';
+import type { Multer } from 'multer';
 import { QuizService } from './quiz.service';
 import { CreateQuizDto } from './dto/create-quiz.dto';
 import { UpdateQuizDto, UpdateQuizQuestionDto } from './dto/update-quiz.dto';
@@ -56,11 +62,58 @@ const quizImageFilter = (req, file, cb) => {
   cb(null, true);
 };
 
+// Configure multer for question image uploads
+const questionImageStorage = diskStorage({
+  destination: (req, file, cb) => {
+    const uploadDir = path.join(process.cwd(), 'uploads', 'question-images');
+    
+    // Create uploads directory if it doesn't exist
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    // Generate a unique filename with original extension
+    const randomName = uuidv4();
+    cb(null, `${randomName}${extname(file.originalname)}`);
+  },
+});
+
 @Controller('quizzes')
+@UseInterceptors(ClassSerializerInterceptor)
 export class QuizController {
   private readonly logger = new Logger(QuizController.name);
 
-  constructor(private readonly quizService: QuizService) {}
+  constructor(
+    private readonly quizService: QuizService,
+    private readonly configService: ConfigService
+  ) {}
+
+  @Post('upload-question-image')
+  @UseInterceptors(FileInterceptor('image', {
+    storage: questionImageStorage,
+    fileFilter: quizImageFilter,
+    limits: {
+      fileSize: 5 * 1024 * 1024, // 5MB limit
+    },
+  }))
+  async uploadQuestionImage(@UploadedFile() file: Express.Multer.File, @Req() request: Request): Promise<{ url: string; filename: string }> {
+    if (!file) {
+      throw new BadRequestException('No file uploaded');
+    }
+
+    // Get the base URL from the request
+    const protocol = request.protocol || 'http';
+    const host = request.get('host');
+    const baseUrl = `${protocol}://${host}`;
+
+    return {
+      url: `${baseUrl}/uploads/question-images/${file.filename}`,
+      filename: file.filename,
+    };
+  }
 
   @Get('quiz/')
   findQuizDataByQuizId(
@@ -124,7 +177,7 @@ export class QuizController {
         imageFile: questionImages[index],
         // Preserve existing image URL if no new file is uploaded
         imageUrl: questionImages[index] 
-          ? `/uploads/quiz-images/${questionImages[index].filename}`
+          ? `${this.configService.get('BACKEND_URL')}/uploads/quiz-images/${questionImages[index].filename}`
           : q.imageUrl
       }));
     }

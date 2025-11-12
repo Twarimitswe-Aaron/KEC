@@ -1,11 +1,12 @@
 import { Module } from '@nestjs/common';
 import { QuizService } from './quiz.service';
 import { QuizController } from './quiz.controller';
-import { FileUploadModule } from '../file-upload/file-upload.module';
+import { PrismaModule } from '../prisma/prisma.module';
 
 @Module({
-  imports: [FileUploadModule],
+  imports: [PrismaModule],
   controllers: [QuizController],
   providers: [QuizService],
+  exports: [QuizService],
 })
 export class QuizModule {}

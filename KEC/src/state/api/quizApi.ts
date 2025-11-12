@@ -10,7 +10,10 @@ export interface QuizIdentifiers {
 }
 
 
-export interface QuizQuestion extends QuestionProp {}
+export interface QuizQuestion extends QuestionProp {
+  imageUrl?: string;
+  imageFile?: File;
+}
 
 
 export interface QuizSettings {
@@ -42,6 +45,9 @@ export interface UpdateQuizRequest {
   questions?: QuizQuestion[];
   settings?: QuizSettings;
 }
+
+
+
 export const quizApi = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
     // Get quiz data by identifiers
@@ -59,10 +65,27 @@ export const quizApi = apiSlice.injectEndpoints({
       query: ({ id, data }) => {
         const formData = new FormData();
         
-        // Append all fields to formData
+        // Handle questions with image files
+        const processedQuestions = data.questions?.map((question, index) => {
+          const processedQuestion = { ...question };
+          
+          // If the question has an image file, add it to FormData and remove it from question data
+          if (question.imageFile) {
+            formData.append(`question-${index}-image`, question.imageFile);
+            delete processedQuestion.imageFile; // Remove from question data
+            delete processedQuestion.imageUrl;  // Remove preview URL (backend will generate proper URL)
+          }
+          
+          return processedQuestion;
+        });
+        
+        // Append all non-file fields to formData
         Object.entries(data).forEach(([key, value]) => {
-          if (key === 'questions' || key === 'settings') {
-            // Stringify objects and arrays
+          if (key === 'questions') {
+            // Use processed questions (without imageFile objects)
+            formData.append(key, JSON.stringify(processedQuestions));
+          } else if (key === 'settings') {
+            // Stringify settings object
             formData.append(key, JSON.stringify(value));
           } else if (value !== undefined && value !== null) {
             // Convert other values to strings
@@ -78,14 +101,13 @@ export const quizApi = apiSlice.injectEndpoints({
           headers: {},
         };
       },
-      invalidatesTags: (result, error, { id }) => [
+      invalidatesTags: (_, __, { id }) => [
         { type: "Quiz", id },
         "Quiz",
       ],
     }),
   }),
 });
-
 
 export const {
   useUpdateQuizMutation,

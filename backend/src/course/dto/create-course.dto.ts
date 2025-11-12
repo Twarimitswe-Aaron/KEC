@@ -1,26 +1,21 @@
-import { IsBoolean, IsNumber, IsString } from "class-validator";
+import { IsBoolean, IsNumber, IsString } from 'class-validator';
 
 export class CreateCourseDto {
-    @IsNumber()
-    id:number;
-    @IsString()
-    image_url:string;
-    @IsString()
-    title:string;
-    @IsString()
-    description:string;
-    @IsString()
-    price:string;
-    @IsBoolean()
+  @IsNumber()
+  id: number;
+  @IsString()
+  image_url: string;
+  @IsString()
+  title: string;
+  @IsString()
+  description: string;
+  @IsString()
+  price: string;
+  @IsBoolean()
+  @IsNumber()
+  adminId: number;
 
-   
-    @IsNumber()
-    adminId:number;
-  
-   
-    uploader:{
-        id:number;
-    
-    }
-
+  uploader: {
+    id: number;
+  };
 }

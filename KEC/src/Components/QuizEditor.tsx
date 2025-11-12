@@ -16,7 +16,6 @@ import {
   useGetQuizDataByQuizIdQuery,
   QuizIdentifiers,
   QuizSettings,
-
 } from "../state/api/quizApi";
 import { QuestionProp } from "../state/api/courseApi";
 import { FaTag } from "react-icons/fa6";
@@ -37,7 +36,7 @@ const INITIAL_NEW_QUESTION: Partial<Question> = {
   correctAnswers: [],
   required: false,
   points: 1,
-  imageUrl:"",
+  imageUrl: "",
   labelAnswers:[],
 };
 
@@ -102,7 +101,6 @@ const QuizEditor = ({ onClose, resource }: QuizEditorProps) => {
           correctAnswer: q.correctAnswer,
           required: q.required,
           points: q.points,
-          imageUrl: q.imageUrl,
           labelAnswers: q.labelAnswers,
           quizId: q.quizId,
         })) || []
@@ -201,8 +199,30 @@ const QuizEditor = ({ onClose, resource }: QuizEditorProps) => {
   };
 
   const addQuestion = () => {
+    // Basic validation
     if (!newQuestion.question?.trim()) {
       toast.error("Please enter a question");
+      return;
+    }
+
+    // Check for at least one correct answer for question types that require it
+    if (newQuestion.type === 'multiple' || newQuestion.type === 'checkbox' || newQuestion.type === 'truefalse') {
+      const hasCorrectAnswer = Array.isArray(newQuestion.correctAnswers) && newQuestion.correctAnswers.length > 0;
+      if (!hasCorrectAnswer) {
+        toast.error("Please select at least one correct answer");
+        return;
+      }
+    }
+
+    // For labeling questions, ensure there's at least one label-answer pair
+    if (newQuestion.type === 'labeling' && (!newQuestion.labelAnswers || newQuestion.labelAnswers.length === 0)) {
+      toast.error("Please add at least one label-answer pair");
+      return;
+    }
+
+    // For other question types with options, ensure there's at least one option
+    if (newQuestion.type !== 'labeling' && (!newQuestion.options || newQuestion.options.filter((opt: string) => opt.trim()).length === 0)) {
+      toast.error("Please add at least one answer option");
       return;
     }
 
@@ -218,11 +238,23 @@ const QuizEditor = ({ onClose, resource }: QuizEditorProps) => {
 
     // Handle different question types
     if (newQuestion.type === 'labeling') {
+      // Store full label-answer objects
       question.labelAnswers = [...(newQuestion.labelAnswers || [])];
-      // Map just the answer strings to correctAnswers
-      question.correctAnswers = question.labelAnswers.map(la => la.answer);
+      
+      // Store labels as options for consistent API format
+      question.options = (newQuestion.labelAnswers || []).map(la => la.label);
+      
+      // Store correctAnswers in appropriate format
+      // First convert to JSON-friendly format and then parse back
+      // This ensures compatibility with backend storage
+      const labelAnswersStr = JSON.stringify((newQuestion.labelAnswers || []).map(la => ({
+        label: la.label,
+        answer: la.answer
+      })));
+      question.correctAnswers = JSON.parse(labelAnswersStr);
+      
+      // Handle image
       question.imageFile = newQuestion.imageFile;
-      question.imageUrl = newQuestion.imageUrl;
     } else {
       question.options = newQuestion.options?.filter((opt: string) => opt.trim());
       question.correctAnswers = newQuestion.correctAnswers || [];
@@ -375,7 +407,7 @@ const QuizEditor = ({ onClose, resource }: QuizEditorProps) => {
           ? (q.labelAnswers || []).filter(la => la?.label && la?.answer)
           : undefined;
 
-        const questionData = {
+        const questionData: any = {
           id: q.id,
           type: q.type,
           question: q.question.trim(),
@@ -386,24 +418,11 @@ const QuizEditor = ({ onClose, resource }: QuizEditorProps) => {
           options,
           correctAnswers,
           labelAnswers,
-          imageUrl: q.imageUrl // Keep existing image URL if no new file is uploaded
         };
 
-        // If there's a new image file, upload it first
+        // Include imageFile for FormData processing if it exists
         if (q.imageFile) {
-          const imageFormData = new FormData();
-          imageFormData.append('image', q.imageFile);
-          
-          try {
-            const uploadResponse = await fetch('/api/upload-question-image', {
-              method: 'POST',
-              body: imageFormData,
-            });
-            const uploadedImage = await uploadResponse.json();
-            questionData.imageUrl = uploadedImage.url;
-          } catch (error) {
-            console.error("Error uploading image:", error);
-          }
+          questionData.imageFile = q.imageFile;
         }
 
         return questionData;
@@ -443,17 +462,7 @@ const QuizEditor = ({ onClose, resource }: QuizEditorProps) => {
   };
 
   const handleNewQuestionChange = (updates: Partial<Question>) => {
-    setNewQuestion((prev) => {
-      // If we're updating the image file, also update the imageUrl
-      if (updates.imageFile) {
-        return { 
-          ...prev, 
-          ...updates,
-          imageUrl: URL.createObjectURL(updates.imageFile)
-        };
-      }
-      return { ...prev, ...updates };
-    });
+    setNewQuestion((prev) => ({ ...prev, ...updates }));
   };
 
   const isOptionCorrect = (question: any, optionIndex: number) => {
@@ -473,7 +482,6 @@ const QuizEditor = ({ onClose, resource }: QuizEditorProps) => {
         options: undefined,
         correctAnswers: [],
         correctAnswer: undefined,
-        imageUrl: prev.imageUrl || "",
         labelAnswers: prev.labelAnswers || [{ label: "A", answer: "" }],
       }));
     } else if (!newQuestion.options || newQuestion.options.length < 2) {
@@ -482,7 +490,6 @@ const QuizEditor = ({ onClose, resource }: QuizEditorProps) => {
         options: ["", ""],
         correctAnswers: [],
         correctAnswer: undefined,
-        imageUrl: undefined,
         labelAnswers: undefined,
       }));
     }
@@ -538,12 +545,12 @@ const QuizEditor = ({ onClose, resource }: QuizEditorProps) => {
           isNewOptionCorrect={isNewOptionCorrect}
           courseId={resource.courseId}
           lessonId={resource.lessonId}
-          quizId={resource.quizId}
+          quizId={resource.quizId!}
         />
-      </div>
     </div>
-  );
-  };
+  </div>
+);
+};
 
 
 const LoadingOverlay = ({ message }: { message: string }) => (
@@ -910,13 +917,9 @@ const LabelingQuestionEdit = ({
       return;
     }
 
-    // Create a temporary URL for preview
-    const tempUrl = URL.createObjectURL(file);
-    
-    // Update the UI immediately with the temp URL
+    // Update the UI immediately with the file
     onUpdate({ 
       ...question, 
-      imageUrl: tempUrl,
       imageFile: file  // We'll send this to the backend
     });
   };
@@ -935,10 +938,10 @@ const LabelingQuestionEdit = ({
         className="w-full px-3 py-2 border border-gray-200 rounded-lg hover:border-gray-300 hover:shadow-sm transition-all focus:ring-2 focus:ring-yellow-500 text-sm cursor-pointer"
       />
 
-      {question.imageUrl && (
+      {question.imageFile && (
         <div className="mt-2 border border-gray-200 rounded-lg hover:border-gray-300 hover:shadow-sm transition-all p-2 bg-gray-50">
           <img
-            src={question.imageUrl}
+            src={URL.createObjectURL(question.imageFile)}
             alt="Preview"
             className="max-w-full h-auto max-h-48 object-contain mx-auto"
           />

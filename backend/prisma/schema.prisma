@@ -130,6 +130,7 @@ model QuizQuestion {
   question       String
   options       Json?
   correctAnswers Json?
+  labelAnswers   Json?
   required       Boolean   @default(false)
   points         Int       @default(1)
   imageUrl       String?

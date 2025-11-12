@@ -6,6 +6,7 @@ import {
   NotFoundException,
   Logger,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { UpdateQuizDto, UpdateQuizQuestionDto } from './dto/update-quiz.dto';
 import { Express } from 'express';
@@ -16,21 +17,16 @@ export class QuizService {
 
   constructor(
     private prisma: PrismaService,
+    private configService: ConfigService,
   ) {}
 
 async updateQuiz({ id, data }: { id: number; data: UpdateQuizDto }) {
-  // 1️⃣ Handle question images if provided
+  // Image processing is already handled by the controller
+  // Remove imageFile objects before database operations
   if (data.questions) {
     for (const question of data.questions) {
       if (question.imageFile) {
-        try {
-          // The file was saved by the interceptor, update the URL
-          question.imageUrl = `/uploads/quiz-images/${question.imageFile.filename}`;
-        } catch (error) {
-          this.logger.error('Error processing question image:', error);
-          throw new BadRequestException('Error processing image upload');
-        }
-        delete question.imageFile; // not needed for DB
+        delete question.imageFile; // Remove file object, keep imageUrl from controller
       }
     }
   }
@@ -90,6 +86,19 @@ async updateQuiz({ id, data }: { id: number; data: UpdateQuizDto }) {
             ? [q.correctAnswers]
             : [],
         };
+        
+        // Handle labeling question specifics
+        if (q.type === 'labeling') {
+          // Store label-answer pairs in correctAnswers for labeling questions
+          if (Array.isArray(q.labelAnswers) && q.labelAnswers.length > 0) {
+            questionData.correctAnswers = q.labelAnswers;
+          }
+          
+          // Make sure options contains labels for labeling questions
+          if (!questionData.options.length && Array.isArray(q.labelAnswers)) {
+            questionData.options = q.labelAnswers.map(la => la.label || '');
+          }
+        }
 
         if (q.imageUrl) questionData.imageUrl = q.imageUrl;
         return questionData;
@@ -182,7 +191,7 @@ async updateQuiz({ id, data }: { id: number; data: UpdateQuizDto }) {
           : [];
     }
 
-    return {
+    const questionData: any = {
       id: q.id,
       type: q.type,
       question: q.question,
@@ -192,6 +201,18 @@ async updateQuiz({ id, data }: { id: number; data: UpdateQuizDto }) {
       required: q.required,
       quizId: quiz.id,
     };
+
+    // Add imageUrl if present
+    if (q.imageUrl) {
+      questionData.imageUrl = q.imageUrl;
+    }
+
+    // For labeling questions, also provide labelAnswers for frontend compatibility
+    if (q.type === 'labeling' && correctAnswers.length > 0) {
+      questionData.labelAnswers = correctAnswers;
+    }
+
+    return questionData;
   });
 
   const totalPoints = formattedQuestions.reduce((sum, q) => sum + q.points, 0);

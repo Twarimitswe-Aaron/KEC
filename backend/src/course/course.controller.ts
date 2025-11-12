@@ -21,7 +21,7 @@ import { Roles } from 'src/auth/decorators/roles.decorator';
 import { diskStorage } from 'multer';
 import { ConfigService } from '@nestjs/config';
 import { ConfirmCourseDto } from './dto/confirm-course.dto';
-import { Role } from 'generated/prisma';
+
 
 @UseGuards(AuthGuard, RolesGuard)
 @Roles('admin', 'teacher')
