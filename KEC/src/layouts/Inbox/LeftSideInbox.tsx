@@ -1,144 +1,200 @@
-import React, { useState, useEffect } from "react";
-import { CgChevronLeft } from "react-icons/cg";
-import { IoEllipsisVerticalCircleOutline } from "react-icons/io5";
-import { TbSearch } from "react-icons/tb";
-import { Link } from "react-router-dom";
-import { IoChatbubbleEllipses } from "react-icons/io5";
-import { MdMarkChatUnread } from "react-icons/md"; // For Unread
-import { FaStar } from "react-icons/fa"; // For Favorites
-import { BsPeopleFill } from "react-icons/bs"; // For Non-contacts
-import { MdGroups } from "react-icons/md"; // For Groups
-import { FaRegEdit } from "react-icons/fa"; // For Drafts
+import React, { useState } from 'react';
+import { IoSearch } from 'react-icons/io5';
+import { BsPeopleFill } from 'react-icons/bs';
+import { IoArrowBack } from 'react-icons/io5';
+import { useGetUserQuery } from '../../state/api/authApi';
+import { useGetAllUsersQuery } from '../../state/api/userApi';
+import { useCreateChatMutation } from '../../state/api/chatApi';
+import { useChat } from './ChatContext';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 interface LeftSideInboxProps {
   onCloseSidebar: () => void;
 }
 
+
 const LeftSideInbox: React.FC<LeftSideInboxProps> = ({ onCloseSidebar }) => {
-  const [selected, setSelected] = useState("All");
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { data: currentUser } = useGetUserQuery();
+  const { data: allUsers, isLoading, error } = useGetAllUsersQuery();
+  const [createChat, { isLoading: isCreatingChat }] = useCreateChatMutation();
+  const { setActiveChat } = useChat();
+  const navigate = useNavigate();
+  const location = useLocation();
+  
+  const [searchTerm, setSearchTerm] = useState('');
 
-  const baseClasses =
-    "px-5 py-2 rounded-full transition-all duration-200 focus:outline-none";
+  // Get the previous route for back navigation
+  const previousRoute = location.state?.from || '/dashboard';
 
-  const isSelected = (btn: string): boolean => selected === btn;
+  // Filter users based on search and exclude current user
+  const filteredUsers = allUsers?.filter(user => {
+    const searchLower = searchTerm.toLowerCase();
+    const fullName = user.name.toLowerCase();
+    const matchesSearch = fullName.includes(searchLower) || user.email.toLowerCase().includes(searchLower);
+    const isNotCurrentUser = user.id !== currentUser?.id;
+    return matchesSearch && isNotCurrentUser;
+  }) || [];
 
-  useEffect(() => {
-    if (selected !== 'All') {
-      setIsMenuOpen(false);
+  // Handle back navigation
+  const handleGoBack = () => {
+    navigate(previousRoute);
+  };
+
+  // Get role badge color
+  const getRoleBadgeColor = (role: string) => {
+    switch (role) {
+      case 'admin': return 'bg-red-100 text-red-800';
+      case 'teacher': return 'bg-blue-100 text-blue-800';
+      case 'student': return 'bg-green-100 text-green-800';
+      default: return 'bg-gray-100 text-gray-800';
     }
-  }, [selected]);
+  };
 
-  const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
+  // Handle user selection to start a chat
+  const handleUserSelect = async (user: any) => {
+    if (isCreatingChat) return; // Prevent duplicate requests
+    
+    try {
+      // Call the real backend API to create or find existing chat
+      const response = await createChat({
+        participantIds: [user.id],
+        isGroup: false
+      });
+      
+      if ('data' in response && response.data) {
+        // Successfully created or found chat
+        setActiveChat(response.data as any);
+        onCloseSidebar();
+      } else if ('error' in response) {
+        // Handle API error
+        console.error('Failed to create chat:', response.error);
+        
+        // Show user-friendly error message
+        alert('Failed to start chat. Please try again.');
+      }
+      
+    } catch (error) {
+      console.error('Failed to start chat:', error);
+      alert('Failed to start chat. Please check your connection and try again.');
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col h-full bg-white">
+        <div className="p-4 border-b">
+          <h2 className="text-lg font-semibold text-gray-800">Loading Users...</h2>
+        </div>
+        <div className="flex-1 flex items-center justify-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          <span className="ml-2 text-gray-600">Fetching users from database...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col h-full bg-white">
+        <div className="p-4 border-b">
+          <h2 className="text-lg font-semibold text-gray-800">Error Loading Users</h2>
+        </div>
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center text-red-600">
+            <p className="text-sm">Failed to load users from database</p>
+            <button 
+              onClick={() => window.location.reload()} 
+              className="mt-2 text-blue-600 underline text-sm"
+            >
+              Try Again
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="scroll-hide h-full flex flex-col">
-      {/* Sticky Header */}
-      <div className="sticky w-full top-0 left-0 bg-[#F5FAFF] z-10 pb-4">
-        {/* Logo */}
-        <div className="mb-2">
-          <img src="/images/Logo.svg" className="w-16 h-16" alt="Logo" />
-        </div>
-
-        {/* Back and Heading */}
-        <div className="flex justify-between items-center mb-4">
-          {/* Mobile close button is handled by parent layout now */}
-          <Link
-            to="/dashboard"
-            className="py-2 px-3 bg-[#EEEFF1] shadow-sm rounded flex items-center gap-2"
-          >
-            <CgChevronLeft />
-            <p className="text-sm">Back</p>
-          </Link>
-          <h3 className="text-lg font-semibold text-gray-800">All Messages</h3>
-          <div className="relative">
-            <IoEllipsisVerticalCircleOutline
-              size={28}
-              color="#3F3F44"
-              onClick={toggleMenu}
-              style={{ cursor: "pointer" }}
-            />
-            {isMenuOpen && (
-              <div className="absolute right-0 z-20 mt-2 w-48 bg-gray-800 rounded-lg shadow-lg">
-                <ul className="py-2 text-sm text-gray-200">
-                  <li className="px-4 py-2 flex gap-2 items-center hover:bg-gray-700 cursor-pointer" onClick={() => { setSelected("Unread"); setIsMenuOpen(false); }}> <MdMarkChatUnread /> <p>Unread</p> </li>
-                  <li className="px-4 py-2 flex gap-2 items-center hover:bg-gray-700 cursor-pointer" onClick={() => { setSelected("Favorites"); setIsMenuOpen(false); }}> <FaStar /> <p>Favorites</p> </li>
-                  <li className="px-4 py-2 flex gap-2 items-center hover:bg-gray-700 cursor-pointer" onClick={() => { setSelected("Contacts"); setIsMenuOpen(false); }}> <IoChatbubbleEllipses /> <p>Contacts</p> </li>
-                  <li className="px-4 py-2 flex gap-2 items-center hover:bg-gray-700 cursor-pointer" onClick={() => { setSelected("Non-contacts"); setIsMenuOpen(false); }}> <BsPeopleFill /> <p>Non-contacts</p> </li>
-                  <li className="px-4 py-2 flex gap-2 items-center hover:bg-gray-700 cursor-pointer" onClick={() => { setSelected("Groups"); setIsMenuOpen(false); }}> <MdGroups /> <p>Groups</p> </li>
-                  <li className="px-4 py-2 flex gap-2 items-center hover:bg-gray-700 cursor-pointer" onClick={() => { setSelected("Drafts"); setIsMenuOpen(false); }}> <FaRegEdit /> <p>Drafts</p> </li>
-                </ul>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Search */}
-        <div className="flex justify-between items-center mt-4">
-          <div className="relative w-full">
-            <input
-              placeholder="Search"
-              className="w-full pl-10 pr-3 py-2 text-sm rounded-md border border-gray-200 shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
-              type="text"
-            />
-            <TbSearch className="absolute text-gray-400 top-2.5 left-3" />
-          </div>
-        </div>
-
-        {/* Filter Buttons */}
-        <div className="flex mt-4 items-center gap-3">
+    <div className="flex flex-col h-full bg-white">
+      {/* Header with Back Button */}
+      <div className="flex items-center justify-between p-4 border-b border-gray-200">
+        <div className="flex items-center gap-3">
           <button
-            onClick={() => setSelected("All")}
-            className={`${baseClasses} cursor-pointer ${
-              isSelected("All")
-                ? "bg-[#003f5c] text-white shadow-md"
-                : "bg-[#EEEFF1] text-[#003f5c] shadow-sm hover:bg-[#d2d4d6]"
-            }`}
+            onClick={handleGoBack}
+            className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors"
+            title="Go Back"
           >
-            All
+            <IoArrowBack size={20} />
           </button>
-          <button
-            onClick={() => setSelected("Unread")}
-            className={`${baseClasses} cursor-pointer ${
-              isSelected("Unread")
-                ? "bg-[#003f5c] text-white shadow-md"
-                : "bg-[#EEEFF1] text-[#003f5c] shadow-sm hover:bg-[#d2d4d6]"
-            }`}
-          >
-            Unread
-          </button>
+          <BsPeopleFill className="text-blue-600" size={24} />
+          <h1 className="text-xl font-semibold text-gray-800">Select User to Chat</h1>
+        </div>
+        <span className="text-sm text-gray-500">({filteredUsers.length} users)</span>
+      </div>
+
+      {/* Search Bar */}
+      <div className="p-4 border-b border-gray-200">
+        <div className="relative">
+          <IoSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+          <input
+            type="text"
+            placeholder="Search users by name or email..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
         </div>
       </div>
 
-      {/* Messages List */}
-      <div className="flex-1 space-y-0 mt-0 scroll-hide overflow-y-auto divide-y divide-gray-200">
-        {Array.from({ length: 10 }).map((_, i) => (
-          <div
-            key={i}
-            className="flex rounded-md items-center w-full justify-between bg-white hover:bg-gray-100 px-4 py-2 my-1 cursor-pointer transition-colors duration-150"
-          >
-            {/* Avatar + Text */}
-            <div className="flex items-center gap-3">
-              <img
-                src="/images/teacher.png"
-                alt="Avatar"
-                className="w-12 h-12 rounded-full object-cover"
-              />
-              <div className="flex flex-col text-black">
-                <span className="font-semibold text-sm">React.JS 🇷🇼</span>
-                <span className="text-xs text-gray-600 max-w-[180px] truncate">~rwema: why you that?</span>
-              </div>
-            </div>
-
-            {/* Time + Count */}
-            <div className="flex flex-col items-end gap-1">
-              <span className="text-xs text-gray-500">13:30</span>
-              <div className="w-4 h-4 flex items-center justify-center text-white text-[10px] rounded-full bg-green-500">
-                9
-              </div>
-            </div>
+      {/* User List */}
+      <div className="flex-1 overflow-y-auto">
+        {filteredUsers.length === 0 ? (
+          <div className="p-4 text-center text-gray-500">
+            {searchTerm ? 'No users found matching your search.' : 'No users available.'}
           </div>
-        ))}
+        ) : (
+          filteredUsers.map((user) => (
+            <div
+              key={user.id}
+              onClick={() => handleUserSelect(user as any)}
+              className={`flex items-center gap-3 p-4 border-b border-gray-100 cursor-pointer transition-colors hover:bg-blue-50 ${
+                isCreatingChat ? 'opacity-50 pointer-events-none' : ''
+              }`}
+            >
+              {/* Avatar */}
+              <div className="relative flex-shrink-0">
+                <img
+                  src={user.avatar || '/images/default-avatar.png'}
+                  alt={user.name}
+                  className="w-12 h-12 rounded-full object-cover"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = '/images/default-avatar.png';
+                  }}
+                />
+                <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
+              </div>
+
+              {/* User Info */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-semibold text-gray-900 truncate">
+                    {user.name}
+                  </h3>
+                  <span className={`text-xs px-2 py-1 rounded-full font-medium ${getRoleBadgeColor(user.role)}`}>
+                    {user.role.toUpperCase()}
+                  </span>
+                </div>
+                
+                <div className="flex items-center justify-between mt-1">
+                  <p className="text-sm text-gray-600 truncate">
+                    {user.email}
+                  </p>
+                  <span className="text-xs text-green-600 font-medium">Online</span>
+                </div>
+              </div>
+            </div>
+          ))
+        )}
       </div>
     </div>
   );

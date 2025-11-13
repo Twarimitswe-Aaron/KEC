@@ -22,11 +22,20 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { Request } from 'express';
-import { FileInterceptor, FilesInterceptor, FileFieldsInterceptor, AnyFilesInterceptor } from '@nestjs/platform-express';
+import {
+  FileInterceptor,
+  FilesInterceptor,
+  FileFieldsInterceptor,
+  AnyFilesInterceptor,
+} from '@nestjs/platform-express';
 import type { Express } from 'express';
 import type { Multer } from 'multer';
 import { QuizService } from './quiz.service';
-import { CreateQuizDto, CreateManualQuizDto, UpdateManualMarksDto } from './dto/create-quiz.dto';
+import {
+  CreateQuizDto,
+  CreateManualQuizDto,
+  UpdateManualMarksDto,
+} from './dto/create-quiz.dto';
 import { UpdateQuizDto, UpdateQuizQuestionDto } from './dto/update-quiz.dto';
 import { CreateQuizAttemptDto } from './dto/quiz-attempt.dto';
 import { diskStorage } from 'multer';
@@ -39,12 +48,12 @@ import * as path from 'path';
 const quizImageStorage = diskStorage({
   destination: (req, file, cb) => {
     const uploadDir = path.join(process.cwd(), 'uploads', 'course_url');
-    
+
     // Create uploads directory if it doesn't exist
     if (!fs.existsSync(uploadDir)) {
       fs.mkdirSync(uploadDir, { recursive: true });
     }
-    
+
     cb(null, uploadDir);
   },
   filename: (req, file, cb) => {
@@ -68,12 +77,12 @@ const quizImageFilter = (req, file, cb) => {
 const questionImageStorage = diskStorage({
   destination: (req, file, cb) => {
     const uploadDir = path.join(process.cwd(), 'uploads', 'course_url');
-    
+
     // Create uploads directory if it doesn't exist
     if (!fs.existsSync(uploadDir)) {
       fs.mkdirSync(uploadDir, { recursive: true });
     }
-    
+
     cb(null, uploadDir);
   },
   filename: (req, file, cb) => {
@@ -92,18 +101,23 @@ export class QuizController {
 
   constructor(
     private readonly quizService: QuizService,
-    private readonly configService: ConfigService
+    private readonly configService: ConfigService,
   ) {}
 
   @Post('upload-question-image')
-  @UseInterceptors(FileInterceptor('image', {
-    storage: questionImageStorage,
-    fileFilter: quizImageFilter,
-    limits: {
-      fileSize: 5 * 1024 * 1024, // 5MB limit
-    },
-  }))
-  async uploadQuestionImage(@UploadedFile() file: Express.Multer.File, @Req() request: Request): Promise<{ url: string; filename: string }> {
+  @UseInterceptors(
+    FileInterceptor('image', {
+      storage: questionImageStorage,
+      fileFilter: quizImageFilter,
+      limits: {
+        fileSize: 5 * 1024 * 1024, // 5MB limit
+      },
+    }),
+  )
+  async uploadQuestionImage(
+    @UploadedFile() file: Express.Multer.File,
+    @Req() request: Request,
+  ): Promise<{ url: string; filename: string }> {
     if (!file) {
       throw new BadRequestException('No file uploaded');
     }
@@ -122,19 +136,26 @@ export class QuizController {
     @Query('courseId', ParseIntPipe) courseId: number,
     @Query('formId', ParseIntPipe) formId: number,
   ) {
-    return this.quizService.getQuizDataByQuiz({ quizId, lessonId, courseId, formId });
+    return this.quizService.getQuizDataByQuiz({
+      quizId,
+      lessonId,
+      courseId,
+      formId,
+    });
   }
 
   @Patch(':id')
-  @UseInterceptors(AnyFilesInterceptor({
-    storage: quizImageStorage,
-    fileFilter: quizImageFilter,
-    limits: {
-      fileSize: 5 * 1024 * 1024, // 5MB limit
-      files: 10, // Maximum number of files
-    },
-    preservePath: false
-  }))
+  @UseInterceptors(
+    AnyFilesInterceptor({
+      storage: quizImageStorage,
+      fileFilter: quizImageFilter,
+      limits: {
+        fileSize: 5 * 1024 * 1024, // 5MB limit
+        files: 10, // Maximum number of files
+      },
+      preservePath: false,
+    }),
+  )
   async updateQuiz(
     @Param('id', ParseIntPipe) id: number,
     @UploadedFiles() files: any[] = [],
@@ -153,14 +174,17 @@ export class QuizController {
     };
 
     // Handle the main quiz image
-    const mainImage = files.find(f => f.fieldname === 'image');
+    const mainImage = files.find((f) => f.fieldname === 'image');
     if (mainImage) {
       updateQuizDto.imageUrl = `/uploads/course_url/${mainImage.filename}`;
     }
 
     // Process question images
     const questionImages = files
-      .filter(f => f.fieldname.startsWith('question-') && f.fieldname.endsWith('-image'))
+      .filter(
+        (f) =>
+          f.fieldname.startsWith('question-') && f.fieldname.endsWith('-image'),
+      )
       .reduce((acc, file) => {
         const match = file.fieldname.match(/question-(\d+)-image/);
         if (match) {
@@ -173,16 +197,15 @@ export class QuizController {
     // Update questions with their respective images
     if (updateQuizDto.questions) {
       updateQuizDto.questions = updateQuizDto.questions.map((q, index) => {
-        const newImageUrl = questionImages[index] 
+        const newImageUrl = questionImages[index]
           ? `${this.configService.get('BACKEND_URL')}/uploads/course_url/${questionImages[index].filename}`
           : q.imageUrl;
-        
-        
+
         return {
           ...q,
           imageFile: questionImages[index],
           // Preserve existing image URL if no new file is uploaded
-          imageUrl: newImageUrl
+          imageUrl: newImageUrl,
         };
       });
     }
@@ -217,5 +240,4 @@ export class QuizController {
   ) {
     return this.quizService.getQuizParticipants(quizId, courseId);
   }
-
 }

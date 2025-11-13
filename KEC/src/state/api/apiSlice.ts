@@ -29,7 +29,7 @@ export const apiSlice = createApi({
       return headers;
     },
   }),
-  tagTypes: ['User', 'Announcement', 'Course',"Lesson","Quiz","QuizAttempt","Resource"],
+  tagTypes: ['User', 'Announcement', 'Course',"Lesson","Quiz","QuizAttempt","Resource", 'Chat', 'Message'],
   endpoints: () => ({}),
 });
 

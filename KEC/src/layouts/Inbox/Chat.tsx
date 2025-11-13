@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 
 import { MdOutlinePhoneInTalk } from "react-icons/md";
 import { FiSend } from "react-icons/fi";
@@ -7,78 +7,59 @@ import { GoPaperclip } from "react-icons/go";
 import { BsEmojiSmile } from "react-icons/bs";
 import { MdInfoOutline } from "react-icons/md";
 import { CiMenuKebab } from "react-icons/ci";
+import { useChat } from './ChatContext';
+import { Message } from '../../state/api/chatApi';
 
 interface ChatProps {
   onToggleRightSidebar: () => void;
 }
 
 const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
-  const [messages, setMessages] = useState([
-    {
-      id: 1,
-      sender: "Ish Amani",
-      text: "Hello how are you?",
-      time: "10hr ago",
-      type: "text",
-      prof:"/images/image.png"
-    },
-    {
-      id: 2,
-      sender: "You",
-      text: "We have lake-front vacation rentals. No specific liability.",
-      time: "10hr ago",
-      type: "text",
-      
-    },
-    {
-      id: 3,
-      sender: "You",
-      text: "",
-      time: "10hr ago",
-      type: "image",
-      image: "/images/chat.png", // Replace with actual image path
-    },
-    {
-      id: 4,
-      sender: "Ish Amani",
-      text: "We have lake-front vacation rentals. No specific liability.",
-      time: "10hr ago",
-      type: "text",
-      prof:"/images/image.png"
-    },
-    {
-      id: 5,
-      sender: "You",
-      text: "elements.envato.com/close-up-... (link shortened)",
-      time: "10hr ago",
-      type: "link",
-    },
-    {
-      id: 6,
-      sender: "You",
-      text: "",
-      time: "3 days ago",
-      type: "image",
-      image: "/images/chat.png", // Replace with actual image path
-
-    },
-  ]);
+  const { 
+    activeChat, 
+    messages, 
+    currentUser, 
+    sendMessage, 
+    isTyping, 
+    setIsTyping, 
+    typingUsers,
+    onlineUsers,
+    isLoading,
+    isConnected 
+  } = useChat();
+  
   const [newMessage, setNewMessage] = useState("");
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const handleSendMessage = (e?: React.MouseEvent<HTMLButtonElement>) => {
+  // Auto-scroll to bottom when new messages arrive
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  // Format time display
+  const formatTime = (dateString: string): string => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInMs = now.getTime() - date.getTime();
+    const diffInHours = diffInMs / (1000 * 60 * 60);
+    const diffInDays = diffInMs / (1000 * 60 * 60 * 24);
+
+    if (diffInHours < 1) return 'now';
+    if (diffInHours < 24) return `${Math.floor(diffInHours)}hr ago`;
+    if (diffInDays < 7) return `${Math.floor(diffInDays)} days ago`;
+    
+    return date.toLocaleDateString();
+  };
+
+  const handleSendMessage = async (e?: React.MouseEvent<HTMLButtonElement>) => {
     e?.preventDefault();
-    if (newMessage.trim()) {
-      setMessages([
-        ...messages,
-        {
-          id: messages.length + 1,
-          sender: "You",
-          text: newMessage,
-          time: "just now",
-          type: "text",
-        },
-      ]);
-      setNewMessage("");
+    if (newMessage.trim() && activeChat) {
+      const success = await sendMessage(newMessage.trim());
+      if (success) {
+        setNewMessage("");
+        setIsTyping(false);
+      }
     }
   };
 
@@ -89,104 +70,231 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
     }
   };
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setNewMessage(e.target.value);
+    
+    // Handle typing indicator
+    if (!isTyping) {
+      setIsTyping(true);
+    }
+    
+    // Clear previous timeout
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+    
+    // Set new timeout to stop typing indicator
+    typingTimeoutRef.current = setTimeout(() => {
+      setIsTyping(false);
+    }, 2000);
+  };
+
+  // Get chat participant info (excluding current user)
+  const getChatParticipant = () => {
+    if (!activeChat) return null;
+    
+    if (activeChat.isGroup) {
+      return {
+        name: activeChat.name || 'Group Chat',
+        avatar: activeChat.groupAvatar,
+        isOnline: false,
+        lastSeen: 'Group'
+      };
+    }
+    
+    const participant = activeChat.participants.find(p => p.user.id !== currentUser?.id);
+    if (participant) {
+      return {
+        name: `${participant.user.firstName} ${participant.user.lastName}`,
+        avatar: participant.user.profile?.avatar,
+        isOnline: onlineUsers.includes(participant.user.id),
+        lastSeen: participant.user.isOnline ? 'Online' : participant.user.lastSeen || 'Last seen recently'
+      };
+    }
+    
+    return null;
+  };
+
+  const participant = getChatParticipant();
+
+  // Show loading state if no active chat
+  if (!activeChat) {
+    return (
+      <div className="flex w-full flex-col h-full bg-white">
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center text-gray-500">
+            <h3 className="text-lg font-semibold mb-2">Select a conversation</h3>
+            <p className="text-sm">Choose from your existing conversations or start a new one</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex w-full flex-col h-full">
       {/* Header */}
-      <div className="flex items-center justify-between p-4  bg-white text-black">
-        <div className="flex items-center gap-2">
-          <img
-            src="/images/chat.png" // Replace with actual avatar path
-            alt="Ish Amani"
-            className="w-10 h-10 rounded-full"
-          />
+      <div className="flex items-center justify-between p-4 bg-white text-black border-b">
+        <div className="flex items-center gap-3">
+          <div className="relative">
+            <img
+              src={participant?.avatar || '/images/chat.png'}
+              alt={participant?.name || 'Chat'}
+              className="w-10 h-10 rounded-full object-cover"
+            />
+            {participant?.isOnline && (
+              <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
+            )}
+          </div>
           <div>
-            <h3 className="font-semibold">Ish Amani</h3>
-            <p className="text-xs">Last seen today</p>
+            <h3 className="font-semibold">{participant?.name || 'Unknown'}</h3>
+            <div className="flex items-center gap-2 text-xs text-gray-500">
+              {typingUsers.length > 0 ? (
+                <span className="text-blue-500">Typing...</span>
+              ) : (
+                <span>{participant?.lastSeen}</span>
+              )}
+              {!isConnected && (
+                <span className="text-red-500">• Offline</span>
+              )}
+            </div>
           </div>
         </div>
         <div className="flex items-center gap-4 text-xl">
-          <GoDeviceCameraVideo className="cursor-pointer" />
-          <MdOutlinePhoneInTalk className="cursor-pointer" />
+          <GoDeviceCameraVideo className="cursor-pointer hover:text-blue-600 transition-colors" />
+          <MdOutlinePhoneInTalk className="cursor-pointer hover:text-blue-600 transition-colors" />
           <MdInfoOutline
-            className="cursor-pointer"
+            className="cursor-pointer hover:text-blue-600 transition-colors"
             onClick={onToggleRightSidebar}
           />
         </div>
       </div>
 
       {/* Messages */}
-      <div className="flex-2 p-4 scroll-hide items-center justify-center gap-1 overflow-y-auto bg-white">
-  {messages.map((message) => (
-    <div
-      key={message.id}
-      className={`flex items-start gap-2 my-3 ${
-        message.sender === "You" ? "justify-end" : "justify-start"
-      }`}
-    >
-      {message.sender !== "You" && (
-        <img
-          src="/images/chat.png"
-          className="h-10 w-10 rounded-full"
-          alt="Sender Avatar"
-        />
-      )}
+      <div className="flex-1 p-4 overflow-y-auto bg-white space-y-4">
+        {isLoading ? (
+          <div className="flex justify-center items-center h-full">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <span className="ml-2 text-gray-600">Loading messages...</span>
+          </div>
+        ) : messages.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-full text-gray-500">
+            <h3 className="text-lg font-semibold mb-2">No messages yet</h3>
+            <p className="text-sm">Start the conversation by sending a message</p>
+          </div>
+        ) : (
+          <>
+            {messages.map((message) => {
+              const isCurrentUser = message.senderId === currentUser?.id;
+              return (
+                <div
+                  key={message.id}
+                  className={`flex items-start gap-3 ${
+                    isCurrentUser ? "justify-end" : "justify-start"
+                  }`}
+                >
+                  {!isCurrentUser && (
+                    <img
+                      src={message.sender?.profile?.avatar || '/images/chat.png'}
+                      className="h-8 w-8 rounded-full object-cover"
+                      alt={`${message.sender?.firstName} Avatar`}
+                    />
+                  )}
 
-      <div className={`max-w-[70%]`}>
-        <div
-          className={`${message.type === 'text' && message.text && 'p-2'} rounded-lg ${
-            message.sender === "You"
-              ? "bg-[#ECEDF3] text-black text-right"
-              : "bg-[#e7ebfc] text-black text-left"
-          }`}
-        >
-          {message.type === "text" && message.text}
-          {message.type === "image" && (
-            <img
-              src={message.image}
-              alt="Chat"
-              className="max-w-[200px] rounded-md"
-            />
-          )}
-          {message.type === "link" && (
-            <a
-              href={message.text}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-500 underline p-2 block"
-            >
-              {message.text}
-            </a>
-          )}
-         
-        
-        </div>
-        <p className="text-xs text-gray-500 mt-1">
-          {message.time}
-        </p>
+                  <div className={`max-w-[70%] ${isCurrentUser ? 'text-right' : 'text-left'}`}>
+                    <div
+                      className={`inline-block px-4 py-2 rounded-lg ${
+                        isCurrentUser
+                          ? "bg-blue-500 text-white"
+                          : "bg-gray-100 text-gray-900"
+                      }`}
+                    >
+                      {message.messageType === "text" && (
+                        <p className="whitespace-pre-wrap">{message.content}</p>
+                      )}
+                      {message.messageType === "image" && (
+                        <img
+                          src={message.fileUrl}
+                          alt="Shared image"
+                          className="max-w-[250px] rounded-md"
+                        />
+                      )}
+                      {message.messageType === "file" && (
+                        <div className="flex items-center gap-2 p-2 bg-white bg-opacity-20 rounded-md">
+                          <GoPaperclip className="h-4 w-4" />
+                          <span className="text-sm">{message.fileName}</span>
+                        </div>
+                      )}
+                      {message.messageType === "link" && (
+                        <a
+                          href={message.content}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-200 underline hover:text-blue-100"
+                        >
+                          {message.content}
+                        </a>
+                      )}
+                    </div>
+                    
+                    <div className={`flex items-center gap-1 mt-1 text-xs text-gray-500 ${
+                      isCurrentUser ? 'justify-end' : 'justify-start'
+                    }`}>
+                      <span>{formatTime(message.createdAt)}</span>
+                      {isCurrentUser && (
+                        <span>
+                          {message.isRead ? '✓✓' : '✓'}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {isCurrentUser && (
+                    <img
+                      src={currentUser?.profile?.avatar || '/images/user-avatar.png'}
+                      className="h-8 w-8 rounded-full object-cover"
+                      alt="Your Avatar"
+                    />
+                  )}
+                </div>
+              );
+            })}
+            <div ref={messagesEndRef} />
+          </>
+        )}
       </div>
-    </div>
-  ))}
-</div>
-
 
       {/* Input Area */}
-      <div className="py-2 px-2  flex items-center gap-2 bg-gray-50">
-        <input
-          type="text"
-          value={newMessage}
-          onChange={(e) => setNewMessage(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder="Write your message..."
-          className="flex-1 p-1 rounded-md border border-gray-300 focus:outline-none"
-        />
-        <span className="text-gray-500 cursor-pointer"><BsEmojiSmile/></span>
-        <span className="text-gray-500 cursor-pointer"><GoPaperclip/></span>
-        <button
-          onClick={handleSendMessage}
-          className="bg-blue-500 text-white items-center justify-center p-2 rounded-md"
-        >
-          <FiSend />
-        </button>
+      <div className="p-4 bg-gray-50 border-t">
+        <div className="flex items-center gap-3">
+          <input
+            type="text"
+            value={newMessage}
+            onChange={handleInputChange}
+            onKeyDown={handleKeyDown}
+            placeholder="Type a message..."
+            disabled={!isConnected}
+            className="flex-1 px-4 py-2 rounded-full border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100"
+          />
+          
+          <div className="flex items-center gap-2">
+            <button className="p-2 text-gray-500 hover:text-blue-600 transition-colors">
+              <BsEmojiSmile className="h-5 w-5" />
+            </button>
+            
+            <button className="p-2 text-gray-500 hover:text-blue-600 transition-colors">
+              <GoPaperclip className="h-5 w-5" />
+            </button>
+            
+            <button
+              onClick={handleSendMessage}
+              disabled={!newMessage.trim() || !isConnected}
+              className="bg-blue-500 hover:bg-blue-600 disabled:bg-gray-400 text-white p-2 rounded-full transition-colors"
+            >
+              <FiSend className="h-5 w-5" />
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );

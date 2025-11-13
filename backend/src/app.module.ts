@@ -23,6 +23,7 @@ import { FeedbackModule } from './feedback/feedback.module';
 import { CourseModule } from './course/course.module';
 import { ModuleModule } from './module/module.module';
 import { QuizModule } from './quiz/quiz.module';
+import { ChatModule } from './chat/chat.module';
 
 @Module({
   imports: [
@@ -43,6 +44,7 @@ import { QuizModule } from './quiz/quiz.module';
     CourseModule,
     ModuleModule,
     QuizModule,
+    ChatModule,
   ],
   controllers: [AppController, CsrfController],
   providers: [

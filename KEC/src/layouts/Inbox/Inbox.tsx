@@ -1,7 +1,12 @@
 import InboxLayout from './InboxLayout';
+import { ChatProvider } from './ChatContext';
 
 const Inbox = () => {
-  return <InboxLayout />;
+  return (
+    <ChatProvider>
+      <InboxLayout />
+    </ChatProvider>
+  );
 };
 
 export default Inbox;

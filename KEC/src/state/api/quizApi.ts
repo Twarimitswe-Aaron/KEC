@@ -56,6 +56,95 @@ export interface CourseWithData {
   credits: number;
   lessons: LessonWithQuizzes[];
   enrolledStudents: EnrolledStudent[];
+  analytics?: CourseAnalytics;
+}
+
+// Comprehensive course analytics interface
+export interface CourseAnalytics {
+  totalLessons: number;
+  totalAssignments: number;
+  totalStudents: number;
+  courseAverage: number;
+  completionRate: number;
+  studentsAtRisk: number;
+  lessonsAnalytics: LessonAnalytics[];
+  topPerformingStudents: StudentPerformance[];
+  assignmentTypeBreakdown: AssignmentTypeStats[];
+  gradeDistribution: GradeDistribution;
+}
+
+// Individual lesson analytics within course
+export interface LessonAnalytics {
+  lessonId: number;
+  lessonTitle: string;
+  assignmentCount: number;
+  averagePerformance: number;
+  completionRate: number;
+  studentsAtRisk: number;
+  quizStats: QuizAnalyticsStats[];
+}
+
+// Student performance across entire course
+export interface StudentPerformance {
+  studentId: number;
+  name: string;
+  email: string;
+  overallAverage: number;
+  letterGrade: string;
+  assignmentsCompleted: number;
+  totalAssignments: number;
+  lessonsProgress: LessonProgress[];
+}
+
+// Progress per lesson for a student
+export interface LessonProgress {
+  lessonId: number;
+  lessonTitle: string;
+  averageScore: number;
+  assignmentsCompleted: number;
+  totalAssignments: number;
+}
+
+// Assignment type statistics
+export interface AssignmentTypeStats {
+  type: string;
+  count: number;
+  averageScore: number;
+  completionRate: number;
+}
+
+// Grade distribution across course
+export interface GradeDistribution {
+  A: number;
+  B: number;
+  C: number;
+  D: number;
+  F: number;
+}
+
+// Enhanced quiz analytics
+export interface QuizAnalyticsStats {
+  quizId: number;
+  title: string;
+  type: string;
+  average: number;
+  max: number;
+  min: number;
+  submissions: number;
+  studentResults: StudentQuizResult[];
+}
+
+// Individual student result for a quiz
+export interface StudentQuizResult {
+  studentId: number;
+  name: string;
+  email: string;
+  mark: number;
+  maxPoints: number;
+  percentage: number;
+  letterGrade: string;
+  submissionDate: string;
+  status: 'completed' | 'pending' | 'late';
 }
 
 export interface LessonWithQuizzes {
@@ -63,6 +152,7 @@ export interface LessonWithQuizzes {
   title: string;
   description: string;
   quizzes: QuizSummary[];
+  analytics?: LessonAnalytics;
 }
 
 export interface QuizSummary {
@@ -74,6 +164,8 @@ export interface QuizSummary {
   weight: number;
   attempts: number;
   isEditable: boolean;
+  students?: StudentQuizResult[];
+  analytics?: QuizAnalyticsStats;
 }
 
 export interface EnrolledStudent {
@@ -243,6 +335,18 @@ export const quizApi = apiSlice.injectEndpoints({
         { type: 'Quiz', id: quizId },
       ],
     }),
+
+    // Get comprehensive course analytics with all lesson data
+    getCourseAnalytics: builder.query<CourseAnalytics, number>({
+      query: (courseId) => ({
+        url: `courses/${courseId}/analytics`,
+      }),
+      providesTags: (result, error, courseId) => [
+        { type: 'Course', id: courseId },
+        'Quiz',
+        'QuizAttempt',
+      ],
+    }),
   }),
 });
 
@@ -258,4 +362,5 @@ export const {
   useCreateManualQuizMutation,
   useUpdateManualMarksMutation,
   useGetQuizDetailsQuery,
+  useGetCourseAnalyticsQuery,
 } = quizApi;

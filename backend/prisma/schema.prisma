@@ -27,13 +27,19 @@ model User {
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 
-  profile      Profile?
-  admin        Admin?
-  teacher      Teacher?
-  student      Student?
-  course       Course[]
-  announcement Announcement[]
-  responses    Response[]
+  profile           Profile?
+  admin             Admin?
+  teacher           Teacher?
+  student           Student?
+  course            Course[]
+  announcement      Announcement[]
+  responses         Response[]
+  
+  // Chat relationships
+  chatParticipants  ChatParticipant[]
+  sentMessages      Message[]
+  messageReads      MessageRead[]
+  userStatus        UserStatus?
 }
 
 model Admin {
@@ -283,4 +289,89 @@ model ResetToken {
   email     String
   code      String
   expiresAt DateTime
+}
+
+// Chat System Models
+model Chat {
+  id          Int      @id @default(autoincrement())
+  name        String?  // For group chats
+  isGroup     Boolean  @default(false)
+  groupAvatar String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  participants ChatParticipant[]
+  messages     Message[]
+  
+  @@map("chats")
+}
+
+model ChatParticipant {
+  id       Int      @id @default(autoincrement())
+  userId   Int
+  chatId   Int
+  isAdmin  Boolean  @default(false)
+  joinedAt DateTime @default(now())
+  leftAt   DateTime?
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  chat Chat @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, chatId])
+  @@map("chat_participants")
+}
+
+model Message {
+  id           Int         @id @default(autoincrement())
+  chatId       Int
+  senderId     Int
+  content      String?
+  messageType  MessageType @default(TEXT)
+  fileUrl      String?
+  fileName     String?
+  fileSize     Int?
+  fileMimeType String?
+  isRead       Boolean     @default(false)
+  isEdited     Boolean     @default(false)
+  editedAt     DateTime?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  
+  chat   Chat @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  sender User @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  
+  readBy MessageRead[]
+  
+  @@map("messages")
+}
+
+model MessageRead {
+  id        Int      @id @default(autoincrement())
+  messageId Int
+  userId    Int
+  readAt    DateTime @default(now())
+  
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([messageId, userId])
+  @@map("message_reads")
+}
+
+model UserStatus {
+  id       Int      @id @default(autoincrement())
+  userId   Int      @unique
+  isOnline Boolean  @default(false)
+  lastSeen DateTime @default(now())
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("user_status")
+}
+
+enum MessageType {
+  TEXT
+  IMAGE
+  FILE
+  LINK
 }
