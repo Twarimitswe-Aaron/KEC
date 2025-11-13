@@ -1,10 +1,23 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { Search, Download, Plus, Edit2, Trash2, Filter, BarChart3, Users, BookOpen, TrendingUp, X } from "lucide-react";
 import { FaUser } from "react-icons/fa6";
 import { FaSearch } from "react-icons/fa";
 import { MdAssignmentAdd } from "react-icons/md";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
+
+// API functions
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+
+const apiService = {
+  async getCoursesWithData() {
+    const response = await fetch(`${API_BASE_URL}/quizzes/courses-with-data`);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch courses: ${response.statusText}`);
+    }
+    return response.json();
+  }
+};
 
 // Expanded mock data with more realistic structure
 const initialMockData = [
@@ -103,6 +116,8 @@ const initialMockData = [
 const Tasks = () => {
   // State management
   const [data, setData] = useState(initialMockData);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [expandedCourses, setExpandedCourses] = useState<number[]>([]);
   const [selectedAssignments, setSelectedAssignments] = useState<Record<number, number | "total" | "analytics" | null>>({});
   const [searchTerm, setSearchTerm] = useState("");
@@ -119,6 +134,66 @@ const Tasks = () => {
     maxPoints: 100,
     weight: 0.1,
   });
+
+  // Transform API data to match mock data format
+  const transformApiDataToMockFormat = (apiData: any[]) => {
+    return apiData.map(course => ({
+      id: course.id,
+      name: course.name,
+      code: course.code,
+      semester: course.semester || "Current Semester",
+      credits: course.credits || 3,
+      instructor: course.instructor,
+      assignments: course.lessons.flatMap((lesson: any) => 
+        lesson.quizzes.map((quiz: any) => ({
+          id: quiz.id,
+          title: quiz.title,
+          type: quiz.type,
+          dueDate: quiz.dueDate,
+          maxPoints: quiz.maxPoints,
+          weight: quiz.weight || 0.1,
+          students: course.enrolledStudents.map((student: any) => ({
+            id: student.id,
+            name: student.name,
+            email: student.email,
+            mark: Math.floor(Math.random() * quiz.maxPoints * 0.8) + Math.floor(quiz.maxPoints * 0.2), // Random marks for demo
+            submissionDate: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+          }))
+        }))
+      )
+    })).filter(course => course.assignments.length > 0); // Only show courses with assignments
+  };
+
+  // Load real data from API
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const apiData = await apiService.getCoursesWithData();
+      console.log('API Data:', apiData); // Debug log
+      
+      const transformedData = transformApiDataToMockFormat(apiData);
+      console.log('Transformed Data:', transformedData); // Debug log
+      
+      if (transformedData.length === 0) {
+        // If no real data with assignments, fall back to mock data
+        setData(initialMockData);
+      } else {
+        setData(transformedData);
+      }
+    } catch (err) {
+      console.error('Error loading data:', err);
+      setError('Failed to load courses. Using demo data.');
+      setData(initialMockData); // Fallback to mock data
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Load data on component mount
+  useEffect(() => {
+    loadData();
+  }, []);
 
   // Calculate weighted total marks per student across all assignments
   const calculateWeightedTotalMarks = (assignments: any[]) => {
@@ -492,11 +567,36 @@ const Tasks = () => {
     );
   };
 
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading courses...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className=" mx-auto bg-gray-50 min-h-screen ">
-      
-
-     
+      {/* Error banner */}
+      {error && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6 mx-6">
+          <div className="flex items-center">
+            <div className="text-yellow-800">
+              ⚠️ {error}
+            </div>
+            <button 
+              onClick={loadData}
+              className="ml-auto px-3 py-1 bg-yellow-600 text-white rounded text-sm hover:bg-yellow-700"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Course Cards */}
       {filteredData.map((course) => {

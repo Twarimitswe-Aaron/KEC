@@ -328,4 +328,77 @@ async updateQuiz({ id, data }: { id: number; data: UpdateQuizDto }) {
     return {updatedQuiz};
   }
 
+  async getCoursesWithLessonsAndQuizzes() {
+    const courses = await this.prisma.course.findMany({
+      where: { isConfirmed: true },
+      include: {
+        uploader: {
+          select: {
+            email: true
+          }
+        },
+        lesson: {
+          include: {
+            resources: {
+              include: {
+                form: {
+                  include: {
+                    quizzes: {
+                      include: {
+                        attempts: true
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        onGoingStudents: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                email: true
+              }
+            }
+          }
+        }
+      }
+    });
+
+    return courses.map(course => ({
+      id: course.id,
+      name: course.title,
+      code: `COURSE-${course.id}`,
+      instructor: course.uploader?.email || 'Unknown',
+      semester: 'Current',
+      credits: 3,
+      lessons: course.lesson.map(lesson => ({
+        id: lesson.id,
+        title: lesson.title,
+        description: lesson.description,
+        quizzes: lesson.resources
+          .filter(resource => resource.form?.quizzes && resource.form.quizzes.length > 0)
+          .flatMap(resource => resource.form?.quizzes?.map(quiz => ({
+            id: quiz.id,
+            title: quiz.name,
+            type: (quiz.settings as any)?.type || 'online',
+            dueDate: quiz.createdAt.toISOString().split('T')[0],
+            maxPoints: (quiz.settings as any)?.totalPoints || 100,
+            weight: 0.1,
+            attempts: quiz.attempts.length,
+            isEditable: (quiz.settings as any)?.type === 'manual' || (quiz.settings as any)?.type === 'practical'
+          })) || [])
+      })),
+      enrolledStudents: course.onGoingStudents.map(student => ({
+        id: student.user?.id || 0,
+        name: student.user ? `${student.user.firstName} ${student.user.lastName}` : 'Unknown',
+        email: student.user?.email || ''
+      }))
+    }));
+  }
+
 }

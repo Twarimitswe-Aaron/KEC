@@ -190,4 +190,9 @@ export class QuizController {
     return this.quizService.updateQuiz({ id, data: updateQuizDto });
   }
 
+  @Get('courses-with-data')
+  async getCoursesWithLessonsAndQuizzes() {
+    return this.quizService.getCoursesWithLessonsAndQuizzes();
+  }
+
 }
