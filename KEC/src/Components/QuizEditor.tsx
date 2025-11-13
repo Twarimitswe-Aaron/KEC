@@ -120,9 +120,12 @@ const QuizEditor = ({ onClose, resource }: QuizEditorProps) => {
   }, [quizData, resource]);
 
   const updateQuestion = (questionId: number, updates: Partial<Question>) => {
-    setQuestions((prev) =>
-      prev.map((q) => (q.id === questionId ? { ...q, ...updates } : q))
-    );
+    setQuestions((prev) => {
+      const newQuestions = prev.map((q) => 
+        q.id === questionId ? { ...q, ...updates } : q
+      );
+      return newQuestions;
+    });
     setHasChanges(true);
   };
 
@@ -520,10 +523,6 @@ const QuizEditor = ({ onClose, resource }: QuizEditorProps) => {
           updateQuestion={updateQuestion}
           deleteQuestion={deleteQuestion}
           moveQuestion={moveQuestion}
-          toggleCorrectAnswer={toggleCorrectAnswer}
-          addOption={addOption}
-          updateOption={updateOption}
-          removeOption={removeOption}
           updateLabelAnswer={updateLabelAnswer}
           addLabelKey={addLabelKey}
           removeLabelKey={removeLabelKey}

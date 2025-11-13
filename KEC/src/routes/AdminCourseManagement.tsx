@@ -1,8 +1,40 @@
 import React, { useContext } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useCoursesQuery } from "./../state/api/courseApi";
-import { BookOpen } from "lucide-react";
+import { useCoursesQuery, useGetCourseDataQuery } from "./../state/api/courseApi";
+import { BookOpen, GraduationCap } from "lucide-react";
 import { UserRoleContext } from "../UserRoleContext";
+
+// Custom hook to get actual lesson count from course data
+const useCourseWithActualLessonCount = (courseId: number) => {
+  const { data: courseDetails, isLoading } = useGetCourseDataQuery(courseId);
+  return {
+    actualLessonCount: courseDetails?.lesson?.length || 0,
+    isLoading
+  };
+};
+
+// Component to display lesson count with actual data fetching
+const LessonCountBadge: React.FC<{ courseId: number }> = ({ courseId }) => {
+  const { actualLessonCount, isLoading } = useCourseWithActualLessonCount(courseId);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center gap-1 bg-gray-100 px-2 py-1 rounded-full animate-pulse">
+        <GraduationCap className="text-gray-400" size={14} />
+        <span className="text-gray-400 text-xs font-medium">...</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-1 bg-blue-50 px-2 py-1 rounded-full">
+      <GraduationCap className="text-blue-600" size={14} />
+      <span className="text-blue-700 text-xs font-medium">
+        {actualLessonCount} lessons
+      </span>
+    </div>
+  );
+};
 
 interface Course {
   id: number;
@@ -11,7 +43,6 @@ interface Course {
   description: string;
   price: string;
   open?: boolean;
-  no_lessons: string;
   uploader: { id: number; email: string; name: string; avatar_url: string };
 }
 
@@ -59,11 +90,11 @@ const DashboardCard: React.FC<DashboardCardProps> = ({
             </div>
 
             <div className="mb-4">
-              <p className="text-[#004e64] font-semibold text-lg">
-                {course.price}
-              </p>
-              <div className="flex items-center gap-4 text-xs text-gray-500 mt-1">
-                <span>{course.no_lessons || "0"} lessons</span>
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-[#004e64] font-semibold text-lg">
+                  {course.price}
+                </p>
+                <LessonCountBadge courseId={course.id} />
               </div>
             </div>
 

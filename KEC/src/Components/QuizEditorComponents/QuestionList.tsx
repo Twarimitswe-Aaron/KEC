@@ -9,7 +9,6 @@ import {
   FaArrowUp,
   FaArrowDown,
   FaEdit,
-  FaTrash,
   FaPlus,
   FaTag,
   FaTags,
@@ -68,14 +67,6 @@ interface QuestionListProps {
   updateQuestion: (questionId: number, updates: any) => void;
   deleteQuestion: (questionId: number) => void;
   moveQuestion: (index: number, direction: "up" | "down") => void;
-  toggleCorrectAnswer: (questionId: number, optionIndex: number) => void;
-  addOption: (questionId: number) => void;
-  updateOption: (
-    questionId: number,
-    optionIndex: number,
-    value: string
-  ) => void;
-  removeOption: (questionId: number, optionIndex: number) => void;
   updateLabelAnswer: (
     questionId: number,
     index: number,
@@ -106,10 +97,6 @@ const QuestionList = ({
   updateQuestion,
   deleteQuestion,
   moveQuestion,
-  toggleCorrectAnswer,
-  addOption,
-  updateOption,
-  removeOption,
   updateLabelAnswer,
   addLabelKey,
   removeLabelKey,
@@ -123,9 +110,6 @@ const QuestionList = ({
   onNewQuestionRemoveOption,
   onNewQuestionToggleCorrectAnswer,
   isNewOptionCorrect,
-  courseId,
-  lessonId,
-  quizId,
 }: QuestionListProps) => {
   const [editingStates, setEditingStates] = useState<{ [key: number]: any }>(
     {}
@@ -139,38 +123,7 @@ const QuestionList = ({
     setEditingQuestion(question.id);
   };
 
-  const handleCancelEdit = (questionId: number) => {
-    const originalQuestion = editingStates[questionId];
-    if (originalQuestion) {
-      updateQuestion(questionId, originalQuestion);
-    }
-    setEditingQuestion(null);
-    setEditingStates((prev) => {
-      const newState = { ...prev };
-      delete newState[questionId];
-      return newState;
-    });
-  };
-
   const handleSaveEdit = (questionId: number, updatedQuestion: any) => {
-    const questionData = {
-      questionId,
-      quizId,
-      lessonId,
-      courseId,
-      updates: {
-        type: updatedQuestion.type,
-        question: updatedQuestion.question,
-        description: updatedQuestion.description,
-        options: updatedQuestion.options,
-        correctAnswers: updatedQuestion.correctAnswers,
-        correctAnswer: updatedQuestion.correctAnswer,
-        imageUrl: updatedQuestion.imageUrl,
-        required: updatedQuestion.required,
-        points: updatedQuestion.points,
-      },
-    };
-
     updateQuestion(questionId, updatedQuestion);
 
     setEditingQuestion(null);
@@ -191,6 +144,60 @@ const QuestionList = ({
       ...prev,
       [questionId]: updatedQuestion,
     }));
+    
+    // Also update the main question state immediately for better UX
+    updateQuestion(questionId, updates);
+  };
+
+  // Enhanced option management functions for edit mode
+  const handleEditModeAddOption = (questionId: number) => {
+    const currentEditState = editingStates[questionId];
+    if (currentEditState && currentEditState.options) {
+      const updatedOptions = [...currentEditState.options, ""];
+      handleQuestionUpdate(questionId, { options: updatedOptions });
+    }
+  };
+
+  const handleEditModeUpdateOption = (questionId: number, optionIndex: number, value: string) => {
+    const currentEditState = editingStates[questionId];
+    if (currentEditState && currentEditState.options) {
+      const updatedOptions = [...currentEditState.options];
+      updatedOptions[optionIndex] = value;
+      handleQuestionUpdate(questionId, { options: updatedOptions });
+    }
+  };
+
+  const handleEditModeRemoveOption = (questionId: number, optionIndex: number) => {
+    const currentEditState = editingStates[questionId];
+    if (currentEditState && currentEditState.options && currentEditState.options.length > 1) {
+      const updatedOptions = currentEditState.options.filter((_: any, i: any) => i !== optionIndex);
+      const updatedCorrectAnswers = currentEditState.correctAnswers?.filter((ca: any) => 
+        typeof ca === 'number' ? ca !== optionIndex && ca < updatedOptions.length : true
+      ).map((ca: any) => typeof ca === 'number' && ca > optionIndex ? ca - 1 : ca) || [];
+      
+      handleQuestionUpdate(questionId, { 
+        options: updatedOptions,
+        correctAnswers: updatedCorrectAnswers
+      });
+    }
+  };
+
+  const handleEditModeToggleCorrectAnswer = (questionId: number, optionIndex: number) => {
+    const currentEditState = editingStates[questionId];
+    if (currentEditState) {
+      const currentAnswers = currentEditState.correctAnswers || [];
+      let updatedAnswers;
+      
+      if (currentEditState.type === 'multiple' || currentEditState.type === 'truefalse' || currentEditState.type === 'single') {
+        updatedAnswers = currentAnswers.includes(optionIndex) ? [] : [optionIndex];
+      } else {
+        updatedAnswers = currentAnswers.includes(optionIndex)
+          ? currentAnswers.filter((ca: any) => ca !== optionIndex)
+          : [...currentAnswers, optionIndex];
+      }
+      
+      handleQuestionUpdate(questionId, { correctAnswers: updatedAnswers });
+    }
   };
 
   return (
@@ -203,54 +210,38 @@ const QuestionList = ({
         {questions.map((question: any, index: number) => (
           <div key={question.id} className="relative">
             {editingQuestion === question.id ? (
-              <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-lg font-semibold text-blue-800">
-                    Editing Question {index + 1}
-                  </h3>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() =>
-                        handleSaveEdit(
-                          question.id,
-                          editingStates[question.id] || question
-                        )
-                      }
-                      className="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700 transition-colors"
-                    >
-                      Save
-                    </button>
-                    <button
-                      onClick={() => handleCancelEdit(question.id)}
-                      className="bg-gray-600 text-white px-3 py-1 rounded text-sm hover:bg-gray-700 transition-colors"
-                    >
-                      Cancel
-                    </button>
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-lg p-6 shadow-lg">
+                <div className="flex justify-between items-center mb-6">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center">
+                      <span className="text-white font-semibold text-sm">{index + 1}</span>
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-blue-800">
+                        Editing Question {index + 1}
+                      </h3>
+                      <p className="text-sm text-blue-600">Make your changes and click Save to update the question</p>
+                    </div>
                   </div>
                 </div>
 
                 <QuestionEditForm
-                  question={editingStates[question.id] || question}
-                  onUpdate={(updates) =>
-                    handleQuestionUpdate(question.id, updates)
-                  }
-                  onToggleCorrectAnswer={toggleCorrectAnswer}
-                  onAddOption={addOption}
-                  onUpdateOption={updateOption}
-                  onRemoveOption={removeOption}
-                  onUpdateLabelAnswer={updateLabelAnswer}
-                  onAddLabelKey={addLabelKey}
-                  onRemoveLabelKey={removeLabelKey}
-                  isOptionCorrect={(q, optionIndex) =>
-                    isOptionCorrect(q, optionIndex)
-                  }
-                />
-                <QuestionSettings
-                  question={editingStates[question.id] || question}
-                  onUpdate={(updates) =>
-                    handleQuestionUpdate(question.id, updates)
-                  }
-                  disabled={false}
+                  question={question}
+                  onUpdate={(questionId, updates) => {
+                    updateQuestion(questionId, updates);
+                  }}
+                  onDelete={deleteQuestion}
+                  onCancel={() => setEditingQuestion(null)}
+                  onToggleCorrectAnswer={() => {}}
+                  onAddOption={() => {}}
+                  onUpdateOption={() => {}}
+                  onRemoveOption={() => {}}
+                  onUpdateLabelAnswer={() => {}}
+                  onAddLabelKey={() => {}}
+                  onRemoveLabelKey={() => {}}
+                  isOptionCorrect={(questionId, optionIndex) => {
+                    return question.correctAnswers?.includes(optionIndex) || false;
+                  }}
                 />
               </div>
             ) : (
@@ -378,10 +369,10 @@ const QuestionCard = ({
             </button>
             <button
               onClick={handleDelete}
-              className="p-1.5 text-gray-500 hover:bg-red-50 hover:text-red-600 rounded-md transition-colors"
+              className="p-1.5 text-gray-500 hover:bg-red-50 hover:text-red-600 rounded-md transition-colors group"
               title="Delete question"
             >
-              <FaTrashAlt size={14} />
+              <FaTrashAlt size={14} className="group-hover:scale-110 transition-transform" />
             </button>
           </div>
         </div>
