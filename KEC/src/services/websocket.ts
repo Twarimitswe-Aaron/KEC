@@ -47,7 +47,7 @@ class WebSocketService {
   private maxReconnectAttempts = 5;
   private reconnectDelay = 1000;
 
-  connect(token?: string): Promise<Socket> {
+  connect(): Promise<Socket> {
     return new Promise((resolve, reject) => {
       if (this.socket && this.connected) {
         resolve(this.socket);
@@ -57,11 +57,8 @@ class WebSocketService {
       const baseUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:4000';
       
       this.socket = io(baseUrl, {
-        auth: {
-          token,
-        },
         transports: ['websocket', 'polling'],
-        withCredentials: true,
+        withCredentials: true, // This sends cookies automatically
         autoConnect: true,
       });
 
@@ -160,11 +157,11 @@ class WebSocketService {
 
   // Chat-specific methods
   joinChat(chatId: number) {
-    this.emit('chat:join', chatId);
+    this.emit('chat:join', { chatId });
   }
 
   leaveChat(chatId: number) {
-    this.emit('chat:leave', chatId);
+    this.emit('chat:leave', { chatId });
   }
 
   sendMessage(chatId: number, content: string, messageType: string = 'text') {

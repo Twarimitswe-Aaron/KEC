@@ -5,9 +5,9 @@ const RightSidebar = () => {
   const { activeChat, messages } = useChat();
 
   // Filter messages for files and images
-  const sharedFiles = messages.filter(msg => msg.messageType === 'file' || msg.messageType === 'image');
-  const sharedPhotos = messages.filter(msg => msg.messageType === 'image');
-  const sharedDocuments = messages.filter(msg => msg.messageType === 'file');
+  const sharedFiles = messages.filter(msg => msg.messageType === 'FILE' || msg.messageType === 'IMAGE');
+  const sharedPhotos = messages.filter(msg => msg.messageType === 'IMAGE');
+  const sharedDocuments = messages.filter(msg => msg.messageType === 'FILE');
 
   if (!activeChat) {
     return (

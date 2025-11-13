@@ -53,7 +53,7 @@ export class ChatController {
   @Get(':id/messages')
   async getChatMessages(
     @Request() req,
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id') id: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
     @Query('lastMessageId') lastMessageId?: string,
@@ -67,7 +67,7 @@ export class ChatController {
   @Post(':id/messages')
   async sendMessage(
     @Request() req,
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id') id: string,
     @Body() sendMessageDto: SendMessageDto,
   ) {
     return this.chatService.sendMessage(req.user.sub, id, sendMessageDto);
@@ -139,8 +139,9 @@ export class ChatController {
     return this.chatService.getUsers(search, excludeIds, limitNum);
   }
 
+
   @Post('status')
-  async updateUserStatus(@Request() req, @Body() body: { isOnline: boolean }) {
-    return this.chatService.updateUserStatus(req.user.sub, body.isOnline);
+  async updateUserStatus(@Request() req, @Body() { isOnline }: { isOnline: boolean }) {
+    return this.chatService.updateUserStatus(req.user.sub, isOnline);
   }
 }

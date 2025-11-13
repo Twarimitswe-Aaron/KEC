@@ -78,7 +78,11 @@ export class ChatService {
       }
     });
 
-    return chat;
+    // Add unreadCount for consistency with frontend interface
+    return {
+      ...chat,
+      unreadCount: 0 // New chat has no unread messages
+    };
   }
 
   async getUserChats(userId: number, page = 1, limit = 20, search?: string) {
@@ -181,10 +185,20 @@ export class ChatService {
     return chat;
   }
 
-  async getChatMessages(userId: number, chatId: number, page = 1, limit = 50, lastMessageId?: number) {
+  async getChatMessages(userId: number, chatId: number | string, page = 1, limit = 50, lastMessageId?: number) {
+    // Convert chatId to number if it's a string (handle frontend temp IDs)
+    const actualChatId = typeof chatId === 'string' && chatId.startsWith('temp_') 
+      ? null // Handle temp IDs 
+      : Number(chatId);
+
+    // If we have a temp chat ID, return empty messages
+    if (actualChatId === null) {
+      return { messages: [], total: 0, hasMore: false };
+    }
+
     // Verify user is participant
     const participant = await this.prisma.chatParticipant.findFirst({
-      where: { userId, chatId }
+      where: { userId, chatId: actualChatId }
     });
 
     if (!participant) {
@@ -193,7 +207,7 @@ export class ChatService {
 
     const skip = lastMessageId ? 0 : (page - 1) * limit;
     const whereClause = {
-      chatId,
+      chatId: actualChatId,
       ...(lastMessageId && { id: { lt: lastMessageId } })
     };
 
@@ -208,7 +222,7 @@ export class ChatService {
         skip,
         take: limit
       }),
-      this.prisma.message.count({ where: { chatId } })
+      this.prisma.message.count({ where: { chatId: actualChatId } })
     ]);
 
     return { 
@@ -218,22 +232,38 @@ export class ChatService {
     };
   }
 
-  async sendMessage(userId: number, chatId: number, sendMessageDto: SendMessageDto) {
+  async sendMessage(userId: number, chatId: number | string, sendMessageDto: SendMessageDto) {
+    // Convert chatId to number if it's a string (handle frontend temp IDs)
+    const actualChatId = typeof chatId === 'string' && chatId.startsWith('temp_') 
+      ? null // Handle temp IDs - we'll need to find or create the real chat
+      : Number(chatId);
+
+    // If we have a temp chat ID, we need to find or create a real chat first
+    if (actualChatId === null) {
+      throw new BadRequestException('Cannot send message to temporary chat. Please create a real chat first.');
+    }
+
     // Verify user is participant
     const participant = await this.prisma.chatParticipant.findFirst({
-      where: { userId, chatId }
+      where: { userId, chatId: actualChatId }
     });
 
     if (!participant) {
       throw new ForbiddenException('You are not a participant in this chat');
     }
 
+    // Normalize messageType to uppercase (handle frontend lowercase)
+    const normalizedDto = {
+      ...sendMessageDto,
+      messageType: sendMessageDto.messageType.toUpperCase() as any
+    };
+
     // Create message
     const message = await this.prisma.message.create({
       data: {
-        chatId,
+        chatId: actualChatId,
         senderId: userId,
-        ...sendMessageDto
+        ...normalizedDto
       },
       include: {
         sender: { include: { profile: true } },
@@ -243,7 +273,7 @@ export class ChatService {
 
     // Update chat's updatedAt
     await this.prisma.chat.update({
-      where: { id: chatId },
+      where: { id: actualChatId },
       data: { updatedAt: new Date() }
     });
 

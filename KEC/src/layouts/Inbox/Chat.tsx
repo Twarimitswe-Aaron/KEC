@@ -209,23 +209,23 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
                           : "bg-gray-100 text-gray-900"
                       }`}
                     >
-                      {message.messageType === "text" && (
+                      {message.messageType === "TEXT" && (
                         <p className="whitespace-pre-wrap">{message.content}</p>
                       )}
-                      {message.messageType === "image" && (
+                      {message.messageType === "IMAGE" && (
                         <img
                           src={message.fileUrl}
                           alt="Shared image"
                           className="max-w-[250px] rounded-md"
                         />
                       )}
-                      {message.messageType === "file" && (
+                      {message.messageType === "FILE" && (
                         <div className="flex items-center gap-2 p-2 bg-white bg-opacity-20 rounded-md">
                           <GoPaperclip className="h-4 w-4" />
                           <span className="text-sm">{message.fileName}</span>
                         </div>
                       )}
-                      {message.messageType === "link" && (
+                      {message.messageType === "LINK" && (
                         <a
                           href={message.content}
                           target="_blank"

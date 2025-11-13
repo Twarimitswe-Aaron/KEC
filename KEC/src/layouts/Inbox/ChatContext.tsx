@@ -5,8 +5,7 @@ import {
   useSendMessageMutation,
   useMarkMessagesAsReadMutation,
   Chat,
-  Message,
-  User
+  Message
 } from '../../state/api/chatApi';
 import { useGetUserQuery, UserState } from '../../state/api/authApi';
 import websocketService from '../../services/websocket';
@@ -44,12 +43,32 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
   // API hooks
   const { data: currentUser } = useGetUserQuery();
   const { data: chatsData, isLoading: chatsLoading } = useGetChatsQuery({});
-  const { data: messagesData, isLoading: messagesLoading } = useGetMessagesQuery(
+  const { data: messagesData, isLoading: messagesLoading, refetch: refetchMessages } = useGetMessagesQuery(
     { chatId: activeChat?.id || 0 },
     { skip: !activeChat }
   );
   const [sendMessageMutation] = useSendMessageMutation();
   const [markMessagesAsReadMutation] = useMarkMessagesAsReadMutation();
+
+  // Message handler with current activeChat reference
+  const handleNewMessage = useCallback((message: any) => {
+    console.log('🔥 New message received:', JSON.stringify(message, null, 2));
+    console.log('📝 Message content:', message?.content);
+    console.log('🆔 Message chatId:', message?.chatId);
+    console.log('🎯 Current activeChat:', activeChat?.id);
+    console.log('👤 Message sender:', message?.senderId, 'Current user:', currentUser?.id);
+    
+    // Refetch messages for the current chat (both own and other users)
+    if (activeChat && String(message.chatId) === String(activeChat.id)) {
+      console.log('📥 Message received - refreshing...');
+      // Small delay to prevent race conditions with optimistic updates
+      setTimeout(() => {
+        refetchMessages();
+      }, 100);
+    } else {
+      console.log('❌ Message not for current chat or no active chat');
+    }
+  }, [activeChat, refetchMessages, currentUser]);
 
   // WebSocket connection
   useEffect(() => {
@@ -58,10 +77,7 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
         setIsConnected(true);
         
         // Set up event listeners
-        websocketService.on('message:new', (message: Message) => {
-          // Real-time message handling will be implemented here
-          console.log('New message received:', message);
-        });
+        websocketService.on('message:new', handleNewMessage);
 
         websocketService.on('typing:update', (data) => {
           setTypingUsers(prev => {
@@ -89,40 +105,41 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
         setIsConnected(false);
       };
     }
-  }, [currentUser]);
+  }, [currentUser, handleNewMessage]);
 
   // Join/leave chat rooms when active chat changes
   useEffect(() => {
     if (activeChat && isConnected) {
-      websocketService.joinChat(activeChat.id);
-      return () => {
-        websocketService.leaveChat(activeChat.id);
-      };
+      // Only join if it's a real chat (not temp)
+      const chatId = typeof activeChat.id === 'string' && (activeChat.id as string).startsWith('temp_') 
+        ? null 
+        : Number(activeChat.id);
+        
+      if (chatId !== null) {
+        websocketService.joinChat(chatId);
+        return () => {
+          websocketService.leaveChat(chatId);
+        };
+      }
     }
   }, [activeChat, isConnected]);
 
-  const sendMessage = useCallback(async (content: string, messageType: string = 'text'): Promise<boolean> => {
+  const sendMessage = useCallback(async (content: string, messageType: string = 'TEXT'): Promise<boolean> => {
     if (!activeChat || !currentUser) return false;
 
     try {
-      // Send via WebSocket for real-time delivery
-      if (isConnected) {
-        websocketService.sendMessage(activeChat.id, content, messageType);
-      }
-
-      // Send via API for persistence
+      // Always use API mutation for sending messages to ensure optimistic updates work
       await sendMessageMutation({
         chatId: activeChat.id,
         content,
         messageType: messageType as any,
       }).unwrap();
-
       return true;
     } catch (error) {
       console.error('Failed to send message:', error);
       return false;
     }
-  }, [activeChat, currentUser, isConnected, sendMessageMutation]);
+  }, [activeChat, currentUser, sendMessageMutation]);
 
   const markAsRead = useCallback(async (messageIds: number[]) => {
     if (!activeChat || messageIds.length === 0) return;

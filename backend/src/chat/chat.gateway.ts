@@ -53,7 +53,24 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   async handleConnection(client: AuthenticatedSocket) {
     try {
-      const token = client.handshake.auth?.token || client.handshake.headers?.authorization?.replace('Bearer ', '');
+      // Try to get token from auth header first (JWT)
+      let token = client.handshake.auth?.token || client.handshake.headers?.authorization?.replace('Bearer ', '');
+      
+      // If no JWT token, try to extract from cookies
+      if (!token) {
+        const cookies = client.handshake.headers.cookie;
+        if (cookies) {
+          // Parse cookies to extract auth token
+          const cookieObj = cookies.split(';').reduce((acc, cookie) => {
+            const [key, value] = cookie.trim().split('=');
+            acc[key] = value;
+            return acc;
+          }, {} as Record<string, string>);
+          
+          // Look for the specific auth cookie name used by your app
+          token = cookieObj['jwt_access'];
+        }
+      }
       
       if (!token) {
         this.logger.warn('Client attempted to connect without token');
@@ -78,6 +95,9 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       // Update user online status
       await this.chatService.updateUserStatus(client.userId, true);
 
+      // Auto-join user to all their existing chat rooms
+      await this.autoJoinUserChats(client);
+
       // Broadcast user online status to relevant chats
       this.broadcastUserOnlineStatus(client.userId, true);
 
@@ -85,6 +105,25 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     } catch (error) {
       this.logger.error('Authentication failed', error);
       client.disconnect();
+    }
+  }
+
+  private async autoJoinUserChats(client: AuthenticatedSocket) {
+    try {
+      if (!client.userId) return;
+      
+      // Get all chats for this user
+      const userChats = await this.chatService.getUserChats(client.userId, 1, 100); // Get up to 100 chats
+      
+      // Join all chat rooms
+      userChats.chats.forEach(chat => {
+        const roomName = `chat:${chat.id}`;
+        client.join(roomName);
+      });
+
+      this.logger.log(`User ${client.userId} auto-joined ${userChats.chats.length} chat rooms`);
+    } catch (error) {
+      this.logger.error(`Failed to auto-join chats for user ${client.userId}`, error);
     }
   }
 
@@ -127,15 +166,19 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     if (!client.userId) return;
 
     try {
+      this.logger.log(`📨 Received message: "${data.content}" for chat ${data.chatId} from user ${client.userId}`);
+      
       const message = await this.chatService.sendMessage(client.userId, data.chatId, {
         content: data.content,
         messageType: data.messageType as any,
       });
 
+      this.logger.log(`💾 Saved message to DB: ${JSON.stringify({id: message.id, content: message.content, chatId: message.chatId})}`);
+
       // Broadcast message to all participants in the chat
       this.server.to(`chat:${data.chatId}`).emit('message:new', message);
       
-      this.logger.log(`Message sent in chat ${data.chatId} by user ${client.userId}`);
+      this.logger.log(`📡 Broadcasted message to room chat:${data.chatId}`);
     } catch (error) {
       this.logger.error('Failed to send message', error);
       client.emit('error', { message: 'Failed to send message' });

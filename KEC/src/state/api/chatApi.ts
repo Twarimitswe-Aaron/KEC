@@ -23,7 +23,7 @@ export interface Message {
   senderId: number;
   chatId: number;
   content?: string;
-  messageType: 'text' | 'image' | 'file' | 'link';
+  messageType: 'TEXT' | 'IMAGE' | 'FILE' | 'LINK';
   fileUrl?: string;
   fileName?: string;
   fileSize?: number;
@@ -70,7 +70,7 @@ export interface CreateChatRequest {
 export interface SendMessageRequest {
   chatId: number;
   content?: string;
-  messageType: 'text' | 'image' | 'file' | 'link';
+  messageType: 'TEXT' | 'IMAGE' | 'FILE' | 'LINK';
   fileUrl?: string;
   fileName?: string;
   fileSize?: number;
@@ -168,10 +168,11 @@ export const chatApi = apiCore.apiSlice.injectEndpoints({
       }),
       // Optimistically update the UI
       async onQueryStarted({ chatId, ...message }, { dispatch, queryFulfilled }) {
+        const tempId = `temp-${Date.now()}`; // Consistent temp ID
         const patchResult = dispatch(
           chatApi.util.updateQueryData('getMessages', { chatId }, (draft) => {
             const optimisticMessage = {
-              id: Date.now(), // Temporary ID
+              id: tempId, // Use string temp ID
               senderId: -1, // Will be updated
               chatId,
               isRead: false,
@@ -183,21 +184,24 @@ export const chatApi = apiCore.apiSlice.injectEndpoints({
                 lastName: '',
               },
               ...message,
-            } as Message;
+            } as any; // Use any to allow string ID
             
-            draft.messages.unshift(optimisticMessage);
+            draft.messages.push(optimisticMessage); // Add to end, not beginning
           })
         );
 
         try {
           const { data: newMessage } = await queryFulfilled;
           
-          // Update with real message data
+          // Replace optimistic message with real one
           dispatch(
             chatApi.util.updateQueryData('getMessages', { chatId }, (draft) => {
-              const index = draft.messages.findIndex(msg => msg.id === Date.now());
+              const index = draft.messages.findIndex(msg => String(msg.id) === tempId);
               if (index !== -1) {
                 draft.messages[index] = newMessage;
+              } else {
+                // If not found, just add the message
+                draft.messages.push(newMessage);
               }
             })
           );
@@ -272,7 +276,7 @@ export const chatApi = apiCore.apiSlice.injectEndpoints({
     // Get all users (for creating new chats)
     getUsers: builder.query<User[], { search?: string; excludeIds?: number[] }>({
       query: ({ search, excludeIds }) => ({
-        url: 'users',
+        url: 'chat/users/search',
         params: { 
           search, 
           exclude: excludeIds?.join(','),

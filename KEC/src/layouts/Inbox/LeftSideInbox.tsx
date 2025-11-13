@@ -3,8 +3,7 @@ import { IoSearch } from 'react-icons/io5';
 import { BsPeopleFill } from 'react-icons/bs';
 import { IoArrowBack } from 'react-icons/io5';
 import { useGetUserQuery } from '../../state/api/authApi';
-import { useGetAllUsersQuery } from '../../state/api/userApi';
-import { useCreateChatMutation } from '../../state/api/chatApi';
+import { useCreateChatMutation, useGetUsersQuery } from '../../state/api/chatApi';
 import { useChat } from './ChatContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 
@@ -15,7 +14,9 @@ interface LeftSideInboxProps {
 
 const LeftSideInbox: React.FC<LeftSideInboxProps> = ({ onCloseSidebar }) => {
   const { data: currentUser } = useGetUserQuery();
-  const { data: allUsers, isLoading, error } = useGetAllUsersQuery();
+  const { data: allUsers, isLoading, error } = useGetUsersQuery({ 
+    excludeIds: currentUser ? [currentUser.id] : [] 
+  });
   const [createChat, { isLoading: isCreatingChat }] = useCreateChatMutation();
   const { setActiveChat } = useChat();
   const navigate = useNavigate();
@@ -26,13 +27,12 @@ const LeftSideInbox: React.FC<LeftSideInboxProps> = ({ onCloseSidebar }) => {
   // Get the previous route for back navigation
   const previousRoute = location.state?.from || '/dashboard';
 
-  // Filter users based on search and exclude current user
+  // Filter users based on search
   const filteredUsers = allUsers?.filter(user => {
     const searchLower = searchTerm.toLowerCase();
-    const fullName = user.name.toLowerCase();
+    const fullName = `${user.firstName} ${user.lastName}`.toLowerCase();
     const matchesSearch = fullName.includes(searchLower) || user.email.toLowerCase().includes(searchLower);
-    const isNotCurrentUser = user.id !== currentUser?.id;
-    return matchesSearch && isNotCurrentUser;
+    return matchesSearch;
   }) || [];
 
   // Handle back navigation
@@ -164,8 +164,8 @@ const LeftSideInbox: React.FC<LeftSideInboxProps> = ({ onCloseSidebar }) => {
               {/* Avatar */}
               <div className="relative flex-shrink-0">
                 <img
-                  src={user.avatar || '/images/default-avatar.png'}
-                  alt={user.name}
+                  src={user.profile?.avatar || '/images/default-avatar.png'}
+                  alt={`${user.firstName} ${user.lastName}`}
                   className="w-12 h-12 rounded-full object-cover"
                   onError={(e) => {
                     (e.target as HTMLImageElement).src = '/images/default-avatar.png';
@@ -178,7 +178,7 @@ const LeftSideInbox: React.FC<LeftSideInboxProps> = ({ onCloseSidebar }) => {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between">
                   <h3 className="font-semibold text-gray-900 truncate">
-                    {user.name}
+                    {`${user.firstName} ${user.lastName}`}
                   </h3>
                   <span className={`text-xs px-2 py-1 rounded-full font-medium ${getRoleBadgeColor(user.role)}`}>
                     {user.role.toUpperCase()}
