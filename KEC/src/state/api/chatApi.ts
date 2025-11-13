@@ -29,7 +29,9 @@ export interface Message {
   fileSize?: number;
   fileMimeType?: string;
   isRead: boolean;
+  isDelivered?: boolean;
   isEdited?: boolean;
+  replyToId?: number; // ID of the message being replied to
   createdAt: string;
   updatedAt: string;
   sender: {
@@ -75,6 +77,7 @@ export interface SendMessageRequest {
   fileName?: string;
   fileSize?: number;
   fileMimeType?: string;
+  replyToId?: number; // ID of the message being replied to
 }
 
 export interface GetChatsResponse {
@@ -176,6 +179,7 @@ export const chatApi = apiCore.apiSlice.injectEndpoints({
               senderId: -1, // Will be updated
               chatId,
               isRead: false,
+              isDelivered: false,
               createdAt: new Date().toISOString(),
               updatedAt: new Date().toISOString(),
               sender: {

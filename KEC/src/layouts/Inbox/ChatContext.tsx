@@ -16,7 +16,7 @@ export interface ChatContextType {
   currentUser: UserState | null;
   messages: Message[];
   setActiveChat: (chat: Chat) => void;
-  sendMessage: (content: string, messageType?: string) => Promise<boolean>;
+  sendMessage: (content: string, messageType?: string, fileData?: { fileUrl: string; fileName: string; fileSize: number; fileMimeType: string }) => Promise<boolean>;
   markAsRead: (messageIds: number[]) => void;
   isTyping: boolean;
   setIsTyping: (typing: boolean) => void;
@@ -124,16 +124,30 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
     }
   }, [activeChat, isConnected]);
 
-  const sendMessage = useCallback(async (content: string, messageType: string = 'TEXT'): Promise<boolean> => {
+  const sendMessage = useCallback(async (
+    content: string, 
+    messageType: string = 'TEXT', 
+    fileData?: { fileUrl: string; fileName: string; fileSize: number; fileMimeType: string }
+  ): Promise<boolean> => {
     if (!activeChat || !currentUser) return false;
 
     try {
       // Always use API mutation for sending messages to ensure optimistic updates work
-      await sendMessageMutation({
+      const messagePayload: any = {
         chatId: activeChat.id,
         content,
         messageType: messageType as any,
-      }).unwrap();
+      };
+
+      // Add file data if provided
+      if (fileData) {
+        messagePayload.fileUrl = fileData.fileUrl;
+        messagePayload.fileName = fileData.fileName;
+        messagePayload.fileSize = fileData.fileSize;
+        messagePayload.fileMimeType = fileData.fileMimeType;
+      }
+
+      await sendMessageMutation(messagePayload).unwrap();
       return true;
     } catch (error) {
       console.error('Failed to send message:', error);
