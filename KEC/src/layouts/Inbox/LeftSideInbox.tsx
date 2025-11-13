@@ -62,9 +62,23 @@ const LeftSideInbox: React.FC<LeftSideInboxProps> = ({ onCloseSidebar }) => {
       });
       
       if ('data' in response && response.data) {
-        // Successfully created or found chat
-        setActiveChat(response.data as any);
-        onCloseSidebar();
+        // Validate that the chat has participants before setting as active
+        const chat = response.data as any;
+        console.log('📤 [LeftSideInbox] Chat creation response:', {
+          chatId: chat.id,
+          participantsCount: chat.participants?.length || 0,
+          participants: chat.participants
+        });
+        
+        if (chat.participants && chat.participants.length > 0) {
+          // Successfully created or found chat with valid participants
+          setActiveChat(chat);
+          onCloseSidebar();
+        } else {
+          // Chat created but has no participants - this is a backend issue
+          console.error('❌ [LeftSideInbox] Chat created but has no participants:', chat);
+          alert('Chat created but failed to add participants. Please try refreshing the page.');
+        }
       } else if ('error' in response) {
         // Handle API error
         console.error('Failed to create chat:', response.error);

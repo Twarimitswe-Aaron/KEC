@@ -32,6 +32,16 @@ export interface Message {
   isDelivered?: boolean;
   isEdited?: boolean;
   replyToId?: number; // ID of the message being replied to
+  replyTo?: {
+    id: number;
+    content?: string;
+    messageType: 'TEXT' | 'IMAGE' | 'FILE' | 'LINK';
+    sender: {
+      id: number;
+      firstName: string;
+      lastName: string;
+    };
+  };
   createdAt: string;
   updatedAt: string;
   sender: {

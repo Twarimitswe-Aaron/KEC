@@ -94,6 +94,10 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
   const [selectedMessage, setSelectedMessage] = useState<number | null>(null);
   const [showEmojiPicker, setShowEmojiPicker] = useState<number | null>(null);
   const [isRecordingVoice, setIsRecordingVoice] = useState(false);
+  const [isSending, setIsSending] = useState(false); // Additional sending state
+  const sendingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastSendTime = useRef<number>(0); // Track last send time
+  const MIN_SEND_INTERVAL = 1000; // Minimum 1 second between sends
   const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(null);
   const [showMainEmojiPicker, setShowMainEmojiPicker] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -249,28 +253,68 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
       if (longPressTimer) {
         clearTimeout(longPressTimer);
       }
+      if (sendingTimeoutRef.current) {
+        clearTimeout(sendingTimeoutRef.current);
+      }
     };
   }, [longPressTimer]);
 
-  const handleSendMessage = async (e?: React.MouseEvent<HTMLButtonElement>) => {
+  const handleSendMessage = async (e?: React.MouseEvent<HTMLButtonElement> | React.KeyboardEvent, source: string = 'unknown') => {
     e?.preventDefault();
-    if (!activeChat || isUploading) return; // Prevent multiple sends
+    
+    const currentTime = Date.now();
+    const timeSinceLastSend = currentTime - lastSendTime.current;
+    
+    console.log('🎯 [Chat] handleSendMessage called from:', source, { 
+      isUploading, 
+      isSending, 
+      timeSinceLastSend,
+      timestamp: currentTime 
+    });
+    
+    if (!activeChat || isUploading || isSending) {
+      console.log('❌ [Chat] Send blocked:', { activeChat: !!activeChat, isUploading, isSending });
+      return; // Prevent multiple sends
+    }
+    
+    if (timeSinceLastSend < MIN_SEND_INTERVAL) {
+      console.log('❌ [Chat] Send blocked - too rapid:', { timeSinceLastSend, minInterval: MIN_SEND_INTERVAL });
+      return; // Prevent rapid sending
+    }
+    
+    lastSendTime.current = currentTime;
     
     const messageContent = newMessage.trim();
     const hasFiles = attachedFiles.length > 0;
+    const replyToId = replyingTo?.id;
+    
+    console.log('🚀 [Chat] Sending message:', { 
+      messageContent, 
+      hasFiles, 
+      replyToId, 
+      replyingTo: replyingTo ? { id: replyingTo.id, senderName: replyingTo.senderName } : null 
+    });
     
     // Can't send empty message without files
     if (!messageContent && !hasFiles) return;
     
     setIsUploading(true);
+    setIsSending(true);
+    
+    // Clear any existing timeout
+    if (sendingTimeoutRef.current) {
+      clearTimeout(sendingTimeoutRef.current);
+    }
     
     try {
       // Send text message first if there's text content
       if (messageContent) {
-        const success = await sendMessage(messageContent, 'TEXT');
+        console.log('📝 [Chat] Sending text message with reply:', { content: messageContent, replyToId });
+        const success = await sendMessage(messageContent, 'TEXT', undefined, replyToId);
         if (!success) {
           throw new Error('Failed to send text message');
         }
+        console.log('✅ [Chat] Text message sent successfully');
       }
       
       // Upload and send files one by one
@@ -301,13 +345,16 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
           
           console.log('📤 Corrected file URL:', fileUrl);
           
-          // Send message with file info
+          // Send message with file info (only add reply to first file if no text message was sent)
+          const shouldAddReply = !messageContent && i === 0;
+          console.log('📎 [Chat] Sending file message:', { fileName: uploadResult.fileName, shouldAddReply, replyToId: shouldAddReply ? replyToId : undefined });
+          
           const success = await sendMessage('', attachedFile.type === 'image' ? 'IMAGE' : 'FILE', {
             fileUrl: fileUrl,
             fileName: uploadResult.fileName,
             fileSize: uploadResult.fileSize,
             fileMimeType: uploadResult.mimeType
-          });
+          }, shouldAddReply ? replyToId : undefined);
           
           if (!success) {
             throw new Error(`Failed to send file: ${attachedFile.file.name}`);
@@ -322,9 +369,11 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
       }
       
       // Clear message and attachments on success with smooth transition
+      console.log('🧹 [Chat] Clearing message state and reply');
       setNewMessage("");
       setReplyingTo(null);
       setIsTyping(false);
+      setIsSending(false);
       
       // Clear files with slight delay for smooth UI transition
       setTimeout(() => {
@@ -333,9 +382,14 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
       
     } catch (error) {
       console.error('Failed to send message:', error);
-      // You might want to show a toast notification here
+      setIsSending(false);
     } finally {
       setIsUploading(false);
+      
+      // Reset sending state after a short delay to prevent rapid clicks
+      sendingTimeoutRef.current = setTimeout(() => {
+        setIsSending(false);
+      }, 500);
     }
   };
   
@@ -354,16 +408,24 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
   
   // Handle message reply
   const handleReply = useCallback((message: Message) => {
+    console.log('💬 [Chat] Reply button clicked for message:', message.id);
+    console.log('💬 [Chat] Message sender data:', message.sender);
+    
     const senderName = message.senderId === currentUser?.id 
       ? 'You' 
-      : `${message.sender?.firstName} ${message.sender?.lastName}`;
+      : `${message.sender?.firstName || 'User'} ${message.sender?.lastName || ''}`.trim() || 'Someone';
       
-    setReplyingTo({
+    const replyData = {
       id: message.id,
       content: message.content || message.fileName || 'Media',
       senderName,
       messageType: message.messageType
-    });
+    };
+    
+    console.log('💬 [Chat] Setting reply state:', replyData);
+    setReplyingTo(replyData);
+    
+    console.log('💬 [Chat] ReplyToId:', replyData.id);
     setSelectedMessage(null);
   }, [currentUser]);
   
@@ -447,12 +509,7 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSendMessage();
-    }
-  };
+  // Removed duplicate handleKeyDown function - using inline onKeyDown in textarea
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setNewMessage(e.target.value);
@@ -475,31 +532,98 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
 
   // Get chat participant info (excluding current user)
   const getChatParticipant = () => {
-    if (!activeChat) return null;
+    if (!activeChat) {
+      console.log('⚠️ [Chat] No active chat for participant info');
+      return null;
+    }
+    
+    console.log('🔍 [Chat] Debugging activeChat data:', {
+      chatId: activeChat.id,
+      isGroup: activeChat.isGroup,
+      participantsCount: activeChat.participants?.length || 0,
+      participants: activeChat.participants,
+      currentUserId: currentUser?.id
+    });
     
     if (activeChat.isGroup) {
+      console.log('👥 [Chat] Group chat participant info:', activeChat.name);
       return {
         name: activeChat.name || 'Group Chat',
-        avatar: activeChat.groupAvatar,
-        isOnline: false,
-        lastSeen: 'Group'
+        avatar: activeChat.groupAvatar || '/images/chat.png',
+        isOnline: true, // Groups are always "online"
+        lastSeen: `${activeChat.participants?.length || 0} members`
       };
     }
     
-    const participant = activeChat.participants.find(p => p.user.id !== currentUser?.id);
-    if (participant) {
+    // Check if participants array exists and has data
+    if (!activeChat.participants || activeChat.participants.length === 0) {
+      console.log('⚠️ [Chat] No participants array or empty participants');
       return {
-        name: `${participant.user.firstName} ${participant.user.lastName}`,
-        avatar: participant.user.profile?.avatar,
-        isOnline: onlineUsers.includes(participant.user.id),
-        lastSeen: participant.user.isOnline ? 'Online' : participant.user.lastSeen || 'Last seen recently'
+        name: 'Loading participants...',
+        avatar: '/images/chat.png',
+        isOnline: false,
+        lastSeen: 'Loading...'
       };
     }
     
-    return null;
+    console.log('🔍 [Chat] Looking for participant excluding current user ID:', currentUser?.id);
+    activeChat.participants.forEach((p, index) => {
+      console.log(`👤 [Chat] Participant ${index}:`, {
+        participantId: p.id,
+        userId: p.user?.id,
+        userFirstName: p.user?.firstName,
+        userLastName: p.user?.lastName,
+        isCurrentUser: p.user?.id === currentUser?.id
+      });
+    });
+    
+    const participant = activeChat.participants.find(p => p.user?.id !== currentUser?.id);
+    if (participant) {
+      const participantInfo = {
+        name: `${participant.user?.firstName || ''} ${participant.user?.lastName || ''}`.trim() || 'Chat Participant',
+        avatar: participant.user?.profile?.avatar || '/images/chat.png',
+        isOnline: onlineUsers.includes(participant.user?.id || 0),
+        lastSeen: onlineUsers.includes(participant.user?.id || 0) ? 'Online' : 'Last seen recently'
+      };
+      console.log('👤 [Chat] Found 1-on-1 chat participant:', participantInfo);
+      return participantInfo;
+    }
+    
+    console.log('⚠️ [Chat] No other participant found in chat - all participants might be current user');
+    return {
+      name: 'Chat Loading...',
+      avatar: '/images/chat.png',
+      isOnline: false,
+      lastSeen: 'Loading...'
+    };
   };
 
   const participant = getChatParticipant();
+
+  // Get display text for typing users
+  const getTypingUsersDisplay = () => {
+    if (!activeChat || typingUsers.length === 0) return '';
+    
+    const typingNames = typingUsers.map(userId => {
+      // Check if it's current user (shouldn't happen, but safety check)
+      if (userId === currentUser?.id) return null;
+      
+      // Find the participant in the chat
+      const typingParticipant = activeChat.participants.find(p => p.user.id === userId);
+      if (typingParticipant) {
+        const firstName = typingParticipant.user.firstName;
+        const lastName = typingParticipant.user.lastName;
+        return `${firstName} ${lastName}`.trim() || 'Someone';
+      }
+      
+      return 'Someone';
+    }).filter(Boolean);
+    
+    if (typingNames.length === 0) return 'Someone';
+    if (typingNames.length === 1) return typingNames[0];
+    if (typingNames.length === 2) return `${typingNames[0]} and ${typingNames[1]}`;
+    return `${typingNames[0]} and ${typingNames.length - 1} others`;
+  };
 
   // Show loading state if no active chat
   if (!activeChat) {
@@ -532,7 +656,7 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h3 className="font-semibold">{participant?.name || 'Unknown'}</h3>
+              <h3 className="font-semibold">{participant?.name || 'Loading Chat...'}</h3>
               {getUnreadCount() > 0 && (
                 <span className="bg-blue-500 text-white text-xs px-2 py-1 rounded-full min-w-[20px] text-center">
                   {getUnreadCount()}
@@ -541,7 +665,9 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
             </div>
             <div className="flex items-center gap-2 text-xs text-gray-500">
               {typingUsers.length > 0 ? (
-                <span className="text-blue-500">Typing...</span>
+                <span className="text-blue-500">
+                  {getTypingUsersDisplay()} typing...
+                </span>
               ) : (
                 <span>{participant?.lastSeen}</span>
               )}
@@ -589,7 +715,9 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
                   const isCurrentUser = message.senderId === currentUser?.id;
                   const isUnread = !isCurrentUser && !message.isRead;
                   const prevMessage = index > 0 ? dayMessages[index - 1] : null;
+                  const nextMessage = index < dayMessages.length - 1 ? dayMessages[index + 1] : null;
                   const isGrouped = shouldGroupMessage(message, prevMessage);
+                  const isGroupedWithNext = nextMessage ? shouldGroupMessage(nextMessage, message) : false;
                   const showAvatar = !isCurrentUser && !isGrouped;
                   
                   return (
@@ -607,7 +735,7 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
                         className={`flex items-start gap-1 sm:gap-2 ${
                           isCurrentUser ? "justify-end pr-0 -mr-1" : "justify-start pl-0"
                         } ${isUnread ? 'bg-blue-50/30 -mx-2 sm:-mx-4 px-2 sm:px-4 py-2 rounded-lg' : ''} ${
-                          isGrouped ? 'mb-0.5' : 'mb-3'
+                          isGrouped ? 'mb-1' : 'mb-4'
                         }`}
                         onMouseDown={() => handleMouseDown(message.id)}
                         onMouseUp={handleMouseUp}
@@ -643,25 +771,47 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
                                 : 'border-gray-300 bg-gray-50'
                             }`}>
                               <div className="text-gray-600 font-medium mb-1">
-                                Replying to {message.replyToId === currentUser?.id ? 'yourself' : 'them'}
+                                {message.replyTo 
+                                  ? `Replying to ${message.replyTo.sender.id === currentUser?.id ? 'yourself' : `${message.replyTo.sender.firstName || 'User'} ${message.replyTo.sender.lastName || ''}`.trim()}`
+                                  : `Replying to message #${message.replyToId}`
+                                }
                               </div>
                               <div className="text-gray-500 truncate">
-                                {/* Reply content would come from API */}
-                                Original message content...
+                                {message.replyTo 
+                                  ? (message.replyTo.messageType === 'TEXT' 
+                                      ? message.replyTo.content || 'Message' 
+                                      : message.replyTo.messageType === 'IMAGE' 
+                                        ? '📷 Image' 
+                                        : message.replyTo.messageType === 'FILE'
+                                          ? '📄 File'
+                                          : 'Message'
+                                    )
+                                  : 'Original message...'
+                                }
                               </div>
                             </div>
                           )}
 
                           {/* Main message bubble */}
                           <div
-                            className={`${message.messageType === "TEXT" ? "inline-block" : "block w-full"} px-2 sm:px-4 py-2 rounded-2xl relative ${
+                            className={`${message.messageType === "TEXT" ? "inline-block" : "block w-full"} px-2 sm:px-4 py-2 relative ${
+                              // Base styling
                               isCurrentUser
-                                ? "bg-blue-500 text-white rounded-br-md"
+                                ? "bg-blue-500 text-white"
                                 : isUnread 
-                                  ? "bg-white border border-blue-200 text-gray-900 shadow-md rounded-bl-md"
-                                  : "bg-white border border-gray-200 text-gray-900 shadow-sm rounded-bl-md"
-                            } ${isGrouped && isCurrentUser ? 'rounded-br-2xl' : ''} ${
-                              isGrouped && !isCurrentUser ? 'rounded-bl-2xl' : ''
+                                  ? "bg-white border border-blue-200 text-gray-900 shadow-md"
+                                  : "bg-white border border-gray-200 text-gray-900 shadow-sm"
+                            } ${
+                              // Dynamic border radius based on grouping
+                              isCurrentUser 
+                                ? `${!isGrouped && !isGroupedWithNext ? 'rounded-2xl' : 
+                                     !isGrouped && isGroupedWithNext ? 'rounded-2xl rounded-br-md' :
+                                     isGrouped && !isGroupedWithNext ? 'rounded-2xl rounded-tr-md' :
+                                     'rounded-xl rounded-tr-md rounded-br-md'}`
+                                : `${!isGrouped && !isGroupedWithNext ? 'rounded-2xl' : 
+                                     !isGrouped && isGroupedWithNext ? 'rounded-2xl rounded-bl-md' :
+                                     isGrouped && !isGroupedWithNext ? 'rounded-2xl rounded-tl-md' :
+                                     'rounded-xl rounded-tl-md rounded-bl-md'}`
                             }`}
                           >
                             {/* Message content */}
@@ -730,7 +880,7 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
                                   <div className={`font-medium text-sm truncate ${
                                     isCurrentUser ? 'text-white' : 'text-gray-900'
                                   }`}>
-                                    {message.fileName || 'Unknown file'}
+                                    {message.fileName || 'Uploaded file'}
                                   </div>
                                   <div className={`text-xs flex items-center gap-2 ${
                                     isCurrentUser ? 'text-white/70' : 'text-gray-500'
@@ -919,7 +1069,10 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
                 </div>
               </div>
               <button
-                onClick={() => setReplyingTo(null)}
+                onClick={() => {
+                  console.log('❌ [Chat] Canceling reply');
+                  setReplyingTo(null);
+                }}
                 className="p-1 hover:bg-gray-200 rounded-full transition-colors"
               >
                 <MdClose className="h-4 w-4 text-gray-500" />
@@ -1029,7 +1182,7 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' && !e.shiftKey) {
                       e.preventDefault();
-                      handleSendMessage();
+                      handleSendMessage(e, 'textarea-enter');
                     }
                   }}
                   placeholder="Type a message..."
@@ -1057,15 +1210,15 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
             {/* Voice/Send button */}
             {(newMessage.trim() || attachedFiles.length > 0) ? (
               <button
-                onClick={handleSendMessage}
-                disabled={!isConnected || isUploading}
+                onClick={(e) => handleSendMessage(e, 'send-button')}
+                disabled={!isConnected || isUploading || isSending}
                 className={`p-2 sm:p-3 rounded-full transition-all duration-200 transform hover:scale-105 active:scale-95 ${
-                  isUploading 
+                  (isUploading || isSending)
                     ? 'bg-gray-400 text-white cursor-not-allowed' 
                     : 'bg-blue-500 hover:bg-blue-600 text-white'
                 }`}
               >
-                {isUploading ? (
+                {(isUploading || isSending) ? (
                   <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
                 ) : (
                   <FiSend className="h-5 w-5" />

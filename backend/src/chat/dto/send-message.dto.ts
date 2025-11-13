@@ -30,4 +30,8 @@ export class SendMessageDto {
   @IsOptional()
   @IsString()
   fileMimeType?: string;
+
+  @IsOptional()
+  @IsNumber()
+  replyToId?: number;
 }

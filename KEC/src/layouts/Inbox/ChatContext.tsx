@@ -16,7 +16,7 @@ export interface ChatContextType {
   currentUser: UserState | null;
   messages: Message[];
   setActiveChat: (chat: Chat) => void;
-  sendMessage: (content: string, messageType?: string, fileData?: { fileUrl: string; fileName: string; fileSize: number; fileMimeType: string }) => Promise<boolean>;
+  sendMessage: (content: string, messageType?: string, fileData?: { fileUrl: string; fileName: string; fileSize: number; fileMimeType: string }, replyToId?: number) => Promise<boolean>;
   markAsRead: (messageIds: number[]) => void;
   isTyping: boolean;
   setIsTyping: (typing: boolean) => void;
@@ -43,10 +43,69 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
   // API hooks
   const { data: currentUser } = useGetUserQuery();
   const { data: chatsData, isLoading: chatsLoading } = useGetChatsQuery({});
-  const { data: messagesData, isLoading: messagesLoading, refetch: refetchMessages } = useGetMessagesQuery(
+
+  // Debug loaded chat data and auto-select first valid chat
+  useEffect(() => {
+    if (chatsData && chatsData.chats) {
+      console.log('💬 [ChatContext] Loaded chats:', chatsData.chats.length);
+      
+      let firstValidChat: Chat | null = null;
+      chatsData.chats.forEach((chat, index) => {
+        console.log(`💬 [ChatContext] Chat ${index}:`, {
+          id: chat.id,
+          name: chat.name,
+          isGroup: chat.isGroup,
+          participantsCount: chat.participants?.length || 0,
+          participants: chat.participants?.map(p => ({
+            id: p.id,
+            userId: p.user?.id,
+            userName: `${p.user?.firstName} ${p.user?.lastName}`
+          }))
+        });
+        
+        // Show detailed participant info for the first chat
+        if (index === 0 && chat.participants) {
+          console.log('🔍 [ChatContext] Detailed participants for Chat', chat.id, ':', chat.participants);
+        }
+        
+        // Track first valid chat (has participants)
+        if (firstValidChat === null && chat.participants && chat.participants.length > 0) {
+          firstValidChat = chat;
+        }
+      });
+      
+      // Auto-select first valid chat if no active chat is selected
+      if (firstValidChat && !activeChat) {
+        console.log('🎯 [ChatContext] Auto-selecting first valid chat:', firstValidChat.id);
+        setActiveChat(firstValidChat);
+      }
+    }
+    
+    if (currentUser) {
+      console.log('👤 [ChatContext] Current user:', {
+        id: currentUser.id,
+        name: `${currentUser.firstName} ${currentUser.lastName}`,
+        email: currentUser.email
+      });
+    }
+  }, [chatsData, currentUser, activeChat]);
+  const { data: messagesData, isLoading: messagesLoading, error: messagesError, refetch: refetchMessages } = useGetMessagesQuery(
     { chatId: activeChat?.id || 0 },
     { skip: !activeChat }
   );
+
+  // Handle messages API error
+  useEffect(() => {
+    if (messagesError && activeChat) {
+      console.error('❌ [ChatContext] Failed to load messages for chat:', activeChat.id, messagesError);
+      
+      // If 403 Forbidden, clear the active chat
+      if ('status' in messagesError && messagesError.status === 403) {
+        console.warn('🔒 [ChatContext] Access denied to chat, clearing selection');
+        setActiveChat(null);
+      }
+    }
+  }, [messagesError, activeChat]);
   const [sendMessageMutation] = useSendMessageMutation();
   const [markMessagesAsReadMutation] = useMarkMessagesAsReadMutation();
 
@@ -127,19 +186,20 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
   const sendMessage = useCallback(async (
     content: string, 
     messageType: string = 'TEXT', 
-    fileData?: { fileUrl: string; fileName: string; fileSize: number; fileMimeType: string }
+    fileData?: { fileUrl: string; fileName: string; fileSize: number; fileMimeType: string },
+    replyToId?: number
   ): Promise<boolean> => {
     if (!activeChat || !currentUser) return false;
 
     try {
-      // Always use API mutation for sending messages to ensure optimistic updates work
+      console.log('🔧 [ChatContext] Sending message:', { content, messageType, replyToId, hasFileData: !!fileData });
+      
       const messagePayload: any = {
         chatId: activeChat.id,
-        content,
-        messageType: messageType as any,
+        content: content || undefined,
+        messageType: messageType as 'TEXT' | 'IMAGE' | 'FILE' | 'LINK'
       };
 
-      // Add file data if provided
       if (fileData) {
         messagePayload.fileUrl = fileData.fileUrl;
         messagePayload.fileName = fileData.fileName;
@@ -147,7 +207,15 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
         messagePayload.fileMimeType = fileData.fileMimeType;
       }
 
+      if (replyToId) {
+        messagePayload.replyToId = replyToId;
+        console.log('💬 [ChatContext] Adding reply reference:', replyToId);
+      }
+
+      console.log('📤 [ChatContext] Final message payload:', messagePayload);
+      
       await sendMessageMutation(messagePayload).unwrap();
+      console.log('✅ [ChatContext] Message sent successfully');
       return true;
     } catch (error) {
       console.error('Failed to send message:', error);
@@ -169,6 +237,35 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
   }, [activeChat, markMessagesAsReadMutation]);
 
   const handleSetActiveChat = useCallback((chat: Chat) => {
+    console.log('🎯 [ChatContext] Setting active chat:', {
+      chatId: chat.id,
+      chatName: chat.name,
+      isGroup: chat.isGroup,
+      participantsCount: chat.participants?.length || 0,
+      participants: chat.participants?.map(p => ({
+        id: p.id,
+        userId: p.user?.id,
+        userName: `${p.user?.firstName} ${p.user?.lastName}`,
+        isCurrentUser: p.user?.id === currentUser?.id
+      })),
+      currentUserId: currentUser?.id
+    });
+
+    // Validate chat has participants
+    if (!chat.participants || chat.participants.length === 0) {
+      console.warn('⚠️ [ChatContext] Trying to select chat with no participants! Chat ID:', chat.id);
+      // Try to find this chat in loaded chats to get fresh data
+      const freshChat = chatsData?.chats.find(c => c.id === chat.id);
+      if (freshChat && freshChat.participants && freshChat.participants.length > 0) {
+        console.log('✅ [ChatContext] Found fresh chat data with participants:', freshChat.participants.length);
+        setActiveChat(freshChat);
+        return;
+      } else {
+        console.error('❌ [ChatContext] Chat not found in loaded chats or still has no participants');
+        return;
+      }
+    }
+    
     setActiveChat(chat);
     
     // Mark unread messages as read

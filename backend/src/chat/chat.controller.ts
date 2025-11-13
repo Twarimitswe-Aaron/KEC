@@ -70,6 +70,11 @@ export class ChatController {
     @Param('id') id: string,
     @Body() sendMessageDto: SendMessageDto,
   ) {
+    console.log('🔧 [ChatController] Received sendMessage request:', {
+      chatId: id,
+      userId: req.user.sub,
+      messageData: sendMessageDto
+    });
     return this.chatService.sendMessage(req.user.sub, id, sendMessageDto);
   }
 

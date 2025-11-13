@@ -331,14 +331,17 @@ model Message {
   fileName     String?
   fileSize     Int?
   fileMimeType String?
+  replyToId    Int?        // ID of message being replied to
   isRead       Boolean     @default(false)
   isEdited     Boolean     @default(false)
   editedAt     DateTime?
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
   
-  chat   Chat @relation(fields: [chatId], references: [id], onDelete: Cascade)
-  sender User @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  chat      Chat      @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  sender    User      @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  replyTo   Message?  @relation("MessageReply", fields: [replyToId], references: [id])
+  replies   Message[] @relation("MessageReply")
   
   readBy MessageRead[]
   

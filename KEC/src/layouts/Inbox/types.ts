@@ -25,28 +25,7 @@ export interface Message {
   isDelivered?: boolean;
 }
 
-export interface Chat {
-  id: string;
-  participants: User[];
-  lastMessage?: Message;
-  unreadCount: number;
-  isGroup: boolean;
-  groupName?: string;
-  groupAvatar?: string;
-  messages: Message[];
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface ChatContextType {
-  chats: Chat[];
-  activeChat: Chat | null;
-  currentUser: User;
-  setActiveChat: (chat: Chat) => void;
-  sendMessage: (chatId: string, message: Omit<Message, 'id' | 'timestamp'>) => void;
-  markAsRead: (chatId: string, messageId: string) => void;
-  isTyping: boolean;
-  setIsTyping: (typing: boolean) => void;
-}
+// Removed Chat and ChatContextType interfaces to avoid conflicts with chatApi.ts
+// Use the interfaces from ../../state/api/chatApi.ts instead
 
 export type FilterType = 'All' | 'Unread' | 'Favorites' | 'Contacts' | 'Non-contacts' | 'Groups' | 'Drafts';

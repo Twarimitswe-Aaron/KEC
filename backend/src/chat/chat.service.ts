@@ -233,6 +233,13 @@ export class ChatService {
   }
 
   async sendMessage(userId: number, chatId: number | string, sendMessageDto: SendMessageDto) {
+    console.log('🔧 [ChatService] sendMessage called:', {
+      userId,
+      chatId,
+      sendMessageDto,
+      hasReplyToId: !!sendMessageDto.replyToId
+    });
+    
     // Convert chatId to number if it's a string (handle frontend temp IDs)
     const actualChatId = typeof chatId === 'string' && chatId.startsWith('temp_') 
       ? null // Handle temp IDs - we'll need to find or create the real chat
@@ -258,6 +265,12 @@ export class ChatService {
       messageType: sendMessageDto.messageType.toUpperCase() as any
     };
 
+    console.log('📝 [ChatService] Creating message with data:', {
+      chatId: actualChatId,
+      senderId: userId,
+      ...normalizedDto
+    });
+
     // Create message
     const message = await this.prisma.message.create({
       data: {
@@ -269,6 +282,12 @@ export class ChatService {
         sender: { include: { profile: true } },
         readBy: true
       }
+    });
+
+    console.log('✅ [ChatService] Message created successfully:', {
+      id: message.id,
+      replyToId: (message as any).replyToId,
+      content: message.content?.substring(0, 50) + '...'
     });
 
     // Update chat's updatedAt
@@ -321,18 +340,37 @@ export class ChatService {
   }
 
   async updateUserStatus(userId: number, isOnline: boolean) {
-    await this.prisma.userStatus.upsert({
-      where: { userId },
-      update: {
-        isOnline,
-        lastSeen: new Date()
-      },
-      create: {
-        userId,
-        isOnline,
-        lastSeen: new Date()
+    try {
+      console.log('🔧 [ChatService] Updating user status:', { userId, isOnline });
+      
+      // First, check if the user exists
+      const userExists = await this.prisma.user.findUnique({
+        where: { id: userId }
+      });
+
+      if (!userExists) {
+        console.log('❌ [ChatService] User does not exist:', userId);
+        return; // Silently return if user doesn't exist
       }
-    });
+
+      await this.prisma.userStatus.upsert({
+        where: { userId },
+        update: {
+          isOnline,
+          lastSeen: new Date()
+        },
+        create: {
+          userId,
+          isOnline,
+          lastSeen: new Date()
+        }
+      });
+      
+      console.log('✅ [ChatService] User status updated successfully:', { userId, isOnline });
+    } catch (error) {
+      console.error('❌ [ChatService] Failed to update user status:', error);
+      // Don't throw error to prevent WebSocket connection failures
+    }
 
     return { success: true };
   }
