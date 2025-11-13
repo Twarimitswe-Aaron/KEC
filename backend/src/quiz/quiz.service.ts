@@ -9,6 +9,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { UpdateQuizDto, UpdateQuizQuestionDto } from './dto/update-quiz.dto';
+import { CreateManualQuizDto, UpdateManualMarksDto } from './dto/create-quiz.dto';
 import { Express } from 'express';
 
 @Injectable()
@@ -399,6 +400,207 @@ async updateQuiz({ id, data }: { id: number; data: UpdateQuizDto }) {
         email: student.user?.email || ''
       }))
     }));
+  }
+
+  // Create manual quiz for assignments, practical tests, etc.
+  async createManualQuiz(createManualQuizDto: CreateManualQuizDto) {
+    try {
+      const { name, description, courseId, lessonId, maxPoints, type } = createManualQuizDto;
+
+      // Verify that the lesson and course exist
+      const lesson = await this.prisma.lesson.findFirst({
+        where: {
+          id: lessonId,
+          courseId: courseId
+        }
+      });
+
+      if (!lesson) {
+        throw new NotFoundException('Lesson not found or does not belong to the specified course');
+      }
+
+      // Create the quiz using transaction
+      const result = await this.prisma.$transaction(async (tx) => {
+        // Create resource
+        const resource = await tx.resource.create({
+          data: {
+            name,
+            type: 'quiz',
+            lessonId
+          }
+        });
+
+        // Create form
+        const form = await tx.form.create({
+          data: {
+            resourceId: resource.id
+          }
+        });
+
+        // Create quiz with manual type settings
+        const quiz = await tx.quiz.create({
+          data: {
+            name,
+            description: description || '',
+            settings: {
+              type: type || 'assignment',
+              totalPoints: maxPoints,
+              isManual: true,
+              allowRetakes: false,
+              showResults: true
+            },
+            formId: form.id
+          }
+        });
+
+        return { quiz, resource };
+      });
+
+      this.logger.log(`Manual quiz created: ${name} for lesson ${lessonId}`);
+      return result;
+
+    } catch (error) {
+      this.logger.error('Error creating manual quiz:', error);
+      throw new BadRequestException('Failed to create manual quiz');
+    }
+  }
+
+  // Update manual marks for students
+  async updateManualMarks(updateManualMarksDto: UpdateManualMarksDto) {
+    try {
+      const { quizId, studentMarks } = updateManualMarksDto;
+
+      // Verify quiz exists and is manual
+      const quiz = await this.prisma.quiz.findUnique({
+        where: { id: quizId },
+        include: { form: { include: { resource: { include: { lesson: true } } } } }
+      });
+
+      if (!quiz) {
+        throw new NotFoundException('Quiz not found');
+      }
+
+      const updates: any[] = [];
+
+      // Process each student mark
+      for (const studentMark of studentMarks) {
+        const { userId, mark, maxPoints } = studentMark;
+
+        // Note: QuizAttempt in current schema doesn't support userId directly
+        // We'll need to create a different approach for manual marks
+        // For now, we'll create quiz attempts without user association
+        
+        // Create quiz attempt record for manual scoring
+        const attempt = await this.prisma.quizAttempt.create({
+          data: {
+            quizId,
+            responses: JSON.stringify({ manual: true, userId, mark, maxPoints }),
+            score: mark,
+            totalPoints: maxPoints,
+            detailedResults: JSON.stringify({
+              userId,
+              isManual: true,
+              mark,
+              maxPoints,
+              percentage: maxPoints > 0 ? (mark / maxPoints) * 100 : 0
+            })
+          }
+        });
+        
+        updates.push({ userId, action: 'created', mark, attemptId: attempt.id });
+      }
+
+      this.logger.log(`Manual marks updated for quiz ${quizId}: ${updates.length} students`);
+      return {
+        message: `Successfully updated marks for ${updates.length} students`,
+        updates
+      };
+
+    } catch (error) {
+      this.logger.error('Error updating manual marks:', error);
+      throw new BadRequestException('Failed to update manual marks');
+    }
+  }
+
+  // Get quiz participants with their marks
+  async getQuizParticipants(quizId: number, courseId: number) {
+    try {
+      const quiz = await this.prisma.quiz.findUnique({
+        where: { id: quizId },
+        include: {
+          attempts: true,
+          form: {
+            include: {
+              resource: {
+                include: {
+                  lesson: {
+                    include: {
+                      course: {
+                        include: {
+                          onGoingStudents: {
+                            include: {
+                              user: true
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      });
+
+      if (!quiz) {
+        throw new NotFoundException('Quiz not found');
+      }
+
+      // Get all enrolled students for the course
+      const enrolledStudents = quiz.form?.resource?.lesson?.course?.onGoingStudents?.map(student => ({
+        id: student.user?.id || 0,
+        name: student.user ? `${student.user.firstName} ${student.user.lastName}` : 'Unknown',
+        email: student.user?.email || '',
+        mark: 0,
+        maxPoints: (quiz.settings as any)?.totalPoints || 100,
+        percentage: 0,
+        submissionDate: '',
+        hasSubmitted: false,
+        isEditable: true
+      })) || [];
+
+      // Update with actual attempt data (parse from detailedResults for manual quizzes)
+      const participantsWithMarks = enrolledStudents.map(student => {
+        const attempt = quiz.attempts.find(a => {
+          try {
+            const details = JSON.parse(a.detailedResults || '{}');
+            return details.userId === student.id;
+          } catch {
+            return false;
+          }
+        });
+        
+        if (attempt) {
+          const percentage = attempt.totalPoints > 0 ? (attempt.score / attempt.totalPoints) * 100 : 0;
+          return {
+            ...student,
+            mark: attempt.score,
+            maxPoints: attempt.totalPoints,
+            percentage,
+            submissionDate: attempt.submittedAt?.toISOString().split('T')[0] || '',
+            hasSubmitted: true
+          };
+        }
+        return student;
+      });
+
+      return participantsWithMarks;
+
+    } catch (error) {
+      this.logger.error('Error getting quiz participants:', error);
+      throw new BadRequestException('Failed to get quiz participants');
+    }
   }
 
 }

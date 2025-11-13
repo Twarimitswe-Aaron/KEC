@@ -1,8 +1,9 @@
-import React, { useContext } from "react";
+import React, { useContext, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useCoursesQuery, useGetCourseDataQuery } from "./../state/api/courseApi";
-import { BookOpen, GraduationCap } from "lucide-react";
+import { BookOpen, GraduationCap, Search } from "lucide-react";
 import { UserRoleContext } from "../UserRoleContext";
+import { SearchContext } from "../SearchContext";
 
 // Custom hook to get actual lesson count from course data
 const useCourseWithActualLessonCount = (courseId: number) => {
@@ -177,11 +178,22 @@ const EmptyDisplay: React.FC<{ onConfirmCourse: () => void }> = ({
 
 const AdminCourseManagement: React.FC = () => {
   const navigate = useNavigate();
+  const { searchQuery } = useContext(SearchContext);
   const {
     data: courses = [],
     isLoading,
     isFetching,
   } = useCoursesQuery({unconfirmed:false});
+
+  // Filter courses based on search query from context
+  const filteredCourses = useMemo(() => {
+    if (!searchQuery.trim()) return courses;
+    
+    return courses.filter(course => 
+      course.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      course.description.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [courses, searchQuery]);
 
   const handleCourseAction = (id: number) => {
     navigate(`${id}/create-modules`);
@@ -219,8 +231,23 @@ const AdminCourseManagement: React.FC = () => {
       )}
       {courses.length === 0 ? (
         <EmptyDisplay onConfirmCourse={handleConfirmCourse} />
+      ) : filteredCourses.length === 0 && searchQuery ? (
+        <div className="flex flex-col items-center justify-center py-24">
+          <div className="bg-[#e6ebf560] p-6 rounded-full mb-6 shadow-sm">
+            <Search className="text-[#004e64]" size={60} />
+          </div>
+          <h3 className="text-xl font-semibold text-[#004e64] mb-2">
+            No Courses Found
+          </h3>
+          <p className="text-gray-500 text-sm mb-6 text-center max-w-sm">
+            No courses match your search criteria "{searchQuery}". Try different keywords.
+          </p>
+        </div>
       ) : (
-        <DashboardCard courses={courses} onCourseAction={handleCourseAction} />
+        <DashboardCard 
+          courses={filteredCourses} 
+          onCourseAction={handleCourseAction}
+        />
       )}
     </div>
   );

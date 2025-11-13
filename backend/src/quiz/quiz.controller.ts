@@ -26,7 +26,7 @@ import { FileInterceptor, FilesInterceptor, FileFieldsInterceptor, AnyFilesInter
 import type { Express } from 'express';
 import type { Multer } from 'multer';
 import { QuizService } from './quiz.service';
-import { CreateQuizDto } from './dto/create-quiz.dto';
+import { CreateQuizDto, CreateManualQuizDto, UpdateManualMarksDto } from './dto/create-quiz.dto';
 import { UpdateQuizDto, UpdateQuizQuestionDto } from './dto/update-quiz.dto';
 import { CreateQuizAttemptDto } from './dto/quiz-attempt.dto';
 import { diskStorage } from 'multer';
@@ -193,6 +193,29 @@ export class QuizController {
   @Get('courses-with-data')
   async getCoursesWithLessonsAndQuizzes() {
     return this.quizService.getCoursesWithLessonsAndQuizzes();
+  }
+
+  // Create manual quiz (for assignments, practical tests, etc.)
+  @Post('manual-quiz')
+  @HttpCode(HttpStatus.CREATED)
+  async createManualQuiz(@Body() createManualQuizDto: CreateManualQuizDto) {
+    return this.quizService.createManualQuiz(createManualQuizDto);
+  }
+
+  // Update student marks for manual quizzes
+  @Put('update-manual-marks')
+  @HttpCode(HttpStatus.OK)
+  async updateManualMarks(@Body() updateManualMarksDto: UpdateManualMarksDto) {
+    return this.quizService.updateManualMarks(updateManualMarksDto);
+  }
+
+  // Get quiz participants with marks
+  @Get('quiz/:quizId/participants')
+  async getQuizParticipants(
+    @Param('quizId', ParseIntPipe) quizId: number,
+    @Query('courseId', ParseIntPipe) courseId: number,
+  ) {
+    return this.quizService.getQuizParticipants(quizId, courseId);
   }
 
 }

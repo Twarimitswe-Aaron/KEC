@@ -18,6 +18,8 @@
     "clsx": "^2.1.1",
     "express-session": "^1.18.2",
     "file-saver": "^2.0.5",
+    "jspdf": "^3.0.3",
+    "jspdf-autotable": "^5.0.2",
     "keen-slider": "^6.8.6",
     "lodash": "^4.17.21",
     "lucide-react": "^0.511.0",

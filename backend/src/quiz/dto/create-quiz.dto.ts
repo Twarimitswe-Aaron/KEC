@@ -15,6 +15,26 @@ export class CreateQuizQuestionDto {
   points?: number;
 }
 
+// DTO for manual quiz creation (assignments, practical tests, etc.)
+export class CreateManualQuizDto {
+  name: string;
+  description?: string;
+  courseId: number;
+  lessonId: number;
+  maxPoints: number;
+  type: string; // assignment, quiz, exam, lab, project
+}
+
+// DTO for updating student marks
+export class UpdateManualMarksDto {
+  quizId: number;
+  studentMarks: {
+    userId: number;
+    mark: number;
+    maxPoints: number;
+  }[];
+}
+
 export class QuizSettingsDto {
   [key: string]: any;  // Index signature for JSON serialization
   title: string;

@@ -29,7 +29,7 @@ import PaymentManagement from "./routes/PaymentManagement";
 import Certificates from "./routes/Certificates";
 import StudentsRequest from "./Components/StudentsRequest";
 import UserLessonsView from "./Components/UserLessonsView.tsx";
-import Tasks from "./Components/Tasks";
+import Tasks from "./Components/Tasks.tsx";
 
 function App() {
   return (
