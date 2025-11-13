@@ -35,13 +35,28 @@ const RightSidebar = () => {
             Photos ({sharedPhotos.length})
           </h4>
           <div className="grid grid-cols-3 gap-2">
-            {sharedPhotos.slice(0, 6).map((message) => (
-              <div key={message.id} className="aspect-square bg-gray-200 rounded-lg overflow-hidden">
+            {sharedPhotos.slice(0, 6).map((message, index) => (
+              <div key={`${message.id}-${message.createdAt}-${index}`} className="aspect-square bg-gray-200 rounded-lg overflow-hidden">
                 <img 
-                  src={message.fileUrl || '/images/default-image.png'} 
+                  src={(() => {
+                    let imageUrl = message.fileUrl || '/images/default-image.png';
+                    // Fix old messages with relative URLs
+                    if (imageUrl && imageUrl.startsWith('/uploads/')) {
+                      const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:4000';
+                      imageUrl = `${backendUrl}${imageUrl}`;
+                    }
+                    return imageUrl;
+                  })()} 
                   alt={message.fileName || 'Shared photo'}
                   className="w-full h-full object-cover hover:opacity-80 cursor-pointer"
-                  onClick={() => window.open(message.fileUrl, '_blank')}
+                  onClick={() => {
+                    let imageUrl = message.fileUrl;
+                    if (imageUrl && imageUrl.startsWith('/uploads/')) {
+                      const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:4000';
+                      imageUrl = `${backendUrl}${imageUrl}`;
+                    }
+                    window.open(imageUrl, '_blank');
+                  }}
                 />
               </div>
             ))}

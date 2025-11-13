@@ -30,6 +30,52 @@ interface MessageReaction {
 }
 
 const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
+  // Add smooth animations for messages
+  const messageAnimationStyle = `
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    @keyframes slideInRight {
+      from {
+        opacity: 0;
+        transform: translateX(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+    
+    @keyframes slideInLeft {
+      from {
+        opacity: 0;
+        transform: translateX(-20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+  `;
+  
+  // Inject styles
+  React.useEffect(() => {
+    const styleElement = document.createElement('style');
+    styleElement.textContent = messageAnimationStyle;
+    document.head.appendChild(styleElement);
+    
+    return () => {
+      document.head.removeChild(styleElement);
+    };
+  }, []);
   const { 
     activeChat, 
     messages, 
@@ -51,6 +97,12 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
   const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(null);
   const [showMainEmojiPicker, setShowMainEmojiPicker] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [attachedFiles, setAttachedFiles] = useState<Array<{
+    file: File;
+    previewUrl: string;
+    type: 'image' | 'file';
+    id: string;
+  }>>([]);
   
   // File upload mutation
   const [uploadFile] = useUploadChatFileMutation();
@@ -58,9 +110,23 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Auto-scroll to bottom when new messages arrive
+  // Smooth auto-scroll to bottom when new messages arrive
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const scrollToBottom = () => {
+      if (messagesEndRef.current) {
+        // Use requestAnimationFrame for smoother scrolling
+        requestAnimationFrame(() => {
+          messagesEndRef.current?.scrollIntoView({ 
+            behavior: 'smooth',
+            block: 'end'
+          });
+        });
+      }
+    };
+    
+    // Small delay to allow for layout completion
+    const timer = setTimeout(scrollToBottom, 50);
+    return () => clearTimeout(timer);
   }, [messages]);
 
   // WhatsApp/Instagram style time formatting
@@ -188,14 +254,88 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
 
   const handleSendMessage = async (e?: React.MouseEvent<HTMLButtonElement>) => {
     e?.preventDefault();
-    if (newMessage.trim() && activeChat) {
-      const messageContent = newMessage.trim();
-      const success = await sendMessage(messageContent);
-      if (success) {
-        setNewMessage("");
-        setReplyingTo(null);
-        setIsTyping(false);
+    if (!activeChat || isUploading) return; // Prevent multiple sends
+    
+    const messageContent = newMessage.trim();
+    const hasFiles = attachedFiles.length > 0;
+    
+    // Can't send empty message without files
+    if (!messageContent && !hasFiles) return;
+    
+    setIsUploading(true);
+    
+    try {
+      // Send text message first if there's text content
+      if (messageContent) {
+        const success = await sendMessage(messageContent, 'TEXT');
+        if (!success) {
+          throw new Error('Failed to send text message');
+        }
       }
+      
+      // Upload and send files one by one
+      for (let i = 0; i < attachedFiles.length; i++) {
+        const attachedFile = attachedFiles[i];
+        try {
+          console.log(`📤 Uploading file ${i + 1}/${attachedFiles.length}:`, attachedFile.file.name);
+          
+          // Upload file to server
+          const uploadResult = await uploadFile({
+            file: attachedFile.file,
+            chatId: activeChat.id
+          }).unwrap();
+          
+          console.log('📤 Upload result:', uploadResult);
+          
+          // Ensure the file URL has the correct backend base URL
+          let fileUrl = uploadResult.fileUrl;
+          const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:4000';
+          
+          // If the URL is relative or uses wrong port, fix it
+          if (fileUrl.startsWith('/uploads/') || fileUrl.includes('localhost:3000')) {
+            const pathPart = fileUrl.includes('/uploads/') 
+              ? fileUrl.substring(fileUrl.indexOf('/uploads/'))
+              : fileUrl;
+            fileUrl = `${backendUrl}${pathPart}`;
+          }
+          
+          console.log('📤 Corrected file URL:', fileUrl);
+          
+          // Send message with file info
+          const success = await sendMessage('', attachedFile.type === 'image' ? 'IMAGE' : 'FILE', {
+            fileUrl: fileUrl,
+            fileName: uploadResult.fileName,
+            fileSize: uploadResult.fileSize,
+            fileMimeType: uploadResult.mimeType
+          });
+          
+          if (!success) {
+            throw new Error(`Failed to send file: ${attachedFile.file.name}`);
+          }
+          
+          console.log(`✅ File sent successfully: ${attachedFile.file.name}`);
+          
+        } catch (error) {
+          console.error(`❌ Failed to upload file ${attachedFile.file.name}:`, error);
+          // Continue with other files even if one fails
+        }
+      }
+      
+      // Clear message and attachments on success with smooth transition
+      setNewMessage("");
+      setReplyingTo(null);
+      setIsTyping(false);
+      
+      // Clear files with slight delay for smooth UI transition
+      setTimeout(() => {
+        clearAttachedFiles();
+      }, 200);
+      
+    } catch (error) {
+      console.error('Failed to send message:', error);
+      // You might want to show a toast notification here
+    } finally {
+      setIsUploading(false);
     }
   };
   
@@ -227,46 +367,57 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
     setSelectedMessage(null);
   }, [currentUser]);
   
-  // Handle file upload
-  const handleFileUpload = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
+  // Handle file selection (preview, don't upload yet)
+  const handleFileUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
-    if (!files || files.length === 0 || !activeChat) return;
+    if (!files || files.length === 0) return;
     
-    setIsUploading(true);
+    const newFiles = Array.from(files).map(file => {
+      const previewUrl = file.type.startsWith('image/') 
+        ? URL.createObjectURL(file)
+        : '';
+      
+      return {
+        file,
+        previewUrl,
+        type: file.type.startsWith('image/') ? 'image' as const : 'file' as const,
+        id: `${Date.now()}-${Math.random()}`
+      };
+    });
     
-    try {
-      for (const file of Array.from(files)) {
-        // Upload file first
-        const uploadResult = await uploadFile({
-          file,
-          chatId: activeChat.id
-        }).unwrap();
-        
-        // Determine message type based on file type
-        let messageType: 'IMAGE' | 'FILE' = 'FILE';
-        if (file.type.startsWith('image/')) {
-          messageType = 'IMAGE';
-        }
-        
-        // Send message with file info
-        await sendMessage('', messageType, {
-          fileUrl: uploadResult.fileUrl,
-          fileName: uploadResult.fileName,
-          fileSize: uploadResult.fileSize,
-          fileMimeType: uploadResult.mimeType
-        });
-      }
-    } catch (error) {
-      console.error('File upload failed:', error);
-      // You might want to show a toast notification here
-    } finally {
-      setIsUploading(false);
-      // Clear the file input
-      if (event.target) {
-        event.target.value = '';
-      }
+    setAttachedFiles(prev => [...prev, ...newFiles]);
+    
+    // Clear the file input
+    if (event.target) {
+      event.target.value = '';
     }
-  }, [activeChat, uploadFile, sendMessage]);
+  }, []);
+  
+  // Remove attached file
+  const removeAttachedFile = useCallback((fileId: string) => {
+    setAttachedFiles(prev => {
+      const updated = prev.filter(f => f.id !== fileId);
+      // Clean up blob URLs to prevent memory leaks
+      const fileToRemove = prev.find(f => f.id === fileId);
+      if (fileToRemove?.previewUrl) {
+        URL.revokeObjectURL(fileToRemove.previewUrl);
+      }
+      return updated;
+    });
+  }, []);
+  
+  // Clear all attached files
+  const clearAttachedFiles = useCallback(() => {
+    // Clean up blob URLs
+    setAttachedFiles(prev => {
+      prev.forEach(f => {
+        if (f.previewUrl) {
+          URL.revokeObjectURL(f.previewUrl);
+        }
+      });
+      return [];
+    });
+  }, []);
   
   // Handle long press for message options
   const handleMouseDown = useCallback((messageId: number) => {
@@ -365,7 +516,7 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
   }
 
   return (
-    <div className="flex w-full flex-col h-full">
+    <div className="flex w-full flex-col h-full overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between p-4 bg-white text-black border-b">
         <div className="flex items-center gap-3">
@@ -411,7 +562,7 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
       </div>
 
       {/* Messages */}
-      <div className="flex-1 p-4 overflow-y-auto bg-white space-y-4">
+      <div className="flex-1 pl-2 sm:pl-4 pr-0 py-2 overflow-y-auto scroll-hide bg-white space-y-2 sm:space-y-4" style={{ scrollBehavior: 'smooth' }}>
         {isLoading ? (
           <div className="flex justify-center items-center h-full">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -442,25 +593,33 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
                   const showAvatar = !isCurrentUser && !isGrouped;
                   
                   return (
-                    <div key={message.id} className="relative">
+                    <div 
+                      key={`${message.id}-${message.createdAt}-${index}`} 
+                      className="relative"
+                      style={{
+                        animation: isCurrentUser 
+                          ? 'slideInRight 0.3s ease-out forwards' 
+                          : 'slideInLeft 0.3s ease-out forwards'
+                      }}
+                    >
                       {/* Message container */}
                       <div
-                        className={`flex items-end gap-2 mb-1 ${
-                          isCurrentUser ? "justify-end" : "justify-start"
-                        } ${isUnread ? 'bg-blue-50/30 -mx-4 px-4 py-2 rounded-lg' : ''} ${
-                          isGrouped ? 'mb-0.5' : 'mb-2'
+                        className={`flex items-start gap-1 sm:gap-2 ${
+                          isCurrentUser ? "justify-end pr-0 -mr-1" : "justify-start pl-0"
+                        } ${isUnread ? 'bg-blue-50/30 -mx-2 sm:-mx-4 px-2 sm:px-4 py-2 rounded-lg' : ''} ${
+                          isGrouped ? 'mb-0.5' : 'mb-3'
                         }`}
                         onMouseDown={() => handleMouseDown(message.id)}
                         onMouseUp={handleMouseUp}
                         onMouseLeave={handleMouseUp}
                       >
                         {/* Avatar space */}
-                        <div className={`w-8 ${!isCurrentUser ? 'block' : 'hidden'}`}>
+                        <div className={`w-6 sm:w-8 ${!isCurrentUser ? 'block' : 'hidden'}`}>
                           {showAvatar && (
                             <div className="relative">
                               <img
                                 src={message.sender?.profile?.avatar || '/images/chat.png'}
-                                className="h-8 w-8 rounded-full object-cover"
+                                className="h-6 w-6 sm:h-8 sm:w-8 rounded-full object-cover"
                                 alt={`${message.sender?.firstName} Avatar`}
                               />
                               {isUnread && (
@@ -471,7 +630,11 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
                         </div>
 
                         {/* Message content */}
-                        <div className={`max-w-[75%] relative group`}>
+                        <div className={`relative group ${
+                          isCurrentUser 
+                            ? 'max-w-[85%] sm:max-w-[75%] md:max-w-[320px] lg:max-w-[400px]'
+                            : 'w-full max-w-[85%] sm:max-w-[75%] md:max-w-[320px] lg:max-w-[400px]'
+                        }`}>
                           {/* Reply indicator */}
                           {message.replyToId && (
                             <div className={`mb-2 p-2 border-l-4 rounded-r-lg text-xs ${
@@ -491,7 +654,7 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
 
                           {/* Main message bubble */}
                           <div
-                            className={`inline-block px-4 py-2 rounded-2xl relative ${
+                            className={`${message.messageType === "TEXT" ? "inline-block" : "block w-full"} px-2 sm:px-4 py-2 rounded-2xl relative ${
                               isCurrentUser
                                 ? "bg-blue-500 text-white rounded-br-md"
                                 : isUnread 
@@ -503,27 +666,80 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
                           >
                             {/* Message content */}
                             {message.messageType === "TEXT" && (
-                              <p className="whitespace-pre-wrap text-sm leading-relaxed">{message.content}</p>
+                              <p className="whitespace-pre-wrap text-xs sm:text-sm leading-relaxed break-words">{message.content}</p>
                             )}
                             {message.messageType === "IMAGE" && (
-                              <div className="relative">
+                              <div className="w-full">
                                 <img
-                                  src={message.fileUrl}
+                                  src={(() => {
+                                    let imageUrl = message.fileUrl;
+                                    // Fix old messages with relative URLs
+                                    if (imageUrl && imageUrl.startsWith('/uploads/')) {
+                                      const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:4000';
+                                      imageUrl = `${backendUrl}${imageUrl}`;
+                                    }
+                                    return imageUrl;
+                                  })()}
                                   alt="Shared image"
-                                  className="max-w-[280px] max-h-[300px] rounded-lg object-cover cursor-pointer hover:opacity-95"
-                                  onClick={() => window.open(message.fileUrl, '_blank')}
+                                  className="w-full max-w-[280px] sm:max-w-[350px] h-[200px] sm:h-[250px] rounded-lg object-cover cursor-pointer hover:opacity-95 transition-opacity duration-200 bg-gray-200"
+                                  onClick={() => {
+                                    let imageUrl = message.fileUrl;
+                                    if (imageUrl && imageUrl.startsWith('/uploads/')) {
+                                      const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:4000';
+                                      imageUrl = `${backendUrl}${imageUrl}`;
+                                    }
+                                    window.open(imageUrl, '_blank');
+                                  }}
+                                  onError={(e) => {
+                                    console.error('❌ Image failed to load:', message.fileUrl);
+                                    // Show fallback content on error
+                                    e.currentTarget.style.display = 'none';
+                                    const fallback = document.createElement('div');
+                                    fallback.className = 'w-full max-w-[280px] sm:max-w-[350px] h-[200px] sm:h-[250px] bg-gray-200 rounded-lg flex items-center justify-center';
+                                    fallback.innerHTML = '<span class="text-gray-500 text-sm">Failed to load image</span>';
+                                    e.currentTarget.parentElement?.appendChild(fallback);
+                                  }}
+                                  onLoad={(e) => {
+                                    console.log('✅ Image loaded successfully:', message.fileUrl);
+                                  }}
                                 />
                               </div>
                             )}
                             {message.messageType === "FILE" && (
-                              <div className="flex items-center gap-3 p-2 min-w-[200px]">
-                                <div className="p-2 bg-gray-100 rounded-full">
-                                  <GoPaperclip className="h-5 w-5 text-gray-600" />
+                              <div 
+                                className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 min-w-[200px] max-w-[280px] sm:max-w-[350px] w-full cursor-pointer hover:bg-opacity-80 transition-all duration-200 rounded-lg border border-gray-200/50"
+                                onClick={() => {
+                                  if (message.fileUrl) {
+                                    let fileUrl = message.fileUrl;
+                                    if (fileUrl.startsWith('/uploads/')) {
+                                      const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:4000';
+                                      fileUrl = `${backendUrl}${fileUrl}`;
+                                    }
+                                    window.open(fileUrl, '_blank');
+                                  }
+                                }}
+                              >
+                                <div className={`p-3 rounded-full flex-shrink-0 ${
+                                  isCurrentUser ? 'bg-white/20' : 'bg-blue-50'
+                                }`}>
+                                  <GoPaperclip className={`h-5 w-5 ${
+                                    isCurrentUser ? 'text-white' : 'text-blue-600'
+                                  }`} />
                                 </div>
-                                <div className="flex-1">
-                                  <div className="font-medium text-sm truncate">{message.fileName}</div>
-                                  <div className="text-xs text-gray-500">
-                                    {message.fileSize ? `${(message.fileSize / 1024 / 1024).toFixed(1)} MB` : 'File'}
+                                <div className="flex-1 min-w-0 overflow-hidden">
+                                  <div className={`font-medium text-sm truncate ${
+                                    isCurrentUser ? 'text-white' : 'text-gray-900'
+                                  }`}>
+                                    {message.fileName || 'Unknown file'}
+                                  </div>
+                                  <div className={`text-xs flex items-center gap-2 ${
+                                    isCurrentUser ? 'text-white/70' : 'text-gray-500'
+                                  }`}>
+                                    <span>
+                                      {message.fileSize ? `${(message.fileSize / (1024 * 1024)).toFixed(1)} MB` : 'File'}
+                                    </span>
+                                    <span>•</span>
+                                    <span className="text-xs opacity-75">Click to download</span>
                                   </div>
                                 </div>
                               </div>
@@ -712,8 +928,67 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
           </div>
         )}
 
-        <div className="p-4">
-          <div className="flex items-end gap-3">
+        <div className="p-2 sm:p-4">
+          {/* File Preview Area */}
+          {attachedFiles.length > 0 && (
+            <div className="mb-4 p-3 bg-gray-50 rounded-lg border border-gray-200 transition-all duration-300 ease-in-out">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-sm font-medium text-gray-700">
+                  {attachedFiles.length} file{attachedFiles.length > 1 ? 's' : ''} attached
+                </span>
+                <button
+                  onClick={clearAttachedFiles}
+                  className="text-xs text-red-600 hover:text-red-800 font-medium"
+                >
+                  Clear all
+                </button>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                {attachedFiles.map((attachedFile) => (
+                  <div key={attachedFile.id} className="relative group">
+                    <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                      {attachedFile.type === 'image' ? (
+                        <div className="aspect-square">
+                          <img
+                            src={attachedFile.previewUrl}
+                            alt={attachedFile.file.name}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      ) : (
+                        <div className="aspect-square flex flex-col items-center justify-center p-3 bg-gray-50">
+                          <GoPaperclip className="h-8 w-8 text-gray-400 mb-2" />
+                          <span className="text-xs text-gray-600 text-center truncate w-full">
+                            {attachedFile.file.name}
+                          </span>
+                        </div>
+                      )}
+                      <div className="p-2 bg-white border-t border-gray-100">
+                        <div className="text-xs text-gray-600 truncate">
+                          {attachedFile.file.name}
+                        </div>
+                        <div className="text-xs text-gray-400">
+                          {(attachedFile.file.size / 1024 / 1024).toFixed(1)} MB
+                          {isUploading && (
+                            <div className="text-blue-500 animate-pulse">Sending...</div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    {/* Remove button */}
+                    <button
+                      onClick={() => removeAttachedFile(attachedFile.id)}
+                      className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center text-xs hover:bg-red-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <MdClose className="h-4 w-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          
+          <div className="flex items-end gap-2 sm:gap-3">
             {/* File input */}
             <input
               ref={fileInputRef}
@@ -728,7 +1003,7 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
             <button
               onClick={() => fileInputRef.current?.click()}
               disabled={isUploading}
-              className={`p-3 rounded-full transition-all duration-200 ${
+              className={`p-2 sm:p-3 rounded-full transition-all duration-200 ${
                 isUploading 
                   ? 'text-gray-400 bg-gray-100 cursor-not-allowed' 
                   : 'text-gray-500 hover:text-blue-600 hover:bg-blue-50'
@@ -760,7 +1035,7 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
                   placeholder="Type a message..."
                   disabled={!isConnected}
                   rows={1}
-                  className="flex-1 px-4 py-3 bg-transparent border-0 focus:outline-none focus:ring-0 resize-none max-h-32 disabled:bg-gray-50"
+                  className="flex-1 px-3 sm:px-4 py-2 sm:py-3 bg-transparent border-0 focus:outline-none focus:ring-0 resize-none max-h-32 disabled:bg-gray-50 text-sm sm:text-base"
                   style={{ 
                     minHeight: '48px',
                     height: 'auto'
@@ -770,7 +1045,7 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
                 {/* Emoji button */}
                 <button 
                   onClick={() => setShowMainEmojiPicker(!showMainEmojiPicker)}
-                  className={`p-3 transition-colors ${
+                  className={`p-2 sm:p-3 transition-colors ${
                     showMainEmojiPicker ? 'text-blue-600 bg-blue-50' : 'text-gray-500 hover:text-blue-600'
                   }`}
                 >
@@ -780,20 +1055,28 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
             </div>
 
             {/* Voice/Send button */}
-            {newMessage.trim() ? (
+            {(newMessage.trim() || attachedFiles.length > 0) ? (
               <button
                 onClick={handleSendMessage}
-                disabled={!isConnected}
-                className="bg-blue-500 hover:bg-blue-600 disabled:bg-gray-400 text-white p-3 rounded-full transition-all duration-200 transform hover:scale-105 active:scale-95"
+                disabled={!isConnected || isUploading}
+                className={`p-2 sm:p-3 rounded-full transition-all duration-200 transform hover:scale-105 active:scale-95 ${
+                  isUploading 
+                    ? 'bg-gray-400 text-white cursor-not-allowed' 
+                    : 'bg-blue-500 hover:bg-blue-600 text-white'
+                }`}
               >
-                <FiSend className="h-5 w-5" />
+                {isUploading ? (
+                  <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
+                ) : (
+                  <FiSend className="h-5 w-5" />
+                )}
               </button>
             ) : (
               <button
                 onMouseDown={() => setIsRecordingVoice(true)}
                 onMouseUp={() => setIsRecordingVoice(false)}
                 onMouseLeave={() => setIsRecordingVoice(false)}
-                className={`p-3 rounded-full transition-all duration-200 transform ${
+                className={`p-2 sm:p-3 rounded-full transition-all duration-200 transform ${
                   isRecordingVoice 
                     ? 'bg-red-500 text-white scale-105' 
                     : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
@@ -848,7 +1131,7 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
           {/* Upload status */}
           {isUploading && (
             <div className="mt-2 text-center text-xs text-blue-500">
-              📎 Uploading file(s)...
+              📎 Sending message and files...
             </div>
           )}
         </div>
