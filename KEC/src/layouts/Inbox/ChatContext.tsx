@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback, useRef } from 'react';
 import { 
   useGetChatsQuery, 
   useGetMessagesQuery, 
@@ -39,6 +39,7 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
   const [isConnected, setIsConnected] = useState(false);
   const [typingUsers, setTypingUsers] = useState<number[]>([]);
   const [onlineUsers, setOnlineUsers] = useState<number[]>([]);
+  const refetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // API hooks
   const { data: currentUser } = useGetUserQuery();
@@ -111,7 +112,7 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
   const [sendMessageMutation] = useSendMessageMutation();
   const [markMessagesAsReadMutation] = useMarkMessagesAsReadMutation();
 
-  // Message handler with current activeChat reference
+  // Message handler with current activeChat reference and debounced refetch
   const handleNewMessage = useCallback((message: any) => {
     console.log('🔥 New message received:', JSON.stringify(message, null, 2));
     console.log('📝 Message content:', message?.content);
@@ -119,13 +120,26 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
     console.log('🎯 Current activeChat:', activeChat?.id);
     console.log('👤 Message sender:', message?.senderId, 'Current user:', currentUser?.id);
     
-    // Refetch messages for the current chat (both own and other users)
+    // Only refetch for messages from OTHER users to avoid conflicts with optimistic updates
     if (activeChat && String(message.chatId) === String(activeChat.id)) {
-      console.log('📥 Message received - refreshing...');
-      // Small delay to prevent race conditions with optimistic updates
-      setTimeout(() => {
+      // Skip refetch for own messages (RTK Query optimistic updates handle this)
+      if (message.senderId === currentUser?.id) {
+        console.log('� [ChatContext] Skipping refetch for own message (handled by optimistic update)');
+        return; 
+      }
+      
+      console.log('� Message from other user - scheduling refresh...');
+      
+      // Clear existing timeout to debounce multiple rapid messages
+      if (refetchTimeoutRef.current) {
+        clearTimeout(refetchTimeoutRef.current);
+      }
+      
+      // Debounced refetch to prevent multiple rapid calls
+      refetchTimeoutRef.current = setTimeout(() => {
+        console.log('🔄 Refetching messages after debounce (other user message)...');
         refetchMessages();
-      }, 100);
+      }, 150); // Slightly longer delay with debouncing
     } else {
       console.log('❌ Message not for current chat or no active chat');
     }
@@ -134,11 +148,22 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
   // WebSocket connection
   useEffect(() => {
     if (currentUser) {
+      console.log('🔗 [ChatContext] Attempting WebSocket connection for user:', currentUser.id);
       websocketService.connect().then(() => {
+        console.log('✅ [ChatContext] WebSocket connected successfully');
         setIsConnected(true);
         
         // Set up event listeners
         websocketService.on('message:new', handleNewMessage);
+        
+        // Listen for connection confirmation events
+        websocketService.on('chat:joined', (data) => {
+          console.log('✅ [ChatContext] Successfully joined chat room:', data.chatId);
+        });
+        
+        websocketService.on('error', (error) => {
+          console.error('❌ [ChatContext] WebSocket error:', error);
+        });
 
         websocketService.on('typing:update', (data) => {
           setTypingUsers(prev => {
@@ -164,6 +189,10 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
       return () => {
         websocketService.disconnect();
         setIsConnected(false);
+        // Clear any pending refetch timeouts
+        if (refetchTimeoutRef.current) {
+          clearTimeout(refetchTimeoutRef.current);
+        }
       };
     }
   }, [currentUser, handleNewMessage]);

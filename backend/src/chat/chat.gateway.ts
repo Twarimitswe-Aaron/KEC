@@ -53,12 +53,16 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   async handleConnection(client: AuthenticatedSocket) {
     try {
+      this.logger.log(`🔗 [WebSocket] New connection attempt from ${client.id}`);
+      
       // Try to get token from auth header first (JWT)
       let token = client.handshake.auth?.token || client.handshake.headers?.authorization?.replace('Bearer ', '');
       
       // If no JWT token, try to extract from cookies
       if (!token) {
         const cookies = client.handshake.headers.cookie;
+        this.logger.log(`🍪 [WebSocket] Checking cookies:`, cookies ? 'Present' : 'None');
+        
         if (cookies) {
           // Parse cookies to extract auth token
           const cookieObj = cookies.split(';').reduce((acc, cookie) => {
@@ -67,63 +71,109 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
             return acc;
           }, {} as Record<string, string>);
           
+          this.logger.log(`🔍 [WebSocket] Available cookies:`, Object.keys(cookieObj));
+          
           // Look for the specific auth cookie name used by your app
-          token = cookieObj['jwt_access'];
+          token = cookieObj['jwt_access'] || cookieObj['access_token'] || cookieObj['auth_token'];
+          
+          if (!token) {
+            // Try common cookie names
+            for (const [key, value] of Object.entries(cookieObj)) {
+              if (key.toLowerCase().includes('jwt') || key.toLowerCase().includes('auth') || key.toLowerCase().includes('token')) {
+                this.logger.log(`🔑 [WebSocket] Found potential auth cookie: ${key}`);
+                token = value;
+                break;
+              }
+            }
+          }
         }
       }
       
       if (!token) {
-        this.logger.warn('Client attempted to connect without token');
+        this.logger.error(`❌ [WebSocket] Client ${client.id} attempted to connect without valid auth token`);
+        this.logger.log(`🔍 [WebSocket] Headers:`, {
+          auth: client.handshake.auth,
+          authorization: client.handshake.headers?.authorization,
+          cookie: client.handshake.headers?.cookie ? 'Present' : 'None'
+        });
         client.disconnect();
         return;
       }
 
+      this.logger.log(`🔓 [WebSocket] Verifying token for client ${client.id}`);
       const payload = this.jwtService.verify(token);
       client.userId = payload.sub;
       
       // Ensure userId exists before proceeding
       if (!client.userId) {
-        this.logger.warn('Invalid token payload - no userId');
+        this.logger.error(`❌ [WebSocket] Invalid token payload - no userId for client ${client.id}`);
+        this.logger.log(`🔍 [WebSocket] Token payload:`, payload);
         client.disconnect();
         return;
       }
       
+      this.logger.log(`✅ [WebSocket] User ${client.userId} authenticated successfully`);
+      
       // Track user connection
       this.connectedUsers.set(client.userId, client.id);
       this.userSockets.set(client.id, client.userId);
+      this.logger.log(`🗺 [WebSocket] Tracking: ${this.connectedUsers.size} users connected`);
 
       // Update user online status
+      this.logger.log(`🟢 [WebSocket] Setting user ${client.userId} status to online`);
       await this.chatService.updateUserStatus(client.userId, true);
 
       // Auto-join user to all their existing chat rooms
+      this.logger.log(`📨 [WebSocket] Auto-joining user ${client.userId} to chat rooms`);
       await this.autoJoinUserChats(client);
 
       // Broadcast user online status to relevant chats
+      this.logger.log(`📡 [WebSocket] Broadcasting online status for user ${client.userId}`);
       this.broadcastUserOnlineStatus(client.userId, true);
 
-      this.logger.log(`User ${client.userId} connected with socket ${client.id}`);
+      this.logger.log(`✅ [WebSocket] User ${client.userId} successfully connected with socket ${client.id}`);
     } catch (error) {
-      this.logger.error('Authentication failed', error);
+      this.logger.error(`❌ [WebSocket] Authentication failed for client ${client.id}:`, error);
+      if (error instanceof Error) {
+        this.logger.error(`🔍 [WebSocket] Error details: ${error.message}`);
+      }
       client.disconnect();
     }
   }
 
   private async autoJoinUserChats(client: AuthenticatedSocket) {
     try {
-      if (!client.userId) return;
+      if (!client.userId) {
+        this.logger.warn(`⚠️ [WebSocket] Cannot auto-join: no userId for client ${client.id}`);
+        return;
+      }
       
+      this.logger.log(`🔍 [WebSocket] Fetching chats for user ${client.userId}`);
       // Get all chats for this user
       const userChats = await this.chatService.getUserChats(client.userId, 1, 100); // Get up to 100 chats
       
+      this.logger.log(`📋 [WebSocket] Found ${userChats.chats.length} chats for user ${client.userId}`);
+      
       // Join all chat rooms
+      const joinedRooms: string[] = [];
       userChats.chats.forEach(chat => {
         const roomName = `chat:${chat.id}`;
         client.join(roomName);
+        joinedRooms.push(roomName);
+        this.logger.log(`✅ [WebSocket] User ${client.userId} joined room: ${roomName}`);
       });
 
-      this.logger.log(`User ${client.userId} auto-joined ${userChats.chats.length} chat rooms`);
+      this.logger.log(`🎯 [WebSocket] User ${client.userId} auto-joined ${userChats.chats.length} chat rooms: [${joinedRooms.join(', ')}]`);
+      
+      // Verify room membership
+      const rooms = Array.from(client.rooms);
+      this.logger.log(`🏠 [WebSocket] Client ${client.id} is now in rooms: [${rooms.join(', ')}]`);
+      
     } catch (error) {
-      this.logger.error(`Failed to auto-join chats for user ${client.userId}`, error);
+      this.logger.error(`❌ [WebSocket] Failed to auto-join chats for user ${client.userId}:`, error);
+      if (error instanceof Error) {
+        this.logger.error(`🔍 [WebSocket] Auto-join error details: ${error.message}`);
+      }
     }
   }
 
@@ -144,12 +194,43 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @SubscribeMessage('chat:join')
-  handleJoinChat(@ConnectedSocket() client: AuthenticatedSocket, @MessageBody() data: JoinChatData) {
-    if (!client.userId) return;
+  async handleJoinChat(@ConnectedSocket() client: AuthenticatedSocket, @MessageBody() data: JoinChatData) {
+    if (!client.userId) {
+      this.logger.warn(`⚠️ [WebSocket] Join attempt without userId from client ${client.id}`);
+      return;
+    }
 
-    const roomName = `chat:${data.chatId}`;
-    client.join(roomName);
-    this.logger.log(`User ${client.userId} joined chat ${data.chatId}`);
+    try {
+      this.logger.log(`📨 [WebSocket] User ${client.userId} requesting to join chat ${data.chatId}`);
+      
+      // Verify user is a participant in this chat
+      const isParticipant = await this.chatService.getChatById(client.userId, data.chatId);
+      
+      if (!isParticipant) {
+        this.logger.warn(`🚫 [WebSocket] User ${client.userId} denied access to chat ${data.chatId} - not a participant`);
+        client.emit('error', { message: 'Access denied to chat' });
+        return;
+      }
+
+      const roomName = `chat:${data.chatId}`;
+      client.join(roomName);
+      
+      // Verify join was successful
+      const rooms = Array.from(client.rooms);
+      const joinedSuccessfully = rooms.includes(roomName);
+      
+      if (joinedSuccessfully) {
+        this.logger.log(`✅ [WebSocket] User ${client.userId} successfully joined chat room ${roomName}`);
+        client.emit('chat:joined', { chatId: data.chatId, success: true });
+      } else {
+        this.logger.error(`❌ [WebSocket] Failed to join room ${roomName} for user ${client.userId}`);
+        client.emit('error', { message: 'Failed to join chat room' });
+      }
+      
+    } catch (error) {
+      this.logger.error(`❌ [WebSocket] Error joining chat ${data.chatId} for user ${client.userId}:`, error);
+      client.emit('error', { message: 'Failed to join chat' });
+    }
   }
 
   @SubscribeMessage('chat:leave')

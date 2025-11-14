@@ -54,6 +54,12 @@ const LeftSideInbox: React.FC<LeftSideInboxProps> = ({ onCloseSidebar }) => {
   const handleUserSelect = async (user: any) => {
     if (isCreatingChat) return; // Prevent duplicate requests
     
+    console.log('🎯 [LeftSideInbox] User selected:', {
+      selectedUserId: user.id,
+      selectedUserName: `${user.firstName} ${user.lastName}`,
+      currentUserId: currentUser?.id
+    });
+    
     try {
       // Call the real backend API to create or find existing chat
       const response = await createChat({
@@ -61,19 +67,49 @@ const LeftSideInbox: React.FC<LeftSideInboxProps> = ({ onCloseSidebar }) => {
         isGroup: false
       });
       
+      console.log('📡 [LeftSideInbox] Full API response:', response);
+      
       if ('data' in response && response.data) {
         // Validate that the chat has participants before setting as active
         const chat = response.data as any;
         console.log('📤 [LeftSideInbox] Chat creation response:', {
           chatId: chat.id,
           participantsCount: chat.participants?.length || 0,
-          participants: chat.participants
+          participants: chat.participants?.map((p: any) => ({
+            id: p.id,
+            userId: p.userId,
+            userName: `${p.user?.firstName || 'Unknown'} ${p.user?.lastName || 'User'}`
+          })) || [],
+          expectedParticipants: [currentUser?.id, user.id]
         });
         
         if (chat.participants && chat.participants.length > 0) {
-          // Successfully created or found chat with valid participants
-          setActiveChat(chat);
-          onCloseSidebar();
+          // Additional validation: check if both users are actually in the participants
+          const participantUserIds = chat.participants.map((p: any) => p.userId);
+          const hasCurrentUser = participantUserIds.includes(currentUser?.id);
+          const hasSelectedUser = participantUserIds.includes(user.id);
+          
+          console.log('🔍 [LeftSideInbox] Participants validation:', {
+            participantUserIds,
+            hasCurrentUser,
+            hasSelectedUser,
+            currentUserId: currentUser?.id,
+            selectedUserId: user.id
+          });
+          
+          if (hasCurrentUser && hasSelectedUser) {
+            // Successfully created or found chat with valid participants
+            console.log('✅ [LeftSideInbox] Chat validated successfully, setting as active');
+            setActiveChat(chat);
+            onCloseSidebar();
+          } else {
+            console.error('❌ [LeftSideInbox] Chat missing required participants:', {
+              hasCurrentUser,
+              hasSelectedUser,
+              chat
+            });
+            alert('Chat created but missing participants. Please try again or refresh the page.');
+          }
         } else {
           // Chat created but has no participants - this is a backend issue
           console.error('❌ [LeftSideInbox] Chat created but has no participants:', chat);
@@ -81,14 +117,15 @@ const LeftSideInbox: React.FC<LeftSideInboxProps> = ({ onCloseSidebar }) => {
         }
       } else if ('error' in response) {
         // Handle API error
-        console.error('Failed to create chat:', response.error);
+        console.error('❌ [LeftSideInbox] API Error:', response.error);
         
-        // Show user-friendly error message
-        alert('Failed to start chat. Please try again.');
+        // Show detailed error message
+        const errorMessage = (response.error as any)?.data?.message || 'Unknown error occurred';
+        alert(`Failed to start chat: ${errorMessage}`);
       }
       
     } catch (error) {
-      console.error('Failed to start chat:', error);
+      console.error('❌ [LeftSideInbox] Exception occurred:', error);
       alert('Failed to start chat. Please check your connection and try again.');
     }
   };

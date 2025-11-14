@@ -25,14 +25,24 @@ export class ChatService {
 
     // For one-on-one chats, check if chat already exists
     if (!isGroup && allParticipantIds.length === 2) {
+      console.log('🔍 [ChatService] Looking for existing 1-on-1 chat between users:', allParticipantIds);
+      
+      // More precise query to find existing chat
       const existingChat = await this.prisma.chat.findFirst({
         where: {
           isGroup: false,
-          participants: {
-            every: {
-              userId: { in: allParticipantIds }
+          AND: [
+            {
+              participants: {
+                some: { userId: allParticipantIds[0] }
+              }
+            },
+            {
+              participants: {
+                some: { userId: allParticipantIds[1] }
+              }
             }
-          }
+          ]
         },
         include: {
           participants: {
@@ -48,10 +58,27 @@ export class ChatService {
         }
       });
 
-      if (existingChat) return existingChat;
+      if (existingChat) {
+        console.log('✅ [ChatService] Found existing chat:', {
+          id: existingChat.id,
+          participantsCount: existingChat.participants.length,
+          participants: existingChat.participants.map(p => ({ id: p.id, userId: p.userId }))
+        });
+        
+        // Validate that the existing chat has the correct participants
+        if (existingChat.participants.length !== 2) {
+          console.error('❌ [ChatService] Existing chat has wrong participant count:', existingChat.participants.length);
+        }
+        
+        return existingChat;
+      }
+      
+      console.log('🆕 [ChatService] No existing chat found, creating new one');
     }
 
     // Create new chat
+    console.log('🆕 [ChatService] Creating new chat with participants:', allParticipantIds);
+    
     const chat = await this.prisma.chat.create({
       data: {
         isGroup,
@@ -77,12 +104,41 @@ export class ChatService {
         }
       }
     });
+    
+    console.log('✅ [ChatService] Created new chat:', {
+      id: chat.id,
+      participantsCount: chat.participants.length,
+      participants: chat.participants.map(p => ({ id: p.id, userId: p.userId }))
+    });
+    
+    // Validate that participants were created successfully
+    if (chat.participants.length !== allParticipantIds.length) {
+      console.error('❌ [ChatService] CRITICAL: Chat created but participants count mismatch!', {
+        expected: allParticipantIds.length,
+        actual: chat.participants.length,
+        expectedParticipants: allParticipantIds,
+        actualParticipants: chat.participants.map(p => p.userId)
+      });
+    }
 
+    // Final validation before returning
+    if (!chat.participants || chat.participants.length === 0) {
+      console.error('❌ [ChatService] CRITICAL ERROR: Chat has no participants!', chat);
+      throw new Error('Chat creation failed: No participants added');
+    }
+    
     // Add unreadCount for consistency with frontend interface
-    return {
+    const finalChat = {
       ...chat,
       unreadCount: 0 // New chat has no unread messages
     };
+    
+    console.log('✅ [ChatService] Returning chat with participants:', {
+      id: finalChat.id,
+      participantsCount: finalChat.participants.length
+    });
+    
+    return finalChat;
   }
 
   async getUserChats(userId: number, page = 1, limit = 20, search?: string) {

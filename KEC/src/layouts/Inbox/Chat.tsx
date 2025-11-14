@@ -98,6 +98,7 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
   const sendingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastSendTime = useRef<number>(0); // Track last send time
   const MIN_SEND_INTERVAL = 1000; // Minimum 1 second between sends
+  const sendingRef = useRef<boolean>(false); // Immediate sending flag to prevent race conditions
   const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(null);
   const [showMainEmojiPicker, setShowMainEmojiPicker] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -268,12 +269,19 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
     console.log('🎯 [Chat] handleSendMessage called from:', source, { 
       isUploading, 
       isSending, 
+      sendingRef: sendingRef.current,
       timeSinceLastSend,
       timestamp: currentTime 
     });
     
-    if (!activeChat || isUploading || isSending) {
-      console.log('❌ [Chat] Send blocked:', { activeChat: !!activeChat, isUploading, isSending });
+    // Atomic check and set to prevent race conditions
+    if (!activeChat || isUploading || isSending || sendingRef.current) {
+      console.log('❌ [Chat] Send blocked:', { 
+        activeChat: !!activeChat, 
+        isUploading, 
+        isSending, 
+        sendingRef: sendingRef.current 
+      });
       return; // Prevent multiple sends
     }
     
@@ -282,6 +290,8 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
       return; // Prevent rapid sending
     }
     
+    // Immediately set sending flag to prevent any other calls
+    sendingRef.current = true;
     lastSendTime.current = currentTime;
     
     const messageContent = newMessage.trim();
@@ -296,8 +306,12 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
     });
     
     // Can't send empty message without files
-    if (!messageContent && !hasFiles) return;
+    if (!messageContent && !hasFiles) {
+      sendingRef.current = false; // Reset flag if nothing to send
+      return;
+    }
     
+    // Set states after atomic flag is set
     setIsUploading(true);
     setIsSending(true);
     
@@ -374,6 +388,7 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
       setReplyingTo(null);
       setIsTyping(false);
       setIsSending(false);
+      sendingRef.current = false; // Reset atomic flag
       
       // Clear files with slight delay for smooth UI transition
       setTimeout(() => {
@@ -383,12 +398,14 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
     } catch (error) {
       console.error('Failed to send message:', error);
       setIsSending(false);
+      sendingRef.current = false; // Reset atomic flag on error
     } finally {
       setIsUploading(false);
       
       // Reset sending state after a short delay to prevent rapid clicks
       sendingTimeoutRef.current = setTimeout(() => {
         setIsSending(false);
+        sendingRef.current = false; // Ensure atomic flag is reset
       }, 500);
     }
   };

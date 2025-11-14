@@ -181,9 +181,24 @@ export const chatApi = apiCore.apiSlice.injectEndpoints({
       }),
       // Optimistically update the UI
       async onQueryStarted({ chatId, ...message }, { dispatch, queryFulfilled }) {
-        const tempId = `temp-${Date.now()}`; // Consistent temp ID
+        const tempId = `temp-${Date.now()}-${Math.random()}`; // More unique temp ID
+        console.log('🔄 [RTK Query] Starting optimistic update with tempId:', tempId);
+        
         const patchResult = dispatch(
           chatApi.util.updateQueryData('getMessages', { chatId }, (draft) => {
+            // Check if we already have this message (prevent duplicates from rapid clicks)
+            const isDuplicate = draft.messages.some(msg => 
+              msg.content === message.content && 
+              msg.messageType === message.messageType &&
+              String(msg.id).startsWith('temp-') &&
+              Date.now() - new Date(msg.createdAt).getTime() < 1000 // Within 1 second
+            );
+            
+            if (isDuplicate) {
+              console.log('⚠️ [RTK Query] Preventing duplicate optimistic update');
+              return;
+            }
+            
             const optimisticMessage = {
               id: tempId, // Use string temp ID
               senderId: -1, // Will be updated
@@ -200,22 +215,35 @@ export const chatApi = apiCore.apiSlice.injectEndpoints({
               ...message,
             } as any; // Use any to allow string ID
             
-            draft.messages.push(optimisticMessage); // Add to end, not beginning
+            draft.messages.push(optimisticMessage); // Add to end
+            console.log('✅ [RTK Query] Added optimistic message:', tempId);
           })
         );
 
         try {
           const { data: newMessage } = await queryFulfilled;
+          console.log('📨 [RTK Query] Received real message:', newMessage.id, 'replacing tempId:', tempId);
           
           // Replace optimistic message with real one
           dispatch(
             chatApi.util.updateQueryData('getMessages', { chatId }, (draft) => {
-              const index = draft.messages.findIndex(msg => String(msg.id) === tempId);
-              if (index !== -1) {
-                draft.messages[index] = newMessage;
+              const tempIndex = draft.messages.findIndex(msg => String(msg.id) === tempId);
+              
+              if (tempIndex !== -1) {
+                // Replace the optimistic message
+                draft.messages[tempIndex] = newMessage;
+                console.log('✅ [RTK Query] Replaced optimistic message with real one');
               } else {
-                // If not found, just add the message
-                draft.messages.push(newMessage);
+                // Check if the real message already exists (prevent duplicates from WebSocket)
+                const realMessageExists = draft.messages.some(msg => msg.id === newMessage.id);
+                
+                if (!realMessageExists) {
+                  // Only add if it doesn't already exist
+                  draft.messages.push(newMessage);
+                  console.log('✅ [RTK Query] Added real message (optimistic not found)');
+                } else {
+                  console.log('⚠️ [RTK Query] Real message already exists, skipping add');
+                }
               }
             })
           );
@@ -230,7 +258,8 @@ export const chatApi = apiCore.apiSlice.injectEndpoints({
               }
             })
           );
-        } catch {
+        } catch (error) {
+          console.error('❌ [RTK Query] Message send failed, undoing optimistic update:', error);
           patchResult.undo();
         }
       },

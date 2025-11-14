@@ -30,7 +30,25 @@ export class ChatController {
 
   @Post()
   async createChat(@Request() req, @Body() createChatDto: CreateChatDto) {
-    return this.chatService.createChat(req.user.sub, createChatDto);
+    console.log('📨 [ChatController] Create chat request:', {
+      userId: req.user.sub,
+      participantIds: createChatDto.participantIds,
+      isGroup: createChatDto.isGroup
+    });
+    
+    try {
+      const result = await this.chatService.createChat(req.user.sub, createChatDto);
+      
+      console.log('✅ [ChatController] Chat created successfully:', {
+        chatId: result.id,
+        participantsCount: result.participants?.length || 0
+      });
+      
+      return result;
+    } catch (error) {
+      console.error('❌ [ChatController] Chat creation failed:', error);
+      throw error;
+    }
   }
 
   @Get()

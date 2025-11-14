@@ -28,6 +28,7 @@ export interface WebSocketEvents {
   'typing:update': (data: TypingIndicator) => void;
   'user:online': (data: OnlineStatusUpdate) => void;
   'chat:created': (data: { chatId: number; participants: number[] }) => void;
+  'chat:joined': (data: { chatId: number }) => void;
   'connect': () => void;
   'disconnect': () => void;
   'error': (error: any) => void;
@@ -50,40 +51,58 @@ class WebSocketService {
   connect(): Promise<Socket> {
     return new Promise((resolve, reject) => {
       if (this.socket && this.connected) {
+        console.log('📋 [WebSocket] Using existing connection');
         resolve(this.socket);
         return;
       }
 
       const baseUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:4000';
+      console.log('🔗 [WebSocket] Connecting to:', baseUrl);
       
       this.socket = io(baseUrl, {
         transports: ['websocket', 'polling'],
         withCredentials: true, // This sends cookies automatically
         autoConnect: true,
+        forceNew: true, // Force new connection
+        timeout: 20000, // 20 second timeout
       });
 
       this.socket.on('connect', () => {
-        console.log('📡 WebSocket connected');
+        console.log('✅ [WebSocket] Connected successfully with ID:', this.socket?.id);
+        console.log('🌍 [WebSocket] Connected to server:', baseUrl);
         this.connected = true;
         this.reconnectAttempts = 0;
         resolve(this.socket!);
       });
 
       this.socket.on('disconnect', (reason) => {
-        console.log('📡 WebSocket disconnected:', reason);
+        console.log('❌ [WebSocket] Disconnected:', reason);
+        console.log('🔍 [WebSocket] Disconnect details:', {
+          reason,
+          socketId: this.socket?.id,
+          connected: this.connected
+        });
         this.connected = false;
         
         // Auto-reconnect logic
         if (reason === 'io server disconnect') {
-          // Server initiated disconnect, don't reconnect
+          console.log('🚫 [WebSocket] Server initiated disconnect - not reconnecting');
           return;
         }
         
         this.handleReconnect();
       });
 
-      this.socket.on('connect_error', (error) => {
-        console.error('📡 WebSocket connection error:', error);
+      this.socket.on('connect_error', (error: any) => {
+        console.error('❌ [WebSocket] Connection error:', error);
+        console.log('🔍 [WebSocket] Error details:', {
+          message: error?.message || 'Unknown error',
+          type: error?.type || 'connection_error',
+          description: error?.description || 'WebSocket connection failed',
+          context: error?.context || 'websocket_connect',
+          baseUrl,
+          withCredentials: true
+        });
         this.connected = false;
         reject(error);
         this.handleReconnect();
@@ -157,11 +176,23 @@ class WebSocketService {
 
   // Chat-specific methods
   joinChat(chatId: number) {
-    this.emit('chat:join', { chatId });
+    console.log('📨 [WebSocket] Joining chat room:', chatId);
+    const success = this.emit('chat:join', { chatId });
+    if (success) {
+      console.log('✅ [WebSocket] Successfully sent join request for chat:', chatId);
+    } else {
+      console.error('❌ [WebSocket] Failed to send join request for chat:', chatId);
+    }
   }
 
   leaveChat(chatId: number) {
-    this.emit('chat:leave', { chatId });
+    console.log('📵 [WebSocket] Leaving chat room:', chatId);
+    const success = this.emit('chat:leave', { chatId });
+    if (success) {
+      console.log('✅ [WebSocket] Successfully sent leave request for chat:', chatId);
+    } else {
+      console.error('❌ [WebSocket] Failed to send leave request for chat:', chatId);
+    }
   }
 
   sendMessage(chatId: number, content: string, messageType: string = 'text') {
