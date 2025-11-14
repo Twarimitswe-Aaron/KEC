@@ -1,5 +1,5 @@
 import React from 'react';
-import { useChat } from '../layouts/Inbox/ChatContext';
+import { useChat } from '../hooks/useChat';
 
 export const ChatConnectionStatus: React.FC = () => {
   const { isConnected } = useChat();

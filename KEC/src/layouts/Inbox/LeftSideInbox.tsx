@@ -4,7 +4,7 @@ import { BsPeopleFill } from 'react-icons/bs';
 import { IoArrowBack } from 'react-icons/io5';
 import { useGetUserQuery } from '../../state/api/authApi';
 import { useCreateChatMutation, useGetUsersQuery } from '../../state/api/chatApi';
-import { useChat } from './ChatContext';
+import { useChat } from '../../hooks/useChat';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 interface LeftSideInboxProps {

@@ -6,7 +6,17 @@ import { MarkMessagesReadDto } from './dto/mark-read.dto';
 
 @Injectable()
 export class ChatService {
-  constructor(private prisma: PrismaService) {}
+  private chatGateway: any = null;
+
+  constructor(
+    private prisma: PrismaService
+  ) {}
+
+  // Method to set the gateway reference from the gateway itself
+  setChatGateway(gateway: any) {
+    this.chatGateway = gateway;
+    console.log('✅ [ChatService] ChatGateway reference set successfully');
+  }
 
   async createChat(userId: number, createChatDto: CreateChatDto) {
     const { participantIds, isGroup = false, name, groupAvatar } = createChatDto;
@@ -351,6 +361,15 @@ export class ChatService {
       where: { id: actualChatId },
       data: { updatedAt: new Date() }
     });
+
+    // Broadcast message via WebSocket if gateway is available
+    if (this.chatGateway?.server) {
+      console.log('📡 [ChatService] Broadcasting message via WebSocket to room:', `chat:${actualChatId}`);
+      this.chatGateway.server.to(`chat:${actualChatId}`).emit('message:new', message);
+      console.log('✅ [ChatService] WebSocket broadcast completed');
+    } else {
+      console.warn('⚠️ [ChatService] ChatGateway not available for WebSocket broadcast');
+    }
 
     return message;
   }

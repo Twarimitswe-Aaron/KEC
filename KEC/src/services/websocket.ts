@@ -51,21 +51,32 @@ class WebSocketService {
 
   connect(): Promise<Socket> {
     return new Promise((resolve, reject) => {
-      if (this.socket && this.connected) {
-        console.log('📋 [WebSocket] Using existing connection');
+      if (this.socket && this.connected && this.socket.connected) {
+        console.log('📋 [WebSocket] Using existing stable connection');
         resolve(this.socket);
         return;
       }
 
+      // Clean up any existing connection first
+      if (this.socket) {
+        console.log('🧹 [WebSocket] Cleaning up existing connection');
+        this.socket.disconnect();
+        this.socket = null;
+      }
+
       const baseUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:4000';
-      console.log('🔗 [WebSocket] Connecting to:', baseUrl);
+      console.log('🔗 [WebSocket] Creating new connection to:', baseUrl);
       
       this.socket = io(baseUrl, {
         transports: ['websocket', 'polling'],
         withCredentials: true, // This sends cookies automatically
         autoConnect: true,
-        forceNew: true, // Force new connection
+        forceNew: false, // Don't force new connection if one exists
         timeout: 20000, // 20 second timeout
+        reconnection: true, // Enable auto-reconnection
+        reconnectionDelay: 1000, // Wait 1s before reconnecting
+        reconnectionAttempts: 5, // Try 5 times
+        reconnectionDelayMax: 5000, // Max 5s delay
       });
 
       this.socket.on('connect', () => {
@@ -221,7 +232,26 @@ class WebSocketService {
   }
 }
 
-// Singleton instance
-const websocketService = new WebSocketService();
+// Singleton instance with HMR persistence
+let websocketService: WebSocketService;
+
+// Preserve WebSocket connection across Hot Module Reloads
+if (import.meta.hot) {
+  if (import.meta.hot.data.websocketService) {
+    console.log('🔄 [WebSocket] Reusing existing service across HMR');
+    websocketService = import.meta.hot.data.websocketService;
+  } else {
+    console.log('🆕 [WebSocket] Creating new service instance');
+    websocketService = new WebSocketService();
+    import.meta.hot.data.websocketService = websocketService;
+  }
+  
+  import.meta.hot.dispose(() => {
+    console.log('♻️ [WebSocket] HMR dispose - preserving connection');
+    // Don't disconnect on HMR, just preserve the instance
+  });
+} else {
+  websocketService = new WebSocketService();
+}
 
 export default websocketService;

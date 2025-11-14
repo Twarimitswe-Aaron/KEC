@@ -7,8 +7,8 @@ import { GoPaperclip } from "react-icons/go";
 import { BsEmojiSmile } from "react-icons/bs";
 import { MdInfoOutline } from "react-icons/md";
 import { BsReply, BsThreeDots } from "react-icons/bs";
-import { MdClose, MdCheck, MdDoneAll, MdMic, MdMicOff } from "react-icons/md";
-import { useChat } from './ChatContext';
+import { MdClose, MdCheck, MdDoneAll, MdMic, MdMicOff, MdEdit, MdDelete } from "react-icons/md";
+import { useChat } from '../../hooks/useChat';
 import { Message, useUploadChatFileMutation } from '../../state/api/chatApi';
 
 interface ChatProps {
@@ -134,6 +134,8 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
   const [replyingTo, setReplyingTo] = useState<ReplyingToMessage | null>(null);
   const [selectedMessage, setSelectedMessage] = useState<number | null>(null);
   const [showEmojiPicker, setShowEmojiPicker] = useState<number | null>(null);
+  const [editingMessage, setEditingMessage] = useState<number | null>(null);
+  const [editingContent, setEditingContent] = useState("");
   const [isRecordingVoice, setIsRecordingVoice] = useState(false);
   const [isSending, setIsSending] = useState(false); // Additional sending state
   const sendingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -204,10 +206,13 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
     
     // Longer delay to allow for message animation to start
     const timer = setTimeout(scrollToBottom, 150);
-    return () => clearTimeout(timer);
+    
+    // Cleanup function
+    return () => {
+      clearTimeout(timer);
+    };
   }, [messages]);
-
-  // WhatsApp/Instagram style time formatting
+  
   const formatTime = (dateString: string): string => {
     const date = new Date(dateString);
     const now = new Date();
@@ -332,6 +337,34 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
       }
     };
   }, [longPressTimer]);
+
+  // Handle click outside to close editing and menu
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      
+      // Close editing if clicking outside the editing area
+      if (editingMessage && !target.closest('.editing-message')) {
+        setEditingMessage(null);
+        setEditingContent('');
+      }
+      
+      // Close message menu if clicking outside
+      if (selectedMessage && !target.closest('.message-menu')) {
+        setSelectedMessage(null);
+      }
+      
+      // Close emoji picker if clicking outside
+      if (showEmojiPicker && !target.closest('.emoji-picker')) {
+        setShowEmojiPicker(null);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [editingMessage, selectedMessage, showEmojiPicker]);
 
   const handleSendMessage = async (e?: React.MouseEvent<HTMLButtonElement> | React.KeyboardEvent, source: string = 'unknown') => {
     e?.preventDefault();
@@ -507,23 +540,70 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
     console.log('💬 [Chat] Reply button clicked for message:', message.id);
     console.log('💬 [Chat] Message sender data:', message.sender);
     
-    const senderName = message.senderId === currentUser?.id 
-      ? 'You' 
-      : `${message.sender?.firstName || 'User'} ${message.sender?.lastName || ''}`.trim() || 'Someone';
-      
-    const replyData = {
+    const senderName = message.sender 
+      ? (message.sender.id === currentUser?.id 
+          ? 'yourself' 
+          : `${message.sender.firstName || 'User'} ${message.sender.lastName || ''}`.trim())
+      : 'Unknown User';
+    
+    setReplyingTo({
       id: message.id,
-      content: message.content || message.fileName || 'Media',
-      senderName,
+      content: message.content || '',
+      senderName: senderName,
       messageType: message.messageType
-    };
-    
-    console.log('💬 [Chat] Setting reply state:', replyData);
-    setReplyingTo(replyData);
-    
-    console.log('💬 [Chat] ReplyToId:', replyData.id);
+    });
     setSelectedMessage(null);
+    setShowEmojiPicker(null);
   }, [currentUser]);
+
+  // Handle message editing
+  const handleEditMessage = useCallback((message: Message) => {
+    console.log('✏️ [Chat] Edit button clicked for message:', message.id);
+    setEditingMessage(message.id);
+    setEditingContent(message.content || '');
+    setSelectedMessage(null);
+    setShowEmojiPicker(null);
+  }, []);
+
+  // Save edited message
+  const handleSaveEdit = useCallback(async (messageId: number) => {
+    if (!editingContent.trim()) {
+      // If content is empty, don't save
+      handleCancelEdit();
+      return;
+    }
+
+    try {
+      console.log('� [Chat] Saving edited message:', messageId, editingContent);
+      // TODO: Implement API call to update message
+      // await updateMessage({ messageId, content: editingContent });
+      
+      setEditingMessage(null);
+      setEditingContent('');
+    } catch (error) {
+      console.error('❌ [Chat] Failed to save edit:', error);
+    }
+  }, [editingContent]);
+
+  // Cancel editing
+  const handleCancelEdit = useCallback(() => {
+    setEditingMessage(null);
+    setEditingContent('');
+  }, []);
+
+  // Handle message deletion
+  const handleDeleteMessage = useCallback(async (messageId: number) => {
+    try {
+      console.log('�️ [Chat] Deleting message:', messageId);
+      // TODO: Implement API call to delete message
+      // await deleteMessage({ messageId });
+      
+      setSelectedMessage(null);
+    } catch (error) {
+      console.error('❌ [Chat] Failed to delete message:', error);
+    }
+  }, []);
+
   
   // Handle file selection (preview, don't upload yet)
   const handleFileUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
@@ -936,7 +1016,46 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
                           >
                             {/* Message content */}
                             {message.messageType === "TEXT" && (
-                              <p className="whitespace-pre-wrap text-xs sm:text-sm leading-relaxed break-words">{message.content}</p>
+                              editingMessage === message.id ? (
+                                <div className="w-full editing-message">
+                                  <textarea
+                                    value={editingContent}
+                                    onChange={(e) => setEditingContent(e.target.value)}
+                                    className="w-full p-2 text-xs sm:text-sm bg-transparent border border-gray-300 rounded resize-none focus:outline-none focus:ring-2 focus:ring-blue-400"
+                                    rows={2}
+                                    autoFocus
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter' && !e.shiftKey) {
+                                        e.preventDefault();
+                                        handleSaveEdit(message.id);
+                                      } else if (e.key === 'Escape') {
+                                        handleCancelEdit();
+                                      }
+                                    }}
+                                  />
+                                  <div className="flex justify-end gap-2 mt-2">
+                                    <button
+                                      onClick={handleCancelEdit}
+                                      className="px-3 py-1 text-xs text-gray-600 hover:text-gray-800 transition-colors"
+                                    >
+                                      Cancel
+                                    </button>
+                                    <button
+                                      onClick={() => handleSaveEdit(message.id)}
+                                      className="px-3 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+                                    >
+                                      Save
+                                    </button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="relative">
+                                  <p className="whitespace-pre-wrap text-xs sm:text-sm leading-relaxed break-words">{message.content}</p>
+                                  {message.isEdited && (
+                                    <span className="text-xs text-gray-400 italic ml-2">(edited)</span>
+                                  )}
+                                </div>
+                              )
                             )}
                             {message.messageType === "IMAGE" && (
                               <div className="w-full relative">
@@ -1061,23 +1180,44 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
 
                           {/* Hover actions */}
                           <div className={`absolute top-0 ${
-                            isCurrentUser ? '-left-20' : '-right-20'
+                            isCurrentUser ? '-left-24' : '-right-24'
                           } opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center gap-1 bg-white shadow-lg rounded-full p-1`}>
                             <button
                               onClick={() => handleReply(message)}
                               className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                              title="Reply"
                             >
                               <BsReply className="h-4 w-4 text-gray-600" />
                             </button>
                             <button
                               onClick={() => setShowEmojiPicker(showEmojiPicker === message.id ? null : message.id)}
                               className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                              title="React"
                             >
                               <BsEmojiSmile className="h-4 w-4 text-gray-600" />
                             </button>
+                            {isCurrentUser && message.messageType === 'TEXT' && (
+                              <button
+                                onClick={() => handleEditMessage(message)}
+                                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                                title="Edit"
+                              >
+                                <MdEdit className="h-4 w-4 text-gray-600" />
+                              </button>
+                            )}
+                            {isCurrentUser && (
+                              <button
+                                onClick={() => handleDeleteMessage(message.id)}
+                                className="p-2 hover:bg-red-50 rounded-full transition-colors"
+                                title="Delete"
+                              >
+                                <MdDelete className="h-4 w-4 text-red-600" />
+                              </button>
+                            )}
                             <button
                               onClick={() => setSelectedMessage(selectedMessage === message.id ? null : message.id)}
                               className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                              title="More options"
                             >
                               <BsThreeDots className="h-4 w-4 text-gray-600" />
                             </button>
@@ -1087,7 +1227,7 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
                           {showEmojiPicker === message.id && (
                             <div className={`absolute z-50 mt-2 ${
                               isCurrentUser ? 'right-0' : 'left-0'
-                            } bg-white border border-gray-200 rounded-lg shadow-lg p-2`}>
+                            } bg-white border border-gray-200 rounded-lg shadow-lg p-2 emoji-picker`}>
                               <div className="flex gap-1">
                                 {commonReactions.map((emoji, idx) => (
                                   <button
@@ -1106,7 +1246,7 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
                           {selectedMessage === message.id && (
                             <div className={`absolute z-50 mt-2 ${
                               isCurrentUser ? 'right-0' : 'left-0'
-                            } bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-[120px]`}>
+                            } bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-[120px] message-menu`}>
                               <button
                                 onClick={() => handleReply(message)}
                                 className="w-full px-4 py-2 text-left hover:bg-gray-50 transition-colors text-sm"
@@ -1122,12 +1262,17 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
                               >
                                 Forward
                               </button>
+                              {isCurrentUser && message.messageType === 'TEXT' && (
+                                <button
+                                  onClick={() => handleEditMessage(message)}
+                                  className="w-full px-4 py-2 text-left hover:bg-gray-50 transition-colors text-sm"
+                                >
+                                  Edit
+                                </button>
+                              )}
                               {isCurrentUser && (
                                 <button
-                                  onClick={() => {
-                                    // TODO: Implement delete
-                                    setSelectedMessage(null);
-                                  }}
+                                  onClick={() => handleDeleteMessage(message.id)}
                                   className="w-full px-4 py-2 text-left hover:bg-gray-50 transition-colors text-sm text-red-600"
                                 >
                                   Delete

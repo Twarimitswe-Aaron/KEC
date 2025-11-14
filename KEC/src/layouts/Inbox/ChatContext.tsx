@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback, useRef, useMemo } from 'react';
+import React, { createContext, useState, useEffect, ReactNode, useCallback, useRef, useMemo } from 'react';
 import { 
   useGetChatsQuery, 
   useGetMessagesQuery, 
@@ -35,7 +35,7 @@ export interface ChatContextType {
   isTabVisible: boolean;
 }
 
-const ChatContext = createContext<ChatContextType | undefined>(undefined);
+export const ChatContext = createContext<ChatContextType | undefined>(undefined);
 
 interface ChatProviderProps {
   children: ReactNode;
@@ -141,6 +141,12 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
   useEffect(() => {
     if (currentUser) {
       console.log('🔗 [ChatContext] Attempting WebSocket connection for user:', currentUser.id);
+      
+      // Check if already connected to avoid unnecessary reconnections
+      if (websocketService.isConnected()) {
+        console.log('📋 [ChatContext] WebSocket already connected, setting up listeners only');
+        setIsConnected(true);
+      }
       
       // Move handleNewMessage inside useEffect to avoid dependency issues
       const handleNewMessageLocal = (message: any) => {
@@ -345,7 +351,13 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
         websocketService.off('message:read', messageReadHandler);
         websocketService.off('message:delivered', messageDeliveredHandler);
         
-        websocketService.disconnect();
+        // Don't disconnect on cleanup in development (HMR)
+        if (!import.meta.hot) {
+          console.log('🔌 [ChatContext] Disconnecting WebSocket (production mode)');
+          websocketService.disconnect();
+        } else {
+          console.log('🏠 [ChatContext] Keeping WebSocket connected (development HMR)');
+        }
         setIsConnected(false);
         
         // Clear any pending refetch timeouts
@@ -557,15 +569,11 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
   );
 };
 
-export const useChat = (): ChatContextType => {
-  const context = useContext(ChatContext);
-  if (!context) {
-    throw new Error('useChat must be used within a ChatProvider');
-  }
-  return context;
-};
+// useChat hook moved to separate file: src/hooks/useChat.ts
 
 // Fast Refresh compatibility
 if (import.meta.hot) {
-  import.meta.hot.accept();
+  import.meta.hot.accept(() => {
+    console.log('🔄 [ChatContext] Hot module reloaded');
+  });
 }

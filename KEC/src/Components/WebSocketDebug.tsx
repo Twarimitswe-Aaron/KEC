@@ -1,5 +1,5 @@
 import React from 'react';
-import { useChat } from '../layouts/Inbox/ChatContext';
+import { useChat } from '../hooks/useChat';
 
 export const WebSocketDebug: React.FC = () => {
   const { isConnected, onlineUsers, typingUsers } = useChat();

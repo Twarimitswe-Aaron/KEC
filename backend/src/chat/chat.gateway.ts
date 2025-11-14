@@ -49,7 +49,10 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   constructor(
     private chatService: ChatService,
     private jwtService: JwtService,
-  ) {}
+  ) {
+    // Set reference in service to avoid circular dependency
+    this.chatService.setChatGateway(this);
+  }
 
   async handleConnection(client: AuthenticatedSocket) {
     try {

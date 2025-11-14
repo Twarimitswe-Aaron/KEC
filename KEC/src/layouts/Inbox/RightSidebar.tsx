@@ -1,5 +1,5 @@
 import React from 'react';
-import { useChat } from './ChatContext';
+import { useChat } from '../../hooks/useChat';
 
 const RightSidebar = () => {
   const { activeChat, messages } = useChat();
