@@ -48,7 +48,8 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
   useEffect(() => {
     if (chatsData && chatsData.chats) {
       console.log('💬 [ChatContext] Loaded chats:', chatsData.chats.length);
-      
+
+      // Explicitly type firstValidChat so TypeScript knows this is a Chat when set
       let firstValidChat: Chat | null = null;
       chatsData.chats.forEach((chat, index) => {
         console.log(`💬 [ChatContext] Chat ${index}:`, {
@@ -76,8 +77,9 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
       
       // Auto-select first valid chat if no active chat is selected
       if (firstValidChat && !activeChat) {
-        console.log('🎯 [ChatContext] Auto-selecting first valid chat:', firstValidChat.id);
-        setActiveChat(firstValidChat);
+        const chatToSelect: Chat = firstValidChat;
+        console.log('🎯 [ChatContext] Auto-selecting first valid chat:', chatToSelect.id);
+        setActiveChat(chatToSelect);
       }
     }
     
