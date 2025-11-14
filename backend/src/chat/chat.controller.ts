@@ -3,6 +3,7 @@ import {
   Get,
   Post,
   Delete,
+  Patch,
   Body,
   Param,
   Query,
@@ -18,6 +19,9 @@ import { ChatService } from './chat.service';
 import { CreateChatDto } from './dto/create-chat.dto';
 import { SendMessageDto } from './dto/send-message.dto';
 import { MarkMessagesReadDto } from './dto/mark-read.dto';
+// TODO: Create proper DTOs for edit and reaction functionality
+// import { EditMessageDto } from './dto/edit-message.dto';
+// import { AddReactionDto } from './dto/add-reaction.dto';
 import { AuthGuard } from '../auth/auth.guard';
 import { diskStorage } from 'multer';
 import { extname, join } from 'path';
@@ -162,6 +166,36 @@ export class ChatController {
     return this.chatService.getUsers(search, excludeIds, limitNum);
   }
 
+
+  @Patch(':chatId/messages/:messageId')
+  async editMessage(
+    @Request() req,
+    @Param('chatId', ParseIntPipe) chatId: number,
+    @Param('messageId', ParseIntPipe) messageId: number,
+    @Body() body: { content: string },
+  ) {
+    return this.chatService.editMessage(req.user.sub, chatId, messageId, body);
+  }
+
+  @Post(':chatId/messages/:messageId/reactions')
+  async addReaction(
+    @Request() req,
+    @Param('chatId', ParseIntPipe) chatId: number,
+    @Param('messageId', ParseIntPipe) messageId: number,
+    @Body() body: { emoji: string },
+  ) {
+    return this.chatService.addReaction(req.user.sub, chatId, messageId, body);
+  }
+
+  @Delete(':chatId/messages/:messageId/reactions')
+  async removeReaction(
+    @Request() req,
+    @Param('chatId', ParseIntPipe) chatId: number,
+    @Param('messageId', ParseIntPipe) messageId: number,
+    @Body() { emoji }: { emoji: string },
+  ) {
+    return this.chatService.removeReaction(req.user.sub, chatId, messageId, emoji);
+  }
 
   @Post('status')
   async updateUserStatus(@Request() req, @Body() { isOnline }: { isOnline: boolean }) {

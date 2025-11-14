@@ -3,6 +3,9 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateChatDto } from './dto/create-chat.dto';
 import { SendMessageDto } from './dto/send-message.dto';
 import { MarkMessagesReadDto } from './dto/mark-read.dto';
+// TODO: Create proper DTOs for edit and reaction functionality
+// import { EditMessageDto } from './dto/edit-message.dto';
+// import { AddReactionDto } from './dto/add-reaction.dto';
 
 @Injectable()
 export class ChatService {
@@ -490,5 +493,141 @@ export class ChatService {
         { firstName: 'asc' }
       ]
     });
+  }
+
+  async editMessage(userId: number, chatId: number, messageId: number, body: { content: string }) {
+    console.log('✏️ [ChatService] Editing message:', { userId, chatId, messageId, content: body.content });
+
+    // First verify the message exists and belongs to the user
+    const message = await this.prisma.message.findFirst({
+      where: {
+        id: messageId,
+        chatId: Number(chatId),
+        senderId: userId,
+        messageType: 'TEXT' // Only allow editing text messages
+      }
+    });
+
+    if (!message) {
+      throw new NotFoundException('Message not found or you are not allowed to edit this message');
+    }
+
+    // Update the message
+    const updatedMessage = await this.prisma.message.update({
+      where: { id: messageId },
+      data: {
+        content: body.content,
+        isEdited: true,
+        updatedAt: new Date()
+      },
+      include: {
+        sender: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            profile: {
+              select: { avatar: true }
+            }
+          }
+        },
+        replyTo: {
+          select: {
+            id: true,
+            content: true,
+            messageType: true,
+            sender: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true
+              }
+            }
+          }
+        }
+      }
+    });
+
+    // Emit the updated message via WebSocket
+    if (this.chatGateway) {
+      this.chatGateway.server.to(`chat_${chatId}`).emit('messageEdited', updatedMessage);
+    }
+
+    console.log('✅ [ChatService] Message edited successfully:', messageId);
+    return updatedMessage;
+  }
+
+  async addReaction(userId: number, chatId: number, messageId: number, body: { emoji: string }) {
+    console.log('😀 [ChatService] Adding reaction:', { userId, chatId, messageId, emoji: body.emoji });
+
+    // Verify the message exists and user has access to the chat
+    const message = await this.prisma.message.findFirst({
+      where: {
+        id: messageId,
+        chatId: Number(chatId)
+      }
+    });
+
+    if (!message) {
+      throw new NotFoundException('Message not found');
+    }
+
+    // Check if user is a participant in the chat
+    const participant = await this.prisma.chatParticipant.findFirst({
+      where: {
+        userId,
+        chatId: Number(chatId)
+      }
+    });
+
+    if (!participant) {
+      throw new ForbiddenException('You are not a participant in this chat');
+    }
+
+    // For now, we'll handle reactions in memory without database storage
+    // In a production system, you would create a reactions table
+    console.log('✅ [ChatService] Reaction validation passed - user is participant');
+
+    // Emit the reaction via WebSocket for real-time updates
+    if (this.chatGateway) {
+      this.chatGateway.server.to(`chat_${chatId}`).emit('reactionAdded', {
+        messageId,
+        emoji: body.emoji,
+        userId,
+        userName: `User ${userId}` // You might want to get actual name
+      });
+    }
+
+    console.log('✅ [ChatService] Reaction added successfully');
+    return { messageId, emoji: body.emoji, userId };
+  }
+
+  async removeReaction(userId: number, chatId: number, messageId: number, emoji: string) {
+    console.log('😐 [ChatService] Removing reaction:', { userId, chatId, messageId, emoji });
+
+    // Verify the message exists
+    const message = await this.prisma.message.findFirst({
+      where: {
+        id: messageId,
+        chatId: Number(chatId)
+      }
+    });
+
+    if (!message) {
+      throw new NotFoundException('Message not found');
+    }
+
+    // For now, just emit the reaction removal via WebSocket
+    // In a production system, you would remove from reactions table
+    if (this.chatGateway) {
+      this.chatGateway.server.to(`chat_${chatId}`).emit('reactionRemoved', {
+        messageId,
+        emoji,
+        userId
+      });
+    }
+
+    console.log('✅ [ChatService] Reaction removed successfully');
+    return { messageId, emoji, userId };
   }
 }

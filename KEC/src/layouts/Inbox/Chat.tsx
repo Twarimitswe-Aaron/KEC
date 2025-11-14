@@ -9,7 +9,7 @@ import { MdInfoOutline } from "react-icons/md";
 import { BsReply, BsThreeDots } from "react-icons/bs";
 import { MdClose, MdCheck, MdDoneAll, MdMic, MdMicOff, MdEdit, MdDelete } from "react-icons/md";
 import { useChat } from '../../hooks/useChat';
-import { Message, useUploadChatFileMutation } from '../../state/api/chatApi';
+import { Message, useUploadChatFileMutation, useDeleteMessageMutation, useEditMessageMutation, useAddReactionMutation, useRemoveReactionMutation } from '../../state/api/chatApi';
 
 interface ChatProps {
   onToggleRightSidebar: () => void;
@@ -154,6 +154,10 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
   
   // File upload mutation
   const [uploadFile] = useUploadChatFileMutation();
+  const [deleteMessage] = useDeleteMessageMutation();
+  const [editMessage] = useEditMessageMutation();
+  const [addReaction] = useAddReactionMutation();
+  const [removeReaction] = useRemoveReactionMutation();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -524,10 +528,22 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
   
   // Handle message reactions
   const handleReaction = useCallback(async (messageId: number, emoji: string) => {
-    // TODO: Implement reaction API call
-    console.log(`React to message ${messageId} with ${emoji}`);
-    setShowEmojiPicker(null);
-  }, []);
+    if (!activeChat) return;
+    
+    try {
+      console.log(`😀 [Chat] Adding reaction to message ${messageId} with ${emoji}`);
+      await addReaction({ 
+        chatId: activeChat.id, 
+        messageId, 
+        emoji 
+      }).unwrap();
+      
+      setShowEmojiPicker(null);
+      console.log('✅ [Chat] Reaction added successfully');
+    } catch (error) {
+      console.error('❌ [Chat] Failed to add reaction:', error);
+    }
+  }, [activeChat, addReaction]);
   
   // Handle emoji selection for message input
   const handleEmojiSelect = useCallback((emoji: string) => {
@@ -567,23 +583,27 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
 
   // Save edited message
   const handleSaveEdit = useCallback(async (messageId: number) => {
-    if (!editingContent.trim()) {
+    if (!activeChat || !editingContent.trim()) {
       // If content is empty, don't save
       handleCancelEdit();
       return;
     }
 
     try {
-      console.log('� [Chat] Saving edited message:', messageId, editingContent);
-      // TODO: Implement API call to update message
-      // await updateMessage({ messageId, content: editingContent });
+      console.log(' [Chat] Saving edited message:', messageId, editingContent);
+      await editMessage({ 
+        chatId: activeChat.id, 
+        messageId, 
+        content: editingContent.trim() 
+      }).unwrap();
       
       setEditingMessage(null);
       setEditingContent('');
+      console.log(' [Chat] Message edited successfully');
     } catch (error) {
-      console.error('❌ [Chat] Failed to save edit:', error);
+      console.error(' [Chat] Failed to save edit:', error);
     }
-  }, [editingContent]);
+  }, [activeChat, editingContent, editMessage]);
 
   // Cancel editing
   const handleCancelEdit = useCallback(() => {
@@ -593,16 +613,21 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
 
   // Handle message deletion
   const handleDeleteMessage = useCallback(async (messageId: number) => {
+    if (!activeChat) return;
+    
     try {
-      console.log('�️ [Chat] Deleting message:', messageId);
-      // TODO: Implement API call to delete message
-      // await deleteMessage({ messageId });
+      console.log('🗑️ [Chat] Deleting message:', messageId);
+      await deleteMessage({ 
+        chatId: activeChat.id, 
+        messageId 
+      }).unwrap();
       
       setSelectedMessage(null);
+      console.log('✅ [Chat] Message deleted successfully');
     } catch (error) {
       console.error('❌ [Chat] Failed to delete message:', error);
     }
-  }, []);
+  }, [activeChat, deleteMessage]);
 
   
   // Handle file selection (preview, don't upload yet)

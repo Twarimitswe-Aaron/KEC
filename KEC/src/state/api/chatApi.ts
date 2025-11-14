@@ -348,6 +348,46 @@ export const chatApi = apiCore.apiSlice.injectEndpoints({
       },
     }),
 
+    // Edit a message
+    editMessage: builder.mutation<Message, { chatId: number; messageId: number; content: string }>({
+      query: ({ chatId, messageId, content }) => ({
+        url: `chat/${chatId}/messages/${messageId}`,
+        method: 'PATCH',
+        body: { content },
+      }),
+      async onQueryStarted({ chatId, messageId, content }, { dispatch }) {
+        // Optimistic update
+        dispatch(
+          chatApi.util.updateQueryData('getMessages', { chatId }, (draft) => {
+            const message = draft.messages.find(msg => msg.id === messageId);
+            if (message) {
+              message.content = content;
+              message.isEdited = true;
+              message.updatedAt = new Date().toISOString();
+            }
+          })
+        );
+      },
+    }),
+
+    // Add reaction to message
+    addReaction: builder.mutation<void, { chatId: number; messageId: number; emoji: string }>({
+      query: ({ chatId, messageId, emoji }) => ({
+        url: `chat/${chatId}/messages/${messageId}/reactions`,
+        method: 'POST',
+        body: { emoji },
+      }),
+    }),
+
+    // Remove reaction from message
+    removeReaction: builder.mutation<void, { chatId: number; messageId: number; emoji: string }>({
+      query: ({ chatId, messageId, emoji }) => ({
+        url: `chat/${chatId}/messages/${messageId}/reactions`,
+        method: 'DELETE',
+        body: { emoji },
+      }),
+    }),
+
     // Update typing status
     updateTypingStatus: builder.mutation<void, TypingIndicator>({
       query: (body) => ({
@@ -369,5 +409,8 @@ export const {
   useUploadChatFileMutation,
   useGetUsersQuery,
   useDeleteMessageMutation,
+  useEditMessageMutation,
+  useAddReactionMutation,
+  useRemoveReactionMutation,
   useUpdateTypingStatusMutation,
 } = chatApi;
