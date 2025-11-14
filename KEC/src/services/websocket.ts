@@ -25,6 +25,7 @@ export interface WebSocketEvents {
   // Incoming events
   'message:new': (message: Message) => void;
   'message:read': (data: { chatId: number; messageIds: number[]; userId: number }) => void;
+  'message:delivered': (data: { chatId: number; messageId: number }) => void;
   'typing:update': (data: TypingIndicator) => void;
   'user:online': (data: OnlineStatusUpdate) => void;
   'chat:created': (data: { chatId: number; participants: number[] }) => void;
@@ -70,6 +71,7 @@ class WebSocketService {
       this.socket.on('connect', () => {
         console.log('✅ [WebSocket] Connected successfully with ID:', this.socket?.id);
         console.log('🌍 [WebSocket] Connected to server:', baseUrl);
+        console.log('🔧 [WebSocket] Connection transport:', this.socket?.io.engine.transport.name);
         this.connected = true;
         this.reconnectAttempts = 0;
         resolve(this.socket!);
@@ -147,10 +149,16 @@ class WebSocketService {
     return this.connected && this.socket?.connected === true;
   }
 
-  // Event listeners
+  // Event listeners with debugging
   on<K extends keyof WebSocketEvents>(event: K, callback: WebSocketEvents[K]) {
     if (this.socket) {
-      this.socket.on(event as string, callback as any);
+      console.log(`🎧 [WebSocket] Registering listener for event: ${event as string}`);
+      this.socket.on(event as string, (data: any) => {
+        console.log(`📨 [WebSocket] Event received: ${event as string}`, data);
+        (callback as any)(data);
+      });
+    } else {
+      console.warn(`⚠️ [WebSocket] Cannot register listener for ${event as string} - socket not available`);
     }
   }
 

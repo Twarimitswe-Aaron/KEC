@@ -62,6 +62,7 @@ export interface Chat {
   createdAt: string;
   updatedAt: string;
   lastMessage?: Message;
+  lastMessageTime?: string;
   unreadCount: number;
   participants: {
     id: number;

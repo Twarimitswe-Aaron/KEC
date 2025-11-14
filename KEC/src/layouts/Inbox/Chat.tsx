@@ -6,9 +6,8 @@ import { GoDeviceCameraVideo } from "react-icons/go";
 import { GoPaperclip } from "react-icons/go";
 import { BsEmojiSmile } from "react-icons/bs";
 import { MdInfoOutline } from "react-icons/md";
-import { CiMenuKebab } from "react-icons/ci";
 import { BsReply, BsThreeDots } from "react-icons/bs";
-import { MdClose, MdCheck, MdDoneAll, MdSchedule, MdMic, MdMicOff } from "react-icons/md";
+import { MdClose, MdCheck, MdDoneAll, MdMic, MdMicOff } from "react-icons/md";
 import { useChat } from './ChatContext';
 import { Message, useUploadChatFileMutation } from '../../state/api/chatApi';
 
@@ -23,46 +22,57 @@ interface ReplyingToMessage {
   messageType: string;
 }
 
-interface MessageReaction {
-  emoji: string;
-  userId: string;
-  userName: string;
-}
 
 const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
-  // Add smooth animations for messages
+  // Track message IDs to identify new messages for smooth animation
+  const [seenMessageIds, setSeenMessageIds] = useState<Set<number>>(new Set());
+  const [newMessageIds, setNewMessageIds] = useState<Set<number>>(new Set());
+  
+  // Add smooth message insertion styles
   const messageAnimationStyle = `
-    @keyframes fadeInUp {
-      from {
-        opacity: 0;
-        transform: translateY(10px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
+    .message-enter {
+      opacity: 0;
+      transform: translateY(20px) scale(0.95);
+      transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
     }
     
-    @keyframes slideInRight {
-      from {
-        opacity: 0;
-        transform: translateX(20px);
-      }
-      to {
-        opacity: 1;
-        transform: translateX(0);
-      }
+    .message-enter-active {
+      opacity: 1;
+      transform: translateY(0) scale(1);
     }
     
-    @keyframes slideInLeft {
-      from {
-        opacity: 0;
-        transform: translateX(-20px);
-      }
-      to {
-        opacity: 1;
-        transform: translateX(0);
-      }
+    .message-stable {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+      transition: all 0.3s ease;
+    }
+    
+    .message-image-enter {
+      opacity: 0;
+      transform: translateY(8px);
+      transition: opacity 0.25s ease-out, transform 0.25s ease-out;
+    }
+    
+    .message-image-enter-active {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    
+    /* Smooth image loading */
+    .message-image {
+      transition: opacity 0.2s ease-in-out;
+    }
+    
+    .message-image-loading {
+      opacity: 0.7;
+      background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+    }
+    
+    @keyframes shimmer {
+      0% { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
     }
   `;
   
@@ -76,6 +86,7 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
       document.head.removeChild(styleElement);
     };
   }, []);
+
   const { 
     activeChat, 
     messages, 
@@ -86,8 +97,38 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
     typingUsers,
     onlineUsers,
     isLoading,
-    isConnected 
+    isConnected,
+    // Unread message functionality
+    unreadMessages,
+    firstUnreadMessageId,
+    markAllAsRead,
+    scrollToUnread,
+    isTabVisible
   } = useChat();
+  
+  // Track new messages for animation
+  useEffect(() => {
+    if (messages.length > 0) {
+      const currentMessageIds = new Set(messages.map(m => m.id));
+      const newIds = new Set<number>();
+      
+      currentMessageIds.forEach(id => {
+        if (!seenMessageIds.has(id)) {
+          newIds.add(id);
+        }
+      });
+      
+      if (newIds.size > 0) {
+        setNewMessageIds(newIds);
+        setSeenMessageIds(currentMessageIds);
+        
+        // Remove new message animation after animation completes
+        setTimeout(() => {
+          setNewMessageIds(new Set());
+        }, 500);
+      }
+    }
+  }, [messages, seenMessageIds]);
   
   const [newMessage, setNewMessage] = useState("");
   const [replyingTo, setReplyingTo] = useState<ReplyingToMessage | null>(null);
@@ -114,23 +155,55 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const unreadIndicatorRef = useRef<HTMLDivElement>(null);
+  const [showUnreadIndicator, setShowUnreadIndicator] = useState(false);
+
+  // Handle unread message indicator visibility
+  useEffect(() => {
+    setShowUnreadIndicator(unreadMessages.length > 0 && !isTabVisible);
+  }, [unreadMessages.length, isTabVisible]);
+
+  // Setup scroll to unread functionality
+  useEffect(() => {
+    if (unreadIndicatorRef.current && firstUnreadMessageId) {
+      const scrollToUnreadMessage = () => {
+        const unreadElement = document.querySelector(`[data-message-id="${firstUnreadMessageId}"]`);
+        if (unreadElement) {
+          unreadElement.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'center' 
+          });
+          console.log('📍 [Chat] Scrolled to first unread message:', firstUnreadMessageId);
+        }
+      };
+      
+      // Store the scroll function for context to use
+      const currentScrollRef = unreadIndicatorRef.current;
+      if (currentScrollRef) {
+        // Make the scroll function available
+        (currentScrollRef as any).scrollToUnread = scrollToUnreadMessage;
+      }
+    }
+  }, [firstUnreadMessageId, scrollToUnread]);
 
   // Smooth auto-scroll to bottom when new messages arrive
   useEffect(() => {
     const scrollToBottom = () => {
       if (messagesEndRef.current) {
-        // Use requestAnimationFrame for smoother scrolling
+        // Use requestAnimationFrame for smoother scrolling with proper timing
         requestAnimationFrame(() => {
-          messagesEndRef.current?.scrollIntoView({ 
-            behavior: 'smooth',
-            block: 'end'
+          requestAnimationFrame(() => { // Double RAF for better timing
+            messagesEndRef.current?.scrollIntoView({ 
+              behavior: 'smooth',
+              block: 'end'
+            });
           });
         });
       }
     };
     
-    // Small delay to allow for layout completion
-    const timer = setTimeout(scrollToBottom, 50);
+    // Longer delay to allow for message animation to start
+    const timer = setTimeout(scrollToBottom, 150);
     return () => clearTimeout(timer);
   }, [messages]);
 
@@ -380,6 +453,12 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
           console.error(`❌ Failed to upload file ${attachedFile.file.name}:`, error);
           // Continue with other files even if one fails
         }
+      }
+      
+      // Instagram behavior: Mark all unread messages as read when sending a message
+      if (unreadMessages.length > 0) {
+        console.log('📖 [Chat] Marking unread messages as read after sending message');
+        markAllAsRead();
       }
       
       // Clear message and attachments on success with smooth transition
@@ -740,13 +819,37 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
                   return (
                     <div 
                       key={`${message.id}-${message.createdAt}-${index}`} 
-                      className="relative"
+                      className={`relative ${
+                        newMessageIds.has(message.id) 
+                          ? (message.messageType === 'IMAGE' ? 'message-image-enter' : 'message-enter')
+                          : 'message-stable'
+                      }`}
                       style={{
-                        animation: isCurrentUser 
-                          ? 'slideInRight 0.3s ease-out forwards' 
-                          : 'slideInLeft 0.3s ease-out forwards'
+                        animationDelay: newMessageIds.has(message.id) ? `${index * 0.05}s` : '0s'
                       }}
+                      onTransitionEnd={() => {
+                        // Ensure smooth transition to stable state after CSS transition completes
+                        if (newMessageIds.has(message.id)) {
+                          const element = document.querySelector(`[data-message-id="${message.id}"]`);
+                          if (element) {
+                            element.classList.remove('message-enter', 'message-image-enter');
+                            element.classList.add('message-stable');
+                          }
+                        }
+                      }}
+                      data-message-id={message.id}
                     >
+                      {/* Unread messages divider */}
+                      {firstUnreadMessageId === message.id && unreadMessages.length > 0 && (
+                        <div className="flex items-center justify-center my-4" ref={unreadIndicatorRef}>
+                          <div className="flex-1 h-px bg-gradient-to-r from-transparent via-blue-400 to-transparent"></div>
+                          <div className="px-4 py-1 bg-blue-500 text-white text-xs font-medium rounded-full shadow-sm">
+                            {unreadMessages.length} unread message{unreadMessages.length > 1 ? 's' : ''}
+                          </div>
+                          <div className="flex-1 h-px bg-gradient-to-r from-blue-400 via-transparent to-transparent"></div>
+                        </div>
+                      )}
+                      
                       {/* Message container */}
                       <div
                         className={`flex items-start gap-1 sm:gap-2 ${
@@ -836,7 +939,7 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
                               <p className="whitespace-pre-wrap text-xs sm:text-sm leading-relaxed break-words">{message.content}</p>
                             )}
                             {message.messageType === "IMAGE" && (
-                              <div className="w-full">
+                              <div className="w-full relative">
                                 <img
                                   src={(() => {
                                     let imageUrl = message.fileUrl;
@@ -848,7 +951,11 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
                                     return imageUrl;
                                   })()}
                                   alt="Shared image"
-                                  className="w-full max-w-[280px] sm:max-w-[350px] h-[200px] sm:h-[250px] rounded-lg object-cover cursor-pointer hover:opacity-95 transition-opacity duration-200 bg-gray-200"
+                                  className="message-image w-full max-w-[280px] sm:max-w-[350px] h-[200px] sm:h-[250px] rounded-lg object-cover cursor-pointer hover:opacity-95 transition-all duration-200 bg-gray-200"
+                                  style={{ 
+                                    opacity: 1,
+                                    transform: 'scale(1)'
+                                  }}
                                   onClick={() => {
                                     let imageUrl = message.fileUrl;
                                     if (imageUrl && imageUrl.startsWith('/uploads/')) {
@@ -859,14 +966,23 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
                                   }}
                                   onError={(e) => {
                                     console.error('❌ Image failed to load:', message.fileUrl);
-                                    // Show fallback content on error
-                                    e.currentTarget.style.display = 'none';
-                                    const fallback = document.createElement('div');
-                                    fallback.className = 'w-full max-w-[280px] sm:max-w-[350px] h-[200px] sm:h-[250px] bg-gray-200 rounded-lg flex items-center justify-center';
-                                    fallback.innerHTML = '<span class="text-gray-500 text-sm">Failed to load image</span>';
-                                    e.currentTarget.parentElement?.appendChild(fallback);
+                                    // Smooth fade to error state
+                                    const target = e.currentTarget as HTMLImageElement;
+                                    target.style.opacity = '0';
+                                    setTimeout(() => {
+                                      target.style.display = 'none';
+                                      const fallback = document.createElement('div');
+                                      fallback.className = 'w-full max-w-[280px] sm:max-w-[350px] h-[200px] sm:h-[250px] bg-gray-200 rounded-lg flex items-center justify-center opacity-0';
+                                      fallback.innerHTML = '<span class="text-gray-500 text-sm">Failed to load image</span>';
+                                      target.parentElement?.appendChild(fallback);
+                                      // Fade in error state
+                                      setTimeout(() => {
+                                        fallback.style.opacity = '1';
+                                        fallback.style.transition = 'opacity 0.3s ease';
+                                      }, 10);
+                                    }, 200);
                                   }}
-                                  onLoad={(e) => {
+                                  onLoad={() => {
                                     console.log('✅ Image loaded successfully:', message.fileUrl);
                                   }}
                                 />
@@ -1306,6 +1422,30 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
           )}
         </div>
       </div>
+      
+      {/* Floating scroll to unread button */}
+      {showUnreadIndicator && unreadMessages.length > 0 && (
+        <div className="absolute bottom-20 right-4">
+          <button
+            onClick={() => {
+              const unreadElement = document.querySelector(`[data-message-id="${firstUnreadMessageId}"]`);
+              if (unreadElement) {
+                unreadElement.scrollIntoView({ 
+                  behavior: 'smooth', 
+                  block: 'center' 
+                });
+              }
+            }}
+            className="bg-blue-500 hover:bg-blue-600 text-white p-3 rounded-full shadow-lg transition-all duration-200 transform hover:scale-105 flex items-center gap-2"
+          >
+            <span className="text-sm font-medium">{unreadMessages.length}</span>
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+            </svg>
+          </button>
+        </div>
+      )}
+      
       {/* Overlay for closing menus */}
       {(selectedMessage || showEmojiPicker || showMainEmojiPicker) && (
         <div 
