@@ -42,6 +42,11 @@ export interface Message {
       lastName: string;
     };
   };
+  reactions?: {
+    emoji: string;
+    count: number;
+    users: number[]; // Array of user IDs who reacted with this emoji
+  }[];
   createdAt: string;
   updatedAt: string;
   sender: {
