@@ -26,6 +26,9 @@ interface CourseListViewProps {
   getLetterGrade: (percentage: number) => string;
   calculateLessonTotalScore: (lesson: any) => number;
   calculateLessonTotalMaxPoints: (lesson: any) => number;
+  lessonMenus: Record<number, boolean>;
+  toggleLessonMenu: (lessonId: number, e?: React.MouseEvent) => void;
+  closeAllLessonMenus: () => void;
 }
 
 const CourseListView: React.FC<CourseListViewProps> = ({
@@ -43,10 +46,13 @@ const CourseListView: React.FC<CourseListViewProps> = ({
   getGradeColor,
   getLetterGrade,
   calculateLessonTotalScore,
-  calculateLessonTotalMaxPoints
+  calculateLessonTotalMaxPoints,
+  lessonMenus,
+  toggleLessonMenu,
+  closeAllLessonMenus
 }) => {
   return (
-    <>
+    <div onClick={closeAllLessonMenus}>
       {filteredData.map((course: any) => {
         const isCourseExpanded = expandedCourses[course.id];
         return (
@@ -136,26 +142,24 @@ const CourseListView: React.FC<CourseListViewProps> = ({
                             </div>
                             
                             <div className="flex items-center space-x-2">
-                              {/* Three Dots Menu */}
-                              <div className="relative">
+                              <div className="relative" onClick={(e) => e.stopPropagation()}>
                                 <button 
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    toggleLessonAccordion(lesson.id);
+                                    toggleLessonMenu(lesson.id, e);
                                   }}
                                   className="p-2 hover:bg-gray-100 rounded-full transition-colors"
                                   aria-label="Lesson options"
                                 >
                                   <MoreHorizontal className="h-4 w-4" />
                                 </button>
-                                
-                                {/* Dropdown Menu */}
-                                {expandedLessons[`menu_${lesson.id}`] && (
+                                {lessonMenus[lesson.id] && (
                                   <div className="absolute right-0 mt-1 w-48 bg-white rounded-md shadow-lg border border-gray-200 z-10">
                                     <div className="py-1">
                                       <button 
                                         onClick={(e) => {
                                           e.stopPropagation();
+                                          toggleLessonMenu(lesson.id, e);
                                           handleCreateQuiz(course, lesson.id, lesson.title, 'assignment');
                                         }}
                                         className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
@@ -166,6 +170,7 @@ const CourseListView: React.FC<CourseListViewProps> = ({
                                       <button 
                                         onClick={(e) => {
                                           e.stopPropagation();
+                                          toggleLessonMenu(lesson.id, e);
                                           handleCreateQuiz(course, lesson.id, lesson.title, 'quiz');
                                         }}
                                         className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
@@ -339,8 +344,8 @@ const CourseListView: React.FC<CourseListViewProps> = ({
           </div>
         </div>
       )}
-    </>
+    </div>
   );
-};
+}
 
 export default CourseListView;

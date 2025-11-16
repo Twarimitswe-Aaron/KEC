@@ -12,6 +12,7 @@ import Redis from 'ioredis';
 import { RedisStore } from 'connect-redis';
 import * as path from 'path';
 import * as express from 'express';
+import * as fs from 'fs';
 
 
 if (typeof globalThis.crypto === 'undefined') {
@@ -23,15 +24,30 @@ async function bootstrap() {
     abortOnError: false,
     logger: ['error', 'warn', 'log', 'debug']
   });
-  app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
+  const uploadsRoot = path.join(process.cwd(), 'uploads');
+  if (!fs.existsSync(uploadsRoot)) {
+    fs.mkdirSync(uploadsRoot, { recursive: true });
+  }
+  // Ensure expected subdirectories exist to avoid runtime write errors
+  const uploadSubDirs = ['chat', 'course_url', 'pdf', 'word', 'avatars', 'quiz-images'];
+  uploadSubDirs.forEach((dir) => {
+    const full = path.join(uploadsRoot, dir);
+    if (!fs.existsSync(full)) {
+      fs.mkdirSync(full, { recursive: true });
+    }
+  });
+  app.use('/uploads', express.static(uploadsRoot));
 
   if (process.env.NODE_ENV === 'production') {
     app.set('trust proxy', 1); 
   }
 
  
+  const defaultOrigins = ['http://localhost:5173', 'http://localhost:3000'];
+  const envOrigin = process.env.FRONTEND_URL;
+  const allowedOrigins = envOrigin ? [envOrigin, ...defaultOrigins] : defaultOrigins;
   app.enableCors({
-    origin: process.env.FRONTEND_URL ?? 'http://localhost:3000',
+    origin: allowedOrigins,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
     allowedHeaders: ['Content-Type', 'x-csrf-token', 'Authorization'],
@@ -82,7 +98,9 @@ async function bootstrap() {
       saveUninitialized: false, 
       cookie: {
         secure: process.env.NODE_ENV === 'production',
-        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+        // In development, keep Lax so cookies are accepted on http://localhost (same-site).
+        // In production behind HTTPS, set None so cross-site subrequests work.
+        sameSite: process.env.NODE_ENV === 'production' ? ('none' as any) : 'lax',
         httpOnly: true,
         maxAge: 24 * 60 * 60 * 1000,
       },

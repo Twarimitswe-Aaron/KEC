@@ -334,10 +334,30 @@ export class ChatService {
       messageType: sendMessageDto.messageType.toUpperCase() as any
     };
 
+    // Validate replyToId (must exist and belong to the same chat)
+    const { replyToId, ...restDto } = normalizedDto as any;
+    let validReplyToId: number | undefined = undefined;
+    if (replyToId) {
+      const reply = await this.prisma.message.findUnique({
+        where: { id: Number(replyToId) },
+        select: { id: true, chatId: true }
+      });
+      if (reply && reply.chatId === actualChatId) {
+        validReplyToId = Number(replyToId);
+      } else {
+        console.warn('⚠️ [ChatService] Ignoring invalid replyToId:', replyToId, 'for chat', actualChatId);
+      }
+    }
+
+    const messageData: any = {
+      ...restDto,
+      ...(validReplyToId ? { replyToId: validReplyToId } : {})
+    };
+
     console.log('📝 [ChatService] Creating message with data:', {
       chatId: actualChatId,
       senderId: userId,
-      ...normalizedDto
+      ...messageData
     });
 
     // Create message
@@ -345,7 +365,7 @@ export class ChatService {
       data: {
         chatId: actualChatId,
         senderId: userId,
-        ...normalizedDto
+        ...messageData
       },
       include: {
         sender: { include: { profile: true } },
@@ -389,10 +409,18 @@ export class ChatService {
       throw new ForbiddenException('You are not a participant in this chat');
     }
 
-    // Create read records (use createMany to handle duplicates)
+    // Filter to existing messages in this chat to avoid FK violations
+    const existingMessages = await this.prisma.message.findMany({
+      where: { id: { in: messageIds }, chatId }
+    });
+
+    if (existingMessages.length === 0) {
+      return { success: true };
+    }
+
     await this.prisma.messageRead.createMany({
-      data: messageIds.map(messageId => ({
-        messageId,
+      data: existingMessages.map((m) => ({
+        messageId: m.id,
         userId
       })),
       skipDuplicates: true

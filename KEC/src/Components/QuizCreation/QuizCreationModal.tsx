@@ -16,6 +16,7 @@ interface QuizCreationModalProps {
   lessonTitle: string;
   enrolledStudents: EnrolledStudent[];
   onQuizCreated?: () => void;
+  defaultType?: string;
 }
 
 interface StudentMark {
@@ -34,7 +35,8 @@ const QuizCreationModal: React.FC<QuizCreationModalProps> = ({
   courseName,
   lessonTitle,
   enrolledStudents,
-  onQuizCreated
+  onQuizCreated,
+  defaultType
 }) => {
   const [step, setStep] = useState<'create' | 'marks'>('create');
   const [createdQuizId, setCreatedQuizId] = useState<number | null>(null);
@@ -46,11 +48,12 @@ const QuizCreationModal: React.FC<QuizCreationModalProps> = ({
     courseId,
     lessonId,
     maxPoints: 100,
-    type: 'assignment'
+    type: defaultType ?? 'assignment'
   });
 
   // Student marks state
   const [studentMarks, setStudentMarks] = useState<StudentMark[]>([]);
+  const [alert, setAlert] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   // API hooks
   const [createManualQuiz, { isLoading: isCreating }] = useCreateManualQuizMutation();
@@ -82,12 +85,47 @@ const QuizCreationModal: React.FC<QuizCreationModalProps> = ({
   }, [quizData.maxPoints]);
 
   const handleCreateQuiz = async () => {
+    setAlert(null);
     try {
       const result = await createManualQuiz(quizData).unwrap();
-      setCreatedQuizId(result.quiz.id);
+      const newQuizId = result.quiz.id as number;
+      setCreatedQuizId(newQuizId);
+
+      // Prepare initial zero marks for all enrolled students
+      const initialMarks = (enrolledStudents || []).map((student) => ({
+        userId: student.id,
+        mark: 0,
+        maxPoints: quizData.maxPoints,
+      }));
+
+      // Persist initial zero marks immediately (editable afterwards)
+      if (initialMarks.length > 0) {
+        try {
+          await updateManualMarks({
+            quizId: newQuizId,
+            studentMarks: initialMarks,
+          }).unwrap();
+        } catch (err) {
+          console.error('Failed to initialize zero marks:', err);
+        }
+      }
+
+      // Ensure UI reflects initialized marks
+      if (studentMarks.length === 0 && initialMarks.length > 0) {
+        setStudentMarks(initialMarks.map(m => ({
+          userId: m.userId,
+          name: (enrolledStudents.find(s => s.id === m.userId)?.name) || '',
+          email: (enrolledStudents.find(s => s.id === m.userId)?.email) || '',
+          mark: m.mark,
+          maxPoints: m.maxPoints,
+        })));
+      }
+
+      setAlert({ type: 'success', message: 'Quiz created and zero marks initialized' });
       setStep('marks');
     } catch (error) {
       console.error('Failed to create quiz:', error);
+      setAlert({ type: 'error', message: 'Failed to create quiz. Please try again.' });
     }
   };
 
@@ -119,6 +157,7 @@ const QuizCreationModal: React.FC<QuizCreationModalProps> = ({
       handleClose();
     } catch (error) {
       console.error('Failed to save marks:', error);
+      setAlert({ type: 'error', message: 'Failed to save marks. Please try again.' });
     }
   };
 
@@ -131,9 +170,10 @@ const QuizCreationModal: React.FC<QuizCreationModalProps> = ({
       courseId,
       lessonId,
       maxPoints: 100,
-      type: 'assignment'
+      type: defaultType ?? 'assignment'
     });
     setStudentMarks([]);
+    setAlert(null);
     onClose();
   };
 
@@ -152,8 +192,8 @@ const QuizCreationModal: React.FC<QuizCreationModalProps> = ({
   const stats = calculateStats();
 
   return (
-    <div className="fixed inset-0 bg-black/60 bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
+    <div className="fixed inset-0 bg-black/60 bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={handleClose}>
+      <div className="bg-white rounded-xl w-full max-w-4xl max-h-[90vh] overflow-hidden" onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
           <div className="flex justify-between items-center">
@@ -173,6 +213,12 @@ const QuizCreationModal: React.FC<QuizCreationModalProps> = ({
             </button>
           </div>
         </div>
+
+        {alert && (
+          <div className={`mx-6 mt-4 px-4 py-2 rounded ${alert.type === 'error' ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-green-50 text-green-700 border border-green-200'}`}>
+            {alert.message}
+          </div>
+        )}
 
         <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
           {step === 'create' ? (

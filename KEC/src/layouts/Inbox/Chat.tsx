@@ -1794,7 +1794,7 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
                                     <button
                                       key={idx}
                                       onClick={() =>
-                                        handleReaction(message.id, emoji)
+                                        handleQuickReaction(message.id, emoji)
                                       }
                                       className="p-2 hover:bg-gray-100 rounded-full transition-colors text-lg"
                                     >

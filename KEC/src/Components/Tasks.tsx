@@ -72,6 +72,8 @@ const Tasks = () => {
   const [selectedQuizDetails, setSelectedQuizDetails] = useState<any>(null);
   const [showUnifiedAnalytics, setShowUnifiedAnalytics] = useState(false);
   const [analyticsSelectedCourse, setAnalyticsSelectedCourse] = useState<any>(null);
+  const [lessonMenus, setLessonMenus] = useState<Record<number, boolean>>({});
+  const [selectedQuizType, setSelectedQuizType] = useState<string>('assignment');
 
   // Course analytics - fetch when analytics are selected
   const {
@@ -112,7 +114,7 @@ const Tasks = () => {
           })) || []
         })) || []
       })) || [],
-      enrolledStudents: []
+      enrolledStudents: course.enrolledStudents || []
     }));
   };
 
@@ -263,11 +265,20 @@ const Tasks = () => {
     }
   };
 
-  const handleCreateQuiz = (course: any, lessonId?: number, lessonTitle?: string) => {
+  const toggleLessonMenu = (lessonId: number, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    setLessonMenus(prev => ({
+      ...prev,
+      [lessonId]: !prev[lessonId]
+    }));
+  };
+
+  const handleCreateQuiz = (course: any, lessonId?: number, lessonTitle?: string, quizType?: string) => {
     setCurrentCourse(course);
     if (lessonId && lessonTitle) {
       setSelectedLesson({ lessonId, lessonTitle });
     }
+    setSelectedQuizType(quizType ?? 'assignment');
     setIsQuizCreationModalOpen(true);
   };
 
@@ -295,6 +306,10 @@ const Tasks = () => {
       ...prev,
       [courseId]: !prev[courseId]
     }));
+  };
+
+  const closeAllLessonMenus = () => {
+    setLessonMenus({});
   };
 
   const handleCoursePerformanceSelect = (course: any) => {
@@ -461,6 +476,9 @@ const Tasks = () => {
           getLetterGrade={getLetterGrade}
           calculateLessonTotalScore={calculateLessonTotalScore}
           calculateLessonTotalMaxPoints={calculateLessonTotalMaxPoints}
+          lessonMenus={lessonMenus}
+          toggleLessonMenu={toggleLessonMenu}
+          closeAllLessonMenus={closeAllLessonMenus}
         />
       )}
 
@@ -489,12 +507,13 @@ const Tasks = () => {
         <QuizCreationModal
           isOpen={isQuizCreationModalOpen}
           onClose={() => setIsQuizCreationModalOpen(false)}
-          courseId={currentCourse.courseId}
-          courseName={currentCourse.courseName}
+          courseId={currentCourse.id}
+          courseName={currentCourse.name}
           lessonId={selectedLesson.lessonId}
           lessonTitle={selectedLesson.lessonTitle}
           enrolledStudents={currentCourse.enrolledStudents || []}
           onQuizCreated={handleQuizCreated}
+          defaultType={selectedQuizType}
         />
       )}
 
