@@ -203,6 +203,8 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
   const [uploadProgress, setUploadProgress] = useState<Record<string, number>>(
     {}
   );
+  const [initialScrollDone, setInitialScrollDone] = useState(false);
+  const justSentRef = useRef(false);
 
   // File upload / message mutations
   const [deleteMessage] = useDeleteMessageMutation();
@@ -223,6 +225,7 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
   useEffect(() => {
     setIsAtBottom(true);
     setNewMessagesPending(false);
+    setInitialScrollDone(false);
   }, []);
 
   // Handle emoji selection for input
@@ -402,18 +405,33 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
     }
   }, [firstUnreadMessageId, messages, scrollToUnread]);
 
-  // Smooth auto-scroll to bottom using virtuoso when at bottom
+  // Perform a one-time scroll to the latest message when messages first load
   useEffect(() => {
-    if (isAtBottom) {
-      const timer = setTimeout(() => {
-        virtuosoRef.current?.scrollToIndex({
-          index: Math.max(0, messages.length - 1),
-          align: "end",
-          behavior: "smooth",
-        });
-      }, 150);
-      return () => clearTimeout(timer);
-    } else {
+    if (!initialScrollDone && messages.length > 0) {
+      virtuosoRef.current?.scrollToIndex({
+        index: Math.max(0, messages.length - 1),
+        align: "end",
+        behavior: "auto",
+      });
+      setInitialScrollDone(true);
+    }
+  }, [initialScrollDone, messages.length]);
+
+  // After sending a message while at bottom, re-anchor to the latest once it appears
+  useEffect(() => {
+    if (justSentRef.current && messages.length > 0) {
+      virtuosoRef.current?.scrollToIndex({
+        index: Math.max(0, messages.length - 1),
+        align: "end",
+        behavior: "auto",
+      });
+      justSentRef.current = false;
+    }
+  }, [messages.length]);
+
+  // When new messages arrive while not at bottom, show the "New messages" chip
+  useEffect(() => {
+    if (!isAtBottom && messages.length > 0) {
       setNewMessagesPending(true);
     }
   }, [messages.length, isAtBottom]);
@@ -871,6 +889,9 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
       return;
     }
 
+    // Remember that we just sent a message so we can re-anchor after it appears
+    justSentRef.current = true;
+
     // Set states after atomic flag is set
     setIsUploading(true);
     setIsSending(true);
@@ -1216,6 +1237,10 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
         fileUrl = `${backendUrl}${pathPart}`;
       }
       const replyToId = replyingTo?.id;
+
+      // Mark that we just sent a message so the scroll logic can re-anchor to the latest
+      justSentRef.current = true;
+
       await sendMessage(
         "",
         "FILE",
@@ -1463,7 +1488,7 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
       {/* Messages */}
       <div
         ref={messagesContainerRef}
-        className="relative flex-1 pl-2 sm:pl-4 pr-0 py-2 bg-white"
+        className="relative flex-1 pl-2 sm:pl-4 pr-2 sm:pr-4 py-2 bg-white"
         style={{ height: "100%" }}
       >
         {isLoading ? (
@@ -1484,14 +1509,15 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
             className="scroll-hide"
             style={{ height: "100%", overflowX: "hidden" }}
             groupCounts={groupCounts}
-            followOutput={isAtBottom ? "smooth" : false}
+            alignToBottom
+            followOutput="smooth"
             atBottomStateChange={(atBottom) => {
               setIsAtBottom(atBottom);
               if (atBottom) setNewMessagesPending(false);
             }}
             groupContent={(index) => (
-              <div className="flex items-center justify-center my-6">
-                <div className="bg-green-100 text-green-800 text-xs px-4 py-2 rounded-full font-medium shadow-sm">
+              <div className="flex items-center justify-center my-4">
+                <div className="bg-green-100 text-green-800 text-xs px-3 py-1.5 rounded-full font-medium shadow-sm">
                   {groupsArr[index]?.dateKey}
                 </div>
               </div>
@@ -1514,6 +1540,26 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
                 ? shouldGroupMessage(nextMessage as any, message)
                 : false;
               const showAvatar = !isCurrentUser && !isGrouped;
+
+              // Detect if this message represents an audio/voice file
+              const isAudioFile =
+                !!message.fileUrl &&
+                ((message.fileMimeType &&
+                  message.fileMimeType.toLowerCase().startsWith("audio/")) ||
+                  (message.fileUrl &&
+                    (message.fileUrl.toLowerCase().endsWith(".webm") ||
+                      message.fileUrl.toLowerCase().endsWith(".ogg") ||
+                      message.fileUrl.toLowerCase().endsWith(".mp3") ||
+                      message.fileUrl.toLowerCase().endsWith(".m4a"))) ||
+                  (message.fileName &&
+                    (message.fileName.toLowerCase().endsWith(".webm") ||
+                      message.fileName.toLowerCase().endsWith(".ogg") ||
+                      message.fileName.toLowerCase().endsWith(".mp3") ||
+                      message.fileName.toLowerCase().endsWith(".m4a"))));
+
+              // Treat as image only when it's not an audio file
+              const isImageMessage =
+                message.messageType === "IMAGE" && !isAudioFile;
 
               return (
                 <div
@@ -1549,11 +1595,11 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
                   {firstUnreadMessageId === message.id &&
                     unreadMessages.length > 0 && (
                       <div
-                        className="flex items-center justify-center my-4"
+                        className="flex items-center justify-center my-3"
                         ref={unreadIndicatorRef}
                       >
                         <div className="flex-1 h-px bg-gradient-to-r from-transparent via-blue-400 to-transparent"></div>
-                        <div className="px-4 py-1 bg-blue-500 text-white text-xs font-medium rounded-full shadow-sm">
+                        <div className="px-3 py-1 bg-blue-500 text-white text-xs font-medium rounded-full shadow-sm">
                           {unreadMessages.length} unread message
                           {unreadMessages.length > 1 ? "s" : ""}
                         </div>
@@ -1564,13 +1610,13 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
                   <div
                     className={`flex items-start gap-1 sm:gap-2 ${
                       isCurrentUser
-                        ? "justify-end pr-0 -mr-1"
+                        ? "justify-end pr-1 sm:pr-2"
                         : "justify-start pl-0"
                     } ${
                       isUnread
-                        ? "bg-blue-50/30 -mx-2 sm:-mx-4 px-2 sm:px-4 py-2 rounded-lg"
+                        ? "bg-blue-50/30 -mx-2 sm:-mx-4 px-2 sm:px-3 py-1.5 rounded-lg"
                         : ""
-                    } ${isGrouped ? "mb-1" : "mb-4"}`}
+                    } ${isGrouped ? "mb-1" : "mb-2"}`}
                     onMouseDown={() => handleOptionsMouseDown(message.id)}
                     onMouseUp={handleMouseUp}
                     onMouseLeave={handleMouseUp}
@@ -1652,7 +1698,7 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
                           message.messageType === "TEXT" &&
                           isEmojiOnlyMessage(message.content || "")
                             ? ""
-                            : "px-2 sm:px-4 py-2"
+                            : "px-2 sm:px-3 py-1.5"
                         } relative ${
                           message.messageType === "TEXT" &&
                           isEmojiOnlyMessage(message.content || "")
@@ -1738,7 +1784,7 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
                             </div>
                           ))}
 
-                        {message.messageType === "IMAGE" && (
+                        {isImageMessage && (
                           <div className="relative">
                             <a
                               href={message.fileUrl || "#"}
@@ -1755,42 +1801,65 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
                           </div>
                         )}
 
-                        {message.messageType === "FILE" && (
-                          <>
-                            {message.fileMimeType?.startsWith("audio/") ? (
-                              <audio
-                                controls
-                                preload="metadata"
-                                className="w-full"
-                              >
-                                <source
-                                  src={message.fileUrl || ""}
-                                  type={message.fileMimeType || "audio/webm"}
-                                />
-                                Your browser does not support the audio element.
-                              </audio>
-                            ) : (
-                              <a
-                                href={message.fileUrl || "#"}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex items-center gap-2 p-2 rounded-md hover:bg-gray-50"
-                              >
-                                <GoPaperclip className="h-5 w-5 text-gray-500" />
-                                <span className="text-xs sm:text-sm truncate max-w-[220px]">
-                                  {message.fileName || "File"}
+                        {/* Voice / audio messages */}
+                        {isAudioFile && (
+                            <audio
+                              controls
+                              preload="metadata"
+                              className="w-full"
+                            >
+                              <source
+                                src={message.fileUrl || ""}
+                                type={message.fileMimeType || "audio/webm"}
+                              />
+                              Your browser does not support the audio element.
+                            </audio>
+                          )}
+
+                        {/* Generic file messages */}
+                        {message.fileUrl && !isAudioFile && (
+                            <a
+                              href={message.fileUrl || "#"}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-2 p-2 rounded-md hover:bg-gray-50"
+                            >
+                              <GoPaperclip className="h-5 w-5 text-gray-500" />
+                              <span className="text-xs sm:text-sm truncate max-w-[220px]">
+                                {message.fileName || "File"}
+                              </span>
+                              {typeof message.fileSize === "number" && (
+                                <span className="text-[10px] text-gray-400">
+                                  {Math.round(
+                                    (message.fileSize / 1024 / 1024) * 10
+                                  ) / 10}{" "}
+                                  MB
                                 </span>
-                                {typeof message.fileSize === "number" && (
-                                  <span className="text-[10px] text-gray-400">
-                                    {Math.round(
-                                      (message.fileSize / 1024 / 1024) * 10
-                                    ) / 10}{" "}
-                                    MB
+                              )}
+                            </a>
+                          )}
+
+                        {/* Reactions bar */}
+                        {message.reactions && message.reactions.length > 0 && (
+                          <div className="mt-1 flex flex-wrap gap-1">
+                            {message.reactions.map((reaction) => (
+                              <div
+                                key={reaction.emoji}
+                                className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] ${
+                                  isCurrentUser
+                                    ? "bg-blue-600/80 text-white"
+                                    : "bg-gray-100 text-gray-700"
+                                }`}
+                              >
+                                <span>{reaction.emoji}</span>
+                                {reaction.count > 1 && (
+                                  <span className="ml-1 text-[9px]">
+                                    {reaction.count}
                                   </span>
                                 )}
-                              </a>
-                            )}
-                          </>
+                              </div>
+                            ))}
+                          </div>
                         )}
 
                         {/* Hover actions */}
