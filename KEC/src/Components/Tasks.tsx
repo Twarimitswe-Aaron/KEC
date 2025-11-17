@@ -91,6 +91,9 @@ const Tasks = () => {
     skip: !analyticsSelectedCourse?.id || !showUnifiedAnalytics
   });
 
+
+  
+
   // Transform API data
   const transformApiDataToMockFormat = (apiData: CourseWithData[]) => {
     return apiData.map(course => ({
@@ -155,6 +158,166 @@ const Tasks = () => {
   const calculateLessonTotalMaxPoints = (lesson: any) => {
     return lesson.quizzes?.reduce((total: number, quiz: any) => total + quiz.maxPoints, 0) || 0;
   };
+
+  function computeCourseAnalytics(course: any) {
+    if (!course) return undefined;
+    const lessons = course.lessons || [];
+    const quizzes = lessons.flatMap((l: any) => l.quizzes || []);
+    const totalLessons = lessons.length;
+    const totalAssignments = quizzes.length;
+    const enrolled = course.enrolledStudents || [];
+    const studentMap: Record<number, any> = {};
+    enrolled.forEach((s: any) => {
+      if (s && typeof s.id === 'number') {
+        studentMap[s.id] = {
+          studentId: s.id,
+          name: s.name || '',
+          email: s.email || '',
+          assignmentsCompleted: 0,
+          totalAssignments,
+          _sumPerc: 0,
+          _countPerc: 0,
+        };
+      }
+    });
+    quizzes.forEach((q: any) => {
+      const maxPts = Number(q?.maxPoints) || 100;
+      const students = q?.students || [];
+      students.forEach((st: any) => {
+        const id = typeof st?.studentId === 'number' ? st.studentId : st?.id;
+        if (typeof id !== 'number') return;
+        if (!studentMap[id]) {
+          studentMap[id] = {
+            studentId: id,
+            name: st.name || '',
+            email: st.email || '',
+            assignmentsCompleted: 0,
+            totalAssignments,
+            _sumPerc: 0,
+            _countPerc: 0,
+          };
+        }
+        const mark = typeof st?.mark === 'number' ? st.mark : null;
+        if (mark !== null) {
+          studentMap[id].assignmentsCompleted += 1;
+          studentMap[id]._sumPerc += (mark / maxPts) * 100;
+          studentMap[id]._countPerc += 1;
+        }
+      });
+    });
+    const topPerformingStudents = Object.values(studentMap).map((s: any) => {
+      const overallAverage = s._countPerc > 0 ? s._sumPerc / s._countPerc : 0;
+      return {
+        studentId: s.studentId,
+        name: s.name,
+        email: s.email,
+        overallAverage,
+        letterGrade: getLetterGrade(overallAverage),
+        assignmentsCompleted: s.assignmentsCompleted,
+        totalAssignments: s.totalAssignments,
+        lessonsProgress: [],
+      };
+    });
+    const studentsWithMarks = topPerformingStudents.filter((s: any) => s.assignmentsCompleted > 0);
+    const courseAverage =
+      studentsWithMarks.length > 0
+        ? studentsWithMarks.reduce((acc: number, s: any) => acc + s.overallAverage, 0) / studentsWithMarks.length
+        : 0;
+    const totalStudents =
+      enrolled.length > 0
+        ? enrolled.length
+        : Object.keys(studentMap).length;
+    const completionRate =
+      totalStudents > 0 && totalAssignments > 0
+        ? (topPerformingStudents.reduce((acc: number, s: any) => acc + s.assignmentsCompleted, 0) /
+            (totalStudents * totalAssignments)) *
+          100
+        : 0;
+    const studentsAtRisk = topPerformingStudents.filter((s: any) => s.overallAverage < 65).length;
+    const gradeDistribution = topPerformingStudents.reduce(
+      (acc: any, s: any) => {
+        const g = s.letterGrade.startsWith('A')
+          ? 'A'
+          : s.letterGrade.startsWith('B')
+          ? 'B'
+          : s.letterGrade.startsWith('C')
+          ? 'C'
+          : s.letterGrade.startsWith('D')
+          ? 'D'
+          : 'F';
+        acc[g] = (acc[g] || 0) + 1;
+        return acc;
+      },
+      { A: 0, B: 0, C: 0, D: 0, F: 0 } as any
+    );
+    const lessonsAnalytics = lessons.map((l: any) => {
+      const lQuizzes = l.quizzes || [];
+      const assignmentCount = lQuizzes.length;
+      let sumPerc = 0;
+      let countPerc = 0;
+      let submissions = 0;
+      lQuizzes.forEach((q: any) => {
+        const maxPts = Number(q?.maxPoints) || 100;
+        const students = q?.students || [];
+        students.forEach((st: any) => {
+          const mark = typeof st?.mark === 'number' ? st.mark : null;
+          if (mark !== null) {
+            sumPerc += (mark / maxPts) * 100;
+            countPerc += 1;
+            submissions += 1;
+          }
+        });
+      });
+      const averagePerformance = countPerc > 0 ? sumPerc / countPerc : 0;
+      const lessonCompletionRate =
+        totalStudents > 0 && assignmentCount > 0
+          ? (submissions / (totalStudents * assignmentCount)) * 100
+          : 0;
+      const perStudentMap: Record<number, { sum: number; cnt: number }> = {};
+      lQuizzes.forEach((q: any) => {
+        const maxPts = Number(q?.maxPoints) || 100;
+        (q?.students || []).forEach((st: any) => {
+          const id = typeof st?.studentId === 'number' ? st.studentId : st?.id;
+          if (typeof id !== 'number') return;
+          const mark = typeof st?.mark === 'number' ? st.mark : null;
+          if (mark !== null) {
+            if (!perStudentMap[id]) perStudentMap[id] = { sum: 0, cnt: 0 };
+            perStudentMap[id].sum += (mark / maxPts) * 100;
+            perStudentMap[id].cnt += 1;
+          }
+        });
+      });
+      const studentsAtRiskLesson = Object.values(perStudentMap).filter((v: any) => (v.sum / v.cnt) < 65).length;
+      return {
+        lessonId: l.id,
+        lessonTitle: l.title,
+        assignmentCount,
+        averagePerformance,
+        completionRate: lessonCompletionRate,
+        studentsAtRisk: studentsAtRiskLesson,
+        quizStats: [],
+      };
+    });
+    return {
+      totalLessons,
+      totalAssignments,
+      totalStudents,
+      courseAverage,
+      completionRate,
+      studentsAtRisk,
+      lessonsAnalytics,
+      topPerformingStudents,
+      assignmentTypeBreakdown: [],
+      gradeDistribution,
+    };
+  }
+
+  const computedUnifiedAnalytics = useMemo(() => {
+    if (!analyticsSelectedCourse) return undefined as any;
+    const baseCourse = (data || []).find((c: any) => c.id === analyticsSelectedCourse.id) || analyticsSelectedCourse;
+    return computeCourseAnalytics(baseCourse);
+  }, [analyticsSelectedCourse, data]);
+  
 
   // Filter and search functionality
   const filteredData = useMemo(() => {
@@ -520,8 +683,8 @@ const Tasks = () => {
       {/* Course Analytics Modal */}
       <PerformanceAnalytics
         course={analyticsSelectedCourse}
-        courseAnalytics={unifiedCourseAnalytics}
-        analyticsLoading={unifiedAnalyticsLoading}
+        courseAnalytics={unifiedCourseAnalytics || computedUnifiedAnalytics}
+        analyticsLoading={unifiedAnalyticsLoading && !computedUnifiedAnalytics}
         getGradeColor={getGradeColor}
         getLetterGrade={getLetterGrade}
         isOpen={showUnifiedAnalytics}

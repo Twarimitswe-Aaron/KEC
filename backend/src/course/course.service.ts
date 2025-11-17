@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateCourseDto } from './dto/create-course.dto';
 import { UpdateCourseDto } from './dto/update-course.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
@@ -201,8 +201,7 @@ export class CourseService {
   }
 
   async updateCourse(updateCourseDto: UpdateCourseDto) {
-    const { title, description, price, image_url, maximum, open } =
-      updateCourseDto;
+    const { title, description, price, image_url, maximum, open } = updateCourseDto;
     await this.prisma.course.update({
       where: { id: Number(updateCourseDto.id) },
       data: {
@@ -217,4 +216,223 @@ export class CourseService {
     return { message: 'Course updated successfully' };
   }
 
+  async getCourseAnalytics(courseId: number) {
+    const course = await this.prisma.course.findUnique({
+      where: { id: courseId },
+      include: {
+        lesson: {
+          include: {
+            resources: {
+              include: {
+                form: {
+                  include: {
+                    quizzes: {
+                      include: { attempts: true },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+        onGoingStudents: {
+          include: {
+            user: {
+              select: { id: true, firstName: true, lastName: true, email: true },
+            },
+          },
+        },
+      },
+    });
+
+    if (!course) throw new NotFoundException('Course not found');
+
+    const totalLessons = course.lesson.length;
+    let totalAssignments = 0;
+
+    const enrolled = course.onGoingStudents.map((s) => ({
+      id: s.user?.id || 0,
+      name: `${s.user?.firstName ?? ''} ${s.user?.lastName ?? ''}`.trim(),
+      email: s.user?.email || '',
+    }));
+
+    const studentsById: Record<
+      number,
+      {
+        name: string;
+        email: string;
+        assignmentsCompleted: number;
+        totalAssignments: number;
+        sumPerc: number;
+        countPerc: number;
+      }
+    > = {};
+
+    enrolled.forEach((s) => {
+      if (s.id) {
+        studentsById[s.id] = {
+          name: s.name,
+          email: s.email,
+          assignmentsCompleted: 0,
+          totalAssignments: 0,
+          sumPerc: 0,
+          countPerc: 0,
+        };
+      }
+    });
+
+    const lessonsAnalytics = course.lesson.map((lesson) => {
+      let assignmentCount = 0;
+      let sumPerc = 0;
+      let countPerc = 0;
+      let submissions = 0;
+      const perStudent: Record<number, { sum: number; cnt: number }> = {};
+
+      (lesson.resources || []).forEach((r) => {
+        const quizzes = r.form?.quizzes || [];
+        assignmentCount += quizzes.length;
+        totalAssignments += quizzes.length;
+        quizzes.forEach((q) => {
+          const totalPts = ((q.settings as any)?.totalPoints) || 100;
+          (q.attempts || []).forEach((a) => {
+            let userId: number | null = null;
+            let mark: number | null = typeof (a as any).score === 'number' ? (a as any).score : null;
+            let maxPoints: number =
+              typeof (a as any).totalPoints === 'number' && (a as any).totalPoints > 0
+                ? (a as any).totalPoints
+                : totalPts;
+
+            try {
+              const details = (a as any).detailedResults ? JSON.parse((a as any).detailedResults) : {};
+              if (typeof details.userId === 'number') userId = details.userId;
+              if (mark === null && typeof details.mark === 'number') mark = details.mark;
+              if ((!maxPoints || maxPoints <= 0) && typeof details.maxPoints === 'number')
+                maxPoints = details.maxPoints;
+            } catch {}
+
+            if (userId && mark !== null && maxPoints > 0) {
+              const perc = (mark / maxPoints) * 100;
+              sumPerc += perc;
+              countPerc += 1;
+              submissions += 1;
+
+              if (!studentsById[userId]) {
+                const found = enrolled.find((e) => e.id === userId) || { id: userId, name: '', email: '' };
+                studentsById[userId] = {
+                  name: found.name,
+                  email: found.email,
+                  assignmentsCompleted: 0,
+                  totalAssignments: 0,
+                  sumPerc: 0,
+                  countPerc: 0,
+                };
+              }
+              studentsById[userId].assignmentsCompleted += 1;
+              studentsById[userId].sumPerc += perc;
+              studentsById[userId].countPerc += 1;
+
+              if (!perStudent[userId]) perStudent[userId] = { sum: 0, cnt: 0 };
+              perStudent[userId].sum += perc;
+              perStudent[userId].cnt += 1;
+            }
+          });
+        });
+      });
+
+      const averagePerformance = countPerc > 0 ? sumPerc / countPerc : 0;
+      const totalStudents = enrolled.length || Object.keys(studentsById).length;
+      const completionRate =
+        totalStudents > 0 && assignmentCount > 0
+          ? (submissions / (totalStudents * assignmentCount)) * 100
+          : 0;
+      const studentsAtRisk = Object.values(perStudent).filter(
+        (v) => v.cnt > 0 && v.sum / v.cnt < 65,
+      ).length;
+
+      return {
+        lessonId: lesson.id,
+        lessonTitle: lesson.title,
+        assignmentCount,
+        averagePerformance,
+        completionRate,
+        studentsAtRisk,
+        quizStats: [],
+      };
+    });
+
+    Object.values(studentsById).forEach((s) => {
+      s.totalAssignments = totalAssignments;
+    });
+
+    const topPerformingStudents = Object.entries(studentsById).map(([id, s]) => {
+      const overallAverage = s.countPerc > 0 ? s.sumPerc / s.countPerc : 0;
+      const letterGrade =
+        overallAverage >= 85
+          ? 'A'
+          : overallAverage >= 70
+          ? 'B'
+          : overallAverage >= 60
+          ? 'C'
+          : overallAverage >= 50
+          ? 'D'
+          : 'F';
+      return {
+        studentId: Number(id),
+        name: s.name,
+        email: s.email,
+        overallAverage,
+        letterGrade,
+        assignmentsCompleted: s.assignmentsCompleted,
+        totalAssignments: s.totalAssignments,
+        lessonsProgress: [],
+      };
+    });
+
+    const courseAverage =
+      topPerformingStudents.length > 0
+        ? topPerformingStudents.reduce((acc, st) => acc + st.overallAverage, 0) /
+          topPerformingStudents.length
+        : 0;
+
+    const totalStudentsCount = enrolled.length || topPerformingStudents.length;
+    const totalSubmissions = topPerformingStudents.reduce(
+      (acc, st) => acc + st.assignmentsCompleted,
+      0,
+    );
+    const overallCompletionRate =
+      totalStudentsCount > 0 && totalAssignments > 0
+        ? (totalSubmissions / (totalStudentsCount * totalAssignments)) * 100
+        : 0;
+    const studentsAtRiskCount = topPerformingStudents.filter((s) => s.overallAverage < 65).length;
+
+    const gradeDistribution = topPerformingStudents.reduce(
+      (acc: any, s) => {
+        const g = s.letterGrade.startsWith('A')
+          ? 'A'
+          : s.letterGrade.startsWith('B')
+          ? 'B'
+          : s.letterGrade.startsWith('C')
+          ? 'C'
+          : s.letterGrade.startsWith('D')
+          ? 'D'
+          : 'F';
+        acc[g] = (acc[g] || 0) + 1;
+        return acc;
+      },
+      { A: 0, B: 0, C: 0, D: 0, F: 0 },
+    );
+
+    return {
+      totalLessons,
+      totalAssignments,
+      totalStudents: totalStudentsCount,
+      courseAverage,
+      completionRate: overallCompletionRate,
+      studentsAtRisk: studentsAtRiskCount,
+      lessonsAnalytics,
+      topPerformingStudents,
+      assignmentTypeBreakdown: [],
+      gradeDistribution,
+    };
+  }
 }

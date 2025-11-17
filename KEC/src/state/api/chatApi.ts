@@ -133,7 +133,7 @@ export const chatApi = apiCore.apiSlice.injectEndpoints({
     // Get specific chat by ID
     getChat: builder.query<Chat, number>({
       query: (chatId) => `chat/${chatId}`,
-      providesTags: (result, error, chatId) => [{ type: 'Chat', id: chatId }],
+      providesTags: (_result, _error, chatId) => [{ type: 'Chat', id: chatId }],
     }),
 
     // Get messages for a specific chat
@@ -147,7 +147,7 @@ export const chatApi = apiCore.apiSlice.injectEndpoints({
         url: `chat/${chatId}/messages`,
         params: { page, limit, lastMessageId },
       }),
-      providesTags: (result, error, { chatId }) => [
+      providesTags: (_result, _error, { chatId }) => [
         { type: 'Message', id: `chat-${chatId}` },
       ],
       // Merge new messages with existing ones for pagination
@@ -269,7 +269,7 @@ export const chatApi = apiCore.apiSlice.injectEndpoints({
           patchResult.undo();
         }
       },
-      invalidatesTags: (result, error, { chatId }) => [
+      invalidatesTags: (_result, _error, { chatId }) => [
         { type: 'Message', id: `chat-${chatId}` },
         { type: 'Chat', id: chatId },
       ],
@@ -382,6 +382,29 @@ export const chatApi = apiCore.apiSlice.injectEndpoints({
         method: 'POST',
         body: { emoji },
       }),
+      async onQueryStarted({ chatId, messageId, emoji }, { dispatch, queryFulfilled }) {
+        // Optimistically increment reaction count
+        const patchResult = dispatch(
+          chatApi.util.updateQueryData('getMessages', { chatId }, (draft) => {
+            const msg = draft.messages.find((m) => m.id === messageId);
+            if (!msg) return;
+            const reactions = (msg.reactions = (msg.reactions ?? ([] as any)) as any);
+            const existing = reactions.find((r: any) => r.emoji === emoji);
+            if (existing) {
+              existing.count = (existing.count || 0) + 1;
+            } else {
+              reactions.push({ emoji, count: 1, users: [] as number[] } as any);
+            }
+          })
+        );
+
+        try {
+          await queryFulfilled;
+        } catch (e) {
+          // Revert on failure
+          patchResult.undo();
+        }
+      },
     }),
 
     // Remove reaction from message
@@ -391,6 +414,25 @@ export const chatApi = apiCore.apiSlice.injectEndpoints({
         method: 'DELETE',
         body: { emoji },
       }),
+      async onQueryStarted({ chatId, messageId, emoji }, { dispatch, queryFulfilled }) {
+        const patchResult = dispatch(
+          chatApi.util.updateQueryData('getMessages', { chatId }, (draft) => {
+            const msg = draft.messages.find((m) => m.id === messageId);
+            if (!msg || !msg.reactions) return;
+            const reactions = msg.reactions as any[];
+            const existing = reactions.find((r: any) => r.emoji === emoji);
+            if (existing) {
+              existing.count = Math.max(0, (existing.count || 0) - 1);
+            }
+            msg.reactions = reactions.filter((r: any) => (r.emoji === emoji ? (r.count || 0) > 0 : true)) as any;
+          })
+        );
+        try {
+          await queryFulfilled;
+        } catch (e) {
+          patchResult.undo();
+        }
+      },
     }),
 
     // Update typing status

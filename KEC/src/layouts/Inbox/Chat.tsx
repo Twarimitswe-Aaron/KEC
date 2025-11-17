@@ -1,4 +1,11 @@
-import React, { useState, useRef, useEffect, useCallback } from "react";
+import React, {
+  useState,
+  useRef,
+  useEffect,
+  useCallback,
+  useMemo,
+} from "react";
+import { GroupedVirtuoso, GroupedVirtuosoHandle } from "react-virtuoso";
 
 import { MdOutlinePhoneInTalk } from "react-icons/md";
 import { FiSend } from "react-icons/fi";
@@ -19,7 +26,6 @@ import {
 import { useChat } from "../../hooks/useChat";
 import {
   Message,
-  useUploadChatFileMutation,
   useDeleteMessageMutation,
   useEditMessageMutation,
   useAddReactionMutation,
@@ -185,13 +191,24 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
     }>
   >([]);
 
-  // File upload mutation
-  const [uploadFile] = useUploadChatFileMutation();
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const recordStartTimeRef = useRef<number | null>(null);
+  const [recordingError, setRecordingError] = useState<string | null>(null);
+
+  // Scroll and upload progress helpers
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const [isAtBottom, setIsAtBottom] = useState(true);
+  const [newMessagesPending, setNewMessagesPending] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<Record<string, number>>(
+    {}
+  );
+
+  // File upload / message mutations
   const [deleteMessage] = useDeleteMessageMutation();
   const [editMessage] = useEditMessageMutation();
   const [addReaction] = useAddReactionMutation();
   const [removeReaction] = useRemoveReactionMutation();
-  const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const unreadIndicatorRef = useRef<HTMLDivElement>(null);
@@ -202,76 +219,96 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
     setShowUnreadIndicator(unreadMessages.length > 0 && !isTabVisible);
   }, [unreadMessages.length, isTabVisible]);
 
+  // Track bottom state via virtuoso's atBottomStateChange
+  useEffect(() => {
+    setIsAtBottom(true);
+    setNewMessagesPending(false);
+  }, []);
+
   // Handle emoji selection for input
-  const handleEmojiSelect = useCallback(async (emoji: string) => {
-    // Check if it's a single emoji and the input is empty - send as emoji message
-    if (!newMessage.trim() && /^[\p{Emoji_Presentation}\p{Emoji}\uFE0F\u200D]+$/u.test(emoji)) {
-      // Send emoji directly as a message
-      if (activeChat && isConnected) {
-        try {
-          await sendMessage(emoji, "TEXT");
-          setShowMainEmojiPicker(false);
-          return;
-        } catch (error) {
-          console.error('Failed to send emoji message:', error);
+  const handleEmojiSelect = useCallback(
+    async (emoji: string) => {
+      // Check if it's a single emoji and the input is empty - send as emoji message
+      if (
+        !newMessage.trim() &&
+        /^[\p{Emoji_Presentation}\p{Emoji}\uFE0F\u200D]+$/u.test(emoji)
+      ) {
+        // Send emoji directly as a message
+        if (activeChat && isConnected) {
+          try {
+            await sendMessage(emoji, "TEXT");
+            setShowMainEmojiPicker(false);
+            return;
+          } catch (error) {
+            console.error("Failed to send emoji message:", error);
+          }
         }
       }
-    }
-    
-    // Otherwise add to input text
-    setNewMessage(prev => prev + emoji);
-    setShowMainEmojiPicker(false);
-  }, [newMessage, activeChat, isConnected, sendMessage]);
+
+      // Otherwise add to input text
+      setNewMessage((prev) => prev + emoji);
+      setShowMainEmojiPicker(false);
+    },
+    [newMessage, activeChat, isConnected, sendMessage]
+  );
 
   // Handle message reaction
-  const handleMessageReaction = useCallback(async (messageId: number, emoji: string) => {
-    if (!activeChat || !currentUser) return;
-    
-    try {
-      console.log('👍 [Chat] Adding reaction:', { messageId, emoji });
-      
-      // Call the API to add/remove reaction
-      await addReaction({ 
-        messageId, 
-        emoji, 
-        chatId: activeChat.id 
-      }).unwrap();
-      
-      console.log(`✅ [Chat] Added ${emoji} reaction to message ${messageId}`);
-      
-      setShowEmojiPicker(null);
-      setSelectedMessage(null);
-      
-    } catch (error) {
-      console.error('❌ Failed to add reaction:', error);
-      
-      // Try to remove the reaction if it already exists
+  const handleMessageReaction = useCallback(
+    async (messageId: number, emoji: string) => {
+      if (!activeChat || !currentUser) return;
+
       try {
-        await removeReaction({ 
-          messageId, 
-          emoji, 
-          chatId: activeChat.id 
+        console.log("👍 [Chat] Adding reaction:", { messageId, emoji });
+
+        // Call the API to add/remove reaction
+        await addReaction({
+          messageId,
+          emoji,
+          chatId: activeChat.id,
         }).unwrap();
-        console.log(`✅ [Chat] Removed ${emoji} reaction from message ${messageId}`);
-      } catch (removeError) {
-        console.error('❌ Failed to remove reaction:', removeError);
+
+        console.log(
+          `✅ [Chat] Added ${emoji} reaction to message ${messageId}`
+        );
+
+        setShowEmojiPicker(null);
+        setSelectedMessage(null);
+      } catch (error) {
+        console.error("❌ Failed to add reaction:", error);
+
+        // Try to remove the reaction if it already exists
+        try {
+          await removeReaction({
+            messageId,
+            emoji,
+            chatId: activeChat.id,
+          }).unwrap();
+          console.log(
+            `✅ [Chat] Removed ${emoji} reaction from message ${messageId}`
+          );
+        } catch (removeError) {
+          console.error("❌ Failed to remove reaction:", removeError);
+        }
       }
-    }
-  }, [activeChat, currentUser, addReaction, removeReaction]);
+    },
+    [activeChat, currentUser, addReaction, removeReaction]
+  );
 
   // Handle quick reaction (double tap or long press)
-  const handleQuickReaction = useCallback(async (messageId: number, emoji: string = '❤️') => {
-    // Show floating reaction animation
-    setFloatingReaction({ messageId, emoji, show: true });
-    
-    // Hide animation after delay
-    setTimeout(() => {
-      setFloatingReaction(null);
-    }, 1000);
-    
-    await handleMessageReaction(messageId, emoji);
-  }, [handleMessageReaction]);
+  const handleQuickReaction = useCallback(
+    async (messageId: number, emoji: string = "❤️") => {
+      // Show floating reaction animation
+      setFloatingReaction({ messageId, emoji, show: true });
 
+      // Hide animation after delay
+      setTimeout(() => {
+        setFloatingReaction(null);
+      }, 1000);
+
+      await handleMessageReaction(messageId, emoji);
+    },
+    [handleMessageReaction]
+  );
 
   const handleMouseUp = useCallback(() => {
     if (longPressTimer) {
@@ -281,114 +318,105 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
   }, [longPressTimer]);
 
   // Handle message deletion
-  const handleDeleteMessage = useCallback(async (messageId: number) => {
-    if (!activeChat) return;
-    
-    try {
-      console.log('🗑️ [Chat] Deleting message:', messageId);
-      
-      await deleteMessage({ 
-        messageId, 
-        chatId: activeChat.id 
-      }).unwrap();
-      
-      console.log('✅ [Chat] Message deleted successfully');
-      setSelectedMessage(null);
-      
-    } catch (error) {
-      console.error('❌ Failed to delete message:', error);
-    }
-  }, [activeChat, deleteMessage]);
+  const handleDeleteMessage = useCallback(
+    async (messageId: number) => {
+      if (!activeChat) return;
+
+      try {
+        console.log("🗑️ [Chat] Deleting message:", messageId);
+
+        await deleteMessage({
+          messageId,
+          chatId: activeChat.id,
+        }).unwrap();
+
+        console.log("✅ [Chat] Message deleted successfully");
+        setSelectedMessage(null);
+      } catch (error) {
+        console.error("❌ Failed to delete message:", error);
+      }
+    },
+    [activeChat, deleteMessage]
+  );
 
   // Handle message edit
   const handleEditMessage = useCallback((message: Message) => {
-    console.log('✏️ [Chat] Edit message:', message.id);
+    console.log("✏️ [Chat] Edit message:", message.id);
     setEditingMessage(message.id);
-    setEditingContent(message.content || '');
+    setEditingContent(message.content || "");
     setSelectedMessage(null);
   }, []);
 
   // Save edited message
-  const handleSaveEdit = useCallback(async (messageId: number) => {
-    if (!activeChat || !editingContent.trim()) return;
-    
-    try {
-      console.log('💾 [Chat] Saving edited message:', messageId);
-      
-      await editMessage({ 
-        messageId, 
-        content: editingContent.trim(),
-        chatId: activeChat.id 
-      }).unwrap();
-      
-      console.log('✅ [Chat] Message edited successfully');
-      setEditingMessage(null);
-      setEditingContent('');
-      
-    } catch (error) {
-      console.error('❌ Failed to edit message:', error);
-    }
-  }, [activeChat, editingContent, editMessage]);
+  const handleSaveEdit = useCallback(
+    async (messageId: number) => {
+      if (!activeChat || !editingContent.trim()) return;
+
+      try {
+        console.log("💾 [Chat] Saving edited message:", messageId);
+
+        await editMessage({
+          messageId,
+          content: editingContent.trim(),
+          chatId: activeChat.id,
+        }).unwrap();
+
+        console.log("✅ [Chat] Message edited successfully");
+        setEditingMessage(null);
+        setEditingContent("");
+      } catch (error) {
+        console.error("❌ Failed to edit message:", error);
+      }
+    },
+    [activeChat, editingContent, editMessage]
+  );
 
   // Cancel message edit
   const handleCancelEdit = useCallback(() => {
     setEditingMessage(null);
-    setEditingContent('');
+    setEditingContent("");
   }, []);
 
   // Setup scroll to unread functionality
   useEffect(() => {
     if (unreadIndicatorRef.current && firstUnreadMessageId) {
       const scrollToUnreadMessage = () => {
-        const unreadElement = document.querySelector(
-          `[data-message-id="${firstUnreadMessageId}"]`
-        );
-        if (unreadElement) {
-          unreadElement.scrollIntoView({
+        const idx = messages.findIndex((m) => m.id === firstUnreadMessageId);
+        if (idx >= 0) {
+          virtuosoRef.current?.scrollToIndex({
+            index: idx,
+            align: "center",
             behavior: "smooth",
-            block: "center",
           });
           console.log(
-            "📍 [Chat] Scrolled to first unread message:",
+            "📍 [Chat] Scrolled to first unread message via virtuoso:",
             firstUnreadMessageId
           );
         }
       };
 
-      // Store the scroll function for context to use
       const currentScrollRef = unreadIndicatorRef.current;
       if (currentScrollRef) {
-        // Make the scroll function available
         (currentScrollRef as any).scrollToUnread = scrollToUnreadMessage;
       }
     }
-  }, [firstUnreadMessageId, scrollToUnread]);
+  }, [firstUnreadMessageId, messages, scrollToUnread]);
 
-  // Smooth auto-scroll to bottom when new messages arrive
+  // Smooth auto-scroll to bottom using virtuoso when at bottom
   useEffect(() => {
-    const scrollToBottom = () => {
-      if (messagesEndRef.current) {
-        // Use requestAnimationFrame for smoother scrolling with proper timing
-        requestAnimationFrame(() => {
-          requestAnimationFrame(() => {
-            // Double RAF for better timing
-            messagesEndRef.current?.scrollIntoView({
-              behavior: "smooth",
-              block: "end",
-            });
-          });
+    if (isAtBottom) {
+      const timer = setTimeout(() => {
+        virtuosoRef.current?.scrollToIndex({
+          index: Math.max(0, messages.length - 1),
+          align: "end",
+          behavior: "smooth",
         });
-      }
-    };
-
-    // Longer delay to allow for message animation to start
-    const timer = setTimeout(scrollToBottom, 150);
-
-    // Cleanup function
-    return () => {
-      clearTimeout(timer);
-    };
-  }, [messages]);
+      }, 150);
+      return () => clearTimeout(timer);
+    } else {
+      setNewMessagesPending(true);
+    }
+  }, [messages.length, isAtBottom]);
 
   const formatTime = (dateString: string): string => {
     const date = new Date(dateString);
@@ -474,6 +502,40 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
     return groups;
   };
 
+  const groupedMessages = useMemo(() => groupMessagesByDate(), [messages]);
+
+  // Virtualization helpers
+  const groupsArr = useMemo(
+    () =>
+      Object.entries(groupedMessages).map(([dateKey, dayMessages]) => ({
+        dateKey,
+        dayMessages,
+      })),
+    [groupedMessages]
+  );
+  const groupCounts = useMemo(
+    () => groupsArr.map((g) => g.dayMessages.length),
+    [groupsArr]
+  );
+  const flatItems = useMemo(
+    () =>
+      groupsArr.flatMap((g, groupIdx) =>
+        g.dayMessages.map((message, idxInGroup) => ({
+          message,
+          groupIdx,
+          idxInGroup,
+          group: g,
+        }))
+      ),
+    [groupsArr]
+  );
+  const idToIndex = useMemo(() => {
+    const map = new Map<number, number>();
+    flatItems.forEach((it, i) => map.set(it.message.id, i));
+    return map;
+  }, [flatItems]);
+  const virtuosoRef = useRef<GroupedVirtuosoHandle>(null);
+
   // Check if messages should be grouped (same sender, within 5 minutes)
   const shouldGroupMessage = (
     currentMsg: Message,
@@ -499,13 +561,16 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
 
   // Check if message is emoji-only for special styling
   const isEmojiOnlyMessage = (content: string): boolean => {
-    if (!content || content.trim() === '') return false;
-    
+    if (!content || content.trim() === "") return false;
+
     // Remove whitespace and check if it's only emojis (1-3 emojis max for large display)
     const trimmed = content.trim();
-    const emojiRegex = /^[\p{Emoji_Presentation}\p{Emoji}\uFE0F\u200D\s]{1,6}$/u;
-    const emojiCount = (trimmed.match(/[\p{Emoji_Presentation}\p{Emoji}]/gu) || []).length;
-    
+    const emojiRegex =
+      /^[\p{Emoji_Presentation}\p{Emoji}\uFE0F\u200D\s]{1,6}$/u;
+    const emojiCount = (
+      trimmed.match(/[\p{Emoji_Presentation}\p{Emoji}]/gu) || []
+    ).length;
+
     return emojiRegex.test(trimmed) && emojiCount >= 1 && emojiCount <= 3;
   };
 
@@ -684,25 +749,28 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
     emoji: string;
     show: boolean;
   } | null>(null);
-  
-  const handleMessageTap = useCallback((messageId: number) => {
-    const now = Date.now();
-    const timeDiff = now - lastTapTime;
-    
-    if (timeDiff < 300 && tapCount === 1) {
-      // Double tap detected - add heart reaction
-      handleQuickReaction(messageId, '❤️');
-      setTapCount(0);
-    } else {
-      setTapCount(1);
-      setLastTapTime(now);
-      
-      // Reset tap count after delay
-      setTimeout(() => {
+
+  const handleMessageTap = useCallback(
+    (messageId: number) => {
+      const now = Date.now();
+      const timeDiff = now - lastTapTime;
+
+      if (timeDiff < 300 && tapCount === 1) {
+        // Double tap detected - add heart reaction
+        handleQuickReaction(messageId, "❤️");
         setTapCount(0);
-      }, 300);
-    }
-  }, [lastTapTime, tapCount, handleQuickReaction]);
+      } else {
+        setTapCount(1);
+        setLastTapTime(now);
+
+        // Reset tap count after delay
+        setTimeout(() => {
+          setTapCount(0);
+        }, 300);
+      }
+    },
+    [lastTapTime, tapCount, handleQuickReaction]
+  );
 
   // Clean up on unmount
   useEffect(() => {
@@ -840,11 +908,14 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
             attachedFile.file.name
           );
 
-          // Upload file to server
-          const uploadResult = await uploadFile({
-            file: attachedFile.file,
-            chatId: activeChat.id,
-          }).unwrap();
+          // Upload file to server with progress
+          setUploadProgress((prev) => ({ ...prev, [attachedFile.id]: 0 }));
+          const uploadResult = await uploadFileWithProgress(
+            attachedFile.file,
+            activeChat.id,
+            (p) =>
+              setUploadProgress((prev) => ({ ...prev, [attachedFile.id]: p }))
+          );
 
           console.log("📤 Upload result:", uploadResult);
 
@@ -889,6 +960,7 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
           if (!success) {
             throw new Error(`Failed to send file: ${attachedFile.file.name}`);
           }
+          setUploadProgress((prev) => ({ ...prev, [attachedFile.id]: 100 }));
 
           console.log(`✅ File sent successfully: ${attachedFile.file.name}`);
         } catch (error) {
@@ -935,8 +1007,6 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
     }
   };
 
-
-
   // Handle message reply
   const handleReply = useCallback(
     (message: Message) => {
@@ -962,8 +1032,6 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
     },
     [currentUser]
   );
-
-
 
   // Handle file selection (preview, don't upload yet)
   const handleFileUpload = useCallback(
@@ -1022,6 +1090,154 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
     });
   }, []);
 
+  // Low-level upload helper with real progress and CSRF header
+  const uploadFileWithProgress = useCallback(
+    async (
+      file: File,
+      chatId: number,
+      onProgress?: (progress: number) => void
+    ): Promise<{
+      fileUrl: string;
+      fileName: string;
+      fileSize: number;
+      mimeType: string;
+    }> => {
+      const backendUrl =
+        import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
+      // Fetch CSRF token (mirrors apiSlice behavior)
+      let csrfToken = "";
+      try {
+        const res = await fetch(`${backendUrl}/csrf/token`, {
+          credentials: "include",
+        });
+        if (res.ok) {
+          const data = await res.json();
+          csrfToken = data.csrfToken || "";
+        }
+      } catch {}
+
+      return await new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open("POST", `${backendUrl}/chat/upload`);
+        xhr.withCredentials = true;
+        if (csrfToken) xhr.setRequestHeader("x-csrf-token", csrfToken);
+        if (xhr.upload && onProgress) {
+          xhr.upload.onprogress = (e) => {
+            if (e.lengthComputable) {
+              const percent = Math.round((e.loaded / e.total) * 100);
+              onProgress(percent);
+            }
+          };
+        }
+        xhr.onreadystatechange = () => {
+          if (xhr.readyState === XMLHttpRequest.DONE) {
+            if (xhr.status >= 200 && xhr.status < 300) {
+              try {
+                const json = JSON.parse(xhr.responseText);
+                resolve(json);
+              } catch {
+                reject(new Error("Invalid upload response"));
+              }
+            } else {
+              reject(new Error(`Upload failed: ${xhr.status}`));
+            }
+          }
+        };
+        const form = new FormData();
+        form.append("file", file);
+        form.append("chatId", String(chatId));
+        xhr.send(form);
+      });
+    },
+    []
+  );
+
+  const startVoiceRecording = useCallback(async () => {
+    try {
+      if (!isConnected || !activeChat) return;
+      setRecordingError(null);
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
+        ? "audio/webm;codecs=opus"
+        : "audio/webm";
+      const recorder = new MediaRecorder(stream, { mimeType });
+      audioChunksRef.current = [];
+      recorder.ondataavailable = (e) => {
+        if (e.data && e.data.size > 0) audioChunksRef.current.push(e.data);
+      };
+      recorder.onstart = () => {
+        recordStartTimeRef.current = Date.now();
+        setIsRecordingVoice(true);
+      };
+      mediaRecorderRef.current = recorder;
+      recorder.start();
+    } catch (err: any) {
+      setRecordingError("Microphone access denied");
+      setIsRecordingVoice(false);
+    }
+  }, [activeChat, isConnected]);
+
+  const stopVoiceRecording = useCallback(async () => {
+    const recorder = mediaRecorderRef.current;
+    if (!recorder) return;
+    try {
+      await new Promise<void>((resolve) => {
+        recorder.onstop = () => resolve();
+        recorder.stop();
+      });
+      recorder.stream.getTracks().forEach((t) => t.stop());
+      mediaRecorderRef.current = null;
+      setIsRecordingVoice(false);
+      const blob = new Blob(audioChunksRef.current, {
+        type: recorder.mimeType || "audio/webm",
+      });
+      audioChunksRef.current = [];
+      if (!activeChat || blob.size === 0) return;
+      const file = new File([blob], `voice-${Date.now()}.webm`, {
+        type: blob.type,
+      });
+      const progressId = `voice-${Date.now()}`;
+      setUploadProgress((prev) => ({ ...prev, [progressId]: 0 }));
+      const uploadResult = await uploadFileWithProgress(
+        file,
+        activeChat.id,
+        (p) => setUploadProgress((prev) => ({ ...prev, [progressId]: p }))
+      );
+      let fileUrl = uploadResult.fileUrl;
+      const backendUrl =
+        import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
+      if (
+        fileUrl.startsWith("/uploads/") ||
+        fileUrl.includes("localhost:3000")
+      ) {
+        const pathPart = fileUrl.includes("/uploads/")
+          ? fileUrl.substring(fileUrl.indexOf("/uploads/"))
+          : fileUrl;
+        fileUrl = `${backendUrl}${pathPart}`;
+      }
+      const replyToId = replyingTo?.id;
+      await sendMessage(
+        "",
+        "FILE",
+        {
+          fileUrl,
+          fileName: uploadResult.fileName || file.name,
+          fileSize: uploadResult.fileSize || file.size,
+          fileMimeType: uploadResult.mimeType || file.type,
+        },
+        replyToId
+      );
+      setReplyingTo(null);
+      setUploadProgress((prev) => ({ ...prev, [progressId]: 100 }));
+      setTimeout(() => {
+        setUploadProgress((curr) => {
+          const { [progressId]: _omit, ...rest } = curr;
+          return rest;
+        });
+      }, 800);
+    } catch (e) {}
+  }, [activeChat, replyingTo, uploadFileWithProgress, sendMessage]);
+
   // Handle long press for message options
   const handleOptionsMouseDown = useCallback((messageId: number) => {
     const timer = setTimeout(() => {
@@ -1045,7 +1261,9 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
 
   // Removed duplicate handleKeyDown function - using inline onKeyDown in textarea
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLTextAreaElement | HTMLInputElement>
+  ) => {
     setNewMessage(e.target.value);
 
     // Handle typing indicator
@@ -1244,8 +1462,9 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
 
       {/* Messages */}
       <div
-        className="flex-1 pl-2 sm:pl-4 pr-0 py-2 overflow-y-auto scroll-hide bg-white space-y-2 sm:space-y-4"
-        style={{ scrollBehavior: "smooth" }}
+        ref={messagesContainerRef}
+        className="relative flex-1 pl-2 sm:pl-4 pr-0 py-2 bg-white"
+        style={{ height: "100%" }}
       >
         {isLoading ? (
           <div className="flex justify-center items-center h-full">
@@ -1260,689 +1479,512 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
             </p>
           </div>
         ) : (
-          <>
-            {Object.entries(groupMessagesByDate()).map(
-              ([dateKey, dayMessages]) => (
-                <div key={dateKey}>
-                  {/* Date separator */}
-                  <div className="flex items-center justify-center my-6">
-                    <div className="bg-green-100 text-green-800 text-xs px-4 py-2 rounded-full font-medium shadow-sm">
-                      {dateKey}
-                    </div>
-                  </div>
-
-                  {/* Messages for this date */}
-                  {dayMessages.map((message, index) => {
-                    const isCurrentUser = message.senderId === currentUser?.id;
-                    const isUnread = !isCurrentUser && !message.isRead;
-                    const prevMessage =
-                      index > 0 ? dayMessages[index - 1] : null;
-                    const nextMessage =
-                      index < dayMessages.length - 1
-                        ? dayMessages[index + 1]
-                        : null;
-                    const isGrouped = shouldGroupMessage(message, prevMessage);
-                    const isGroupedWithNext = nextMessage
-                      ? shouldGroupMessage(nextMessage, message)
-                      : false;
-                    const showAvatar = !isCurrentUser && !isGrouped;
-
-                    return (
-                      <div
-                        key={`${message.id}-${message.createdAt}-${index}`}
-                        className={`relative ${
-                          newMessageIds.has(message.id)
-                            ? message.messageType === "IMAGE"
-                              ? "message-image-enter"
-                              : "message-enter"
-                            : "message-stable"
-                        }`}
-                        style={{
-                          animationDelay: newMessageIds.has(message.id)
-                            ? `${index * 0.05}s`
-                            : "0s",
-                        }}
-                        onTransitionEnd={() => {
-                          // Ensure smooth transition to stable state after CSS transition completes
-                          if (newMessageIds.has(message.id)) {
-                            const element = document.querySelector(
-                              `[data-message-id="${message.id}"]`
-                            );
-                            if (element) {
-                              element.classList.remove(
-                                "message-enter",
-                                "message-image-enter"
-                              );
-                              element.classList.add("message-stable");
-                            }
-                          }
-                        }}
-                        data-message-id={message.id}
-                      >
-                        {/* Unread messages divider */}
-                        {firstUnreadMessageId === message.id &&
-                          unreadMessages.length > 0 && (
-                            <div
-                              className="flex items-center justify-center my-4"
-                              ref={unreadIndicatorRef}
-                            >
-                              <div className="flex-1 h-px bg-gradient-to-r from-transparent via-blue-400 to-transparent"></div>
-                              <div className="px-4 py-1 bg-blue-500 text-white text-xs font-medium rounded-full shadow-sm">
-                                {unreadMessages.length} unread message
-                                {unreadMessages.length > 1 ? "s" : ""}
-                              </div>
-                              <div className="flex-1 h-px bg-gradient-to-r from-blue-400 via-transparent to-transparent"></div>
-                            </div>
-                          )}
-
-                        {/* Message container */}
-                        <div
-                          className={`flex items-start gap-1 sm:gap-2 ${
-                            isCurrentUser
-                              ? "justify-end pr-0 -mr-1"
-                              : "justify-start pl-0"
-                          } ${
-                            isUnread
-                              ? "bg-blue-50/30 -mx-2 sm:-mx-4 px-2 sm:px-4 py-2 rounded-lg"
-                              : ""
-                          } ${isGrouped ? "mb-1" : "mb-4"}`}
-                          onMouseDown={() => handleOptionsMouseDown(message.id)}
-                          onMouseUp={handleMouseUp}
-                          onMouseLeave={handleMouseUp}
-                          onClick={() => handleMessageTap(message.id)}
-                        >
-                          {/* Avatar space */}
-                          <div
-                            className={`w-6 sm:w-8 ${
-                              !isCurrentUser ? "block" : "hidden"
-                            }`}
-                          >
-                            {showAvatar && (
-                              <div className="relative">
-                                <img
-                                  src={
-                                    message.sender?.profile?.avatar ||
-                                    "/images/chat.png"
-                                  }
-                                  className="h-6 w-6 sm:h-8 sm:w-8 rounded-full object-cover"
-                                  alt={`${message.sender?.firstName} Avatar`}
-                                />
-                                {isUnread && (
-                                  <div className="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 rounded-full border-2 border-white"></div>
-                                )}
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Message content */}
-                          <div
-                            className={`relative group ${
-                              isCurrentUser
-                                ? "max-w-[85%] sm:max-w-[75%] md:max-w-[320px] lg:max-w-[400px]"
-                                : "w-full max-w-[85%] sm:max-w-[75%] md:max-w-[320px] lg:max-w-[400px]"
-                            }`}
-                          >
-                            {/* Reply indicator */}
-                            {message.replyToId && (
-                              <div
-                                className={`mb-2 p-2 border-l-4 rounded-r-lg text-xs ${
-                                  isCurrentUser
-                                    ? "border-blue-300 bg-blue-50/50"
-                                    : "border-gray-300 bg-gray-50"
-                                }`}
-                              >
-                                <div className="text-gray-600 font-medium mb-1">
-                                  {message.replyTo
-                                    ? `Replying to ${
-                                        message.replyTo.sender.id ===
-                                        currentUser?.id
-                                          ? "yourself"
-                                          : `${
-                                              message.replyTo.sender
-                                                .firstName || "User"
-                                            } ${
-                                              message.replyTo.sender.lastName ||
-                                              ""
-                                            }`.trim()
-                                      }`
-                                    : `Replying to message #${message.replyToId}`}
-                                </div>
-                                <div className="text-gray-500 truncate">
-                                  {message.replyTo
-                                    ? message.replyTo.messageType === "TEXT"
-                                      ? message.replyTo.content || "Message"
-                                      : message.replyTo.messageType === "IMAGE"
-                                      ? "📷 Image"
-                                      : message.replyTo.messageType === "FILE"
-                                      ? "📄 File"
-                                      : "Message"
-                                    : "Original message..."}
-                                </div>
-                              </div>
-                            )}
-
-                            {/* Main message bubble */}
-                            <div
-                              className={`${
-                                message.messageType === "TEXT"
-                                  ? isEmojiOnlyMessage(message.content || '')
-                                    ? "inline-block bg-transparent border-0 shadow-none px-1 py-1" // Special styling for emoji-only
-                                    : "inline-block"
-                                  : "block w-full"
-                              } ${
-                                // Skip normal padding for emoji-only messages
-                                message.messageType === "TEXT" && isEmojiOnlyMessage(message.content || '')
-                                  ? ""
-                                  : "px-2 sm:px-4 py-2"
-                              } relative ${
-                                // Base styling - skip background for emoji-only messages
-                                message.messageType === "TEXT" && isEmojiOnlyMessage(message.content || '')
-                                  ? "" // No background for emoji-only
-                                  : isCurrentUser
-                                  ? "bg-blue-500 text-white"
-                                  : isUnread
-                                  ? "bg-white border border-blue-200 text-gray-900 shadow-md"
-                                  : "bg-white border border-gray-200 text-gray-900 shadow-sm"
-                              } ${
-                                // Dynamic border radius based on grouping
-                                isCurrentUser
-                                  ? `${
-                                      !isGrouped && !isGroupedWithNext
-                                        ? "rounded-2xl"
-                                        : !isGrouped && isGroupedWithNext
-                                        ? "rounded-2xl rounded-br-md"
-                                        : isGrouped && !isGroupedWithNext
-                                        ? "rounded-2xl rounded-tr-md"
-                                        : "rounded-xl rounded-tr-md rounded-br-md"
-                                    }`
-                                  : `${
-                                      !isGrouped && !isGroupedWithNext
-                                        ? "rounded-2xl"
-                                        : !isGrouped && isGroupedWithNext
-                                        ? "rounded-2xl rounded-bl-md"
-                                        : isGrouped && !isGroupedWithNext
-                                        ? "rounded-2xl rounded-tl-md"
-                                        : "rounded-xl rounded-tl-md rounded-bl-md"
-                                    }`
-                              }`}
-                            >
-                              {/* Message content */}
-                              {message.messageType === "TEXT" &&
-                                (editingMessage === message.id ? (
-                                  <div className="w-full editing-message">
-                                    <textarea
-                                      value={editingContent}
-                                      onChange={(e) =>
-                                        setEditingContent(e.target.value)
-                                      }
-                                      className="w-full p-2 text-xs sm:text-sm bg-transparent border border-gray-300 rounded resize-none focus:outline-none focus:ring-2 focus:ring-blue-400"
-                                      rows={2}
-                                      autoFocus
-                                      onKeyDown={(e) => {
-                                        if (e.key === "Enter" && !e.shiftKey) {
-                                          e.preventDefault();
-                                          handleSaveEdit(message.id);
-                                        } else if (e.key === "Escape") {
-                                          handleCancelEdit();
-                                        }
-                                      }}
-                                    />
-                                    <div className="flex justify-end gap-2 mt-2">
-                                      <button
-                                        onClick={handleCancelEdit}
-                                        className="px-3 py-1 text-xs text-gray-600 hover:text-gray-800 transition-colors"
-                                      >
-                                        Cancel
-                                      </button>
-                                      <button
-                                        onClick={() =>
-                                          handleSaveEdit(message.id)
-                                        }
-                                        className="px-3 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
-                                      >
-                                        Save
-                                      </button>
-                                    </div>
-                                  </div>
-                                ) : (
-                                  <div className="relative">
-                                    <p className={`whitespace-pre-wrap leading-relaxed break-words ${
-                                      isEmojiOnlyMessage(message.content || '')
-                                        ? "text-4xl sm:text-5xl" // Large emoji display
-                                        : "text-xs sm:text-sm" // Normal text size
-                                    }`}>
-                                      {message.content}
-                                    </p>
-                                    {message.isEdited && (
-                                      <span className="text-xs text-gray-400 italic ml-2">
-                                        (edited)
-                                      </span>
-                                    )}
-                                  </div>
-                                ))}
-                              {message.messageType === "IMAGE" && (
-                                <div className="w-full relative">
-                                  <img
-                                    src={(() => {
-                                      let imageUrl = message.fileUrl;
-                                      // Fix old messages with relative URLs
-                                      if (
-                                        imageUrl &&
-                                        imageUrl.startsWith("/uploads/")
-                                      ) {
-                                        const backendUrl =
-                                          import.meta.env.VITE_BACKEND_URL ||
-                                          "http://localhost:4000";
-                                        imageUrl = `${backendUrl}${imageUrl}`;
-                                      }
-                                      return imageUrl;
-                                    })()}
-                                    alt="Shared image"
-                                    className="message-image w-full max-w-[280px] sm:max-w-[350px] h-[200px] sm:h-[250px] rounded-lg object-cover cursor-pointer hover:opacity-95 transition-all duration-200 bg-gray-200"
-                                    style={{
-                                      opacity: 1,
-                                      transform: "scale(1)",
-                                    }}
-                                    onClick={() => {
-                                      let imageUrl = message.fileUrl;
-                                      if (
-                                        imageUrl &&
-                                        imageUrl.startsWith("/uploads/")
-                                      ) {
-                                        const backendUrl =
-                                          import.meta.env.VITE_BACKEND_URL ||
-                                          "http://localhost:4000";
-                                        imageUrl = `${backendUrl}${imageUrl}`;
-                                      }
-                                      window.open(imageUrl, "_blank");
-                                    }}
-                                    onError={(e) => {
-                                      console.error(
-                                        "❌ Image failed to load:",
-                                        message.fileUrl
-                                      );
-                                      // Smooth fade to error state
-                                      const target =
-                                        e.currentTarget as HTMLImageElement;
-                                      target.style.opacity = "0";
-                                      setTimeout(() => {
-                                        target.style.display = "none";
-                                        const fallback =
-                                          document.createElement("div");
-                                        fallback.className =
-                                          "w-full max-w-[280px] sm:max-w-[350px] h-[200px] sm:h-[250px] bg-gray-200 rounded-lg flex items-center justify-center opacity-0";
-                                        fallback.innerHTML =
-                                          '<span class="text-gray-500 text-sm">Failed to load image</span>';
-                                        target.parentElement?.appendChild(
-                                          fallback
-                                        );
-                                        // Fade in error state
-                                        setTimeout(() => {
-                                          fallback.style.opacity = "1";
-                                          fallback.style.transition =
-                                            "opacity 0.3s ease";
-                                        }, 10);
-                                      }, 200);
-                                    }}
-                                    onLoad={() => {
-                                      console.log(
-                                        "✅ Image loaded successfully:",
-                                        message.fileUrl
-                                      );
-                                    }}
-                                  />
-                                </div>
-                              )}
-                              {message.messageType === "FILE" && (
-                                <div
-                                  className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 min-w-[200px] max-w-[280px] sm:max-w-[350px] w-full cursor-pointer hover:bg-opacity-80 transition-all duration-200 rounded-lg border border-gray-200/50"
-                                  onClick={() => {
-                                    if (message.fileUrl) {
-                                      let fileUrl = message.fileUrl;
-                                      if (fileUrl.startsWith("/uploads/")) {
-                                        const backendUrl =
-                                          import.meta.env.VITE_BACKEND_URL ||
-                                          "http://localhost:4000";
-                                        fileUrl = `${backendUrl}${fileUrl}`;
-                                      }
-                                      window.open(fileUrl, "_blank");
-                                    }
-                                  }}
-                                >
-                                  <div
-                                    className={`p-3 rounded-full flex-shrink-0 ${
-                                      isCurrentUser
-                                        ? "bg-white/20"
-                                        : "bg-blue-50"
-                                    }`}
-                                  >
-                                    <GoPaperclip
-                                      className={`h-5 w-5 ${
-                                        isCurrentUser
-                                          ? "text-white"
-                                          : "text-blue-600"
-                                      }`}
-                                    />
-                                  </div>
-                                  <div className="flex-1 min-w-0 overflow-hidden">
-                                    <div
-                                      className={`font-medium text-sm truncate ${
-                                        isCurrentUser
-                                          ? "text-white"
-                                          : "text-gray-900"
-                                      }`}
-                                    >
-                                      {message.fileName || "Uploaded file"}
-                                    </div>
-                                    <div
-                                      className={`text-xs flex items-center gap-2 ${
-                                        isCurrentUser
-                                          ? "text-white/70"
-                                          : "text-gray-500"
-                                      }`}
-                                    >
-                                      <span>
-                                        {message.fileSize
-                                          ? `${(
-                                              message.fileSize /
-                                              (1024 * 1024)
-                                            ).toFixed(1)} MB`
-                                          : "File"}
-                                      </span>
-                                      <span>•</span>
-                                      <span className="text-xs opacity-75">
-                                        Click to download
-                                      </span>
-                                    </div>
-                                  </div>
-                                </div>
-                              )}
-                              {message.messageType === "LINK" && (
-                                <a
-                                  href={message.content}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className={`text-sm underline hover:no-underline ${
-                                    isCurrentUser
-                                      ? "text-blue-100"
-                                      : "text-blue-600"
-                                  }`}
-                                >
-                                  {message.content}
-                                </a>
-                              )}
-
-                              {/* Message reactions */}
-                              {message.reactions && message.reactions.length > 0 && (
-                                <div className="flex flex-wrap gap-1 mt-2">
-                                  {message.reactions.map((reaction, reactionIndex) => (
-                                    <button
-                                      key={`${reaction.emoji}-${reactionIndex}`}
-                                      onClick={() => handleMessageReaction(message.id, reaction.emoji)}
-                                      className="flex items-center gap-1 px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded-full text-xs transition-colors"
-                                      title={`${reaction.count} ${reaction.count === 1 ? 'person' : 'people'} reacted with ${reaction.emoji}`}
-                                    >
-                                      <span>{reaction.emoji}</span>
-                                      <span className="text-gray-600">{reaction.count}</span>
-                                    </button>
-                                  ))}
-                                </div>
-                              )}
-
-                              {/* Floating reaction animation */}
-                              {floatingReaction && floatingReaction.messageId === message.id && (
-                                <div 
-                                  className={`absolute ${isCurrentUser ? 'left-1/2' : 'right-1/2'} top-1/2 transform -translate-x-1/2 -translate-y-1/2 pointer-events-none z-30`}
-                                  style={{
-                                    animation: 'floatUp 1s ease-out forwards'
-                                  }}
-                                >
-                                  <div className="text-4xl animate-bounce">
-                                    {floatingReaction.emoji}
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-
-                            {/* Time and status */}
-                            <div
-                              className={`flex items-center gap-1 mt-1 text-xs text-gray-500 ${
-                                isCurrentUser ? "justify-end" : "justify-start"
-                              }`}
-                            >
-                              <span className="text-xs">
-                                {formatTime(message.createdAt)}
-                              </span>
-                              {isCurrentUser && (
-                                <span className="ml-1">
-                                  {getMessageStatusIcon(message)}
-                                </span>
-                              )}
-                            </div>
-
-                            {/* Hover actions */}
-                            <div
-                              className={`absolute top-0 ${
-                                isCurrentUser ? "-left-24" : "-right-24"
-                              } opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center gap-1 bg-white shadow-lg rounded-full p-1`}
-                            >
-                              <button
-                                onClick={() => handleReply(message)}
-                                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-                                title="Reply"
-                              >
-                                <BsReply className="h-4 w-4 text-gray-600" />
-                              </button>
-                              <button
-                                onClick={() =>
-                                  setShowEmojiPicker(
-                                    showEmojiPicker === message.id
-                                      ? null
-                                      : message.id
-                                  )
-                                }
-                                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-                                title="React"
-                              >
-                                <BsEmojiSmile className="h-4 w-4 text-gray-600" />
-                              </button>
-                              {isCurrentUser &&
-                                message.messageType === "TEXT" && (
-                                  <button
-                                    onClick={() => handleEditMessage(message)}
-                                    className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-                                    title="Edit"
-                                  >
-                                    <MdEdit className="h-4 w-4 text-gray-600" />
-                                  </button>
-                                )}
-                              {isCurrentUser && (
-                                <button
-                                  onClick={() =>
-                                    handleDeleteMessage(message.id)
-                                  }
-                                  className="p-2 hover:bg-red-50 rounded-full transition-colors"
-                                  title="Delete"
-                                >
-                                  <MdDelete className="h-4 w-4 text-red-600" />
-                                </button>
-                              )}
-                              <button
-                                onClick={() =>
-                                  setSelectedMessage(
-                                    selectedMessage === message.id
-                                      ? null
-                                      : message.id
-                                  )
-                                }
-                                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-                                title="More options"
-                              >
-                                <BsThreeDots className="h-4 w-4 text-gray-600" />
-                              </button>
-                            </div>
-
-                            {/* Emoji picker */}
-                            {showEmojiPicker === message.id && (
-                              <div
-                                className={`absolute z-50 mt-2 ${
-                                  isCurrentUser ? "right-0" : "left-0"
-                                } bg-white border border-gray-200 rounded-lg shadow-lg p-2 emoji-picker`}
-                              >
-                                <div className="flex gap-1">
-                                  {commonReactions.map((emoji, idx) => (
-                                    <button
-                                      key={idx}
-                                      onClick={() =>
-                                        handleQuickReaction(message.id, emoji)
-                                      }
-                                      className="p-2 hover:bg-gray-100 rounded-full transition-colors text-lg"
-                                    >
-                                      {emoji}
-                                    </button>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-
-                            {/* Message options menu */}
-                            {selectedMessage === message.id && (
-                              <div
-                                className={`absolute z-50 mt-2 ${
-                                  isCurrentUser ? "right-0" : "left-0"
-                                } bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-[120px] message-menu`}
-                              >
-                                <button
-                                  onClick={() => handleReply(message)}
-                                  className="w-full px-4 py-2 text-left hover:bg-gray-50 transition-colors text-sm"
-                                >
-                                  Reply
-                                </button>
-                                <button
-                                  onClick={() => {
-                                    // TODO: Implement forward
-                                    setSelectedMessage(null);
-                                  }}
-                                  className="w-full px-4 py-2 text-left hover:bg-gray-50 transition-colors text-sm"
-                                >
-                                  Forward
-                                </button>
-                                {isCurrentUser &&
-                                  message.messageType === "TEXT" && (
-                                    <button
-                                      onClick={() => handleEditMessage(message)}
-                                      className="w-full px-4 py-2 text-left hover:bg-gray-50 transition-colors text-sm"
-                                    >
-                                      Edit
-                                    </button>
-                                  )}
-                                {isCurrentUser && (
-                                  <button
-                                    onClick={() =>
-                                      handleDeleteMessage(message.id)
-                                    }
-                                    className="w-full px-4 py-2 text-left hover:bg-gray-50 transition-colors text-sm text-red-600"
-                                  >
-                                    Delete
-                                  </button>
-                                )}
-                              </div>
-                            )}
-
-                            {/* Reaction picker */}
-                            {showEmojiPicker === message.id && (
-                              <div
-                                className={`absolute z-50 mt-2 ${
-                                  isCurrentUser ? "right-0" : "left-0"
-                                } bg-white border border-gray-200 rounded-lg shadow-lg p-3 emoji-picker`}
-                              >
-                                <div className="text-xs text-gray-500 mb-2 font-medium">
-                                  Quick reactions
-                                </div>
-                                <div className="flex gap-2 mb-3">
-                                  {commonReactions.map((emoji) => (
-                                    <button
-                                      key={emoji}
-                                      onClick={() => handleMessageReaction(message.id, emoji)}
-                                      className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-lg"
-                                      title={`React with ${emoji}`}
-                                    >
-                                      {emoji}
-                                    </button>
-                                  ))}
-                                </div>
-                                <div className="border-t border-gray-200 pt-2">
-                                  <div className="text-xs text-gray-500 mb-2 font-medium">
-                                    More emojis
-                                  </div>
-                                  <div className="grid grid-cols-6 gap-1 max-h-32 overflow-y-auto">
-                                    {mainEmojis.slice(0, 24).map((emoji) => (
-                                      <button
-                                        key={emoji}
-                                        onClick={() => handleMessageReaction(message.id, emoji)}
-                                        className="p-1 hover:bg-gray-100 rounded transition-colors text-sm"
-                                        title={`React with ${emoji}`}
-                                      >
-                                        {emoji}
-                                      </button>
-                                    ))}
-                                  </div>
-                                </div>
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Current user avatar */}
-                          <div
-                            className={`w-8 ${
-                              isCurrentUser ? "block" : "hidden"
-                            }`}
-                          >
-                            {showAvatar && isCurrentUser && (
-                              <img
-                                src={
-                                  currentUser?.profile?.avatar ||
-                                  "/images/user-avatar.png"
-                                }
-                                className="h-8 w-8 rounded-full object-cover"
-                                alt="Your Avatar"
-                              />
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )
-            )}
-
-            {/* Typing indicator */}
-            {typingUsers.length > 0 && (
-              <div className="flex items-center gap-3 mb-4">
-                <img
-                  src={"/images/chat.png"}
-                  className="h-8 w-8 rounded-full object-cover"
-                  alt="Typing"
-                />
-                <div className="bg-gray-200 rounded-full px-4 py-2">
-                  <div className="flex gap-1">
-                    <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce"></div>
-                    <div
-                      className="w-2 h-2 bg-gray-500 rounded-full animate-bounce"
-                      style={{ animationDelay: "0.1s" }}
-                    ></div>
-                    <div
-                      className="w-2 h-2 bg-gray-500 rounded-full animate-bounce"
-                      style={{ animationDelay: "0.2s" }}
-                    ></div>
-                  </div>
+          <GroupedVirtuoso
+            ref={virtuosoRef}
+            className="scroll-hide"
+            style={{ height: "100%", overflowX: "hidden" }}
+            groupCounts={groupCounts}
+            followOutput={isAtBottom ? "smooth" : false}
+            atBottomStateChange={(atBottom) => {
+              setIsAtBottom(atBottom);
+              if (atBottom) setNewMessagesPending(false);
+            }}
+            groupContent={(index) => (
+              <div className="flex items-center justify-center my-6">
+                <div className="bg-green-100 text-green-800 text-xs px-4 py-2 rounded-full font-medium shadow-sm">
+                  {groupsArr[index]?.dateKey}
                 </div>
               </div>
             )}
+            itemContent={(index) => {
+              const item = flatItems[index];
+              if (!item) return null;
+              const { message, group, idxInGroup } = item;
+              const dayMessages = group.dayMessages;
+              const isCurrentUser = message.senderId === currentUser?.id;
+              const isUnread = !isCurrentUser && !message.isRead;
+              const prevMessage =
+                idxInGroup > 0 ? dayMessages[idxInGroup - 1] : null;
+              const nextMessage =
+                idxInGroup < dayMessages.length - 1
+                  ? dayMessages[idxInGroup + 1]
+                  : null;
+              const isGrouped = shouldGroupMessage(message, prevMessage as any);
+              const isGroupedWithNext = nextMessage
+                ? shouldGroupMessage(nextMessage as any, message)
+                : false;
+              const showAvatar = !isCurrentUser && !isGrouped;
 
-            <div ref={messagesEndRef} />
-          </>
+              return (
+                <div
+                  key={`${message.id}-${message.createdAt}-${idxInGroup}`}
+                  className={`relative ${
+                    newMessageIds.has(message.id)
+                      ? message.messageType === "IMAGE"
+                        ? "message-image-enter"
+                        : "message-enter"
+                      : "message-stable"
+                  }`}
+                  style={{
+                    animationDelay: newMessageIds.has(message.id)
+                      ? `${idxInGroup * 0.05}s`
+                      : "0s",
+                  }}
+                  onTransitionEnd={() => {
+                    if (newMessageIds.has(message.id)) {
+                      const element = document.querySelector(
+                        `[data-message-id="${message.id}"]`
+                      );
+                      if (element) {
+                        element.classList.remove(
+                          "message-enter",
+                          "message-image-enter"
+                        );
+                        element.classList.add("message-stable");
+                      }
+                    }
+                  }}
+                  data-message-id={message.id}
+                >
+                  {firstUnreadMessageId === message.id &&
+                    unreadMessages.length > 0 && (
+                      <div
+                        className="flex items-center justify-center my-4"
+                        ref={unreadIndicatorRef}
+                      >
+                        <div className="flex-1 h-px bg-gradient-to-r from-transparent via-blue-400 to-transparent"></div>
+                        <div className="px-4 py-1 bg-blue-500 text-white text-xs font-medium rounded-full shadow-sm">
+                          {unreadMessages.length} unread message
+                          {unreadMessages.length > 1 ? "s" : ""}
+                        </div>
+                        <div className="flex-1 h-px bg-gradient-to-r from-blue-400 via-transparent to-transparent"></div>
+                      </div>
+                    )}
+
+                  <div
+                    className={`flex items-start gap-1 sm:gap-2 ${
+                      isCurrentUser
+                        ? "justify-end pr-0 -mr-1"
+                        : "justify-start pl-0"
+                    } ${
+                      isUnread
+                        ? "bg-blue-50/30 -mx-2 sm:-mx-4 px-2 sm:px-4 py-2 rounded-lg"
+                        : ""
+                    } ${isGrouped ? "mb-1" : "mb-4"}`}
+                    onMouseDown={() => handleOptionsMouseDown(message.id)}
+                    onMouseUp={handleMouseUp}
+                    onMouseLeave={handleMouseUp}
+                    onClick={() => handleMessageTap(message.id)}
+                  >
+                    <div
+                      className={`w-6 sm:w-8 ${
+                        !isCurrentUser ? "block" : "hidden"
+                      }`}
+                    >
+                      {showAvatar && (
+                        <div className="relative">
+                          <img
+                            src={
+                              message.sender?.profile?.avatar ||
+                              "/images/chat.png"
+                            }
+                            className="h-6 w-6 sm:h-8 sm:w-8 rounded-full object-cover"
+                            alt={`${message.sender?.firstName} Avatar`}
+                          />
+                          {isUnread && (
+                            <div className="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 rounded-full border-2 border-white"></div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    <div
+                      className={`relative group ${
+                        isCurrentUser
+                          ? "max-w-[85%] sm:max-w-[75%] md:max-w-[320px] lg:max-w-[400px]"
+                          : "w-full max-w-[85%] sm:max-w-[75%] md:max-w-[320px] lg:max-w-[400px]"
+                      }`}
+                    >
+                      {message.replyToId && (
+                        <div
+                          className={`mb-2 p-2 border-l-4 rounded-r-lg text-xs ${
+                            isCurrentUser
+                              ? "border-blue-300 bg-blue-50/50"
+                              : "border-gray-300 bg-gray-50"
+                          }`}
+                        >
+                          <div className="text-gray-600 font-medium mb-1">
+                            {message.replyTo
+                              ? `Replying to ${
+                                  message.replyTo.sender.id === currentUser?.id
+                                    ? "yourself"
+                                    : `${
+                                        message.replyTo.sender.firstName ||
+                                        "User"
+                                      } ${
+                                        message.replyTo.sender.lastName || ""
+                                      }`.trim()
+                                }`
+                              : `Replying to message #${message.replyToId}`}
+                          </div>
+                          <div className="text-gray-500 truncate">
+                            {message.replyTo
+                              ? message.replyTo.messageType === "TEXT"
+                                ? message.replyTo.content || "Message"
+                                : message.replyTo.messageType === "IMAGE"
+                                ? "📷 Image"
+                                : message.replyTo.messageType === "FILE"
+                                ? "📄 File"
+                                : "Message"
+                              : "Original message..."}
+                          </div>
+                        </div>
+                      )}
+
+                      <div
+                        className={`${
+                          message.messageType === "TEXT"
+                            ? isEmojiOnlyMessage(message.content || "")
+                              ? "inline-block bg-transparent border-0 shadow-none px-1 py-1"
+                              : "inline-block"
+                            : "block w-full"
+                        } ${
+                          message.messageType === "TEXT" &&
+                          isEmojiOnlyMessage(message.content || "")
+                            ? ""
+                            : "px-2 sm:px-4 py-2"
+                        } relative ${
+                          message.messageType === "TEXT" &&
+                          isEmojiOnlyMessage(message.content || "")
+                            ? ""
+                            : isCurrentUser
+                            ? "bg-blue-500 text-white"
+                            : isUnread
+                            ? "bg-white border border-blue-200 text-gray-900 shadow-md"
+                            : "bg-white border border-gray-200 text-gray-900 shadow-sm"
+                        } ${
+                          isCurrentUser
+                            ? `${
+                                !isGrouped && !isGroupedWithNext
+                                  ? "rounded-2xl"
+                                  : !isGrouped && isGroupedWithNext
+                                  ? "rounded-2xl rounded-br-md"
+                                  : isGrouped && !isGroupedWithNext
+                                  ? "rounded-2xl rounded-tr-md"
+                                  : "rounded-xl rounded-tr-md rounded-br-md"
+                              }`
+                            : `${
+                                !isGrouped && !isGroupedWithNext
+                                  ? "rounded-2xl"
+                                  : !isGrouped && isGroupedWithNext
+                                  ? "rounded-2xl rounded-bl-md"
+                                  : isGrouped && !isGroupedWithNext
+                                  ? "rounded-2xl rounded-tl-md"
+                                  : "rounded-xl rounded-tl-md rounded-bl-md"
+                              }`
+                        }`}
+                      >
+                        {message.messageType === "TEXT" &&
+                          (editingMessage === message.id ? (
+                            <div className="w-full editing-message">
+                              <textarea
+                                value={editingContent}
+                                onChange={(e) =>
+                                  setEditingContent(e.target.value)
+                                }
+                                className="w-full p-2 text-xs sm:text-sm bg-transparent border border-gray-300 rounded resize-none focus:outline-none focus:ring-2 focus:ring-blue-400"
+                                rows={2}
+                                autoFocus
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter" && !e.shiftKey) {
+                                    e.preventDefault();
+                                    handleSaveEdit(message.id);
+                                  } else if (e.key === "Escape") {
+                                    handleCancelEdit();
+                                  }
+                                }}
+                              />
+                              <div className="flex justify-end gap-2 mt-2">
+                                <button
+                                  onClick={handleCancelEdit}
+                                  className="px-3 py-1 text-xs text-gray-600 hover:text-gray-800 transition-colors"
+                                >
+                                  Cancel
+                                </button>
+                                <button
+                                  onClick={() => handleSaveEdit(message.id)}
+                                  className="px-3 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+                                >
+                                  Save
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="relative">
+                              <p
+                                className={`whitespace-pre-wrap leading-relaxed break-words ${
+                                  isEmojiOnlyMessage(message.content || "")
+                                    ? "text-4xl sm:text-5xl"
+                                    : "text-xs sm:text-sm"
+                                }`}
+                              >
+                                {message.content}
+                              </p>
+                              {message.isEdited && (
+                                <span className="text-xs text-gray-400 italic ml-2">
+                                  (edited)
+                                </span>
+                              )}
+                            </div>
+                          ))}
+
+                        {message.messageType === "IMAGE" && (
+                          <div className="relative">
+                            <a
+                              href={message.fileUrl || "#"}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              <img
+                                src={message.fileUrl || ""}
+                                alt={message.fileName || "Image"}
+                                loading="lazy"
+                                className="message-image rounded-lg max-h-80 object-contain"
+                              />
+                            </a>
+                          </div>
+                        )}
+
+                        {message.messageType === "FILE" && (
+                          <>
+                            {message.fileMimeType?.startsWith("audio/") ? (
+                              <audio
+                                controls
+                                preload="metadata"
+                                className="w-full"
+                              >
+                                <source
+                                  src={message.fileUrl || ""}
+                                  type={message.fileMimeType || "audio/webm"}
+                                />
+                                Your browser does not support the audio element.
+                              </audio>
+                            ) : (
+                              <a
+                                href={message.fileUrl || "#"}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-2 p-2 rounded-md hover:bg-gray-50"
+                              >
+                                <GoPaperclip className="h-5 w-5 text-gray-500" />
+                                <span className="text-xs sm:text-sm truncate max-w-[220px]">
+                                  {message.fileName || "File"}
+                                </span>
+                                {typeof message.fileSize === "number" && (
+                                  <span className="text-[10px] text-gray-400">
+                                    {Math.round(
+                                      (message.fileSize / 1024 / 1024) * 10
+                                    ) / 10}{" "}
+                                    MB
+                                  </span>
+                                )}
+                              </a>
+                            )}
+                          </>
+                        )}
+
+                        {/* Hover actions */}
+                        <div
+                          className={`absolute top-0 ${
+                            isCurrentUser ? "-left-24" : "-right-24"
+                          } opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center gap-1 bg-white shadow-lg rounded-full p-1`}
+                        >
+                          <button
+                            onClick={() => handleReply(message)}
+                            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                            title="Reply"
+                          >
+                            <BsReply className="h-4 w-4 text-gray-600" />
+                          </button>
+                          <button
+                            onClick={() =>
+                              setShowEmojiPicker(
+                                showEmojiPicker === message.id
+                                  ? null
+                                  : message.id
+                              )
+                            }
+                            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                            title="React"
+                          >
+                            <BsEmojiSmile className="h-4 w-4 text-gray-600" />
+                          </button>
+                          {isCurrentUser && message.messageType === "TEXT" && (
+                            <button
+                              onClick={() => handleEditMessage(message)}
+                              className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                              title="Edit"
+                            >
+                              <MdEdit className="h-4 w-4 text-gray-600" />
+                            </button>
+                          )}
+                          {isCurrentUser && (
+                            <button
+                              onClick={() => handleDeleteMessage(message.id)}
+                              className="p-2 hover:bg-red-50 rounded-full transition-colors"
+                              title="Delete"
+                            >
+                              <MdDelete className="h-4 w-4 text-red-600" />
+                            </button>
+                          )}
+                          <button
+                            onClick={() =>
+                              setSelectedMessage(
+                                selectedMessage === message.id
+                                  ? null
+                                  : message.id
+                              )
+                            }
+                            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                            title="More options"
+                          >
+                            <BsThreeDots className="h-4 w-4 text-gray-600" />
+                          </button>
+                        </div>
+
+                        {/* Emoji picker */}
+                        {showEmojiPicker === message.id && (
+                          <div
+                            className={`absolute z-50 mt-2 ${
+                              isCurrentUser ? "right-0" : "left-0"
+                            } bg-white border border-gray-200 rounded-lg shadow-lg p-2 emoji-picker`}
+                          >
+                            <div className="flex gap-1">
+                              {commonReactions.map((emoji, idx) => (
+                                <button
+                                  key={idx}
+                                  onClick={() =>
+                                    handleQuickReaction(message.id, emoji)
+                                  }
+                                  className="p-2 hover:bg-gray-100 rounded-full transition-colors text-lg"
+                                >
+                                  {emoji}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Message options menu */}
+                        {selectedMessage === message.id && (
+                          <div
+                            className={`absolute z-50 mt-2 ${
+                              isCurrentUser ? "right-0" : "left-0"
+                            } bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-[120px] message-menu`}
+                          >
+                            <button
+                              onClick={() => handleReply(message)}
+                              className="w-full px-4 py-2 text-left hover:bg-gray-50 transition-colors text-sm"
+                            >
+                              Reply
+                            </button>
+                            <button
+                              onClick={() => {
+                                // TODO: Implement forward
+                                setSelectedMessage(null);
+                              }}
+                              className="w-full px-4 py-2 text-left hover:bg-gray-50 transition-colors text-sm"
+                            >
+                              Forward
+                            </button>
+                            {isCurrentUser &&
+                              message.messageType === "TEXT" && (
+                                <button
+                                  onClick={() => handleEditMessage(message)}
+                                  className="w-full px-4 py-2 text-left hover:bg-gray-50 transition-colors text-sm"
+                                >
+                                  Edit
+                                </button>
+                              )}
+                            {isCurrentUser && (
+                              <button
+                                onClick={() => handleDeleteMessage(message.id)}
+                                className="w-full px-4 py-2 text-left hover:bg-gray-50 transition-colors text-sm text-red-600"
+                              >
+                                Delete
+                              </button>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Reaction picker */}
+                        {showEmojiPicker === message.id && (
+                          <div
+                            className={`absolute z-50 mt-2 ${
+                              isCurrentUser ? "right-0" : "left-0"
+                            } bg-white border border-gray-200 rounded-lg shadow-lg p-3 emoji-picker`}
+                          >
+                            <div className="text-xs text-gray-500 mb-2 font-medium">
+                              Quick reactions
+                            </div>
+                            <div className="flex gap-2 mb-3">
+                              {commonReactions.map((emoji) => (
+                                <button
+                                  key={emoji}
+                                  onClick={() =>
+                                    handleMessageReaction(message.id, emoji)
+                                  }
+                                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-lg"
+                                  title={`React with ${emoji}`}
+                                >
+                                  {emoji}
+                                </button>
+                              ))}
+                            </div>
+                            <div className="border-t border-gray-200 pt-2">
+                              <div className="text-xs text-gray-500 mb-2 font-medium">
+                                More emojis
+                              </div>
+                              <div className="grid grid-cols-6 gap-1 max-h-32 overflow-y-auto">
+                                {mainEmojis.slice(0, 24).map((emoji) => (
+                                  <button
+                                    key={emoji}
+                                    onClick={() =>
+                                      handleMessageReaction(message.id, emoji)
+                                    }
+                                    className="p-1 hover:bg-gray-100 rounded transition-colors text-sm"
+                                    title={`React with ${emoji}`}
+                                  >
+                                    {emoji}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Current user avatar */}
+                      <div
+                        className={`w-8 ${isCurrentUser ? "block" : "hidden"}`}
+                      >
+                        {showAvatar && isCurrentUser && (
+                          <img
+                            src={
+                              currentUser?.profile?.avatar ||
+                              "/images/user-avatar.png"
+                            }
+                            className="h-8 w-8 rounded-full object-cover"
+                            alt="Your Avatar"
+                          />
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            }}
+          />
         )}
       </div>
 
@@ -1956,16 +1998,16 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
                 <div className="w-1 h-8 bg-blue-500 rounded-full"></div>
                 <div className="flex-1">
                   <div className="text-xs font-medium text-blue-600 mb-1">
-                    Replying to {replyingTo.senderName}
+                    Replying to {replyingTo!.senderName}
                   </div>
                   <div className="text-sm text-gray-600 truncate max-w-[300px]">
-                    {replyingTo.messageType === "TEXT"
-                      ? replyingTo.content
-                      : replyingTo.messageType === "IMAGE"
+                    {replyingTo!.messageType === "TEXT"
+                      ? replyingTo!.content
+                      : replyingTo!.messageType === "IMAGE"
                       ? "📷 Image"
-                      : replyingTo.messageType === "FILE"
-                      ? `📄 ${replyingTo.content}`
-                      : replyingTo.content}
+                      : replyingTo!.messageType === "FILE"
+                      ? `📄 ${replyingTo!.content}`
+                      : replyingTo!.content}
                   </div>
                 </div>
               </div>
@@ -2024,12 +2066,26 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
                         </div>
                         <div className="text-xs text-gray-400">
                           {(attachedFile.file.size / 1024 / 1024).toFixed(1)} MB
-                          {isUploading && (
-                            <div className="text-blue-500 animate-pulse">
-                              Sending...
-                            </div>
-                          )}
                         </div>
+                        {typeof uploadProgress[attachedFile.id] ===
+                          "number" && (
+                          <div className="mt-1">
+                            <div className="w-full h-1.5 bg-gray-200 rounded">
+                              <div
+                                className="h-1.5 bg-blue-500 rounded"
+                                style={{
+                                  width: `${
+                                    uploadProgress[attachedFile.id] || 0
+                                  }%`,
+                                }}
+                              />
+                            </div>
+                            <div className="text-[10px] text-gray-500 mt-1">
+                              {Math.round(uploadProgress[attachedFile.id] || 0)}
+                              %
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
                     {/* Remove button */}
@@ -2079,10 +2135,7 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
                 {/* Text input */}
                 <textarea
                   value={newMessage}
-                  onChange={(e) => {
-                    setNewMessage(e.target.value);
-                    handleInputChange(e as any);
-                  }}
+                  onChange={handleInputChange}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && !e.shiftKey) {
                       e.preventDefault();
@@ -2132,9 +2185,9 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
               </button>
             ) : (
               <button
-                onMouseDown={() => setIsRecordingVoice(true)}
-                onMouseUp={() => setIsRecordingVoice(false)}
-                onMouseLeave={() => setIsRecordingVoice(false)}
+                onMouseDown={() => startVoiceRecording()}
+                onMouseUp={() => stopVoiceRecording()}
+                onMouseLeave={() => stopVoiceRecording()}
                 className={`p-2 sm:p-3 rounded-full transition-all duration-200 transform ${
                   isRecordingVoice
                     ? "bg-red-500 text-white scale-105"
@@ -2204,22 +2257,74 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
               📎 Sending message and files...
             </div>
           )}
+
+          {/* Voice upload progress chip */}
+          {Object.entries(uploadProgress).some(([k]) =>
+            k.startsWith("voice-")
+          ) && (
+            <div className="mt-2 flex justify-center">
+              {Object.entries(uploadProgress)
+                .filter(([k]) => k.startsWith("voice-"))
+                .map(([k, p]) => (
+                  <div
+                    key={k}
+                    className="px-3 py-1.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 text-xs"
+                  >
+                    Voice upload {Math.round(p || 0)}%
+                  </div>
+                ))}
+            </div>
+          )}
+
+          {/* Recording error */}
+          {recordingError && (
+            <div className="mt-2 text-xs text-red-600 bg-red-50 border border-red-200 rounded p-2 flex items-center justify-between">
+              <span>{recordingError}</span>
+              <button
+                onClick={() => setRecordingError(null)}
+                className="text-red-600 hover:underline"
+              >
+                Dismiss
+              </button>
+            </div>
+          )}
         </div>
       </div>
+
+      {/* New messages indicator */}
+      {newMessagesPending && !isAtBottom && (
+        <div className="absolute bottom-20 left-1/2 -translate-x-1/2">
+          <button
+            onClick={() => {
+              virtuosoRef.current?.scrollToIndex({
+                index: Math.max(0, flatItems.length - 1),
+                align: "end",
+                behavior: "smooth",
+              });
+              setNewMessagesPending(false);
+            }}
+            className="bg-gray-800 hover:bg-gray-700 text-white px-3 py-1.5 rounded-full shadow text-sm"
+          >
+            New messages
+          </button>
+        </div>
+      )}
 
       {/* Floating scroll to unread button */}
       {showUnreadIndicator && unreadMessages.length > 0 && (
         <div className="absolute bottom-20 right-4">
           <button
             onClick={() => {
-              const unreadElement = document.querySelector(
-                `[data-message-id="${firstUnreadMessageId}"]`
-              );
-              if (unreadElement) {
-                unreadElement.scrollIntoView({
-                  behavior: "smooth",
-                  block: "center",
-                });
+              const id = firstUnreadMessageId;
+              if (typeof id === "number") {
+                const idx = idToIndex.get(id);
+                if (typeof idx === "number") {
+                  virtuosoRef.current?.scrollToIndex({
+                    index: idx,
+                    align: "center",
+                    behavior: "smooth",
+                  });
+                }
               }
             }}
             className="bg-blue-500 hover:bg-blue-600 text-white p-3 rounded-full shadow-lg transition-all duration-200 transform hover:scale-105 flex items-center gap-2"
@@ -2251,7 +2356,7 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
             setShowEmojiPicker(null);
             setShowMainEmojiPicker(false);
           }}
-        />
+        ></div>
       )}
     </div>
   );

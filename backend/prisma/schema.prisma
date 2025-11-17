@@ -27,19 +27,19 @@ model User {
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 
-  profile           Profile?
-  admin             Admin?
-  teacher           Teacher?
-  student           Student?
-  course            Course[]
-  announcement      Announcement[]
-  responses         Response[]
-  
+  profile      Profile?
+  admin        Admin?
+  teacher      Teacher?
+  student      Student?
+  course       Course[]
+  announcement Announcement[]
+  responses    Response[]
+
   // Chat relationships
-  chatParticipants  ChatParticipant[]
-  sentMessages      Message[]
-  messageReads      MessageRead[]
-  userStatus        UserStatus?
+  chatParticipants ChatParticipant[]
+  sentMessages     Message[]
+  messageReads     MessageRead[]
+  userStatus       UserStatus?
 }
 
 model Admin {
@@ -130,16 +130,16 @@ model Resource {
 }
 
 model QuizQuestion {
-  id             Int      @id @default(autoincrement())
+  id             Int     @id @default(autoincrement())
   quizId         Int
   type           String
   question       String
-  options       Json?
+  options        Json?
   correctAnswers Json?
-  required       Boolean   @default(false)
-  points         Int       @default(1)
+  required       Boolean @default(false)
+  points         Int     @default(1)
   imageUrl       String?
-  quiz           Quiz      @relation(fields: [quizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  quiz           Quiz    @relation(fields: [quizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 }
 
 model QuizAttempt {
@@ -178,18 +178,16 @@ model Form {
 }
 
 model Question {
-  id           Int          @id @default(autoincrement())
-  formId       Int
-  form         Form         @relation(fields: [formId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  questionText String
-  type         QuestionType
-  options      String[]
+  id            Int          @id @default(autoincrement())
+  formId        Int
+  form          Form         @relation(fields: [formId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  questionText  String
+  type          QuestionType
+  options       String[]
   correctAnswer String[]
-  points       Int          @default(1)
-  required     Boolean      @default(false)
+  points        Int          @default(1)
+  required      Boolean      @default(false)
 }
-
-
 
 model Response {
   id         Int      @id @default(autoincrement())
@@ -294,29 +292,29 @@ model ResetToken {
 // Chat System Models
 model Chat {
   id          Int      @id @default(autoincrement())
-  name        String?  // For group chats
+  name        String? // For group chats
   isGroup     Boolean  @default(false)
   groupAvatar String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  
+
   participants ChatParticipant[]
   messages     Message[]
-  
+
   @@map("chats")
 }
 
 model ChatParticipant {
-  id       Int      @id @default(autoincrement())
+  id       Int       @id @default(autoincrement())
   userId   Int
   chatId   Int
-  isAdmin  Boolean  @default(false)
-  joinedAt DateTime @default(now())
+  isAdmin  Boolean   @default(false)
+  joinedAt DateTime  @default(now())
   leftAt   DateTime?
-  
+
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
   chat Chat @relation(fields: [chatId], references: [id], onDelete: Cascade)
-  
+
   @@unique([userId, chatId])
   @@map("chat_participants")
 }
@@ -331,20 +329,20 @@ model Message {
   fileName     String?
   fileSize     Int?
   fileMimeType String?
-  replyToId    Int?        // ID of message being replied to
+  replyToId    Int? // ID of message being replied to
   isRead       Boolean     @default(false)
   isEdited     Boolean     @default(false)
   editedAt     DateTime?
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
-  
-  chat      Chat      @relation(fields: [chatId], references: [id], onDelete: Cascade)
-  sender    User      @relation(fields: [senderId], references: [id], onDelete: Cascade)
-  replyTo   Message?  @relation("MessageReply", fields: [replyToId], references: [id])
-  replies   Message[] @relation("MessageReply")
-  
+
+  chat    Chat      @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  sender  User      @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  replyTo Message?  @relation("MessageReply", fields: [replyToId], references: [id])
+  replies Message[] @relation("MessageReply")
+
   readBy MessageRead[]
-  
+
   @@map("messages")
 }
 
@@ -353,10 +351,10 @@ model MessageRead {
   messageId Int
   userId    Int
   readAt    DateTime @default(now())
-  
+
   message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+
   @@unique([messageId, userId])
   @@map("message_reads")
 }
@@ -366,9 +364,9 @@ model UserStatus {
   userId   Int      @unique
   isOnline Boolean  @default(false)
   lastSeen DateTime @default(now())
-  
+
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+
   @@map("user_status")
 }
 

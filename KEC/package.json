@@ -34,6 +34,7 @@
     "react-router-hash-link": "^2.4.3",
     "react-slick": "^0.31.0",
     "react-toastify": "^11.0.5",
+    "react-virtuoso": "^4.14.1",
     "recharts": "^2.15.3",
     "slick-carousel": "^1.8.1",
     "socket.io-client": "^4.8.1",

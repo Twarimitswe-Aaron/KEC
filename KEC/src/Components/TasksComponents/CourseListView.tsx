@@ -8,7 +8,7 @@ import {
   BarChart3,
   FileText
 } from "lucide-react";
-import { MdAssignmentAdd } from "react-icons/md";
+ 
 
 interface CourseListViewProps {
   filteredData: any[];
@@ -160,23 +160,12 @@ const CourseListView: React.FC<CourseListViewProps> = ({
                                         onClick={(e) => {
                                           e.stopPropagation();
                                           toggleLessonMenu(lesson.id, e);
-                                          handleCreateQuiz(course, lesson.id, lesson.title, 'assignment');
-                                        }}
-                                        className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                                      >
-                                        <MdAssignmentAdd className="mr-2 h-4 w-4" />
-                                        Create Assignment
-                                      </button>
-                                      <button 
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          toggleLessonMenu(lesson.id, e);
-                                          handleCreateQuiz(course, lesson.id, lesson.title, 'quiz');
+                                          handleCreateQuiz(course, lesson.id, lesson.title);
                                         }}
                                         className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                                       >
                                         <FileText className="mr-2 h-4 w-4" />
-                                        Create Quiz
+                                        Create
                                       </button>
                                     </div>
                                   </div>
