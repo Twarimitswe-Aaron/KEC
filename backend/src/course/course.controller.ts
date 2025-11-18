@@ -84,6 +84,10 @@ export class CourseController {
   }
 
  
+  @Get('/get-course-enrollments')
+  getCourseEnrollments() {
+    return this.courseService.getCoursesWithStudents();
+  }
 
   @Roles('admin')
   @Get('/get-unconfirmed-courses')

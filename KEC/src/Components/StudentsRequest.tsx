@@ -11,6 +11,7 @@ import {
   CreditCard,
   BookOpen,
 } from "lucide-react";
+import { useGetCourseEnrollmentsQuery } from "../state/api/courseApi";
 
 type Student = {
   id: number;
@@ -26,97 +27,11 @@ type Course = {
   id: number;
   title: string;
   students: Student[];
-  image?: string;
+  image_url?: string;
 };
 
 const StudentsRequest: React.FC = () => {
-  const mockCourses: Course[] = [
-    {
-      id: 1,
-      title: "Thermodynamics Basics",
-      image:
-        "https://i.pinimg.com/736x/41/05/64/41056405ae252836c286d6eca5983724.jpg",
-      students: [
-        {
-          id: 1,
-          name: "Alice Johnson",
-          email: "alice@example.com",
-          phone: "555-1234",
-          paid: true,
-          course: "Thermodynamics Basics",
-          location: "New York, USA",
-        },
-        {
-          id: 2,
-          name: "Bob Smith",
-          email: "bob@example.com",
-          phone: "555-5678",
-          paid: false,
-          course: "Thermodynamics Basics",
-          location: "London, UK",
-        },
-        {
-          id: 4,
-          name: "Diana Ross",
-          email: "diana@example.com",
-          phone: "555-9999",
-          paid: true,
-          course: "Thermodynamics Basics",
-          location: "Paris, France",
-        },
-      ],
-    },
-    {
-      id: 2,
-      title: "Advanced Fluid Mechanics",
-      image:
-        "https://i.pinimg.com/736x/4d/19/90/4d19904f4cb65c410e37863eb9f0dc0a.jpg",
-      students: [
-        {
-          id: 3,
-          name: "Charlie Brown",
-          email: "charlie@example.com",
-          phone: "555-8765",
-          paid: true,
-          course: "Advanced Fluid Mechanics",
-          location: "Toronto, Canada",
-        },
-        {
-          id: 5,
-          name: "Eva Martinez",
-          email: "eva@example.com",
-          phone: "555-2468",
-          paid: false,
-          course: "Advanced Fluid Mechanics",
-          location: "Madrid, Spain",
-        },
-      ],
-    },
-    {
-      id: 3,
-      title: "Engineering Drawing & CAD",
-      image:
-        "https://i.pinimg.com/1200x/04/f1/12/04f112c19b9e3228861692ccd57c02cf.jpg",
-      students: [],
-    },
-    {
-      id: 4,
-      title: "Finite Element Analysis (FEA)",
-      image:
-        "https://i.pinimg.com/736x/ac/36/dc/ac36dc239fd5d8a3118cc57c6f33e286.jpg",
-      students: [
-        {
-          id: 6,
-          name: "Frank Wilson",
-          email: "frank@example.com",
-          phone: "555-1357",
-          paid: true,
-          course: "Finite Element Analysis (FEA)",
-          location: "Berlin, Germany",
-        },
-      ],
-    },
-  ];
+  const { data: courses = [], isLoading } = useGetCourseEnrollmentsQuery();
 
   const [expandedCourses, setExpandedCourses] = useState<Set<number>>(
     new Set()
@@ -131,10 +46,10 @@ const StudentsRequest: React.FC = () => {
   };
 
   const getTotalStudents = () =>
-    mockCourses.reduce((sum, course) => sum + course.students.length, 0);
+    (courses as Course[]).reduce((sum, course) => sum + course.students.length, 0);
 
   const getPaidStudents = () =>
-    mockCourses.reduce(
+    (courses as Course[]).reduce(
       (sum, course) => sum + course.students.filter((s) => s.paid).length,
       0
     );
@@ -164,7 +79,7 @@ const StudentsRequest: React.FC = () => {
               <div>
                 <p className="text-sm text-gray-600">Total Courses</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {mockCourses.length}
+                  {(courses as Course[]).length}
                 </p>
               </div>
             </div>
@@ -204,7 +119,7 @@ const StudentsRequest: React.FC = () => {
 
       {/* Courses List */}
       <div className="space-y-6">
-        {mockCourses.map((course) => (
+        {(courses as Course[]).map((course) => (
           <div
             key={course.id}
             className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/50 overflow-hidden transition-all duration-300 hover:shadow-2xl"
@@ -215,9 +130,9 @@ const StudentsRequest: React.FC = () => {
               onClick={() => toggleCourse(course.id)}
             >
               <div className="flex items-center gap-8">
-                {course.image ? (
+                {course.image_url ? (
                   <img
-                    src={course.image}
+                    src={course.image_url}
                     alt={course.title}
                     className="w-12 h-12 object-cover rounded-full"
                   />

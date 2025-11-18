@@ -216,6 +216,35 @@ export class CourseService {
     return { message: 'Course updated successfully' };
   }
 
+  async getCoursesWithStudents() {
+    const courses = await this.prisma.course.findMany({
+      where: { isConfirmed: true },
+      include: {
+        onGoingStudents: {
+          include: {
+            user: { include: { profile: true } },
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return courses.map((course) => ({
+      id: course.id,
+      title: course.title,
+      image_url: course.image_url,
+      students: (course.onGoingStudents || []).map((s) => ({
+        id: s.user?.id || 0,
+        name: `${s.user?.firstName ?? ''} ${s.user?.lastName ?? ''}`.trim(),
+        email: s.user?.email || '',
+        phone: s.user?.profile?.phone || '',
+        paid: false,
+        course: course.title,
+        location: s.user?.profile?.resident || '',
+      })),
+    }));
+  }
+
   async getCourseAnalytics(courseId: number) {
     const course = await this.prisma.course.findUnique({
       where: { id: courseId },

@@ -106,6 +106,23 @@ export interface StudentCourseCard {
   createdAt?: string;
 }
 
+export interface StudentEnrollment {
+  id: number;
+  name: string;
+  email: string;
+  phone: string;
+  paid: boolean;
+  course: string;
+  location: string;
+}
+
+export interface CourseEnrollment {
+  id: number;
+  title: string;
+  image_url?: string;
+  students: StudentEnrollment[];
+}
+
 export const courseApi = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
     createCourse: builder.mutation<{ message: string }, CreateCourseDto>({
@@ -115,6 +132,12 @@ export const courseApi = apiSlice.injectEndpoints({
         body,
       }),
       invalidatesTags: [{ type: "Course", id: "LIST" }],
+    }),
+
+    // Admin/Teacher: list courses with enrolled students
+    getCourseEnrollments: builder.query<CourseEnrollment[], void>({
+      query: () => `/course/get-course-enrollments`,
+      providesTags: [{ type: 'Course', id: 'ENROLLMENTS' }],
     }),
 
     getCourses: builder.query<CourseData[], { unconfirmed?: boolean } | void>({
@@ -227,4 +250,5 @@ export const {
   useGetCourseForStudentQuery,
   useGetCourseEnrollmentStatusQuery,
   useEnrollCourseMutation,
+  useGetCourseEnrollmentsQuery,
 } = courseApi;
