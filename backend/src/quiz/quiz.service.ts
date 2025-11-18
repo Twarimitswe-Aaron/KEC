@@ -383,16 +383,64 @@ async updateQuiz({ id, data }: { id: number; data: UpdateQuizDto }) {
         description: lesson.description,
         quizzes: lesson.resources
           .filter(resource => resource.form?.quizzes && resource.form.quizzes.length > 0)
-          .flatMap(resource => resource.form?.quizzes?.map(quiz => ({
-            id: quiz.id,
-            title: quiz.name,
-            type: (quiz.settings as any)?.type || 'online',
-            dueDate: quiz.createdAt.toISOString().split('T')[0],
-            maxPoints: (quiz.settings as any)?.totalPoints || 100,
-            weight: 0.1,
-            attempts: quiz.attempts.length,
-            isEditable: (quiz.settings as any)?.type === 'manual' || (quiz.settings as any)?.type === 'practical'
-          })) || [])
+          .flatMap(resource => resource.form?.quizzes?.map(quiz => {
+            const settings: any = (quiz.settings && typeof quiz.settings === 'object') ? quiz.settings : {};
+            const type = settings.type || 'online';
+            const maxPoints = typeof settings.totalPoints === 'number' && settings.totalPoints > 0 ? settings.totalPoints : 100;
+            const isManual = !!settings.isManual || ['manual', 'practical', 'assignment', 'project', 'lab'].includes(String(type).toLowerCase());
+
+            // Build students list from enrolled + attempts
+            const enrolled = (course.onGoingStudents || []).map(s => ({
+              studentId: s.user?.id || 0,
+              name: s.user ? `${s.user.firstName} ${s.user.lastName}` : 'Unknown',
+              email: s.user?.email || ''
+            }));
+
+            const students = enrolled.map(st => {
+              const att = (quiz.attempts || []).find(a => {
+                try {
+                  const details = a.detailedResults ? JSON.parse(a.detailedResults) : {};
+                  return details && details.userId === st.studentId;
+                } catch { return false; }
+              });
+              if (att) {
+                const mp = (att as any).totalPoints || maxPoints;
+                const sc = (att as any).score || 0;
+                return {
+                  studentId: st.studentId,
+                  name: st.name,
+                  email: st.email,
+                  mark: sc,
+                  maxPoints: mp,
+                  submissionDate: (att as any).submittedAt ? ((att as any).submittedAt as Date).toISOString().split('T')[0] : '',
+                  hasSubmitted: true,
+                  isEditable: isManual,
+                };
+              }
+              return {
+                studentId: st.studentId,
+                name: st.name,
+                email: st.email,
+                mark: 0,
+                maxPoints,
+                submissionDate: '',
+                hasSubmitted: false,
+                isEditable: isManual,
+              };
+            });
+
+            return {
+              id: quiz.id,
+              title: quiz.name,
+              type: type || 'online',
+              dueDate: quiz.createdAt.toISOString().split('T')[0],
+              maxPoints,
+              weight: 0.1,
+              attempts: quiz.attempts.length,
+              isEditable: isManual,
+              students,
+            };
+          }) || [])
       })),
       enrolledStudents: course.onGoingStudents.map(student => ({
         id: student.user?.id || 0,
@@ -557,17 +605,22 @@ async updateQuiz({ id, data }: { id: number; data: UpdateQuizDto }) {
         throw new NotFoundException('Quiz not found');
       }
 
+      // Determine manual vs online to control editability
+      const settings: any = (quiz.settings && typeof quiz.settings === 'object') ? quiz.settings : {};
+      const type = settings.type || 'online';
+      const isManual = !!settings.isManual || ['manual', 'practical', 'assignment', 'project', 'lab'].includes(String(type).toLowerCase());
+
       // Get all enrolled students for the course
       const enrolledStudents = quiz.form?.resource?.lesson?.course?.onGoingStudents?.map(student => ({
         id: student.user?.id || 0,
         name: student.user ? `${student.user.firstName} ${student.user.lastName}` : 'Unknown',
         email: student.user?.email || '',
         mark: 0,
-        maxPoints: (quiz.settings as any)?.totalPoints || 100,
+        maxPoints: (settings?.totalPoints as any) || 100,
         percentage: 0,
         submissionDate: '',
         hasSubmitted: false,
-        isEditable: true
+        isEditable: isManual
       })) || [];
 
       // Update with actual attempt data (parse from detailedResults for manual quizzes)
