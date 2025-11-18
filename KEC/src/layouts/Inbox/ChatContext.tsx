@@ -276,6 +276,95 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
         });
       };
 
+      const reactionAddedHandler = (data: any) => {
+        console.log('😀 [ChatContext] Reaction added via WebSocket:', data);
+        
+        // Update the message in the cache
+        if (messagesData?.messages) {
+          const updatedMessages = messagesData.messages.map(msg => {
+            if (msg.id === data.messageId) {
+              const existingReactions = msg.reactions || [];
+              const existingReaction = existingReactions.find((r: any) => r.emoji === data.emoji);
+              
+              let newReactions;
+              if (existingReaction) {
+                // Increment count if reaction already exists
+                newReactions = existingReactions.map((r: any) => 
+                  r.emoji === data.emoji 
+                    ? { ...r, count: r.count + 1, users: [...(r.users || []), data.userId] }
+                    : r
+                );
+              } else {
+                // Add new reaction
+                newReactions = [...existingReactions, { 
+                  emoji: data.emoji, 
+                  count: 1, 
+                  users: [data.userId] 
+                }];
+              }
+              
+              console.log('🔄 [ChatContext] Updated message reactions:', {
+                messageId: msg.id,
+                oldReactions: existingReactions,
+                newReactions
+              });
+              
+              return { ...msg, reactions: newReactions };
+            }
+            return msg;
+          });
+          
+          // Update the cached data
+          chatApi.util.updateQueryData('getMessages', { chatId: activeChat?.id }, (draft: any) => {
+            draft.messages = updatedMessages;
+          });
+        }
+      };
+
+      const reactionRemovedHandler = (data: any) => {
+        console.log('😐 [ChatContext] Reaction removed via WebSocket:', data);
+        
+        // Update the message in the cache
+        if (messagesData?.messages) {
+          const updatedMessages = messagesData.messages.map(msg => {
+            if (msg.id === data.messageId) {
+              const existingReactions = msg.reactions || [];
+              const existingReaction = existingReactions.find((r: any) => r.emoji === data.emoji);
+              
+              let newReactions;
+              if (existingReaction && existingReaction.count > 1) {
+                // Decrement count if more than 1
+                newReactions = existingReactions.map((r: any) => 
+                  r.emoji === data.emoji 
+                    ? { ...r, count: r.count - 1, users: (r.users || []).filter((uid: number) => uid !== data.userId) }
+                    : r
+                );
+              } else if (existingReaction) {
+                // Remove reaction entirely if count would be 0
+                newReactions = existingReactions.filter((r: any) => r.emoji !== data.emoji);
+              } else {
+                // Reaction not found, no change
+                newReactions = existingReactions;
+              }
+              
+              console.log('🔄 [ChatContext] Updated message reactions after removal:', {
+                messageId: msg.id,
+                oldReactions: existingReactions,
+                newReactions
+              });
+              
+              return { ...msg, reactions: newReactions };
+            }
+            return msg;
+          });
+          
+          // Update the cached data
+          chatApi.util.updateQueryData('getMessages', { chatId: activeChat?.id }, (draft: any) => {
+            draft.messages = updatedMessages;
+          });
+        }
+      };
+
       const messageReadHandler = (data: any) => {
         console.log('📖 [ChatContext] Messages marked as read in real-time:', data);
         
@@ -333,8 +422,10 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
         websocketService.on('user:online', onlineHandler);
         websocketService.on('message:read', messageReadHandler);
         websocketService.on('message:delivered', messageDeliveredHandler);
+        websocketService.on('reaction:added', reactionAddedHandler);
+        websocketService.on('reaction:removed', reactionRemovedHandler);
         
-        console.log('🎧 [ChatContext] All WebSocket event listeners registered');
+        console.log('🎧 [ChatContext] All WebSocket event listeners registered (including reactions)');
       }).catch((error) => {
         console.error('❌ [ChatContext] WebSocket connection failed:', error);
         setIsConnected(false);
@@ -350,6 +441,8 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
         websocketService.off('user:online', onlineHandler);
         websocketService.off('message:read', messageReadHandler);
         websocketService.off('message:delivered', messageDeliveredHandler);
+        websocketService.off('reaction:added', reactionAddedHandler);
+        websocketService.off('reaction:removed', reactionRemovedHandler);
         
         // Don't disconnect on cleanup in development (HMR)
         if (!import.meta.hot) {

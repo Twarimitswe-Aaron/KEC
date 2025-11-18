@@ -21,6 +21,13 @@ interface OnlineStatusUpdate {
   isOnline: boolean;
 }
 
+interface ReactionUpdate {
+  messageId: number;
+  emoji: string;
+  userId: number;
+  userName?: string;
+}
+
 export interface WebSocketEvents {
   // Incoming events
   'message:new': (message: Message) => void;
@@ -30,6 +37,8 @@ export interface WebSocketEvents {
   'user:online': (data: OnlineStatusUpdate) => void;
   'chat:created': (data: { chatId: number; participants: number[] }) => void;
   'chat:joined': (data: { chatId: number }) => void;
+  'reaction:added': (data: ReactionUpdate) => void;
+  'reaction:removed': (data: ReactionUpdate) => void;
   'connect': () => void;
   'disconnect': () => void;
   'error': (error: any) => void;

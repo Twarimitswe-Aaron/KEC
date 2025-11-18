@@ -618,7 +618,7 @@ export class ChatService {
 
     // Emit the reaction via WebSocket for real-time updates
     if (this.chatGateway) {
-      this.chatGateway.server.to(`chat_${chatId}`).emit('reactionAdded', {
+      this.chatGateway.server.to(`chat_${chatId}`).emit('reaction:added', {
         messageId,
         emoji: body.emoji,
         userId,
@@ -648,7 +648,7 @@ export class ChatService {
     // For now, just emit the reaction removal via WebSocket
     // In a production system, you would remove from reactions table
     if (this.chatGateway) {
-      this.chatGateway.server.to(`chat_${chatId}`).emit('reactionRemoved', {
+      this.chatGateway.server.to(`chat_${chatId}`).emit('reaction:removed', {
         messageId,
         emoji,
         userId

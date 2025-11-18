@@ -603,4 +603,169 @@ async updateQuiz({ id, data }: { id: number; data: UpdateQuizDto }) {
     }
   }
 
+  // Create a quiz attempt with auto-grading
+  async createAttempt(
+    quizId: number,
+    responses: Array<{ questionId: number; answer: any }>,
+    userId?: number,
+  ) {
+    const quiz = await this.prisma.quiz.findUnique({
+      where: { id: quizId },
+      include: {
+        questions: true,
+        attempts: true,
+        form: {
+          include: {
+            resource: {
+              include: {
+                lesson: {
+                  include: {
+                    course: { include: { onGoingStudents: true } },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+    if (!quiz) throw new NotFoundException('Quiz not found');
+
+    const questionById = new Map<number, any>();
+    for (const q of quiz.questions) questionById.set(q.id, q);
+
+    const totalPoints = quiz.questions.reduce((sum, q) => sum + (q.points || 0), 0);
+    let score = 0;
+    const perQuestion: Record<number, { awarded: number; points: number }> = {};
+
+    const norm = (v: any) => String(v ?? '').trim().toLowerCase();
+
+    for (const r of responses || []) {
+      const q = questionById.get(r.questionId);
+      if (!q) continue;
+      const points = q.points || 0;
+      let awarded = 0;
+      const type = String(q.type || '').toLowerCase();
+
+      let correct: any[] = [];
+      if (q.correctAnswers) {
+        if (typeof q.correctAnswers === 'string') {
+          try {
+            const parsed = JSON.parse(q.correctAnswers);
+            if (Array.isArray(parsed)) correct = parsed;
+          } catch {}
+        } else if (Array.isArray(q.correctAnswers)) {
+          correct = q.correctAnswers;
+        }
+      }
+
+      if (type === 'multiple' || type === 'truefalse') {
+        const expected = correct.length ? correct[0] : null;
+        if (expected !== null && norm(r.answer) === norm(expected)) awarded = points;
+      } else if (type === 'checkbox') {
+        const ansArr = Array.isArray(r.answer) ? r.answer : [r.answer];
+        const setA = new Set(ansArr.map(norm));
+        const setB = new Set((correct || []).map(norm));
+        if (setA.size === setB.size && [...setA].every((v) => setB.has(v))) awarded = points;
+      } else if (type === 'labeling') {
+        const ans = Array.isArray(r.answer) ? r.answer : [];
+        const ok = Array.isArray(correct)
+          && correct.length === ans.length
+          && correct.every((c: any) => {
+            const found = ans.find((a: any) => norm(a.label) === norm(c.label));
+            return found && norm(found.answer) === norm(c.answer);
+          });
+        if (ok) awarded = points;
+      }
+
+      score += awarded;
+      perQuestion[r.questionId] = { awarded, points };
+    }
+
+    // Enrollment guard: ensure user is enrolled in the quiz's course
+    if (userId) {
+      const course = quiz.form?.resource?.lesson?.course as any;
+      if (course) {
+        let student = await this.prisma.student.findUnique({ where: { userId } });
+        if (!student) {
+          const user = await this.prisma.user.findUnique({ where: { id: userId } });
+          if (!user) throw new BadRequestException('User not found');
+          if (user.role !== 'student') throw new BadRequestException('Only students can attempt quizzes');
+          student = await this.prisma.student.create({ data: { userId } });
+        }
+        const enrolled = Array.isArray(course.onGoingStudents) && course.onGoingStudents.some((s: any) => s.id === student.id);
+        if (!enrolled) {
+          throw new BadRequestException('You must enroll in this course to attempt the quiz');
+        }
+      }
+    }
+
+    // Determine retake policy
+    const settings: any = typeof quiz.settings === 'object' && quiz.settings !== null ? quiz.settings : {};
+    const allowRetakes = !!settings.allowRetakes;
+
+    // Find an existing attempt for this user (by detailedResults.userId)
+    let existingAttempt: any | undefined;
+    if (userId && Array.isArray(quiz.attempts)) {
+      for (const a of quiz.attempts) {
+        try {
+          const details = (a as any).detailedResults ? JSON.parse((a as any).detailedResults) : {};
+          if (details && details.userId === userId) {
+            existingAttempt = a;
+            break;
+          }
+        } catch {}
+      }
+    }
+
+    if (existingAttempt && !allowRetakes) {
+      throw new BadRequestException('Retakes are not allowed for this quiz');
+    }
+
+    const payload = {
+      responses: JSON.stringify(responses || []),
+      score,
+      totalPoints,
+      detailedResults: JSON.stringify({ userId: userId ?? null, score, totalPoints, perQuestion }),
+      submittedAt: new Date(),
+    };
+
+    if (existingAttempt && allowRetakes) {
+      const updated = await this.prisma.quizAttempt.update({
+        where: { id: existingAttempt.id },
+        data: payload,
+      });
+      return { message: 'Quiz resubmitted successfully', score, totalPoints, attemptId: updated.id };
+    }
+
+    const created = await this.prisma.quizAttempt.create({
+      data: {
+        quizId,
+        ...payload,
+      },
+    });
+
+    return { message: 'Quiz submitted successfully', score, totalPoints, attemptId: created.id };
+  }
+
+  async getMyAttempt(quizId: number, userId: number) {
+    const attempts = await this.prisma.quizAttempt.findMany({ where: { quizId } });
+    for (const a of attempts) {
+      try {
+        const details = (a as any).detailedResults ? JSON.parse((a as any).detailedResults) : {};
+        if (details && details.userId === userId) {
+          return {
+            attemptId: a.id,
+            score: (a as any).score || 0,
+            totalPoints: (a as any).totalPoints || 0,
+            submittedAt: (a as any).submittedAt?.toISOString?.() || null,
+            responses: (a as any).responses ? JSON.parse((a as any).responses) : [],
+            perQuestion: details.perQuestion || {},
+          };
+        }
+      } catch {}
+    }
+    return null;
+  }
+
 }

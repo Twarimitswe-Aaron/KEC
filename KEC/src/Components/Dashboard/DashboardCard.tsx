@@ -3,6 +3,7 @@ import { FaEye } from "react-icons/fa";
 import CourseCard, { Course } from "./CourseCard";
 import { UserRoleContext } from "../../UserRoleContext";
 import { useNavigate } from "react-router-dom";
+import { useEnrollCourseMutation } from "../../state/api/courseApi";
 
 interface DashboardCardProps {
   courses: Course[];
@@ -17,12 +18,20 @@ const DashboardCard: React.FC<DashboardCardProps> = ({
  
   const [enrollingCourse, setEnrollingCourse] = useState<Course | null>(null);
   const userRole = useContext(UserRoleContext);
+  const [enrollCourse, { isLoading: isEnrolling }] = useEnrollCourseMutation();
 
   const handleViewDetails = (course: Course) => {
-   navigate("/course-creation/course/id");
+   navigate(`/course-creation/course/${course.id}`);
   };
-  const handleEnrollingCourse=()=>{
-    navigate("/dashboard/course/id")
+  const handleEnrollingCourse= async ()=>{
+    if (!enrollingCourse?.id) return;
+    try{
+      await enrollCourse(enrollingCourse.id).unwrap();
+      setEnrollingCourse(null);
+      navigate(`/dashboard/course/${enrollingCourse.id}`);
+    }catch(err){
+      setEnrollingCourse(null);
+    }
   }
 
   const handleCloseDetails = () => {
@@ -81,21 +90,25 @@ const DashboardCard: React.FC<DashboardCardProps> = ({
                   onClick={() => {
                     if (course.enrolled) {
                       onCourseAction(course.id!); // continue course
-                      navigate("/dashboard/course/id")
+                      navigate(`/dashboard/course/${course.id}`)
                     } else if (course.open) {
                       setEnrollingCourse(course); // open enrollment modal
                     }
                   }}
-                  disabled={!course.open && !course.enrolled}
+                  disabled={course.completed || (!course.open && !course.enrolled)}
                   className={`mt-4  w-full px-4 py-2 rounded text-white transition-colors ${
-                    course.enrolled
+                    course.completed
+                      ? "bg-gray-400 cursor-not-allowed"
+                      : course.enrolled
                       ? "bg-[#034153] cursor-pointer"
                       : course.open
                       ? "bg-[#034154] cursor-pointer"
                       : "bg-gray-400  cursor-not-allowed"
                   }`}
                 >
-                  {course.enrolled
+                  {course.completed
+                    ? "Completed"
+                    : course.enrolled
                     ? "Continue Course"
                     : course.open
                     ? "Start Course"
@@ -147,8 +160,7 @@ const DashboardCard: React.FC<DashboardCardProps> = ({
       <form
         onSubmit={(e) => {
           e.preventDefault();
-
-          setEnrollingCourse(null);
+          handleEnrollingCourse();
         }}
         className="space-y-2"
       >
@@ -214,14 +226,14 @@ const DashboardCard: React.FC<DashboardCardProps> = ({
 
         {/* Submit Button */}
         <button
-        onClick={handleEnrollingCourse}
           type="submit"
-          className="w-full bg-gradient-to-r from-[#004e64] to-[#025a73] hover:from-[#003a4c] hover:to-[#014d61] text-white font-bold py-4 px-6 rounded-md shadow-lg hover:shadow-xl transform hover:scale-101 cursor-pointer transition-all duration-200 flex items-center justify-center gap-2"
+          disabled={isEnrolling}
+          className="w-full bg-gradient-to-r from-[#004e64] to-[#025a73] hover:from-[#003a4c] hover:to-[#014d61] text-white font-bold py-4 px-6 rounded-md shadow-lg hover:shadow-xl transform hover:scale-101 cursor-pointer transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-60"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
-          Confirm Enrollment
+          {isEnrolling ? 'Enrolling...' : 'Confirm Enrollment'}
         </button>
       </form>
 

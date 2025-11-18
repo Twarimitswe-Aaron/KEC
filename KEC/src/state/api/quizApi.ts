@@ -336,6 +336,30 @@ export const quizApi = apiSlice.injectEndpoints({
       ],
     }),
 
+    // Submit a quiz attempt (auto-graded on backend)
+    submitQuizAttempt: builder.mutation<
+      { message: string; score: number; totalPoints: number; attemptId: number },
+      { quizId: number; responses: { questionId: number; answer: any }[] }
+    >({
+      query: ({ quizId, responses }) => ({
+        url: `quizzes/quiz/${quizId}/attempt`,
+        method: 'POST',
+        body: { responses },
+      }),
+      invalidatesTags: ['QuizAttempt'],
+    }),
+
+    // Get my attempt for a quiz
+    getMyAttempt: builder.query<
+      { attemptId: number; score: number; totalPoints: number; submittedAt: string | null; responses: any[]; perQuestion: Record<string, { awarded: number; points: number }> } | null,
+      number
+    >({
+      query: (quizId) => ({
+        url: `quizzes/quiz/${quizId}/my-attempt`,
+      }),
+      providesTags: ['QuizAttempt'],
+    }),
+
     // Get comprehensive course analytics with all lesson data
     getCourseAnalytics: builder.query<CourseAnalytics, number>({
       query: (courseId) => ({
@@ -363,4 +387,6 @@ export const {
   useUpdateManualMarksMutation,
   useGetQuizDetailsQuery,
   useGetCourseAnalyticsQuery,
+  useSubmitQuizAttemptMutation,
+  useGetMyAttemptQuery,
 } = quizApi;

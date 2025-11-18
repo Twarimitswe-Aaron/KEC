@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { CreateCourseDto } from './dto/create-course.dto';
 import { UpdateCourseDto } from './dto/update-course.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
@@ -434,5 +434,110 @@ export class CourseService {
       assignmentTypeBreakdown: [],
       gradeDistribution,
     };
+  }
+
+  // Student-facing helpers
+  async getStudentCourses(userId: number) {
+    let student = await this.prisma.student.findUnique({ where: { userId } });
+    if (!student) {
+      const user = await this.prisma.user.findUnique({ where: { id: userId } });
+      if (user && user.role === 'student') {
+        student = await this.prisma.student.create({ data: { userId } });
+      }
+    }
+    const studentId = student?.id || 0;
+
+    const courses = await this.prisma.course.findMany({
+      where: { isConfirmed: true },
+      include: {
+        uploader: { include: { profile: true } },
+        lesson: true,
+        onGoingStudents: true,
+        completedStudents: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return courses.map((course) => ({
+      id: course.id,
+      title: course.title,
+      description: course.description,
+      price: course.coursePrice,
+      image_url: course.image_url,
+      no_lessons: String(course.lesson?.length || 0),
+      open: !!course.open,
+      enrolled: !!course.onGoingStudents.find((s) => s.id === studentId),
+      completed: !!course.completedStudents.find((s) => s.id === studentId),
+      createdAt: course.createdAt.toISOString(),
+      uploader: {
+        id: course.uploader?.id || 0,
+        name: `${course.uploader?.firstName ?? ''} ${course.uploader?.lastName ?? ''}`.trim(),
+        email: course.uploader?.email || '',
+        avatar_url: course.uploader?.profile?.avatar || '',
+      },
+    }));
+  }
+
+  async getCourseForStudent(id: number) {
+    // Reuse admin course view but only return unlocked lessons
+    const full = await this.getCourseById(id);
+    if ((full as any).message === 'Course not found') throw new NotFoundException('Course not found');
+
+    return {
+      ...full,
+      lesson: (full as any).lesson.filter((l: any) => l.isUnlocked),
+    };
+  }
+
+  async getStudentEnrollmentStatus(userId: number, courseId: number) {
+    let student = await this.prisma.student.findUnique({ where: { userId } });
+    if (!student) {
+      const user = await this.prisma.user.findUnique({ where: { id: userId } });
+      if (!user) throw new NotFoundException('User not found');
+      if (user.role !== 'student') throw new BadRequestException('Only students allowed');
+      student = await this.prisma.student.create({ data: { userId } });
+    }
+
+    const course = await this.prisma.course.findUnique({
+      where: { id: courseId },
+      include: { onGoingStudents: true },
+    });
+    if (!course) throw new NotFoundException('Course not found');
+
+    const enrolled = !!course.onGoingStudents.find((s) => s.id === student.id);
+    return { enrolled, open: !!course.open };
+  }
+
+  async enrollStudent(userId: number, courseId: number) {
+    let student = await this.prisma.student.findUnique({ where: { userId } });
+    if (!student) {
+      const user = await this.prisma.user.findUnique({ where: { id: userId } });
+      if (!user) throw new NotFoundException('User not found');
+      if (user.role !== 'student') throw new BadRequestException('Only students can enroll');
+      student = await this.prisma.student.create({ data: { userId } });
+    }
+
+    const course = await this.prisma.course.findUnique({
+      where: { id: courseId },
+      include: { onGoingStudents: { select: { id: true } } },
+    });
+    if (!course) throw new NotFoundException('Course not found');
+    if (!course.open) throw new BadRequestException('Course is closed');
+
+    const already = course.onGoingStudents.some((s) => s.id === student.id);
+    if (already) {
+      return { message: 'Already enrolled' };
+    }
+
+    await this.prisma.course.update({
+      where: { id: courseId },
+      data: {
+        onGoingStudents: {
+          connect: { id: student.id },
+        },
+      },
+    });
+
+    return { message: 'Enrolled successfully' };
   }
 }

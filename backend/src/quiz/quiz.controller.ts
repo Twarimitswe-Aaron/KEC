@@ -31,6 +31,7 @@ import {
 import type { Express } from 'express';
 import type { Multer } from 'multer';
 import { QuizService } from './quiz.service';
+import { AuthGuard } from 'src/auth/auth.guard';
 import {
   CreateQuizDto,
   CreateManualQuizDto,
@@ -239,5 +240,28 @@ export class QuizController {
     @Query('courseId', ParseIntPipe) courseId: number,
   ) {
     return this.quizService.getQuizParticipants(quizId, courseId);
+  }
+
+  // Student submits a quiz attempt
+  @UseGuards(AuthGuard)
+  @Post('quiz/:quizId/attempt')
+  async createQuizAttempt(
+    @Param('quizId', ParseIntPipe) quizId: number,
+    @Body() body: { responses: { questionId: number; answer: any }[] },
+    @Req() req: Request,
+  ) {
+    const userId = (req as any)?.user?.sub;
+    return this.quizService.createAttempt(quizId, body.responses, userId);
+  }
+
+  // Get my attempt for a quiz (for displaying results / retake policy)
+  @UseGuards(AuthGuard)
+  @Get('quiz/:quizId/my-attempt')
+  async getMyAttempt(
+    @Param('quizId', ParseIntPipe) quizId: number,
+    @Req() req: Request,
+  ) {
+    const userId = (req as any)?.user?.sub;
+    return this.quizService.getMyAttempt(quizId, userId);
   }
 }

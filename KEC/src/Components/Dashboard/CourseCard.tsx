@@ -1,7 +1,9 @@
-import React, { useState,useContext } from "react";
+import React, { useContext } from "react";
+
 import { BsCameraVideoFill } from "react-icons/bs";
 
-import { UserRole, UserRoleContext } from "../../UserRoleContext";
+import { UserRoleContext } from "../../UserRoleContext";
+
 import { Link } from "react-router-dom";
 
 export interface Course {
@@ -13,6 +15,8 @@ export interface Course {
   open:boolean;
  
   no_lessons: string;
+  enrolled?: boolean;
+  completed?: boolean;
  
   uploader: {
     id:number;
@@ -21,7 +25,6 @@ export interface Course {
     avatar_url: string;
   };
 }
-
 
 interface CourseCardProps {
   course: Course;
@@ -40,49 +43,49 @@ const CourseCard: React.FC<CourseCardProps> = ({
   expandedIndex,
   onExpand,
 }) => {
-    const userRole=useContext(UserRoleContext);
+  const userRole=useContext(UserRoleContext);
   return (
     <div className="bg-white w-full rounded-xl shadow-md overflow-hidden relative">
       {/* Expanded description modal */}
       {expandedIndex === index && (
         <div className="fixed inset-0 bg-[#0006] bg-opacity-10 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-lg w-full p-6 relative">
-            <button
-              className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 transition-colors"
-              onClick={() => onExpand(null)}
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
+        <div className="bg-white rounded-lg shadow-xl max-w-lg w-full p-6 relative">
+          <button
+            className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 transition-colors"
+            onClick={() => onExpand(null)}
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+          
+          <div className="flex flex-col gap-4">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-800">{course.title}</h3>
+              <p className="text-sm text-gray-500 mt-1">{course.uploader.name}</p>
+            </div>
             
-            <div className="flex flex-col gap-4">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-800">{course.title}</h3>
-                <p className="text-sm text-gray-500 mt-1">{course.uploader.name}</p>
-              </div>
+            <p className="text-gray-600 leading-relaxed">{course.description}</p>
+            
+            <div className="flex items-center gap-4 text-sm text-gray-500">
+              <span className="flex items-center gap-2">
+                <BsCameraVideoFill className="text-blue-500" /> {course.no_lessons} lessons
+              </span>
               
-              <p className="text-gray-600 leading-relaxed">{course.description}</p>
-              
-              <div className="flex items-center gap-4 text-sm text-gray-500">
-                <span className="flex items-center gap-2">
-                  <BsCameraVideoFill className="text-blue-500" /> {course.no_lessons} lessons
-                </span>
-                
-              </div>
-              
-              <div className="flex items-center justify-between pt-4 border-t">
-                <p className="text-lg font-bold text-[#022F40]">{course.price}</p>
-                <button 
-                  onClick={() => course.id && onAction(course.id)}
-                  className="px-6 py-2 bg-[#022F40] text-white rounded hover:bg-opacity-90 transition-colors"
-                >
-                  {variant === 'student' ? 'Continue Course' : userRole==="teacher" || "admin" ? 'Edit Course' :"Start course"}
-                </button>
-              </div>
+            </div>
+            
+            <div className="flex items-center justify-between pt-4 border-t">
+              <p className="text-lg font-bold text-[#022F40]">{course.price}</p>
+              <button 
+                onClick={() => course.id && onAction(course.id)}
+                className="px-6 py-2 bg-[#022F40] text-white rounded hover:bg-opacity-90 transition-colors"
+              >
+                {variant === 'student' ? 'Continue Course' : (userRole === "teacher" || userRole === "admin") ? 'Edit Course' : "Start course"}
+              </button>
             </div>
           </div>
         </div>
+      </div>
       )}
 
       {/* Card Image */}
@@ -137,7 +140,7 @@ const CourseCard: React.FC<CourseCardProps> = ({
           onClick={() => course.id && onAction(course.id)}
           className="mt-2 py-2 w-full text-sm h-9 border cursor-pointer border-[#022F40] text-[#022F40] hover:bg-[#fff]  shadow-2xl hover:text-[#022F40] rounded transition"
         >
-          {variant === 'student' ? 'Continue Course' : userRole === 'teacher' || 'admin' ? 'View' : 'Start Course'}
+          {variant === 'student' ? 'Continue Course' : (userRole === 'teacher' || userRole === 'admin') ? 'View' : 'Start Course'}
         </button>
       </div>
     </div>

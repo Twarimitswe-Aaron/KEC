@@ -258,54 +258,79 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
   // Handle message reaction
   const handleMessageReaction = useCallback(
     async (messageId: number, emoji: string) => {
-      if (!activeChat || !currentUser) return;
+      if (!activeChat || !currentUser) {
+        console.error('❌ [Chat] Cannot add reaction - missing activeChat or currentUser:', {
+          activeChat: !!activeChat,
+          currentUser: !!currentUser,
+          messageId,
+          emoji
+        });
+        return;
+      }
 
       try {
-        console.log("👍 [Chat] Adding reaction:", { messageId, emoji });
+        console.log("👍 [Chat] Adding reaction:", { 
+          messageId, 
+          emoji, 
+          chatId: activeChat.id,
+          currentUserId: currentUser.id,
+          existingReactions: messages.find(m => m.id === messageId)?.reactions
+        });
 
         // Call the API to add/remove reaction
         await addReaction({
+          chatId: Number(activeChat.id),
           messageId,
           emoji,
-          chatId: activeChat.id,
         }).unwrap();
 
         console.log(
-          `✅ [Chat] Added ${emoji} reaction to message ${messageId}`
+          `✅ [Chat] Successfully added ${emoji} reaction to message ${messageId}`
         );
-
-        setShowEmojiPicker(null);
-        setSelectedMessage(null);
-      } catch (error) {
+      } catch (error: any) {
         console.error("❌ Failed to add reaction:", error);
+        
+        // Check if it's a conflict (reaction already exists) and try to remove it
+        if (error?.status === 409 || error?.message?.includes('already exists')) {
+          console.log("⚠️ [Chat] Reaction already exists, attempting to remove it...");
+          try {
+            await removeReaction({
+              chatId: Number(activeChat.id),
+              messageId,
+              emoji,
+            }).unwrap();
 
-        // Try to remove the reaction if it already exists
-        try {
-          await removeReaction({
-            messageId,
-            emoji,
-            chatId: activeChat.id,
-          }).unwrap();
-          console.log(
-            `✅ [Chat] Removed ${emoji} reaction from message ${messageId}`
-          );
-        } catch (removeError) {
-          console.error("❌ Failed to remove reaction:", removeError);
+            console.log(
+              `✅ [Chat] Successfully removed ${emoji} reaction from message ${messageId}`
+            );
+          } catch (removeError: any) {
+            console.error("❌ Failed to remove reaction:", removeError);
+          }
+        } else {
+          console.error("❌ Unexpected error adding reaction:", {
+            error: error?.message,
+            status: error?.status,
+            data: error?.data
+          });
         }
       }
     },
-    [activeChat, currentUser, addReaction, removeReaction]
+    [activeChat, currentUser, addReaction, removeReaction, messages]
   );
 
   // Handle quick reaction (double tap or long press)
   const handleQuickReaction = useCallback(
     async (messageId: number, emoji: string = "❤️") => {
+      console.log("⚡ [Chat] Quick reaction triggered:", { messageId, emoji });
+      
       // Show floating reaction animation
       setFloatingReaction({ messageId, emoji, show: true });
+      console.log("🎬 [Chat] Floating reaction animation shown");
 
       // Hide animation after delay
       setTimeout(() => {
         setFloatingReaction(null);
+        console.log("🎬 [Chat] Floating reaction animation hidden");
       }, 1000);
 
       await handleMessageReaction(messageId, emoji);
@@ -1932,9 +1957,10 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
                               {commonReactions.map((emoji, idx) => (
                                 <button
                                   key={idx}
-                                  onClick={() =>
-                                    handleQuickReaction(message.id, emoji)
-                                  }
+                                  onClick={() => {
+                                    console.log(`🎯 [Chat] Quick reaction button clicked: ${emoji} for message ${message.id}`);
+                                    handleQuickReaction(message.id, emoji);
+                                  }}
                                   className="p-2 hover:bg-gray-100 rounded-full transition-colors text-lg"
                                 >
                                   {emoji}
@@ -2000,9 +2026,10 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
                               {commonReactions.map((emoji) => (
                                 <button
                                   key={emoji}
-                                  onClick={() =>
-                                    handleMessageReaction(message.id, emoji)
-                                  }
+                                  onClick={() => {
+                                    console.log(`🎯 [Chat] Message reaction button clicked: ${emoji} for message ${message.id}`);
+                                    handleMessageReaction(message.id, emoji);
+                                  }}
                                   className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-lg"
                                   title={`React with ${emoji}`}
                                 >
@@ -2018,9 +2045,10 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
                                 {mainEmojis.slice(0, 24).map((emoji) => (
                                   <button
                                     key={emoji}
-                                    onClick={() =>
-                                      handleMessageReaction(message.id, emoji)
-                                    }
+                                    onClick={() => {
+                                      console.log(`🎯 [Chat] Full emoji reaction button clicked: ${emoji} for message ${message.id}`);
+                                      handleMessageReaction(message.id, emoji);
+                                    }}
                                     className="p-1 hover:bg-gray-100 rounded transition-colors text-sm"
                                     title={`React with ${emoji}`}
                                   >
