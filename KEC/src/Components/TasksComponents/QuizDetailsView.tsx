@@ -1,10 +1,11 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { 
   ArrowLeft,
   Users, 
   BarChart3, 
   TrendingUp
 } from "lucide-react";
+import { useGetQuizParticipantsQuery, useUpdateManualMarksMutation } from "../../state/api/quizApi";
 
 interface QuizDetailsViewProps {
   selectedQuizDetails: any;
@@ -23,7 +24,49 @@ const QuizDetailsView: React.FC<QuizDetailsViewProps> = ({
     return null;
   }
 
-  const { quiz } = selectedQuizDetails;
+  const { quiz, courseId } = selectedQuizDetails;
+  const quizId = Number(quiz?.id) || 0;
+  const courseIdNum = Number(courseId) || 0;
+  const { data: liveParticipants, refetch } = useGetQuizParticipantsQuery(
+    { quizId, courseId: courseIdNum },
+    { skip: !(quizId && courseIdNum) }
+  );
+
+  const students = Array.isArray(liveParticipants)
+    ? liveParticipants
+    : (Array.isArray(quiz.students) ? quiz.students : []);
+  const quizType = String(quiz?.type || '').toLowerCase();
+  const isEditableQuiz = quizType !== 'online';
+  const [isEditing, setIsEditing] = useState(false);
+  const [draft, setDraft] = useState<Record<number, { mark: number }>>({});
+  const [updateManualMarks, { isLoading: isSaving }] = useUpdateManualMarksMutation();
+
+  useEffect(() => {
+    const init: Record<number, { mark: number }> = {};
+    (students || []).forEach((s: any, i: number) => {
+      const uid = (s && (s.studentId ?? s.id)) ?? i;
+      init[Number(uid)] = { mark: Number(s?.mark) || 0 };
+    });
+    setDraft(init);
+  }, [quizId, students]);
+
+  const handleSave = async () => {
+    if (!isEditableQuiz || !quizId) return;
+    const maxPoints = Number(quiz?.maxPoints) || 0;
+    const payload = {
+      quizId,
+      studentMarks: (students || []).map((s: any, i: number) => {
+        const uid = Number((s && (s.studentId ?? s.id)) ?? i);
+        const mark = Number(draft[uid]?.mark ?? 0);
+        return { userId: uid, mark, maxPoints };
+      }),
+    } as any;
+    try {
+      await updateManualMarks(payload).unwrap();
+      await refetch();
+      setIsEditing(false);
+    } catch {}
+  };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -69,15 +112,17 @@ const QuizDetailsView: React.FC<QuizDetailsViewProps> = ({
           {/* Quiz Statistics */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
             {(() => {
-              const students = quiz.students || [];
               const totalStudents = students.length;
-              const submittedStudents = students.filter((s: any) => s.submissionDate).length;
-              const averageScore = totalStudents > 0 ? 
-                students.reduce((sum: number, s: any) => sum + s.mark, 0) / totalStudents : 0;
-              const averagePercentage = (averageScore / quiz.maxPoints) * 100;
-              const highestScore = Math.max(...students.map((s: any) => s.mark));
-              const lowestScore = Math.min(...students.map((s: any) => s.mark));
-              const passingStudents = students.filter((s: any) => (s.mark / quiz.maxPoints) * 100 >= 60).length;
+              const submittedStudents = students.filter((s: any) => !!s?.submissionDate).length;
+              const totalMarks = students.reduce((sum: number, s: any) => sum + (Number(s?.mark) || 0), 0);
+              const averageScore = totalStudents > 0 ? totalMarks / totalStudents : 0;
+              const averagePercentage = quiz?.maxPoints ? (averageScore / quiz.maxPoints) * 100 : 0;
+              const highestScore = totalStudents > 0 ? Math.max(...students.map((s: any) => Number(s?.mark) || 0)) : 0;
+              const passingStudents = students.filter((s: any) => {
+                const mp = Number(quiz?.maxPoints) || 0;
+                const mk = Number(s?.mark) || 0;
+                return mp > 0 ? (mk / mp) * 100 >= 60 : false;
+              }).length;
 
               return (
                 <>
@@ -120,6 +165,24 @@ const QuizDetailsView: React.FC<QuizDetailsViewProps> = ({
           {/* Student Results Table */}
           <div>
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Student Results</h3>
+            {isEditableQuiz && (
+              <div className="mb-3 flex gap-2 justify-end">
+                {!isEditing ? (
+                  <button onClick={() => setIsEditing(true)} className="px-3 py-1 bg-blue-600 text-white rounded-md text-sm">
+                    Edit Marks
+                  </button>
+                ) : (
+                  <>
+                    <button onClick={() => setIsEditing(false)} className="px-3 py-1 bg-gray-200 text-gray-800 rounded-md text-sm">
+                      Cancel
+                    </button>
+                    <button onClick={handleSave} disabled={isSaving} className="px-3 py-1 bg-green-600 text-white rounded-md text-sm disabled:bg-gray-400">
+                      {isSaving ? 'Saving...' : 'Save'}
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
             <div className="overflow-x-auto">
               <table className="w-full border-collapse bg-white rounded-lg overflow-hidden shadow-sm">
                 <thead>
@@ -133,16 +196,36 @@ const QuizDetailsView: React.FC<QuizDetailsViewProps> = ({
                   </tr>
                 </thead>
                 <tbody>
-                  {quiz.students && quiz.students
-                    .sort((a: any, b: any) => b.mark - a.mark)
+                  {(students || [])
+                    .sort((a: any, b: any) => (Number(b?.mark) || 0) - (Number(a?.mark) || 0))
                     .map((student: any, index: number) => {
-                      const percentage = (student.mark / quiz.maxPoints) * 100;
+                      const sid = Number((student && (student.studentId ?? student.id)) ?? index);
+                      const mark = isEditing && isEditableQuiz ? Number(draft[sid]?.mark ?? 0) : (Number(student?.mark) || 0);
+                      const maxPts = Number((student && student.maxPoints) ?? quiz?.maxPoints) || 0;
+                      const percentage = maxPts > 0 ? (mark / maxPts) * 100 : 0;
                       return (
-                        <tr key={student.id} className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}>
-                          <td className="border-b px-4 py-3 font-medium">{student.name}</td>
-                          <td className="border-b px-4 py-3 text-gray-600 text-sm">{student.email}</td>
+                        <tr key={sid} className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}>
+                          <td className="border-b px-4 py-3 font-medium">{student?.name || "-"}</td>
+                          <td className="border-b px-4 py-3 text-gray-600 text-sm">{student?.email || "-"}</td>
                           <td className="border-b px-4 py-3 font-medium">
-                            {student.mark} / {quiz.maxPoints}
+                            {isEditing && isEditableQuiz ? (
+                              <div className="flex items-center gap-2">
+                                <input
+                                  type="number"
+                                  value={Number(draft[sid]?.mark ?? 0)}
+                                  onChange={(e) => {
+                                    const v = Number(e.target.value);
+                                    setDraft((prev) => ({ ...prev, [sid]: { mark: isNaN(v) ? 0 : v } }));
+                                  }}
+                                  className="w-20 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                  min={0}
+                                  max={maxPts}
+                                />
+                                <span className="text-sm text-gray-500">/ {maxPts}</span>
+                              </div>
+                            ) : (
+                              <>{mark} / {maxPts}</>
+                            )}
                           </td>
                           <td className="border-b px-4 py-3">
                             <span className={`px-3 py-1 rounded-full text-sm font-medium ${getGradeColor(percentage)}`}>
@@ -153,7 +236,7 @@ const QuizDetailsView: React.FC<QuizDetailsViewProps> = ({
                             <span className="font-bold text-lg">{getLetterGrade(percentage)}</span>
                           </td>
                           <td className="border-b px-4 py-3 text-sm text-gray-600">
-                            {student.submissionDate || "Not submitted"}
+                            {student?.submissionDate || "Not submitted"}
                           </td>
                         </tr>
                       );

@@ -453,6 +453,7 @@ const Tasks = () => {
   const handleQuizSelect = (course: any, lesson: any, quiz: any) => {
     setSelectedQuizDetails({
       quiz,
+      courseId: course.id,
       courseName: course.name,
       lessonTitle: lesson.title
     });

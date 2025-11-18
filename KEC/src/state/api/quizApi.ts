@@ -275,7 +275,7 @@ export const quizApi = apiSlice.injectEndpoints({
       query: () => ({
         url: 'quizzes/courses-with-data',
       }),
-      providesTags: ['Course', 'Quiz'],
+      providesTags: ['Course', 'Quiz', 'QuizAttempt'],
     }),
 
     // Get lessons with quizzes for a specific course
@@ -286,6 +286,7 @@ export const quizApi = apiSlice.injectEndpoints({
       providesTags: (result, error, courseId) => [
         { type: 'Course', id: courseId },
         'Quiz',
+        'QuizAttempt',
       ],
     }),
 

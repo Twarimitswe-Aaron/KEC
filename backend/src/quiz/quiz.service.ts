@@ -396,13 +396,29 @@ async updateQuiz({ id, data }: { id: number; data: UpdateQuizDto }) {
               email: s.user?.email || ''
             }));
 
+            // Map latest attempt per user
+            const latestAttemptByUser: Record<number, any> = {};
+            for (const a of (quiz.attempts || [])) {
+              let uid: number | null = null;
+              try {
+                const details = (a as any).detailedResults ? JSON.parse((a as any).detailedResults) : {};
+                if (typeof details.userId === 'number') uid = details.userId;
+              } catch {}
+              if (!uid) continue;
+              const prev = latestAttemptByUser[uid];
+              if (!prev) {
+                latestAttemptByUser[uid] = a;
+              } else {
+                const prevTime = (prev as any).submittedAt ? new Date((prev as any).submittedAt).getTime() : 0;
+                const curTime = (a as any).submittedAt ? new Date((a as any).submittedAt).getTime() : 0;
+                if (curTime > prevTime || (!(prev as any).submittedAt && (a as any).submittedAt) || ((curTime === prevTime) && (a as any).id > (prev as any).id)) {
+                  latestAttemptByUser[uid] = a;
+                }
+              }
+            }
+
             const students = enrolled.map(st => {
-              const att = (quiz.attempts || []).find(a => {
-                try {
-                  const details = a.detailedResults ? JSON.parse(a.detailedResults) : {};
-                  return details && details.userId === st.studentId;
-                } catch { return false; }
-              });
+              const att = latestAttemptByUser[st.studentId];
               if (att) {
                 const mp = (att as any).totalPoints || maxPoints;
                 const sc = (att as any).score || 0;
@@ -530,32 +546,59 @@ async updateQuiz({ id, data }: { id: number; data: UpdateQuizDto }) {
 
       const updates: any[] = [];
 
-      // Process each student mark
+      // Fetch all existing attempts once for upsert logic
+      const existingAttempts = await this.prisma.quizAttempt.findMany({ where: { quizId } });
+      // Build a map of latest attempt per userId to avoid repeated scans/JSON parses
+      const latestByUser = new Map<number, any>();
+      for (const a of existingAttempts) {
+        try {
+          const details = (a as any).detailedResults ? JSON.parse((a as any).detailedResults) : {};
+          const uid = details && typeof details.userId === 'number' ? details.userId : null;
+          if (!uid) continue;
+          const prev = latestByUser.get(uid);
+          if (!prev) {
+            latestByUser.set(uid, a);
+          } else {
+            const prevTime = (prev as any).submittedAt ? new Date((prev as any).submittedAt).getTime() : 0;
+            const curTime = (a as any).submittedAt ? new Date((a as any).submittedAt).getTime() : 0;
+            if (curTime > prevTime || (!(prev as any).submittedAt && (a as any).submittedAt) || ((curTime === prevTime) && (a as any).id > (prev as any).id)) {
+              latestByUser.set(uid, a);
+            }
+          }
+        } catch {}
+      }
+
+      // Process each student mark: update existing attempt for the user if present, else create new
       for (const studentMark of studentMarks) {
         const { userId, mark, maxPoints } = studentMark;
+        let existingForUser = latestByUser.get(userId);
 
-        // Note: QuizAttempt in current schema doesn't support userId directly
-        // We'll need to create a different approach for manual marks
-        // For now, we'll create quiz attempts without user association
-        
-        // Create quiz attempt record for manual scoring
-        const attempt = await this.prisma.quizAttempt.create({
-          data: {
-            quizId,
-            responses: JSON.stringify({ manual: true, userId, mark, maxPoints }),
-            score: mark,
-            totalPoints: maxPoints,
-            detailedResults: JSON.stringify({
-              userId,
-              isManual: true,
-              mark,
-              maxPoints,
-              percentage: maxPoints > 0 ? (mark / maxPoints) * 100 : 0
-            })
-          }
-        });
-        
-        updates.push({ userId, action: 'created', mark, attemptId: attempt.id });
+        const payload = {
+          responses: JSON.stringify({ manual: true, userId, mark, maxPoints }),
+          score: mark,
+          totalPoints: maxPoints,
+          detailedResults: JSON.stringify({
+            userId,
+            isManual: true,
+            mark,
+            maxPoints,
+            percentage: maxPoints > 0 ? (mark / maxPoints) * 100 : 0
+          }),
+          submittedAt: new Date(),
+        } as any;
+
+        if (existingForUser) {
+          const attempt = await this.prisma.quizAttempt.update({
+            where: { id: existingForUser.id },
+            data: payload,
+          });
+          updates.push({ userId, action: 'updated', mark, attemptId: attempt.id });
+        } else {
+          const attempt = await this.prisma.quizAttempt.create({
+            data: { quizId, ...payload },
+          });
+          updates.push({ userId, action: 'created', mark, attemptId: attempt.id });
+        }
       }
 
       this.logger.log(`Manual marks updated for quiz ${quizId}: ${updates.length} students`);
@@ -610,6 +653,27 @@ async updateQuiz({ id, data }: { id: number; data: UpdateQuizDto }) {
       const type = settings.type || 'online';
       const isManual = !!settings.isManual || ['manual', 'practical', 'assignment', 'project', 'lab'].includes(String(type).toLowerCase());
 
+      // Build map of latest attempt per userId (by submittedAt desc, then id desc)
+      const latestAttemptByUser: Record<number, any> = {};
+      for (const a of (quiz.attempts || [])) {
+        let uid: number | null = null;
+        try {
+          const details = (a as any).detailedResults ? JSON.parse((a as any).detailedResults) : {};
+          if (typeof details.userId === 'number') uid = details.userId;
+        } catch {}
+        if (!uid) continue;
+        const prev = latestAttemptByUser[uid];
+        if (!prev) {
+          latestAttemptByUser[uid] = a;
+        } else {
+          const prevTime = (prev as any).submittedAt ? new Date((prev as any).submittedAt).getTime() : 0;
+          const curTime = (a as any).submittedAt ? new Date((a as any).submittedAt).getTime() : 0;
+          if (curTime > prevTime || (!(prev as any).submittedAt && (a as any).submittedAt) || ((curTime === prevTime) && (a as any).id > (prev as any).id)) {
+            latestAttemptByUser[uid] = a;
+          }
+        }
+      }
+
       // Get all enrolled students for the course
       const enrolledStudents = quiz.form?.resource?.lesson?.course?.onGoingStudents?.map(student => ({
         id: student.user?.id || 0,
@@ -623,16 +687,9 @@ async updateQuiz({ id, data }: { id: number; data: UpdateQuizDto }) {
         isEditable: isManual
       })) || [];
 
-      // Update with actual attempt data (parse from detailedResults for manual quizzes)
+      // Update with latest attempt data (parse from detailedResults for manual quizzes)
       const participantsWithMarks = enrolledStudents.map(student => {
-        const attempt = quiz.attempts.find(a => {
-          try {
-            const details = JSON.parse(a.detailedResults || '{}');
-            return details.userId === student.id;
-          } catch {
-            return false;
-          }
-        });
+        const attempt = latestAttemptByUser[student.id];
         
         if (attempt) {
           const percentage = attempt.totalPoints > 0 ? (attempt.score / attempt.totalPoints) * 100 : 0;
@@ -700,6 +757,16 @@ async updateQuiz({ id, data }: { id: number; data: UpdateQuizDto }) {
       let awarded = 0;
       const type = String(q.type || '').toLowerCase();
 
+      // Normalize options for index-based comparison
+      const optionsArr: any[] = Array.isArray(q.options)
+        ? q.options
+        : (typeof q.options === 'string'
+            ? (() => { try { const p = JSON.parse(q.options); return Array.isArray(p) ? p : []; } catch { return []; } })()
+            : []);
+      const optIdxMap = new Map<string, number>();
+      for (let i = 0; i < optionsArr.length; i++) optIdxMap.set(norm(optionsArr[i]), i);
+      const idxOfOption = (val: any) => optIdxMap.get(norm(val)) ?? -1;
+
       let correct: any[] = [];
       if (q.correctAnswers) {
         if (typeof q.correctAnswers === 'string') {
@@ -714,20 +781,47 @@ async updateQuiz({ id, data }: { id: number; data: UpdateQuizDto }) {
 
       if (type === 'multiple' || type === 'truefalse') {
         const expected = correct.length ? correct[0] : null;
-        if (expected !== null && norm(r.answer) === norm(expected)) awarded = points;
+        if (expected !== null) {
+          if (typeof expected === 'number') {
+            const ansIdx = idxOfOption(r.answer);
+            if (ansIdx === expected) awarded = points;
+          } else {
+            if (norm(r.answer) === norm(expected)) awarded = points;
+          }
+        }
       } else if (type === 'checkbox') {
         const ansArr = Array.isArray(r.answer) ? r.answer : [r.answer];
-        const setA = new Set(ansArr.map(norm));
-        const setB = new Set((correct || []).map(norm));
+        const ansIdx = ansArr.map((a: any) => idxOfOption(a)).filter((i: number) => i >= 0);
+        let corrIdx: number[] = [];
+        if (correct.every((c) => typeof c === 'number')) {
+          corrIdx = correct as number[];
+        } else {
+          corrIdx = correct.map((c) => idxOfOption(c)).filter((i: number) => i >= 0);
+        }
+        const setA = new Set(ansIdx);
+        const setB = new Set(corrIdx);
         if (setA.size === setB.size && [...setA].every((v) => setB.has(v))) awarded = points;
       } else if (type === 'labeling') {
         const ans = Array.isArray(r.answer) ? r.answer : [];
-        const ok = Array.isArray(correct)
-          && correct.length === ans.length
-          && correct.every((c: any) => {
-            const found = ans.find((a: any) => norm(a.label) === norm(c.label));
-            return found && norm(found.answer) === norm(c.answer);
-          });
+        // Build maps label -> answer using lowercase for both sides
+        const ansMap = new Map<string, string>();
+        for (const a of ans) {
+          if (a && typeof a === 'object' && 'label' in a) {
+            ansMap.set(norm((a as any).label), norm((a as any).answer));
+          }
+        }
+        const corrMap = new Map<string, string>();
+        for (const c of (correct || [])) {
+          if (c && typeof c === 'object' && 'label' in (c as any)) {
+            corrMap.set(norm((c as any).label), norm((c as any).answer));
+          }
+        }
+        let ok = ansMap.size === corrMap.size;
+        if (ok) {
+          for (const [lbl, ansVal] of corrMap.entries()) {
+            if (!ansMap.has(lbl) || ansMap.get(lbl) !== ansVal) { ok = false; break; }
+          }
+        }
         if (ok) awarded = points;
       }
 
@@ -803,22 +897,33 @@ async updateQuiz({ id, data }: { id: number; data: UpdateQuizDto }) {
 
   async getMyAttempt(quizId: number, userId: number) {
     const attempts = await this.prisma.quizAttempt.findMany({ where: { quizId } });
+    let latest: any | null = null;
     for (const a of attempts) {
       try {
         const details = (a as any).detailedResults ? JSON.parse((a as any).detailedResults) : {};
         if (details && details.userId === userId) {
-          return {
-            attemptId: a.id,
-            score: (a as any).score || 0,
-            totalPoints: (a as any).totalPoints || 0,
-            submittedAt: (a as any).submittedAt?.toISOString?.() || null,
-            responses: (a as any).responses ? JSON.parse((a as any).responses) : [],
-            perQuestion: details.perQuestion || {},
-          };
+          if (!latest) {
+            latest = a;
+          } else {
+            const prevTime = (latest as any).submittedAt ? new Date((latest as any).submittedAt).getTime() : 0;
+            const curTime = (a as any).submittedAt ? new Date((a as any).submittedAt).getTime() : 0;
+            if (curTime > prevTime || (!(latest as any).submittedAt && (a as any).submittedAt) || ((curTime === prevTime) && (a as any).id > (latest as any).id)) {
+              latest = a;
+            }
+          }
         }
       } catch {}
     }
-    return null;
+    if (!latest) return null;
+    const details = (latest as any).detailedResults ? JSON.parse((latest as any).detailedResults) : {};
+    return {
+      attemptId: (latest as any).id,
+      score: (latest as any).score || 0,
+      totalPoints: (latest as any).totalPoints || 0,
+      submittedAt: (latest as any).submittedAt?.toISOString?.() || null,
+      responses: (latest as any).responses ? JSON.parse((latest as any).responses) : [],
+      perQuestion: details.perQuestion || {},
+    };
   }
 
 }
