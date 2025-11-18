@@ -3,7 +3,8 @@ import DashboardStats from '../Components/Dashboard/DashboardStats';
 import GrapshSection from '../Components/Dashboard/GrapshSection';
 import AdditionalData from '../Components/Dashboard/AdditionalData';
 import { UserRoleContext } from '../UserRoleContext';
-import { DashboardState, Course } from '../types/dashboard';
+import { DashboardState } from '../types/dashboard';
+
 import { dashboardService } from '../services/dashboardService';
 import HeaderCourseCard from '../Components/Dashboard/HeaderCourseCard';
 import CourseComponent from "../Components/Dashboard/CourseComponent"
@@ -16,8 +17,8 @@ interface DataPoint {
 
 const Dashboard = () => {
   const userRole = useContext(UserRoleContext);
-  const [state, setState] = useState<DashboardState & { graphData: DataPoint[] }>({
-    selectedCourse: '',
+  const [state, setState] = useState<DashboardState & { graphData: DataPoint[]; selectedCategory: string }>({
+    selectedCourse: 'all',
     courses: [],
     stats: {
       revenue: 0,
@@ -31,7 +32,8 @@ const Dashboard = () => {
     },
     graphData: [],
     isLoading: true,
-    error: null
+    error: null,
+    selectedCategory: 'all',
   });
 
   useEffect(() => {
@@ -50,7 +52,7 @@ const Dashboard = () => {
           courses,
           stats,
           graphData,
-          selectedCourse: courses[0]?.id || '',
+          selectedCourse: 'all',
           isLoading: false
         }));
       } catch (error) {
@@ -67,6 +69,9 @@ const Dashboard = () => {
 
   const handleCourseChange = (courseId: string) => {
     setState(prev => ({ ...prev, selectedCourse: courseId }));
+  };
+  const handleCategoryChange = (category: string) => {
+    setState(prev => ({ ...prev, selectedCategory: category }));
   };
 
   if (state.isLoading) {
@@ -94,8 +99,10 @@ const Dashboard = () => {
           courses={state.courses}
           selectedCourse={state.selectedCourse}
           onCourseChange={handleCourseChange}
+          selectedCategory={state.selectedCategory}
+          onCategoryChange={handleCategoryChange}
         />
-        <CourseComponent/>
+        <CourseComponent selectedCourseId={state.selectedCourse} selectedCategory={state.selectedCategory} />
         </>
       )}
     </div>

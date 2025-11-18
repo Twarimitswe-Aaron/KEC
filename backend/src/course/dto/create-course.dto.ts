@@ -10,6 +10,8 @@ export class CreateCourseDto {
   @IsString()
   description: string;
   @IsString()
+  category?: string;
+  @IsString()
   price: string;
   @IsBoolean()
   @IsNumber()

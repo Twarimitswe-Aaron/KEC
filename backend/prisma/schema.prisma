@@ -73,6 +73,7 @@ model Course {
 
   title       String
   description String
+  category    String?
   coursePrice String
   image_url   String
   isConfirmed Boolean @default(false)

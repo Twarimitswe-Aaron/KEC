@@ -117,6 +117,7 @@ const INITIAL_FORM_STATE = {
     price: "",
     maxStudents: null,
     isOpen: false,
+    category: "",
   },
 };
 
@@ -200,6 +201,7 @@ const LessonsView = () => {
       price: courseData.price || "",
       maxStudents: courseData.maximum || null,
       isOpen: courseData.open || false,
+      category: (courseData as any).category || "",
     });
 
   useEffect(() => {
@@ -282,6 +284,7 @@ const LessonsView = () => {
       title: course.title.trim(),
       description: course.description.trim(),
       coursePrice: course.price.trim(),
+      category: (course.category || "").trim(),
       open: course.isOpen,
       maximum: course.maxStudents
     };
@@ -826,6 +829,19 @@ const LessonsView = () => {
                     min="1"
                   />
                                
+                </div>
+                             
+                <div>
+                  <label className="block text-sm font-bold text-gray-800 mb-3">
+                    Category
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g., Thermodynamics"
+                    value={(forms.course as any).category || ""}
+                    onChange={(e) => handleInputChange(e, "category")}
+                    className="w-full bg-gray-50 border-2 border-gray-200 px-4 py-3 rounded-xl focus:border-[#034153] focus:bg-white focus:ring-2 focus:ring-[#034153]/10 transition-all outline-none font-medium"
+                  />
                 </div>
                            
               </div>

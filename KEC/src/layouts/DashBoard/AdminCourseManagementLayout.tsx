@@ -22,6 +22,7 @@ interface NewCourseFormData {
   title: string;
   description: string;
   price: string;
+  category?: string;
   uploader: {
     id: number;
   };
@@ -295,6 +296,7 @@ const AdminCourseManagementLayout: React.FC = () => {
     title: "",
     description: "",
     price: "",
+    category: "",
   });
 
   const resetState = () => {
@@ -307,6 +309,7 @@ const AdminCourseManagementLayout: React.FC = () => {
       title: "",
       description: "",
       price: "",
+      category: "",
     });
   };
 
@@ -354,7 +357,7 @@ const AdminCourseManagementLayout: React.FC = () => {
   };
 
   const handleAddCourse = async () => {
-    const { course_avatar, title, description, price } = newCourse;
+    const { course_avatar, title, description, price, category } = newCourse;
 
     if (!course_avatar || !title || !description || !price) {
       toast.error(
@@ -372,6 +375,9 @@ const AdminCourseManagementLayout: React.FC = () => {
     formData.append("title", title);
     formData.append("description", description);
     formData.append("price", price);
+    if (category && category.trim()) {
+      formData.append("category", category.trim());
+    }
 
     formData.append("course_avatar", course_avatar);
 
@@ -504,6 +510,19 @@ const AdminCourseManagementLayout: React.FC = () => {
                     value={newCourse.price}
                     onChange={handleInputChange}
                     placeholder="e.g., 100,000 RWF"
+                    className="w-full rounded-md px-4 py-3 border border-[#004e64]/30 text-[#004e64] focus:outline-none focus:ring-2 focus:ring-[#004e64]/50 focus:border-transparent transition-all duration-300 hover:shadow-md"
+                  />
+                </div>
+                <div>
+                  <label className="block mb-2 font-medium text-[#004e64]">
+                    Category
+                  </label>
+                  <input
+                    type="text"
+                    name="category"
+                    value={newCourse.category || ""}
+                    onChange={handleInputChange}
+                    placeholder="e.g., Thermodynamics"
                     className="w-full rounded-md px-4 py-3 border border-[#004e64]/30 text-[#004e64] focus:outline-none focus:ring-2 focus:ring-[#004e64]/50 focus:border-transparent transition-all duration-300 hover:shadow-md"
                   />
                 </div>

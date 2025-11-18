@@ -5,6 +5,7 @@ export interface CreateCourseDto {
   description: string;
   image_url: string;
   price: string;
+  category?: string;
   uploader: { id: number };
 }
 
@@ -69,6 +70,7 @@ export interface CourseData {
   id: number;
   title: string;
   description: string;
+  category?: string;
   price: string;
   image_url: string;
   no_lessons: string;
@@ -86,6 +88,7 @@ export interface CourseToUpdate {
   title: string;
   description: string;
   coursePrice: string;
+  category?: string;
   maximum?: number;
   open: boolean;
   image?: File;
@@ -97,6 +100,7 @@ export interface StudentCourseCard {
   image_url: string;
   title: string;
   description: string;
+  category?: string;
   price: string;
   no_lessons: string;
   open?: boolean;

@@ -11,12 +11,14 @@ export interface Course {
   image_url: string;
   title: string;
   description: string;
+  category?: string;
   price: string;
   open:boolean;
  
   no_lessons: string;
   enrolled?: boolean;
   completed?: boolean;
+  createdAt?: string;
  
   uploader: {
     id:number;

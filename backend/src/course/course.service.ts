@@ -8,7 +8,7 @@ import { ConfirmCourseDto } from './dto/confirm-course.dto';
 export class CourseService {
   constructor(private readonly prisma: PrismaService) {}
   async create(createCourseDto: CreateCourseDto) {
-    const { id, image_url, title, description, price, uploader } =
+    const { id, image_url, title, description, price, uploader, category } =
       createCourseDto;
     const uploaderObj =
       typeof uploader === 'string' ? JSON.parse(uploader) : uploader;
@@ -19,6 +19,7 @@ export class CourseService {
         title,
         image_url,
         description,
+        category: category || null,
         coursePrice: price,
         no_lesson: 0,
       },
@@ -73,6 +74,7 @@ export class CourseService {
     id: course.id,
     title: course.title,
     description: course.description,
+    category: course.category || null,
     price: course.coursePrice,
     image_url: course.image_url,
     no_lessons: course.lesson?.length || 0,
@@ -147,6 +149,7 @@ export class CourseService {
       id: course.id,
       title: course.title,
       description: course.description,
+      category: course.category || null,
       price: course.coursePrice,
       image_url: course.image_url,
       no_lessons: '0',
@@ -187,6 +190,7 @@ export class CourseService {
       id: course.id,
       title: course.title,
       description: course.description,
+      category: course.category || null,
       price: course.coursePrice,
       image_url: course.image_url,
       no_lessons: '0',
@@ -201,12 +205,13 @@ export class CourseService {
   }
 
   async updateCourse(updateCourseDto: UpdateCourseDto) {
-    const { title, description, price, image_url, maximum, open } = updateCourseDto;
+    const { title, description, price, image_url, maximum, open, category } = updateCourseDto;
     await this.prisma.course.update({
       where: { id: Number(updateCourseDto.id) },
       data: {
         title,
         description,
+        category: category ?? undefined,
         coursePrice: price,
         image_url,
         maximum: Number(maximum),
@@ -491,6 +496,7 @@ export class CourseService {
       id: course.id,
       title: course.title,
       description: course.description,
+      category: course.category || null,
       price: course.coursePrice,
       image_url: course.image_url,
       no_lessons: String(course.lesson?.length || 0),
