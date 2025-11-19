@@ -217,6 +217,7 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
   );
   const [initialScrollDone, setInitialScrollDone] = useState(false);
   const justSentRef = useRef(false);
+  const processingReactionsRef = useRef<Set<string>>(new Set());
 
   // File upload / message mutations
   const [deleteMessage] = useDeleteMessageMutation();
@@ -283,6 +284,17 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
         return;
       }
 
+      // Prevent duplicate calls
+      const reactionKey = `${messageId}-${emoji}`;
+      if (processingReactionsRef.current.has(reactionKey)) {
+        console.log(
+          "⏸️ [Chat] Reaction already processing, skipping:",
+          reactionKey
+        );
+        return;
+      }
+      processingReactionsRef.current.add(reactionKey);
+
       const message = messages.find((m) => m.id === messageId);
       if (!message) return;
 
@@ -329,6 +341,17 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
           );
         }
       } catch (error: any) {
+        // Silently ignore "already reacted" errors (race condition)
+        if (
+          error?.status === 400 &&
+          error?.data?.message?.includes("already reacted")
+        ) {
+          console.log(
+            `ℹ️ [Chat] Reaction ${emoji} already exists for message ${messageId} (race condition handled)`
+          );
+          return; // Exit silently
+        }
+
         console.error("❌ Failed to toggle reaction:", {
           error: error?.message,
           status: error?.status,
@@ -362,6 +385,9 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
             );
           }
         }
+      } finally {
+        // Always remove from processing set
+        processingReactionsRef.current.delete(reactionKey);
       }
     },
     [activeChat, currentUser, addReaction, removeReaction, messages]
@@ -1216,50 +1242,84 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
     }> => {
       const backendUrl =
         import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
-      // Fetch CSRF token (mirrors apiSlice behavior)
-      let csrfToken = "";
-      try {
-        const res = await fetch(`${backendUrl}/csrf/token`, {
-          credentials: "include",
-        });
-        if (res.ok) {
-          const data = await res.json();
-          csrfToken = data.csrfToken || "";
-        }
-      } catch {}
 
-      return await new Promise((resolve, reject) => {
-        const xhr = new XMLHttpRequest();
-        xhr.open("POST", `${backendUrl}/chat/upload`);
-        xhr.withCredentials = true;
-        if (csrfToken) xhr.setRequestHeader("x-csrf-token", csrfToken);
-        if (xhr.upload && onProgress) {
-          xhr.upload.onprogress = (e) => {
-            if (e.lengthComputable) {
-              const percent = Math.round((e.loaded / e.total) * 100);
-              onProgress(percent);
+      // Retry logic for CSRF token rotation
+      const maxRetries = 2;
+      let lastError: Error | null = null;
+
+      for (let attempt = 0; attempt <= maxRetries; attempt++) {
+        try {
+          // Fetch CSRF token immediately before upload
+          let csrfToken = "";
+          try {
+            const res = await fetch(`${backendUrl}/csrf/token`, {
+              credentials: "include",
+            });
+            if (res.ok) {
+              const data = await res.json();
+              csrfToken = data.csrfToken || "";
+              console.log(
+                `🔑 [Upload] Fetched CSRF token (attempt ${attempt + 1})`
+              );
             }
-          };
-        }
-        xhr.onreadystatechange = () => {
-          if (xhr.readyState === XMLHttpRequest.DONE) {
-            if (xhr.status >= 200 && xhr.status < 300) {
-              try {
-                const json = JSON.parse(xhr.responseText);
-                resolve(json);
-              } catch {
-                reject(new Error("Invalid upload response"));
-              }
-            } else {
-              reject(new Error(`Upload failed: ${xhr.status}`));
-            }
+          } catch (e) {
+            console.warn("⚠️ [Upload] Failed to fetch CSRF token:", e);
           }
-        };
-        const form = new FormData();
-        form.append("file", file);
-        form.append("chatId", String(chatId));
-        xhr.send(form);
-      });
+
+          return await new Promise((resolve, reject) => {
+            const xhr = new XMLHttpRequest();
+            xhr.open("POST", `${backendUrl}/chat/upload`);
+            xhr.withCredentials = true;
+            if (csrfToken) xhr.setRequestHeader("x-csrf-token", csrfToken);
+            if (xhr.upload && onProgress) {
+              xhr.upload.onprogress = (e) => {
+                if (e.lengthComputable) {
+                  const percent = Math.round((e.loaded / e.total) * 100);
+                  onProgress(percent);
+                }
+              };
+            }
+            xhr.onreadystatechange = () => {
+              if (xhr.readyState === XMLHttpRequest.DONE) {
+                if (xhr.status >= 200 && xhr.status < 300) {
+                  try {
+                    const json = JSON.parse(xhr.responseText);
+                    resolve(json);
+                  } catch {
+                    reject(new Error("Invalid upload response"));
+                  }
+                } else {
+                  reject(new Error(`Upload failed: ${xhr.status}`));
+                }
+              }
+            };
+            const form = new FormData();
+            form.append("file", file);
+            form.append("chatId", String(chatId));
+            xhr.send(form);
+          });
+        } catch (error) {
+          lastError = error as Error;
+          console.warn(`⚠️ [Upload] Attempt ${attempt + 1} failed:`, error);
+
+          // If it's a CSRF error and we have retries left, try again
+          if (
+            attempt < maxRetries &&
+            (error as Error).message.includes("403")
+          ) {
+            console.log(`🔄 [Upload] Retrying due to CSRF error...`);
+            // Small delay before retry
+            await new Promise((resolve) => setTimeout(resolve, 100));
+            continue;
+          }
+
+          // If not a CSRF error or no retries left, throw
+          throw error;
+        }
+      }
+
+      // If we exhausted all retries
+      throw lastError || new Error("Upload failed after retries");
     },
     []
   );
@@ -1728,6 +1788,22 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
                       )))) &&
                 !isAudioFile;
 
+              // Debug logging for image detection
+              if (
+                message.fileUrl ||
+                message.messageType === "IMAGE" ||
+                message.messageType === "FILE"
+              ) {
+                console.log(
+                  `🖼️ [Chat] Message ${message.id} - Type: ${message.messageType} - isImageMessage: ${isImageMessage} - isAudioFile: ${isAudioFile}`
+                );
+                console.log("   Details:", {
+                  fileUrl: message.fileUrl,
+                  fileName: message.fileName,
+                  fileMimeType: message.fileMimeType,
+                });
+              }
+
               return (
                 <div
                   key={`${message.id}-${message.createdAt}-${idxInGroup}`}
@@ -1962,10 +2038,16 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
                         {isImageMessage && (
                           <div className="relative group">
                             <img
-                              src={message.fileUrl || ""}
                               alt={message.fileName || "Image"}
-                              loading="lazy"
-                              className="message-image rounded-[18px] max-h-80 w-auto h-auto max-w-full bg-white cursor-default"
+                              className="w-full object-cover hover:opacity-80 cursor-pointer rounded-[18px] max-h-80"
+                              src={message.fileUrl || ""}
+                              onError={(e) => {
+                                console.error(
+                                  "Image failed to load:",
+                                  message.fileUrl
+                                );
+                                console.error("Message data:", message);
+                              }}
                             />
 
                             {/* Instagram-style hover overlay - subtle white overlay */}
@@ -2127,64 +2209,67 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
                           </div>
                         )}
 
-                        {/* Hover actions */}
-                        <div
-                          className={`absolute top-0 ${
-                            isCurrentUser ? "-left-24" : "-right-24"
-                          } opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center gap-1 bg-white shadow-lg rounded-full p-1`}
-                        >
-                          <button
-                            onClick={() => handleReply(message)}
-                            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-                            title="Reply"
+                        {/* Hover actions - hidden for images since they have their own */}
+                        {!isImageMessage && (
+                          <div
+                            className={`absolute top-0 ${
+                              isCurrentUser ? "-left-24" : "-right-24"
+                            } opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center gap-1 bg-white shadow-lg rounded-full p-1`}
                           >
-                            <BsReply className="h-4 w-4 text-gray-600" />
-                          </button>
-                          <button
-                            onClick={() =>
-                              setShowEmojiPicker(
-                                showEmojiPicker === message.id
-                                  ? null
-                                  : message.id
-                              )
-                            }
-                            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-                            title="React"
-                          >
-                            <BsEmojiSmile className="h-4 w-4 text-gray-600" />
-                          </button>
-                          {isCurrentUser && message.messageType === "TEXT" && (
                             <button
-                              onClick={() => handleEditMessage(message)}
+                              onClick={() => handleReply(message)}
                               className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-                              title="Edit"
+                              title="Reply"
                             >
-                              <MdEdit className="h-4 w-4 text-gray-600" />
+                              <BsReply className="h-4 w-4 text-gray-600" />
                             </button>
-                          )}
-                          {isCurrentUser && (
                             <button
-                              onClick={() => handleDeleteMessage(message.id)}
-                              className="p-2 hover:bg-red-50 rounded-full transition-colors"
-                              title="Delete"
+                              onClick={() =>
+                                setShowEmojiPicker(
+                                  showEmojiPicker === message.id
+                                    ? null
+                                    : message.id
+                                )
+                              }
+                              className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                              title="React"
                             >
-                              <MdDelete className="h-4 w-4 text-red-600" />
+                              <BsEmojiSmile className="h-4 w-4 text-gray-600" />
                             </button>
-                          )}
-                          <button
-                            onClick={() =>
-                              setSelectedMessage(
-                                selectedMessage === message.id
-                                  ? null
-                                  : message.id
-                              )
-                            }
-                            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-                            title="More options"
-                          >
-                            <BsThreeDots className="h-4 w-4 text-gray-600" />
-                          </button>
-                        </div>
+                            {isCurrentUser &&
+                              message.messageType === "TEXT" && (
+                                <button
+                                  onClick={() => handleEditMessage(message)}
+                                  className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                                  title="Edit"
+                                >
+                                  <MdEdit className="h-4 w-4 text-gray-600" />
+                                </button>
+                              )}
+                            {isCurrentUser && (
+                              <button
+                                onClick={() => handleDeleteMessage(message.id)}
+                                className="p-2 hover:bg-red-50 rounded-full transition-colors"
+                                title="Delete"
+                              >
+                                <MdDelete className="h-4 w-4 text-red-600" />
+                              </button>
+                            )}
+                            <button
+                              onClick={() =>
+                                setSelectedMessage(
+                                  selectedMessage === message.id
+                                    ? null
+                                    : message.id
+                                )
+                              }
+                              className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                              title="More options"
+                            >
+                              <BsThreeDots className="h-4 w-4 text-gray-600" />
+                            </button>
+                          </div>
+                        )}
 
                         {/* Message options menu */}
                         {selectedMessage === message.id && (
