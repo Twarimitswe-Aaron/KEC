@@ -259,22 +259,26 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
   const handleMessageReaction = useCallback(
     async (messageId: number, emoji: string) => {
       if (!activeChat || !currentUser) {
-        console.error('❌ [Chat] Cannot add reaction - missing activeChat or currentUser:', {
-          activeChat: !!activeChat,
-          currentUser: !!currentUser,
-          messageId,
-          emoji
-        });
+        console.error(
+          "❌ [Chat] Cannot add reaction - missing activeChat or currentUser:",
+          {
+            activeChat: !!activeChat,
+            currentUser: !!currentUser,
+            messageId,
+            emoji,
+          }
+        );
         return;
       }
 
       try {
-        console.log("👍 [Chat] Adding reaction:", { 
-          messageId, 
-          emoji, 
+        console.log("👍 [Chat] Adding reaction:", {
+          messageId,
+          emoji,
           chatId: activeChat.id,
           currentUserId: currentUser.id,
-          existingReactions: messages.find(m => m.id === messageId)?.reactions
+          existingReactions: messages.find((m) => m.id === messageId)
+            ?.reactions,
         });
 
         // Call the API to add/remove reaction
@@ -289,10 +293,15 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
         );
       } catch (error: any) {
         console.error("❌ Failed to add reaction:", error);
-        
+
         // Check if it's a conflict (reaction already exists) and try to remove it
-        if (error?.status === 409 || error?.message?.includes('already exists')) {
-          console.log("⚠️ [Chat] Reaction already exists, attempting to remove it...");
+        if (
+          error?.status === 409 ||
+          error?.message?.includes("already exists")
+        ) {
+          console.log(
+            "⚠️ [Chat] Reaction already exists, attempting to remove it..."
+          );
           try {
             await removeReaction({
               chatId: Number(activeChat.id),
@@ -310,7 +319,7 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
           console.error("❌ Unexpected error adding reaction:", {
             error: error?.message,
             status: error?.status,
-            data: error?.data
+            data: error?.data,
           });
         }
       }
@@ -322,7 +331,7 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
   const handleQuickReaction = useCallback(
     async (messageId: number, emoji: string = "❤️") => {
       console.log("⚡ [Chat] Quick reaction triggered:", { messageId, emoji });
-      
+
       // Show floating reaction animation
       setFloatingReaction({ messageId, emoji, show: true });
       console.log("🎬 [Chat] Floating reaction animation shown");
@@ -943,6 +952,19 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
           throw new Error("Failed to send text message");
         }
         console.log("✅ [Chat] Text message sent successfully");
+
+        // Play sent sound
+        try {
+          const audio = new Audio(
+            "https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3"
+          );
+          audio.volume = 0.3;
+          audio
+            .play()
+            .catch((e) => console.warn("Error playing sent sound:", e));
+        } catch (e) {
+          console.warn("Audio playback failed:", e);
+        }
       }
 
       // Upload and send files one by one
@@ -970,15 +992,12 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
           const backendUrl =
             import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
 
-          // If the URL is relative or uses wrong port, fix it
-          if (
-            fileUrl.startsWith("/uploads/") ||
-            fileUrl.includes("localhost:3000")
-          ) {
-            const pathPart = fileUrl.includes("/uploads/")
-              ? fileUrl.substring(fileUrl.indexOf("/uploads/"))
-              : fileUrl;
-            fileUrl = `${backendUrl}${pathPart}`;
+          // If the URL is relative (starts with /), prepend backend URL
+          if (fileUrl && fileUrl.startsWith("/")) {
+            fileUrl = `${backendUrl}${fileUrl}`;
+          } else if (fileUrl && !fileUrl.startsWith("http")) {
+            // If it's just a filename or path without slash
+            fileUrl = `${backendUrl}/${fileUrl}`;
           }
 
           console.log("📤 Corrected file URL:", fileUrl);
@@ -1252,14 +1271,13 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
       let fileUrl = uploadResult.fileUrl;
       const backendUrl =
         import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
-      if (
-        fileUrl.startsWith("/uploads/") ||
-        fileUrl.includes("localhost:3000")
-      ) {
-        const pathPart = fileUrl.includes("/uploads/")
-          ? fileUrl.substring(fileUrl.indexOf("/uploads/"))
-          : fileUrl;
-        fileUrl = `${backendUrl}${pathPart}`;
+
+      // If the URL is relative (starts with /), prepend backend URL
+      if (fileUrl && fileUrl.startsWith("/")) {
+        fileUrl = `${backendUrl}${fileUrl}`;
+      } else if (fileUrl && !fileUrl.startsWith("http")) {
+        // If it's just a filename or path without slash
+        fileUrl = `${backendUrl}/${fileUrl}`;
       }
       const replyToId = replyingTo?.id;
 
@@ -1828,41 +1846,37 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
 
                         {/* Voice / audio messages */}
                         {isAudioFile && (
-                            <audio
-                              controls
-                              preload="metadata"
-                              className="w-full"
-                            >
-                              <source
-                                src={message.fileUrl || ""}
-                                type={message.fileMimeType || "audio/webm"}
-                              />
-                              Your browser does not support the audio element.
-                            </audio>
-                          )}
+                          <audio controls preload="metadata" className="w-full">
+                            <source
+                              src={message.fileUrl || ""}
+                              type={message.fileMimeType || "audio/webm"}
+                            />
+                            Your browser does not support the audio element.
+                          </audio>
+                        )}
 
                         {/* Generic file messages */}
                         {message.fileUrl && !isAudioFile && (
-                            <a
-                              href={message.fileUrl || "#"}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="flex items-center gap-2 p-2 rounded-md hover:bg-gray-50"
-                            >
-                              <GoPaperclip className="h-5 w-5 text-gray-500" />
-                              <span className="text-xs sm:text-sm truncate max-w-[220px]">
-                                {message.fileName || "File"}
+                          <a
+                            href={message.fileUrl || "#"}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-2 p-2 rounded-md hover:bg-gray-50"
+                          >
+                            <GoPaperclip className="h-5 w-5 text-gray-500" />
+                            <span className="text-xs sm:text-sm truncate max-w-[220px]">
+                              {message.fileName || "File"}
+                            </span>
+                            {typeof message.fileSize === "number" && (
+                              <span className="text-[10px] text-gray-400">
+                                {Math.round(
+                                  (message.fileSize / 1024 / 1024) * 10
+                                ) / 10}{" "}
+                                MB
                               </span>
-                              {typeof message.fileSize === "number" && (
-                                <span className="text-[10px] text-gray-400">
-                                  {Math.round(
-                                    (message.fileSize / 1024 / 1024) * 10
-                                  ) / 10}{" "}
-                                  MB
-                                </span>
-                              )}
-                            </a>
-                          )}
+                            )}
+                          </a>
+                        )}
 
                         {/* Reactions bar */}
                         {message.reactions && message.reactions.length > 0 && (
@@ -1958,7 +1972,9 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
                                 <button
                                   key={idx}
                                   onClick={() => {
-                                    console.log(`🎯 [Chat] Quick reaction button clicked: ${emoji} for message ${message.id}`);
+                                    console.log(
+                                      `🎯 [Chat] Quick reaction button clicked: ${emoji} for message ${message.id}`
+                                    );
                                     handleQuickReaction(message.id, emoji);
                                   }}
                                   className="p-2 hover:bg-gray-100 rounded-full transition-colors text-lg"
@@ -2027,7 +2043,9 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
                                 <button
                                   key={emoji}
                                   onClick={() => {
-                                    console.log(`🎯 [Chat] Message reaction button clicked: ${emoji} for message ${message.id}`);
+                                    console.log(
+                                      `🎯 [Chat] Message reaction button clicked: ${emoji} for message ${message.id}`
+                                    );
                                     handleMessageReaction(message.id, emoji);
                                   }}
                                   className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-lg"
@@ -2046,7 +2064,9 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
                                   <button
                                     key={emoji}
                                     onClick={() => {
-                                      console.log(`🎯 [Chat] Full emoji reaction button clicked: ${emoji} for message ${message.id}`);
+                                      console.log(
+                                        `🎯 [Chat] Full emoji reaction button clicked: ${emoji} for message ${message.id}`
+                                      );
                                       handleMessageReaction(message.id, emoji);
                                     }}
                                     className="p-1 hover:bg-gray-100 rounded transition-colors text-sm"

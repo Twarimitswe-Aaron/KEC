@@ -20,7 +20,7 @@ export interface QuestionProp {
   type: "multiple" | "checkbox" | "truefalse" | "labeling";
   question: string;
   description?: string;
-  correctAnswers?: (string|number)[];
+  correctAnswers?: (string | number)[];
   options?: string[];
   points: number;
   required: boolean;
@@ -129,7 +129,10 @@ export interface CourseEnrollment {
 
 export const courseApi = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
-    createCourse: builder.mutation<{ message: string }, CreateCourseDto>({
+    createCourse: builder.mutation<
+      { id: number } & Partial<CourseData>,
+      CreateCourseDto | FormData
+    >({
       query: (body) => ({
         url: "/course/create-course",
         method: "POST",
@@ -141,7 +144,7 @@ export const courseApi = apiSlice.injectEndpoints({
     // Admin/Teacher: list courses with enrolled students
     getCourseEnrollments: builder.query<CourseEnrollment[], void>({
       query: () => `/course/get-course-enrollments`,
-      providesTags: [{ type: 'Course', id: 'ENROLLMENTS' }],
+      providesTags: [{ type: "Course", id: "ENROLLMENTS" }],
     }),
 
     getCourses: builder.query<CourseData[], { unconfirmed?: boolean } | void>({
@@ -216,28 +219,29 @@ export const courseApi = apiSlice.injectEndpoints({
     // Student-facing endpoints
     getStudentCourses: builder.query<StudentCourseCard[], void>({
       query: () => `/course-public/courses`,
-      providesTags: [{ type: 'Course', id: 'STUDENT_LIST' }],
+      providesTags: [{ type: "Course", id: "STUDENT_LIST" }],
     }),
 
     getCourseForStudent: builder.query<CourseData, number>({
       query: (id) => `/course-public/course/${id}`,
-      providesTags: (result, error, id) => [
-        { type: 'Course', id },
-      ],
+      providesTags: (result, error, id) => [{ type: "Course", id }],
     }),
 
-    getCourseEnrollmentStatus: builder.query<{ enrolled: boolean; open: boolean }, number>({
+    getCourseEnrollmentStatus: builder.query<
+      { enrolled: boolean; open: boolean },
+      number
+    >({
       query: (id) => `/course-public/course/${id}/status`,
-      providesTags: (result, error, id) => [{ type: 'Course', id }],
+      providesTags: (result, error, id) => [{ type: "Course", id }],
     }),
 
     enrollCourse: builder.mutation<{ message: string }, number>({
       query: (courseId) => ({
         url: `/course-public/enroll`,
-        method: 'POST',
+        method: "POST",
         body: { courseId },
       }),
-      invalidatesTags: [{ type: 'Course', id: 'STUDENT_LIST' }],
+      invalidatesTags: [{ type: "Course", id: "STUDENT_LIST" }],
     }),
   }),
   overrideExisting: false,
