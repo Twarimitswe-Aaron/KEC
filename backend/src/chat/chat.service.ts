@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateChatDto } from './dto/create-chat.dto';
 import { SendMessageDto } from './dto/send-message.dto';
@@ -11,9 +16,7 @@ import { MarkMessagesReadDto } from './dto/mark-read.dto';
 export class ChatService {
   private chatGateway: any = null;
 
-  constructor(
-    private prisma: PrismaService
-  ) {}
+  constructor(private prisma: PrismaService) {}
 
   // Method to set the gateway reference from the gateway itself
   setChatGateway(gateway: any) {
@@ -22,24 +25,32 @@ export class ChatService {
   }
 
   async createChat(userId: number, createChatDto: CreateChatDto) {
-    const { participantIds, isGroup = false, name, groupAvatar } = createChatDto;
-    
+    const {
+      participantIds,
+      isGroup = false,
+      name,
+      groupAvatar,
+    } = createChatDto;
+
     // Add current user to participants if not included
     const allParticipantIds = [...new Set([userId, ...participantIds])];
-    
+
     // Validate participants exist
     const users = await this.prisma.user.findMany({
       where: { id: { in: allParticipantIds } },
     });
-    
+
     if (users.length !== allParticipantIds.length) {
       throw new BadRequestException('Some participants do not exist');
     }
 
     // For one-on-one chats, check if chat already exists
     if (!isGroup && allParticipantIds.length === 2) {
-      console.log('🔍 [ChatService] Looking for existing 1-on-1 chat between users:', allParticipantIds);
-      
+      console.log(
+        '🔍 [ChatService] Looking for existing 1-on-1 chat between users:',
+        allParticipantIds,
+      );
+
       // More precise query to find existing chat
       const existingChat = await this.prisma.chat.findFirst({
         where: {
@@ -47,119 +58,137 @@ export class ChatService {
           AND: [
             {
               participants: {
-                some: { userId: allParticipantIds[0] }
-              }
+                some: { userId: allParticipantIds[0] },
+              },
             },
             {
               participants: {
-                some: { userId: allParticipantIds[1] }
-              }
-            }
-          ]
+                some: { userId: allParticipantIds[1] },
+              },
+            },
+          ],
         },
         include: {
           participants: {
-            include: { user: { include: { profile: true } } }
+            include: { user: { include: { profile: true } } },
           },
           messages: {
             take: 1,
             orderBy: { createdAt: 'desc' },
             include: {
-              sender: { include: { profile: true } }
-            }
-          }
-        }
+              sender: { include: { profile: true } },
+            },
+          },
+        },
       });
 
       if (existingChat) {
         console.log('✅ [ChatService] Found existing chat:', {
           id: existingChat.id,
           participantsCount: existingChat.participants.length,
-          participants: existingChat.participants.map(p => ({ id: p.id, userId: p.userId }))
+          participants: existingChat.participants.map((p) => ({
+            id: p.id,
+            userId: p.userId,
+          })),
         });
-        
+
         // Validate that the existing chat has the correct participants
         if (existingChat.participants.length !== 2) {
-          console.error('❌ [ChatService] Existing chat has wrong participant count:', existingChat.participants.length);
+          console.error(
+            '❌ [ChatService] Existing chat has wrong participant count:',
+            existingChat.participants.length,
+          );
         }
-        
+
         return existingChat;
       }
-      
+
       console.log('🆕 [ChatService] No existing chat found, creating new one');
     }
 
     // Create new chat
-    console.log('🆕 [ChatService] Creating new chat with participants:', allParticipantIds);
-    
+    console.log(
+      '🆕 [ChatService] Creating new chat with participants:',
+      allParticipantIds,
+    );
+
     const chat = await this.prisma.chat.create({
       data: {
         isGroup,
         name: isGroup ? name : null,
         groupAvatar: isGroup ? groupAvatar : null,
         participants: {
-          create: allParticipantIds.map(participantId => ({
+          create: allParticipantIds.map((participantId) => ({
             userId: participantId,
             isAdmin: participantId === userId && isGroup, // Creator is admin for groups
-          }))
-        }
+          })),
+        },
       },
       include: {
         participants: {
-          include: { user: { include: { profile: true } } }
+          include: { user: { include: { profile: true } } },
         },
         messages: {
           take: 1,
           orderBy: { createdAt: 'desc' },
           include: {
-            sender: { include: { profile: true } }
-          }
-        }
-      }
+            sender: { include: { profile: true } },
+          },
+        },
+      },
     });
-    
+
     console.log('✅ [ChatService] Created new chat:', {
       id: chat.id,
       participantsCount: chat.participants.length,
-      participants: chat.participants.map(p => ({ id: p.id, userId: p.userId }))
+      participants: chat.participants.map((p) => ({
+        id: p.id,
+        userId: p.userId,
+      })),
     });
-    
+
     // Validate that participants were created successfully
     if (chat.participants.length !== allParticipantIds.length) {
-      console.error('❌ [ChatService] CRITICAL: Chat created but participants count mismatch!', {
-        expected: allParticipantIds.length,
-        actual: chat.participants.length,
-        expectedParticipants: allParticipantIds,
-        actualParticipants: chat.participants.map(p => p.userId)
-      });
+      console.error(
+        '❌ [ChatService] CRITICAL: Chat created but participants count mismatch!',
+        {
+          expected: allParticipantIds.length,
+          actual: chat.participants.length,
+          expectedParticipants: allParticipantIds,
+          actualParticipants: chat.participants.map((p) => p.userId),
+        },
+      );
     }
 
     // Final validation before returning
     if (!chat.participants || chat.participants.length === 0) {
-      console.error('❌ [ChatService] CRITICAL ERROR: Chat has no participants!', chat);
+      console.error(
+        '❌ [ChatService] CRITICAL ERROR: Chat has no participants!',
+        chat,
+      );
       throw new Error('Chat creation failed: No participants added');
     }
-    
+
     // Add unreadCount for consistency with frontend interface
     const finalChat = {
       ...chat,
-      unreadCount: 0 // New chat has no unread messages
+      unreadCount: 0, // New chat has no unread messages
     };
-    
+
     console.log('✅ [ChatService] Returning chat with participants:', {
       id: finalChat.id,
-      participantsCount: finalChat.participants.length
+      participantsCount: finalChat.participants.length,
     });
-    
+
     return finalChat;
   }
 
   async getUserChats(userId: number, page = 1, limit = 20, search?: string) {
     const skip = (page - 1) * limit;
-    
+
     const whereClause = {
       participants: {
-        some: { userId }
+        some: { userId },
       },
       ...(search && {
         OR: [
@@ -170,14 +199,14 @@ export class ChatService {
                 user: {
                   OR: [
                     { firstName: { contains: search, mode: 'insensitive' } },
-                    { lastName: { contains: search, mode: 'insensitive' } }
-                  ]
-                }
-              }
-            }
-          }
-        ]
-      })
+                    { lastName: { contains: search, mode: 'insensitive' } },
+                  ],
+                },
+              },
+            },
+          },
+        ],
+      }),
     };
 
     const [chats, total] = await Promise.all([
@@ -185,22 +214,22 @@ export class ChatService {
         where: whereClause as any,
         include: {
           participants: {
-            include: { user: { include: { profile: true, userStatus: true } } }
+            include: { user: { include: { profile: true, userStatus: true } } },
           },
           messages: {
             take: 1,
             orderBy: { createdAt: 'desc' },
             include: {
               sender: { include: { profile: true } },
-              readBy: { where: { userId } }
-            }
-          }
+              readBy: { where: { userId } },
+            },
+          },
         },
         orderBy: { updatedAt: 'desc' },
         skip,
-        take: limit
+        take: limit,
       }),
-      this.prisma.chat.count({ where: whereClause as any })
+      this.prisma.chat.count({ where: whereClause as any }),
     ]);
 
     // Calculate unread count for each chat
@@ -211,17 +240,17 @@ export class ChatService {
             chatId: chat.id,
             senderId: { not: userId },
             readBy: {
-              none: { userId }
-            }
-          }
+              none: { userId },
+            },
+          },
         });
 
         return {
           ...chat,
           unreadCount,
-          lastMessage: chat.messages[0] || null
+          lastMessage: chat.messages[0] || null,
         };
-      })
+      }),
     );
 
     return { chats: chatsWithUnreadCount, total };
@@ -231,20 +260,20 @@ export class ChatService {
     const chat = await this.prisma.chat.findFirst({
       where: {
         id: chatId,
-        participants: { some: { userId } }
+        participants: { some: { userId } },
       },
       include: {
         participants: {
-          include: { user: { include: { profile: true, userStatus: true } } }
+          include: { user: { include: { profile: true, userStatus: true } } },
         },
         messages: {
           take: 1,
           orderBy: { createdAt: 'desc' },
           include: {
-            sender: { include: { profile: true } }
-          }
-        }
-      }
+            sender: { include: { profile: true } },
+          },
+        },
+      },
     });
 
     if (!chat) {
@@ -254,11 +283,18 @@ export class ChatService {
     return chat;
   }
 
-  async getChatMessages(userId: number, chatId: number | string, page = 1, limit = 50, lastMessageId?: number) {
+  async getChatMessages(
+    userId: number,
+    chatId: number | string,
+    page = 1,
+    limit = 50,
+    lastMessageId?: number,
+  ) {
     // Convert chatId to number if it's a string (handle frontend temp IDs)
-    const actualChatId = typeof chatId === 'string' && chatId.startsWith('temp_') 
-      ? null // Handle temp IDs 
-      : Number(chatId);
+    const actualChatId =
+      typeof chatId === 'string' && chatId.startsWith('temp_')
+        ? null // Handle temp IDs
+        : Number(chatId);
 
     // If we have a temp chat ID, return empty messages
     if (actualChatId === null) {
@@ -267,7 +303,7 @@ export class ChatService {
 
     // Verify user is participant
     const participant = await this.prisma.chatParticipant.findFirst({
-      where: { userId, chatId: actualChatId }
+      where: { userId, chatId: actualChatId },
     });
 
     if (!participant) {
@@ -277,7 +313,7 @@ export class ChatService {
     const skip = lastMessageId ? 0 : (page - 1) * limit;
     const whereClause = {
       chatId: actualChatId,
-      ...(lastMessageId && { id: { lt: lastMessageId } })
+      ...(lastMessageId && { id: { lt: lastMessageId } }),
     };
 
     const [messages, total] = await Promise.all([
@@ -285,43 +321,78 @@ export class ChatService {
         where: whereClause,
         include: {
           sender: { include: { profile: true } },
-          readBy: true
+          readBy: true,
+          messageReactions: { select: { emoji: true, userId: true } },
         },
         orderBy: { createdAt: 'desc' },
         skip,
-        take: limit
+        take: limit,
       }),
-      this.prisma.message.count({ where: { chatId: actualChatId } })
+      this.prisma.message.count({ where: { chatId: actualChatId } }),
     ]);
 
-    return { 
-      messages: messages.reverse(), // Reverse to show oldest first
+    // Aggregate reactions for each message
+    const messagesWithReactions = messages.map((message) => {
+      const reactionMap = new Map<string, { count: number; users: number[] }>();
+
+      message.messageReactions.forEach((r) => {
+        if (!reactionMap.has(r.emoji)) {
+          reactionMap.set(r.emoji, { count: 0, users: [] });
+        }
+        const existing = reactionMap.get(r.emoji)!;
+        existing.count++;
+        existing.users.push(r.userId);
+      });
+
+      const reactions = Array.from(reactionMap.entries()).map(
+        ([emoji, data]) => ({
+          emoji,
+          count: data.count,
+          users: data.users,
+        }),
+      );
+
+      return {
+        ...message,
+        reactions,
+      };
+    });
+
+    return {
+      messages: messagesWithReactions.reverse(), // Reverse to show oldest first
       total,
-      hasMore: messages.length === limit
+      hasMore: messages.length === limit,
     };
   }
 
-  async sendMessage(userId: number, chatId: number | string, sendMessageDto: SendMessageDto) {
+  async sendMessage(
+    userId: number,
+    chatId: number | string,
+    sendMessageDto: SendMessageDto,
+  ) {
     console.log('🔧 [ChatService] sendMessage called:', {
       userId,
       chatId,
       sendMessageDto,
-      hasReplyToId: !!sendMessageDto.replyToId
+      hasReplyToId: !!sendMessageDto.replyToId,
     });
-    
+
     // Convert chatId to number if it's a string (handle frontend temp IDs)
-    const actualChatId = typeof chatId === 'string' && chatId.startsWith('temp_') 
-      ? null // Handle temp IDs - we'll need to find or create the real chat
-      : Number(chatId);
+    const actualChatId =
+      typeof chatId === 'string' && chatId.startsWith('temp_')
+        ? null // Handle temp IDs - we'll need to find or create the real chat
+        : Number(chatId);
 
     // If we have a temp chat ID, we need to find or create a real chat first
     if (actualChatId === null) {
-      throw new BadRequestException('Cannot send message to temporary chat. Please create a real chat first.');
+      throw new BadRequestException(
+        'Cannot send message to temporary chat. Please create a real chat first.',
+      );
     }
 
     // Verify user is participant
     const participant = await this.prisma.chatParticipant.findFirst({
-      where: { userId, chatId: actualChatId }
+      where: { userId, chatId: actualChatId },
     });
 
     if (!participant) {
@@ -331,7 +402,7 @@ export class ChatService {
     // Normalize messageType to uppercase (handle frontend lowercase)
     const normalizedDto = {
       ...sendMessageDto,
-      messageType: sendMessageDto.messageType.toUpperCase() as any
+      messageType: sendMessageDto.messageType.toUpperCase() as any,
     };
 
     // Validate replyToId (must exist and belong to the same chat)
@@ -340,24 +411,29 @@ export class ChatService {
     if (replyToId) {
       const reply = await this.prisma.message.findUnique({
         where: { id: Number(replyToId) },
-        select: { id: true, chatId: true }
+        select: { id: true, chatId: true },
       });
       if (reply && reply.chatId === actualChatId) {
         validReplyToId = Number(replyToId);
       } else {
-        console.warn('⚠️ [ChatService] Ignoring invalid replyToId:', replyToId, 'for chat', actualChatId);
+        console.warn(
+          '⚠️ [ChatService] Ignoring invalid replyToId:',
+          replyToId,
+          'for chat',
+          actualChatId,
+        );
       }
     }
 
     const messageData: any = {
       ...restDto,
-      ...(validReplyToId ? { replyToId: validReplyToId } : {})
+      ...(validReplyToId ? { replyToId: validReplyToId } : {}),
     };
 
     console.log('📝 [ChatService] Creating message with data:', {
       chatId: actualChatId,
       senderId: userId,
-      ...messageData
+      ...messageData,
     });
 
     // Create message
@@ -365,44 +441,55 @@ export class ChatService {
       data: {
         chatId: actualChatId,
         senderId: userId,
-        ...messageData
+        ...messageData,
       },
       include: {
         sender: { include: { profile: true } },
-        readBy: true
-      }
+        readBy: true,
+      },
     });
 
     console.log('✅ [ChatService] Message created successfully:', {
       id: message.id,
       replyToId: (message as any).replyToId,
-      content: message.content?.substring(0, 50) + '...'
+      content: message.content?.substring(0, 50) + '...',
     });
 
     // Update chat's updatedAt
     await this.prisma.chat.update({
       where: { id: actualChatId },
-      data: { updatedAt: new Date() }
+      data: { updatedAt: new Date() },
     });
 
     // Broadcast message via WebSocket if gateway is available
     if (this.chatGateway?.server) {
-      console.log('📡 [ChatService] Broadcasting message via WebSocket to room:', `chat:${actualChatId}`);
-      this.chatGateway.server.to(`chat:${actualChatId}`).emit('message:new', message);
+      console.log(
+        '📡 [ChatService] Broadcasting message via WebSocket to room:',
+        `chat:${actualChatId}`,
+      );
+      this.chatGateway.server
+        .to(`chat:${actualChatId}`)
+        .emit('message:new', message);
       console.log('✅ [ChatService] WebSocket broadcast completed');
     } else {
-      console.warn('⚠️ [ChatService] ChatGateway not available for WebSocket broadcast');
+      console.warn(
+        '⚠️ [ChatService] ChatGateway not available for WebSocket broadcast',
+      );
     }
 
     return message;
   }
 
-  async markMessagesAsRead(userId: number, chatId: number, markReadDto: MarkMessagesReadDto) {
+  async markMessagesAsRead(
+    userId: number,
+    chatId: number,
+    markReadDto: MarkMessagesReadDto,
+  ) {
     const { messageIds } = markReadDto;
 
     // Verify user is participant
     const participant = await this.prisma.chatParticipant.findFirst({
-      where: { userId, chatId }
+      where: { userId, chatId },
     });
 
     if (!participant) {
@@ -411,7 +498,7 @@ export class ChatService {
 
     // Filter to existing messages in this chat to avoid FK violations
     const existingMessages = await this.prisma.message.findMany({
-      where: { id: { in: messageIds }, chatId }
+      where: { id: { in: messageIds }, chatId },
     });
 
     if (existingMessages.length === 0) {
@@ -421,9 +508,9 @@ export class ChatService {
     await this.prisma.messageRead.createMany({
       data: existingMessages.map((m) => ({
         messageId: m.id,
-        userId
+        userId,
       })),
-      skipDuplicates: true
+      skipDuplicates: true,
     });
 
     return { success: true };
@@ -431,15 +518,17 @@ export class ChatService {
 
   async deleteMessage(userId: number, chatId: number, messageId: number) {
     const message = await this.prisma.message.findFirst({
-      where: { id: messageId, chatId, senderId: userId }
+      where: { id: messageId, chatId, senderId: userId },
     });
 
     if (!message) {
-      throw new NotFoundException('Message not found or you do not have permission');
+      throw new NotFoundException(
+        'Message not found or you do not have permission',
+      );
     }
 
     await this.prisma.message.delete({
-      where: { id: messageId }
+      where: { id: messageId },
     });
 
     return { success: true };
@@ -447,11 +536,14 @@ export class ChatService {
 
   async updateUserStatus(userId: number, isOnline: boolean) {
     try {
-      console.log('🔧 [ChatService] Updating user status:', { userId, isOnline });
-      
+      console.log('🔧 [ChatService] Updating user status:', {
+        userId,
+        isOnline,
+      });
+
       // First, check if the user exists
       const userExists = await this.prisma.user.findUnique({
-        where: { id: userId }
+        where: { id: userId },
       });
 
       if (!userExists) {
@@ -463,16 +555,19 @@ export class ChatService {
         where: { userId },
         update: {
           isOnline,
-          lastSeen: new Date()
+          lastSeen: new Date(),
         },
         create: {
           userId,
           isOnline,
-          lastSeen: new Date()
-        }
+          lastSeen: new Date(),
+        },
       });
-      
-      console.log('✅ [ChatService] User status updated successfully:', { userId, isOnline });
+
+      console.log('✅ [ChatService] User status updated successfully:', {
+        userId,
+        isOnline,
+      });
     } catch (error) {
       console.error('❌ [ChatService] Failed to update user status:', error);
       // Don't throw error to prevent WebSocket connection failures
@@ -488,10 +583,10 @@ export class ChatService {
           OR: [
             { firstName: { contains: search, mode: 'insensitive' } },
             { lastName: { contains: search, mode: 'insensitive' } },
-            { email: { contains: search, mode: 'insensitive' } }
-          ]
+            { email: { contains: search, mode: 'insensitive' } },
+          ],
         }),
-        ...(excludeIds && { id: { notIn: excludeIds } })
+        ...(excludeIds && { id: { notIn: excludeIds } }),
       },
       select: {
         id: true,
@@ -505,26 +600,33 @@ export class ChatService {
             phone: true,
             work: true,
             education: true,
-            resident: true
-          }
+            resident: true,
+          },
         },
         userStatus: {
           select: {
             isOnline: true,
-            lastSeen: true
-          }
-        }
+            lastSeen: true,
+          },
+        },
       },
       take: limit,
-      orderBy: [
-        { userStatus: { isOnline: 'desc' } },
-        { firstName: 'asc' }
-      ]
+      orderBy: [{ userStatus: { isOnline: 'desc' } }, { firstName: 'asc' }],
     });
   }
 
-  async editMessage(userId: number, chatId: number, messageId: number, body: { content: string }) {
-    console.log('✏️ [ChatService] Editing message:', { userId, chatId, messageId, content: body.content });
+  async editMessage(
+    userId: number,
+    chatId: number,
+    messageId: number,
+    body: { content: string },
+  ) {
+    console.log('✏️ [ChatService] Editing message:', {
+      userId,
+      chatId,
+      messageId,
+      content: body.content,
+    });
 
     // First verify the message exists and belongs to the user
     const message = await this.prisma.message.findFirst({
@@ -532,12 +634,14 @@ export class ChatService {
         id: messageId,
         chatId: Number(chatId),
         senderId: userId,
-        messageType: 'TEXT' // Only allow editing text messages
-      }
+        messageType: 'TEXT', // Only allow editing text messages
+      },
     });
 
     if (!message) {
-      throw new NotFoundException('Message not found or you are not allowed to edit this message');
+      throw new NotFoundException(
+        'Message not found or you are not allowed to edit this message',
+      );
     }
 
     // Update the message
@@ -546,7 +650,7 @@ export class ChatService {
       data: {
         content: body.content,
         isEdited: true,
-        updatedAt: new Date()
+        updatedAt: new Date(),
       },
       include: {
         sender: {
@@ -555,9 +659,9 @@ export class ChatService {
             firstName: true,
             lastName: true,
             profile: {
-              select: { avatar: true }
-            }
-          }
+              select: { avatar: true },
+            },
+          },
         },
         replyTo: {
           select: {
@@ -568,32 +672,44 @@ export class ChatService {
               select: {
                 id: true,
                 firstName: true,
-                lastName: true
-              }
-            }
-          }
-        }
-      }
+                lastName: true,
+              },
+            },
+          },
+        },
+      },
     });
 
     // Emit the updated message via WebSocket
     if (this.chatGateway) {
-      this.chatGateway.server.to(`chat_${chatId}`).emit('messageEdited', updatedMessage);
+      this.chatGateway.server
+        .to(`chat_${chatId}`)
+        .emit('messageEdited', updatedMessage);
     }
 
     console.log('✅ [ChatService] Message edited successfully:', messageId);
     return updatedMessage;
   }
 
-  async addReaction(userId: number, chatId: number, messageId: number, body: { emoji: string }) {
-    console.log('😀 [ChatService] Adding reaction:', { userId, chatId, messageId, emoji: body.emoji });
+  async addReaction(
+    userId: number,
+    chatId: number,
+    messageId: number,
+    body: { emoji: string },
+  ) {
+    console.log('😀 [ChatService] Adding reaction', {
+      userId,
+      chatId,
+      messageId,
+      emoji: body.emoji,
+    });
 
     // Verify the message exists and user has access to the chat
     const message = await this.prisma.message.findFirst({
       where: {
         id: messageId,
-        chatId: Number(chatId)
-      }
+        chatId: Number(chatId),
+      },
     });
 
     if (!message) {
@@ -604,58 +720,147 @@ export class ChatService {
     const participant = await this.prisma.chatParticipant.findFirst({
       where: {
         userId,
-        chatId: Number(chatId)
-      }
+        chatId: Number(chatId),
+      },
     });
 
     if (!participant) {
       throw new ForbiddenException('You are not a participant in this chat');
     }
 
-    // For now, we'll handle reactions in memory without database storage
-    // In a production system, you would create a reactions table
-    console.log('✅ [ChatService] Reaction validation passed - user is participant');
+    // Check if reaction already exists
+    const existing = await this.prisma.messageReaction.findUnique({
+      where: {
+        messageId_userId_emoji: {
+          messageId,
+          userId,
+          emoji: body.emoji,
+        },
+      },
+    });
+
+    if (existing) {
+      throw new BadRequestException('You have already reacted with this emoji');
+    }
+
+    // Create the reaction
+    await this.prisma.messageReaction.create({
+      data: {
+        messageId,
+        userId,
+        emoji: body.emoji,
+      },
+    });
+
+    // Get aggregated reaction counts
+    const reactions = await this.prisma.messageReaction.groupBy({
+      by: ['emoji'],
+      where: { messageId },
+      _count: {
+        emoji: true,
+      },
+    });
+
+    // Get user IDs for each emoji
+    const reactionDetails = await Promise.all(
+      reactions.map(async (r) => {
+        const users = await this.prisma.messageReaction.findMany({
+          where: { messageId, emoji: r.emoji },
+          select: { userId: true },
+        });
+        return {
+          emoji: r.emoji,
+          count: r._count.emoji,
+          users: users.map((u) => u.userId),
+        };
+      }),
+    );
 
     // Emit the reaction via WebSocket for real-time updates
     if (this.chatGateway) {
-      this.chatGateway.server.to(`chat_${chatId}`).emit('reaction:added', {
+      this.chatGateway.server.to(`chat:${chatId}`).emit('reaction:added', {
+        chatId,
         messageId,
         emoji: body.emoji,
         userId,
-        userName: `User ${userId}` // You might want to get actual name
+        reactions: reactionDetails, // Send all reactions for the message
       });
     }
 
     console.log('✅ [ChatService] Reaction added successfully');
-    return { messageId, emoji: body.emoji, userId };
+    return { messageId, emoji: body.emoji, userId, reactions: reactionDetails };
   }
 
-  async removeReaction(userId: number, chatId: number, messageId: number, emoji: string) {
-    console.log('😐 [ChatService] Removing reaction:', { userId, chatId, messageId, emoji });
+  async removeReaction(
+    userId: number,
+    chatId: number,
+    messageId: number,
+    emoji: string,
+  ) {
+    console.log('😐 [ChatService] Removing reaction:', {
+      userId,
+      chatId,
+      messageId,
+      emoji,
+    });
 
     // Verify the message exists
     const message = await this.prisma.message.findFirst({
       where: {
         id: messageId,
-        chatId: Number(chatId)
-      }
+        chatId: Number(chatId),
+      },
     });
 
     if (!message) {
       throw new NotFoundException('Message not found');
     }
 
-    // For now, just emit the reaction removal via WebSocket
-    // In a production system, you would remove from reactions table
+    // Delete the reaction
+    await this.prisma.messageReaction.deleteMany({
+      where: {
+        messageId,
+        userId,
+        emoji,
+      },
+    });
+
+    // Get updated aggregated reaction counts
+    const reactions = await this.prisma.messageReaction.groupBy({
+      by: ['emoji'],
+      where: { messageId },
+      _count: {
+        emoji: true,
+      },
+    });
+
+    // Get user IDs for each emoji
+    const reactionDetails = await Promise.all(
+      reactions.map(async (r) => {
+        const users = await this.prisma.messageReaction.findMany({
+          where: { messageId, emoji: r.emoji },
+          select: { userId: true },
+        });
+        return {
+          emoji: r.emoji,
+          count: r._count.emoji,
+          users: users.map((u) => u.userId),
+        };
+      }),
+    );
+
+    // Emit reaction removal via WebSocket
     if (this.chatGateway) {
-      this.chatGateway.server.to(`chat_${chatId}`).emit('reaction:removed', {
+      this.chatGateway.server.to(`chat:${chatId}`).emit('reaction:removed', {
+        chatId,
         messageId,
         emoji,
-        userId
+        userId,
+        reactions: reactionDetails, // Send updated reactions
       });
     }
 
     console.log('✅ [ChatService] Reaction removed successfully');
-    return { messageId, emoji, userId };
+    return { messageId, emoji, userId, reactions: reactionDetails };
   }
 }

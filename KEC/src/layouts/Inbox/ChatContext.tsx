@@ -73,6 +73,7 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
   );
   const refetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const unreadScrollRef = useRef<(() => void) | null>(null);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const dispatch = useDispatch<AppDispatch>();
 
   // Handle tab visibility for Instagram-like unread behavior
@@ -418,13 +419,41 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
           });
 
           // Update the cached data
-          chatApi.util.updateQueryData(
-            "getMessages",
-            { chatId: activeChat?.id },
-            (draft: any) => {
-              draft.messages = updatedMessages;
-            }
-          );
+          // Update the cached data
+          if (activeChat?.id) {
+            (dispatch as any)(
+              chatApi.util.updateQueryData(
+                "getMessages",
+                { chatId: activeChat.id },
+                (draft: any) => {
+                  const message = draft.messages?.find(
+                    (m: any) => m.id === data.messageId
+                  );
+                  if (message) {
+                    const existingReactions = message.reactions || [];
+                    const existingReaction = existingReactions.find(
+                      (r: any) => r.emoji === data.emoji
+                    );
+
+                    if (existingReaction) {
+                      existingReaction.count += 1;
+                      if (!existingReaction.users) existingReaction.users = [];
+                      if (!existingReaction.users.includes(data.userId)) {
+                        existingReaction.users.push(data.userId);
+                      }
+                    } else {
+                      if (!message.reactions) message.reactions = [];
+                      message.reactions.push({
+                        emoji: data.emoji,
+                        count: 1,
+                        users: [data.userId],
+                      });
+                    }
+                  }
+                }
+              )
+            );
+          }
         }
       };
 
@@ -479,13 +508,40 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
           });
 
           // Update the cached data
-          chatApi.util.updateQueryData(
-            "getMessages",
-            { chatId: activeChat?.id },
-            (draft: any) => {
-              draft.messages = updatedMessages;
-            }
-          );
+          // Update the cached data
+          if (activeChat?.id) {
+            (dispatch as any)(
+              chatApi.util.updateQueryData(
+                "getMessages",
+                { chatId: activeChat.id },
+                (draft: any) => {
+                  const message = draft.messages?.find(
+                    (m: any) => m.id === data.messageId
+                  );
+                  if (message && message.reactions) {
+                    const reactionIndex = message.reactions.findIndex(
+                      (r: any) => r.emoji === data.emoji
+                    );
+
+                    if (reactionIndex !== -1) {
+                      const reaction = message.reactions[reactionIndex];
+                      if (reaction.count > 1) {
+                        reaction.count -= 1;
+                        if (reaction.users) {
+                          reaction.users = reaction.users.filter(
+                            (uid: number) => uid !== data.userId
+                          );
+                        }
+                      } else {
+                        // Remove the reaction entirely if count is 0
+                        message.reactions.splice(reactionIndex, 1);
+                      }
+                    }
+                  }
+                }
+              )
+            );
+          }
         }
       };
 
@@ -561,6 +617,49 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
         }
       };
 
+      const messageDeletedHandler = (data: {
+        chatId: number;
+        messageId: number;
+      }) => {
+        console.log("🗑️ [ChatContext] Message deleted via WebSocket:", data);
+
+        if (data.chatId && data.messageId) {
+          (dispatch as any)(
+            chatApi.util.updateQueryData(
+              "getMessages",
+              { chatId: data.chatId },
+              (draft) => {
+                const messageIndex = draft.messages.findIndex(
+                  (msg) => msg.id === data.messageId
+                );
+                if (messageIndex !== -1) {
+                  draft.messages.splice(messageIndex, 1);
+                  console.log(
+                    "✅ [ChatContext] Removed deleted message from cache:",
+                    data.messageId
+                  );
+                }
+              }
+            )
+          );
+
+          // Update chat's last message if the deleted message was the last one
+          (dispatch as any)(
+            chatApi.util.updateQueryData("getChats", {}, (draft) => {
+              const chat = draft.chats.find((c) => c.id === data.chatId);
+              if (chat && chat.lastMessage?.id === data.messageId) {
+                // Clear last message - it will be updated by the next message or backend
+                chat.lastMessage = undefined as any;
+                console.log(
+                  "🔄 [ChatContext] Cleared lastMessage for chat:",
+                  data.chatId
+                );
+              }
+            })
+          );
+        }
+      };
+
       websocketService
         .connect()
         .then(() => {
@@ -575,11 +674,12 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
           websocketService.on("user:online", onlineHandler);
           websocketService.on("message:read", messageReadHandler);
           websocketService.on("message:delivered", messageDeliveredHandler);
+          websocketService.on("message:deleted", messageDeletedHandler);
           websocketService.on("reaction:added", reactionAddedHandler);
           websocketService.on("reaction:removed", reactionRemovedHandler);
 
           console.log(
-            "🎧 [ChatContext] All WebSocket event listeners registered (including reactions)"
+            "🎧 [ChatContext] All WebSocket event listeners registered (including reactions and deletion)"
           );
         })
         .catch((error) => {
@@ -597,6 +697,7 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
         websocketService.off("user:online", onlineHandler);
         websocketService.off("message:read", messageReadHandler);
         websocketService.off("message:delivered", messageDeliveredHandler);
+        websocketService.off("message:deleted", messageDeletedHandler);
         websocketService.off("reaction:added", reactionAddedHandler);
         websocketService.off("reaction:removed", reactionRemovedHandler);
 
@@ -666,6 +767,7 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
           chatId: activeChat.id,
           content: content || undefined,
           messageType: messageType as "TEXT" | "IMAGE" | "FILE" | "LINK",
+          senderId: currentUser.id,
         };
 
         if (fileData) {
@@ -709,14 +811,41 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
     [activeChat, markMessagesAsReadMutation]
   );
 
+  // Debounced typing indicator to reduce WebSocket traffic
   const handleSetIsTyping = useCallback(
     (typing: boolean) => {
       setIsTyping(typing);
-      if (activeChat && currentUser && isConnected) {
+
+      if (!activeChat || !currentUser || !isConnected) return;
+
+      // Clear existing timeout
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+
+      // Send typing status immediately if starting to type
+      if (typing) {
         websocketService.updateTypingStatus(
           activeChat.id,
           currentUser.id,
-          typing
+          true
+        );
+
+        // Auto-clear typing status after 1.5 seconds of no activity
+        typingTimeoutRef.current = setTimeout(() => {
+          setIsTyping(false);
+          websocketService.updateTypingStatus(
+            activeChat.id,
+            currentUser.id,
+            false
+          );
+        }, 1500);
+      } else {
+        // Send "stopped typing" immediately
+        websocketService.updateTypingStatus(
+          activeChat.id,
+          currentUser.id,
+          false
         );
       }
     },
