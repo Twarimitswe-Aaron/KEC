@@ -298,6 +298,8 @@ const LessonsView = () => {
       courseUpdateData.imageChanged = "false";
     }
 
+    console.log("LessonsView: Updating course with data:", courseUpdateData);
+
     try {
       const { message } = await updateCourse(courseUpdateData).unwrap();
       toast.success(message || "Course updated successfully");

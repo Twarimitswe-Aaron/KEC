@@ -73,42 +73,48 @@ export const mockCourses: Course[] = [
     name: 'All',
     description: 'Explore All courses',
     instructor: 'John Doe',
-    progress: 100
+    progress: 100,
+    category: 'All'
   },
   {
     id: '1',
     name: 'Advanced Thermodynamics',
     description: 'Learn how to simulate machines using temperature',
     instructor: 'John Doe',
-    progress: 75
+    progress: 75,
+    category: 'Thermodynamics'
   },
   {
     id: '2',
     name: 'Electrofluiding',
     description: 'Know how to work with water pressure',
     instructor: 'Jane Smith',
-    progress: 45
+    progress: 45,
+    category: 'Fluid Mechanics'
   },
   {
     id: '3',
     name: 'Gears technology',
     description: 'Know how to connect with water pipes ',
     instructor: 'Mike Johnson',
-    progress: 30
+    progress: 30,
+    category: 'Mechanics'
   },
   {
     id: '4',
     name: 'Fluid Mechanics',
     description: 'Know how to deal with fluids materials in the conductor',
     instructor: 'Sarah Wilson',
-    progress: 60
+    progress: 60,
+    category: 'Fluid Mechanics'
   },
   {
     id: '5',
     name: 'Machine design',
     description: 'Design your own machine using this course',
     instructor: 'David Brown',
-    progress: 25
+    progress: 25,
+    category: 'Design'
   }
 ];
 

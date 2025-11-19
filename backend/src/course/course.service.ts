@@ -24,6 +24,7 @@ export class CourseService {
         no_lesson: 0,
       },
     });
+    return newCourse;
   }
 
  async getCourseById(id: number) {

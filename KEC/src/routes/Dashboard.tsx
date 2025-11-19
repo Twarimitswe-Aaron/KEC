@@ -6,7 +6,7 @@ import { UserRoleContext } from '../UserRoleContext';
 import { DashboardState } from '../types/dashboard';
 
 import { dashboardService } from '../services/dashboardService';
-import HeaderCourseCard from '../Components/Dashboard/HeaderCourseCard';
+import HeaderCourseCard from '../headerCourseCard';
 import CourseComponent from "../Components/Dashboard/CourseComponent"
 
 interface DataPoint {

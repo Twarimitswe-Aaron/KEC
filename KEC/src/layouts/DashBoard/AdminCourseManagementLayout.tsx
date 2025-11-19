@@ -386,15 +386,20 @@ const AdminCourseManagementLayout: React.FC = () => {
     try {
       console.log(formData);
 
-      await toast.promise(createCourse(formData as any).unwrap(), {
+      const response = await toast.promise(createCourse(formData as any).unwrap(), {
         pending: "Creating course...",
         success: "Course created successfully!",
         error: "Error creating course",
       });
 
       resetState();
-      // Assuming the navigation below is for the next step (like adding lessons)
-      navigate("/course-management/view-lessons");
+      // Navigate to the lessons view of the newly created course
+      if (response && response.id) {
+        navigate(`/course-management/${response.id}`);
+      } else {
+        // Fallback if ID is missing (shouldn't happen with backend fix)
+        navigate("/course-management");
+      }
     } catch (err) {
       // Error is handled by toast.promise
       console.error("Failed to create course:", err);

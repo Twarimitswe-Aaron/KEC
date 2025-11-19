@@ -4,6 +4,7 @@ export interface Course {
   description?: string;
   instructor?: string;
   progress?: number;
+  category?: string;
 }
 
 export interface DashboardStats {
@@ -35,4 +36,4 @@ export interface DashboardState {
   graphData: DataPoint[];
   isLoading: boolean;
   error: string | null;
-} 
+}

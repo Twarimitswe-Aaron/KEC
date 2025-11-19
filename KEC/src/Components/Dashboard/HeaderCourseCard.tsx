@@ -27,6 +27,21 @@ const HeaderCourseCard: React.FC<HeaderCourseCardProps> = ({
     return Array.from(set).sort((a, b) => a.localeCompare(b));
   }, [studentCourses]);
 
+  // Group student course options by category for display
+  const groupedStudentOptions = useMemo(() => {
+    const map = new Map<string, Course[]>();
+    (studentCourses || []).forEach((c: any) => {
+      const cat = (c?.category || 'Uncategorized').toString();
+      const list = map.get(cat) || [];
+      list.push({ id: String(c.id), name: c.title, description: c.description });
+      map.set(cat, list);
+    });
+    const cats = selectedCategory === 'all'
+      ? Array.from(map.keys()).sort((a, b) => a.localeCompare(b))
+      : [selectedCategory];
+    return cats.map(cat => [cat, map.get(cat) || []] as [string, Course[]]);
+  }, [studentCourses, selectedCategory]);
+
   // Fallback data in case backend is not ready
   const fallbackCourses: Course[] = [
     {
@@ -64,7 +79,15 @@ const HeaderCourseCard: React.FC<HeaderCourseCardProps> = ({
           const found = (studentCourses as any[]).find((sc: any) => String(sc.id) === opt.id);
           return (found?.category || '') === selectedCategory;
         });
-    const sorted = [...filtered].sort((a, b) => a.name.localeCompare(b.name));
+    const categoryOf = (opt: Course) => {
+      const found = (studentCourses as any[]).find((sc: any) => String(sc.id) === opt.id);
+      return (found?.category || '').toString();
+    };
+    const sorted = [...filtered].sort((a, b) => {
+      const ca = categoryOf(a);
+      const cb = categoryOf(b);
+      return ca.localeCompare(cb);
+    });
     return sorted;
   }, [studentCourses, selectedCategory]);
 
@@ -103,15 +126,31 @@ const HeaderCourseCard: React.FC<HeaderCourseCardProps> = ({
           </select>
           <select
             value={selectedId}
-            onChange={(e) => onCourseChange(e.target.value)}
+            onChange={(e) => {
+              const val = e.target.value;
+              onCourseChange(val);
+              const found = (studentCourses as any[]).find((sc: any) => String(sc.id) === val);
+              const cat = (found?.category || '').toString();
+              if (cat) onCategoryChange(cat);
+            }}
             className="block w-48 rounded-md border border-gray-300 bg-white py-2 px-3 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 text-10 sm:text-sm"
           >
             <option value="all">All</option>
-            {displayCourses.map((course) => (
-              <option key={course.id} value={course.id}>
-                {course.name}
-              </option>
-            ))}
+            {groupedStudentOptions.length > 0
+              ? groupedStudentOptions.map(([cat, options]) => (
+                  <optgroup key={cat} label={cat}>
+                    {options.map((course) => (
+                      <option key={course.id} value={course.id}>
+                        {course.name}
+                      </option>
+                    ))}
+                  </optgroup>
+                ))
+              : displayCourses.map((course) => (
+                  <option key={course.id} value={course.id}>
+                    {course.name}
+                  </option>
+                ))}
           </select>
         </div>
       </div>
