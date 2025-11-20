@@ -2,6 +2,7 @@ import React, { useEffect, useState, useContext } from "react";
 import { Course } from "../Components/Dashboard/CourseCard";
 import { UserRoleContext } from "../UserRoleContext";
 import { FaEye, FaTimes, FaCheck, FaTrash } from "react-icons/fa";
+import { BookOpen } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import {
@@ -10,6 +11,32 @@ import {
   useCoursesQuery,
 } from "../state/api/courseApi";
 import { SearchContext } from "../SearchContext";
+
+// Add this CSS for the fade-in-up animation
+const styles = `
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  .animate-fade-in-up {
+    animation: fadeInUp 0.5s ease-out forwards;
+    opacity: 0;
+  }
+`;
+
+// Inject the styles
+if (typeof document !== "undefined") {
+  const styleSheet = document.createElement("style");
+  styleSheet.textContent = styles;
+  document.head.appendChild(styleSheet);
+}
 
 // Confirmation Modal Component
 interface ConfirmationModalProps {
@@ -203,17 +230,30 @@ const RequestedCourses = () => {
     );
 
   return (
-    <div className="min-h-screen p-4">
+    <div className="min-h-screen bg-white p-4">
       <div className="max-w-7xl mx-auto">
-        <div className="flex justify-center -mt-6 text-center mb-8">
-          <div className="bg-white px-3 py-2 rounded-lg shadow-sm ">
-            <h4 className="font-bold text-[17px] text-[#004e64]">
-              Requested Courses ({coursesData?.length || 0})
-            </h4>
+        {/* Compact Header */}
+        <div className="mb-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-[#004e64] mb-1">
+                Requested Courses
+              </h1>
+              <p className="text-gray-500 text-xs">
+                Review and manage course requests from instructors
+              </p>
+            </div>
+            <div className="flex items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-lg shadow-sm border border-gray-200">
+              <span className="text-gray-600 text-xs font-medium">Total:</span>
+              <span className="bg-[#034153] text-white px-2.5 py-0.5 rounded-md text-xs font-bold">
+                {coursesData?.length || 0}
+              </span>
+            </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2 gap-6">
+        {/* Compact Course Grid - 4 columns */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {coursesData && coursesData.length > 0 ? (
             coursesData
               .filter((course: any) => {
@@ -225,86 +265,118 @@ const RequestedCourses = () => {
                   course.uploader?.name?.toLowerCase().includes(query)
                 );
               })
-              .map((course: any) => (
+              .map((course: any, index: number) => (
                 <div
                   key={course.id}
-                  className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-all duration-300 border border-gray-200"
+                  className="group bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 border border-gray-200 overflow-hidden hover:scale-[1.01] hover:-translate-y-0.5 animate-fade-in-up"
+                  style={{ animationDelay: `${index * 50}ms` }}
                 >
-                  <div className="relative">
+                  {/* Smaller Image */}
+                  <div className="relative overflow-hidden">
                     <img
                       src={course.image_url}
                       alt={course.title}
-                      className="w-full h-48 object-cover"
+                      className="w-full h-36 object-cover group-hover:scale-105 transition-transform duration-300"
                       onError={(e) => {
-                        e.currentTarget.src = `https://via.placeholder.com/400x200/004e64/white?text=${course.title}`;
+                        e.currentTarget.src = `https://via.placeholder.com/400x200/034153/white?text=${encodeURIComponent(
+                          course.title
+                        )}`;
                       }}
                     />
-                    <div className="absolute top-3 right-3">
+
+                    {/* Compact Status Badge */}
+                    <div className="absolute top-2 left-2">
+                      <span className="bg-orange-500 text-white px-2 py-1 rounded-full text-[10px] font-semibold shadow-md backdrop-blur-sm flex items-center gap-1">
+                        <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></div>
+                        Pending
+                      </span>
+                    </div>
+
+                    {/* Smaller View Button */}
+                    <div className="absolute top-2 right-2">
                       <button
-                        className="bg-white/90 cursor-pointer backdrop-blur-sm text-[#004e64] p-2 rounded-full hover:bg-white hover:text-[#003a4c] transition-all duration-200 shadow-md"
+                        className="bg-white text-[#034153] p-1.5 rounded-lg hover:bg-[#034153] hover:text-white transition-all duration-200 shadow-md hover:shadow-lg hover:scale-105 cursor-pointer"
                         onClick={() => handleViewDetails(course)}
                         title="View course details"
                       >
-                        <FaEye className="text-sm" />
+                        <FaEye className="text-xs" />
                       </button>
                     </div>
                   </div>
 
-                  <div className="p-5">
+                  {/* Compact Content */}
+                  <div className="p-3">
+                    {/* Title & Description */}
                     <div className="mb-3">
-                      <h3 className="font-semibold text-[#004e64] text-lg mb-1 line-clamp-1">
+                      <h3 className="font-bold text-[#004e64] text-base mb-1 line-clamp-1 group-hover:text-[#034153] transition-colors">
                         {course.title}
                       </h3>
-                      <p className="text-gray-600 text-sm line-clamp-2 leading-relaxed">
+                      <p className="text-gray-600 text-xs line-clamp-2 leading-relaxed">
                         {course.description}
                       </p>
                     </div>
 
-                    <div className="mb-4">
-                      <p className="text-[#004e64] font-semibold text-lg">
-                        {course.price}
-                      </p>
-                      <div className="flex items-center gap-4 text-xs text-gray-500 mt-1">
-                        <span>{course.no_lessons || "0"} lessons</span>
+                    {/* Compact Price & Lessons */}
+                    <div className="flex items-center justify-between mb-3 pb-3 border-b border-gray-100">
+                      <div className="bg-[#034153]/10 px-2.5 py-1 rounded-lg">
+                        <p className="text-[#034153] font-bold text-sm">
+                          {course.price}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-1.5 bg-blue-50 px-2 py-1 rounded-lg">
+                        <BookOpen className="w-3 h-3 text-blue-600" />
+                        <span className="text-blue-700 font-semibold text-xs">
+                          {course.no_lessons || "0"}
+                        </span>
                       </div>
                     </div>
 
-                    <div className="flex my-3 gap-1.5">
+                    {/* Compact Uploader Info */}
+                    <div className="mb-3">
                       <Link
                         to={`/profile/${course.uploader.id}`}
-                        className="flex items-center gap-2"
+                        className="flex items-center gap-2 hover:bg-gray-50 p-1.5 rounded-lg transition-colors"
                       >
                         <img
                           src={course.uploader.avatar_url}
                           alt={`${course.uploader.name} avatar`}
-                          className="w-8 h-8 rounded-full border-none shadow-sm object-cover"
+                          className="w-7 h-7 rounded-full border border-gray-200 object-cover"
                         />
-                        <p className=" text-gray-500 text-sm">
-                          {course.uploader.name.split(" ")[1]}
-                        </p>
+                        <div>
+                          <p className="text-gray-700 font-medium text-xs">
+                            {course.uploader.name}
+                          </p>
+                          <p className="text-gray-400 text-[10px]">
+                            Instructor
+                          </p>
+                        </div>
                       </Link>
                     </div>
 
-                    <div className="flex gap-3">
+                    {/* Compact Action Buttons */}
+                    <div className="flex gap-2">
                       <button
                         onClick={() => handleConfirmCourse(course)}
                         disabled={
                           course.id ? loading[course.id]?.confirm : false
                         }
-                        className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-white font-medium transition-all duration-200 ${
+                        className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all duration-200 transform hover:scale-105 active:scale-95 ${
                           course.id && loading[course.id]?.confirm
-                            ? "bg-gray-400 cursor-not-allowed"
-                            : "bg-[#034153] hover:bg-[#025a70] cursor-pointer hover:shadow-md"
+                            ? "bg-gray-300 cursor-not-allowed text-gray-500"
+                            : "bg-[#034153] hover:bg-[#025a70] text-white cursor-pointer shadow-md hover:shadow-lg"
                         }`}
                       >
                         {course.id && loading[course.id]?.confirm ? (
-                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                          <>
+                            <div className="w-3 h-3 border-2 border-gray-500 border-t-transparent rounded-full animate-spin"></div>
+                            <span>...</span>
+                          </>
                         ) : (
-                          <FaCheck className="text-sm" />
+                          <>
+                            <FaCheck className="text-xs" />
+                            <span>Confirm</span>
+                          </>
                         )}
-                        {course.id && loading[course.id]?.confirm
-                          ? "Confirming..."
-                          : "Confirm"}
                       </button>
 
                       <button
@@ -312,28 +384,42 @@ const RequestedCourses = () => {
                         disabled={
                           course.id ? loading[course.id]?.delete : false
                         }
-                        className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-white font-medium transition-all duration-200 ${
+                        className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all duration-200 transform hover:scale-105 active:scale-95 ${
                           course.id && loading[course.id]?.delete
-                            ? "bg-gray-400 cursor-not-allowed"
-                            : "bg-red-500 hover:bg-red-600 cursor-pointer hover:shadow-md"
+                            ? "bg-gray-300 cursor-not-allowed text-gray-500"
+                            : "bg-red-500 hover:bg-red-600 text-white cursor-pointer shadow-md hover:shadow-lg"
                         }`}
                       >
                         {course.id && loading[course.id]?.delete ? (
-                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                          <>
+                            <div className="w-3 h-3 border-2 border-gray-500 border-t-transparent rounded-full animate-spin"></div>
+                            <span>...</span>
+                          </>
                         ) : (
-                          <FaTrash className="text-sm" />
+                          <>
+                            <FaTrash className="text-xs" />
+                            <span>Delete</span>
+                          </>
                         )}
-                        {course.id && loading[course.id]?.delete
-                          ? "Deleting..."
-                          : "Delete"}
                       </button>
                     </div>
                   </div>
                 </div>
               ))
           ) : (
-            <div className="col-span-full text-center py-12">
-              <p className="text-gray-400">No requested courses found.</p>
+            <div className="col-span-full flex flex-col items-center justify-center py-20">
+              <div className="bg-gray-50 rounded-2xl p-12 shadow-sm border border-gray-200 text-center max-w-md">
+                <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <BookOpen className="w-10 h-10 text-gray-400" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-800 mb-3">
+                  No Requested Courses
+                </h3>
+                <p className="text-gray-500 leading-relaxed">
+                  There are currently no course requests to review. New requests
+                  will appear here when instructors submit courses for approval.
+                </p>
+              </div>
             </div>
           )}
         </div>
