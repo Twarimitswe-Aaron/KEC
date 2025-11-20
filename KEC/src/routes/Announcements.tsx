@@ -15,7 +15,6 @@ type AnnouncementCardProps = {
   id: number;
   name: string;
   message: string;
-  date: string;
   avatar?: string | null;
   posterId: number;
   currentUserId: number | null;
@@ -118,7 +117,6 @@ const Announcements = () => {
     id,
     name,
     message,
-    date,
     avatar,
     posterId,
     currentUserId,
@@ -308,7 +306,6 @@ const Announcements = () => {
                 id={announcement.id}
                 name={nameToShow}
                 message={announcement.content}
-                date={new Date(announcement.createdAt).toLocaleDateString()}
                 avatar={announcement.poster?.profile?.avatar || null}
                 posterId={announcement.poster?.id}
                 currentUserId={userData?.id ?? null}
