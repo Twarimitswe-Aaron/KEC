@@ -17,8 +17,10 @@ export interface Course {
   open: boolean;
   enrolled: boolean;
   no_lessons: string;
- 
+
   uploader: {
+    id: number;
+    email: string;
     name: string;
     avatar_url: string;
   };
@@ -133,17 +135,16 @@ const ImageUploadArea: React.FC<ImageUploadAreaProps> = ({
         onDragLeave={handleDrageLeaver}
         onDrop={handleDrop}
         className={`
-        relative border-2 border-dashed rounded-lg transition-all duration-300  ease-in-out
+        relative border-2 border-dashed rounded-lg transition-all duration-300 ease-in-out
         ${
           isDragging
-            ? "border-[#004e64] bg-gradient-to-br from-[#004e64]/10 via-[#004e64]/15 to-[#004e64]/10 scale-102 shadow-lg"
-            : "border-[#004e64]/30 hover:border-[#004e64]/50"
+            ? "border-blue-500 bg-blue-50 scale-[1.01] shadow-lg"
+            : "border-gray-300 hover:border-blue-400 hover:shadow-sm"
         }  
-        ${previewUrl ? "p-3" : "p-8"}
-        bg-gradient-to-br from-white via-[#f8feff] to-white
-          hover:shadow-md hover:shadow-[#004e64]/10
+        ${previewUrl ? "p-3" : "p-6"}
+        bg-white
           cursor-pointer group
-          min-h-[120px]
+          min-h-[100px]
 
         `}
       >
@@ -296,7 +297,7 @@ const ImageUploadArea: React.FC<ImageUploadAreaProps> = ({
 };
 
 const CourseManagement = () => {
-  const navigate=useNavigate()
+  const navigate = useNavigate();
   const userRole = useContext(UserRoleContext);
   const [courses, setCourses] = useState<Course[]>([]);
   const [showModal, setShowModal] = useState(false);
@@ -358,14 +359,15 @@ const CourseManagement = () => {
       open: true,
       enrolled: false,
       no_lessons: "1",
-     
+
       uploader: {
+        id: 1, // Default admin ID, update as needed
+        email: "admin@example.com", // Default admin email, update as needed
         name: "Admin",
         avatar_url: "https://via.placeholder.com/40",
       },
     };
-    navigate("/create-modules")
-    
+    navigate("/create-modules");
   };
 
   return (
@@ -407,11 +409,11 @@ const CourseManagement = () => {
       </div>
 
       {showModal && (
-        <div className="fixed inset-0 scroll-hide bg-black/50  justify-center items-center z-50 px-4">
-          <div className="bg-white mx-auto scroll-hide w-full max-w-3xl p-8 rounded-2xl shadow-2xl overflow-y-auto max-h-[90vh] border border-[#004e64]/10 ">
-            <div className="flex items-center justify-between mb-8">
-              <h2 className="text-3xl font-bold text-[#004e64] bg-gradient-to-r from-[#004e64] to-[#022f40] bg-clip-text ">
-                Create course
+        <div className="fixed inset-0 scroll-hide bg-black/50 justify-center items-center z-50 px-4">
+          <div className="bg-white/80 backdrop-blur-sm mx-auto scroll-hide w-full max-w-3xl p-6 rounded-2xl shadow-xl overflow-y-auto max-h-[90vh] border border-white/50 mt-8">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-gray-900">
+                Create Course
               </h2>
               <button
                 type="button"
@@ -422,74 +424,79 @@ const CourseManagement = () => {
               </button>
             </div>
 
-            <div className="space-y-6">
-              <ImageUploadArea
-                onImageSelect={handleImageSelect}
-                currentImage={newCourse.image_url}
-                className="col-span-full"
-                courseData={{
-                  title: newCourse.title,
-                  description: newCourse.description,
-                  price: newCourse.price,
-                }}
-              />
-
-              {/* title and price row */}
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="">
-                  <label className="block mb-2 font-medium text-[#004e64] ">
-                    Course Title *
-                  </label>
-                  <input
-                    type="text"
-                    name="title"
-                    value={newCourse.title}
-                    onChange={handleInputChange}
-                    placeholder="Enter course title..."
-                    maxLength={50}
-                    className="w-full rounded-md px-4 py-3 border border-[#004e64]/30 text-[#004e64] focus:outline-none focus:ring-2 focus:ring-[#004e64]/50 focus:border-transparent transition-all duration-300 hover:shadow-md"
-                  />
-                </div>
-
-                <div>
-                  <label className="block mb-2 font-medium text-[#004e64]">
-                    Course Price *
-                  </label>
-                  <input
-                    type="text"
-                    name="price"
-                    value={newCourse.price}
-                    onChange={handleInputChange}
-                    placeholder="e.g., 100,000 RWF"
-                    className="w-full rounded-md px-4 py-3 border border-[#004e64]/30 text-[#004e64] focus:outline-none focus:ring-2 focus:ring-[#004e64]/50 focus:border-transparent transition-all duration-300 hover:shadow-md"
-                  />
-                </div>
+            <div className="space-y-4">
+              {/* Image Upload Card */}
+              <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/50 p-6 transition-all duration-300 hover:shadow-2xl">
+                <ImageUploadArea
+                  onImageSelect={handleImageSelect}
+                  currentImage={newCourse.image_url}
+                  className="col-span-full"
+                  courseData={{
+                    title: newCourse.title,
+                    description: newCourse.description,
+                    price: newCourse.price,
+                  }}
+                />
               </div>
 
-              <div className="">
-                <label className="block mb-2 font-medium text-[#004e64] ">
-                  Course Description *
-                </label>
-                <textarea
-                  maxLength={250}
-                  onChange={handleInputChange}
-                  value={newCourse.description}
-                  placeholder="Describe what students will learn in this course..."
-                  name="description"
-                  id=""
-                  className="w-full rounded-md px-4 py-3 border border-[#004e64]/30 text-[#004e64] resize-none focus:outline-none focus:ring-2 focus:ring-[#004e64]/50 focus:border-transparent transition-all duration-300 hover:shadow-md"
-                  rows={4}
-                />
-                <div className="flex justify-between items-center mt-1">
-                  <span className="text-xs text-gray-400">
-                    {newCourse.description.length}/250 characters
-                  </span>
+              {/* Form Fields Card */}
+              <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/50 p-6 transition-all duration-300 hover:shadow-2xl">
+                {/* title and price row */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                  <div className="">
+                    <label className="block mb-2 text-sm font-medium text-gray-700">
+                      Course Title *
+                    </label>
+                    <input
+                      type="text"
+                      name="title"
+                      value={newCourse.title}
+                      onChange={handleInputChange}
+                      placeholder="Enter course title..."
+                      maxLength={50}
+                      className="w-full rounded-lg px-3 py-2 text-sm border border-gray-300 hover:border-blue-400 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block mb-2 text-sm font-medium text-gray-700">
+                      Course Price *
+                    </label>
+                    <input
+                      type="text"
+                      name="price"
+                      value={newCourse.price}
+                      onChange={handleInputChange}
+                      placeholder="e.g., 100,000 RWF"
+                      className="w-full rounded-lg px-3 py-2 text-sm border border-gray-300 hover:border-blue-400 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    />
+                  </div>
+                </div>
+
+                <div className="">
+                  <label className="block mb-2 text-sm font-medium text-gray-700">
+                    Course Description *
+                  </label>
+                  <textarea
+                    maxLength={250}
+                    onChange={handleInputChange}
+                    value={newCourse.description}
+                    placeholder="Describe what students will learn in this course..."
+                    name="description"
+                    id=""
+                    className="w-full rounded-lg px-3 py-2 text-sm border border-gray-300 hover:border-blue-400 hover:shadow-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    rows={4}
+                  />
+                  <div className="flex justify-between items-center mt-1">
+                    <span className="text-xs text-gray-400">
+                      {newCourse.description.length}/250 characters
+                    </span>
+                  </div>
                 </div>
               </div>
 
               {/* Action Buttons */}
-              <div className="flex justify-end gap-4 mt-8 pt-6 border-t border-gray-200">
+              <div className="flex justify-end gap-4 pt-4">
                 <button
                   onClick={handleCloseModal}
                   type="button"

@@ -303,7 +303,7 @@ const AdminCourseManagementLayout: React.FC = () => {
     setShowModal(false);
     setNewCourse({
       uploader: { id: 0 },
-   
+
       course_avatar: null,
       image_url: "",
       title: "",
@@ -386,11 +386,14 @@ const AdminCourseManagementLayout: React.FC = () => {
     try {
       console.log(formData);
 
-      const response = await toast.promise(createCourse(formData as any).unwrap(), {
-        pending: "Creating course...",
-        success: "Course created successfully!",
-        error: "Error creating course",
-      });
+      const response = await toast.promise(
+        createCourse(formData as any).unwrap(),
+        {
+          pending: "Creating course...",
+          success: "Course created successfully!",
+          error: "Error creating course",
+        }
+      );
 
       resetState();
       // Navigate to the lessons view of the newly created course
@@ -448,7 +451,7 @@ const AdminCourseManagementLayout: React.FC = () => {
         </div>
       </header>
 
-      <main className="flex-1 overflow-y-auto scroll-hide py-8 px-4">
+      <main className="flex-1 overflow-y-auto scroll-hide bg-white p-4">
         <div className="w-full max-w-6xl mx-auto">
           <Outlet />
         </div>
@@ -456,10 +459,10 @@ const AdminCourseManagementLayout: React.FC = () => {
 
       {showModal && (
         <div className="fixed inset-0 scroll-hide bg-black/50 flex justify-center items-center z-50 px-4">
-          <div className="bg-white scroll-hide w-full max-w-3xl p-8 rounded-2xl shadow-2xl overflow-y-auto max-h-[90vh] border border-[#004e64]/10">
-            <div className="flex items-center justify-between mb-8">
-              <h2 className="text-3xl font-bold text-[#004e64] bg-gradient-to-r from-[#004e64] to-[#022F40] bg-clip-text">
-                Create New Course
+          <div className="bg-white/80 backdrop-blur-sm scroll-hide w-full max-w-3xl p-6 rounded-2xl shadow-xl overflow-y-auto max-h-[90vh] border border-white/50 mt-8">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-gray-900">
+                Create Course
               </h2>
               <button
                 onClick={handleCloseModal}
@@ -470,91 +473,95 @@ const AdminCourseManagementLayout: React.FC = () => {
               </button>
             </div>
 
-            <div className="space-y-6">
-              <ImageUploadArea
-                // 💡 Pass the updated handler
-                onImageSelect={handleImageSelect}
-                // Pass the base64 URL for the internal preview logic
-                currentImage={newCourse.image_url}
-                className="col-span-full"
-                courseData={{
-                  title: newCourse.title,
-                  description: newCourse.description,
-                  price: newCourse.price,
-                }}
-              />
+            <div className="space-y-4">
+              {/* Image Upload Card */}
+              <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/50 p-6 transition-all duration-300 hover:shadow-2xl">
+                <ImageUploadArea
+                  onImageSelect={handleImageSelect}
+                  currentImage={newCourse.image_url}
+                  className="col-span-full"
+                  courseData={{
+                    title: newCourse.title,
+                    description: newCourse.description,
+                    price: newCourse.price,
+                  }}
+                />
+              </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block mb-2 font-medium text-[#004e64]">
-                    Course Title *
-                  </label>
-                  <input
-                    type="text"
-                    name="title"
-                    value={newCourse.title}
-                    onChange={handleInputChange}
-                    placeholder="Enter course title..."
-                    maxLength={50}
-                    className="w-full rounded-md px-4 py-3 border border-[#004e64]/30 text-[#004e64] focus:outline-none focus:ring-2 focus:ring-[#004e64]/50 focus:border-transparent transition-all duration-300 hover:shadow-md"
-                  />
-                  <div className="flex justify-between items-center mt-1">
-                    <span className="text-xs text-gray-400">
-                      {newCourse.title.length}/50 characters
-                    </span>
+              {/* Form Fields Card */}
+              <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/50 p-6 transition-all duration-300 hover:shadow-2xl">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                  <div>
+                    <label className="block mb-2 text-sm font-medium text-gray-700">
+                      Course Title *
+                    </label>
+                    <input
+                      type="text"
+                      name="title"
+                      value={newCourse.title}
+                      onChange={handleInputChange}
+                      placeholder="Enter course title..."
+                      maxLength={50}
+                      className="w-full rounded-lg px-3 py-2 text-sm border border-gray-300 hover:border-blue-400 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    />
+                    <div className="flex justify-between items-center mt-1">
+                      <span className="text-xs text-gray-400">
+                        {newCourse.title.length}/50 characters
+                      </span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block mb-2 text-sm font-medium text-gray-700">
+                      Course Price *
+                    </label>
+                    <input
+                      type="text"
+                      name="price"
+                      value={newCourse.price}
+                      onChange={handleInputChange}
+                      placeholder="e.g., 100,000 RWF"
+                      className="w-full rounded-lg px-3 py-2 text-sm border border-gray-300 hover:border-blue-400 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    />
+                  </div>
+                  <div>
+                    <label className="block mb-2 text-sm font-medium text-gray-700">
+                      Category
+                    </label>
+                    <input
+                      type="text"
+                      name="category"
+                      value={newCourse.category || ""}
+                      onChange={handleInputChange}
+                      placeholder="e.g., Thermodynamics"
+                      className="w-full rounded-lg px-3 py-2 text-sm border border-gray-300 hover:border-blue-400 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block mb-2 font-medium text-[#004e64]">
-                    Course Price *
+                  <label className="block mb-2 text-sm font-medium text-gray-700">
+                    Course Description *
                   </label>
-                  <input
-                    type="text"
-                    name="price"
-                    value={newCourse.price}
+                  <textarea
+                    name="description"
+                    rows={4}
+                    value={newCourse.description}
                     onChange={handleInputChange}
-                    placeholder="e.g., 100,000 RWF"
-                    className="w-full rounded-md px-4 py-3 border border-[#004e64]/30 text-[#004e64] focus:outline-none focus:ring-2 focus:ring-[#004e64]/50 focus:border-transparent transition-all duration-300 hover:shadow-md"
+                    maxLength={250}
+                    placeholder="Describe what students will learn in this course..."
+                    className="w-full rounded-lg px-3 py-2 text-sm border border-gray-300 hover:border-blue-400 hover:shadow-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                   />
-                </div>
-                <div>
-                  <label className="block mb-2 font-medium text-[#004e64]">
-                    Category
-                  </label>
-                  <input
-                    type="text"
-                    name="category"
-                    value={newCourse.category || ""}
-                    onChange={handleInputChange}
-                    placeholder="e.g., Thermodynamics"
-                    className="w-full rounded-md px-4 py-3 border border-[#004e64]/30 text-[#004e64] focus:outline-none focus:ring-2 focus:ring-[#004e64]/50 focus:border-transparent transition-all duration-300 hover:shadow-md"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block mb-2 font-medium text-[#004e64]">
-                  Course Description *
-                </label>
-                <textarea
-                  name="description"
-                  rows={4}
-                  value={newCourse.description}
-                  onChange={handleInputChange}
-                  maxLength={250}
-                  placeholder="Describe what students will learn in this course..."
-                  className="w-full rounded-md px-4 py-3 border border-[#004e64]/30 text-[#004e64] resize-none focus:outline-none focus:ring-2 focus:ring-[#004e64]/50 focus:border-transparent transition-all duration-300 hover:shadow-md"
-                />
-                <div className="flex justify-between items-center mt-1">
-                  <span className="text-xs text-gray-400">
-                    {newCourse.description.length}/250 characters
-                  </span>
+                  <div className="flex justify-between items-center mt-1">
+                    <span className="text-xs text-gray-400">
+                      {newCourse.description.length}/250 characters
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
 
-            <div className="flex justify-end gap-4 mt-8 pt-6 border-t border-gray-200">
+            <div className="flex justify-end gap-4 pt-4">
               <button
                 onClick={handleCloseModal}
                 type="button"

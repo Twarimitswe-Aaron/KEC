@@ -1,22 +1,52 @@
 import React, { useContext, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useCoursesQuery, useGetCourseDataQuery } from "./../state/api/courseApi";
+import {
+  useCoursesQuery,
+  useGetCourseDataQuery,
+} from "./../state/api/courseApi";
 import { BookOpen, GraduationCap, Search } from "lucide-react";
 import { UserRoleContext } from "../UserRoleContext";
 import { SearchContext } from "../SearchContext";
+
+// Add fade-in-up animation
+const styles = `
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  .animate-fade-in-up {
+    animation: fadeInUp 0.5s ease-out forwards;
+    opacity: 0;
+  }
+`;
+
+// Inject the styles
+if (typeof document !== "undefined") {
+  const styleSheet = document.createElement("style");
+  styleSheet.textContent = styles;
+  document.head.appendChild(styleSheet);
+}
 
 // Custom hook to get actual lesson count from course data
 const useCourseWithActualLessonCount = (courseId: number) => {
   const { data: courseDetails, isLoading } = useGetCourseDataQuery(courseId);
   return {
     actualLessonCount: courseDetails?.lesson?.length || 0,
-    isLoading
+    isLoading,
   };
 };
 
 // Component to display lesson count with actual data fetching
 const LessonCountBadge: React.FC<{ courseId: number }> = ({ courseId }) => {
-  const { actualLessonCount, isLoading } = useCourseWithActualLessonCount(courseId);
+  const { actualLessonCount, isLoading } =
+    useCourseWithActualLessonCount(courseId);
 
   if (isLoading) {
     return (
@@ -59,78 +89,82 @@ const DashboardCard: React.FC<DashboardCardProps> = ({
   const navigate = useNavigate();
   return (
     <div>
-    <div className="flex justify-center text-center -mt-6 mb-8">
-      <div className="bg-white px-3 py-2 rounded-lg shadow-sm">
-        <h4 className="font-bold text-[17px] text-[#004e64]">
-          Uploaded Courses ({courses.length})
-        </h4>
+      <div className="flex justify-center text-center -mt-6 mb-8">
+        <div className="bg-white px-3 py-2 rounded-lg shadow-sm">
+          <h4 className="font-bold text-[17px] text-[#004e64]">
+            Uploaded Courses ({courses.length})
+          </h4>
+        </div>
       </div>
-    </div>
 
-    <div className="grid grid-cols-1 sm:grid-cols-2 mt-4 lg:grid-cols-2 gap-6">
-      {courses.map((course) => (
-        <div
-          key={course.id}
-          className="bg-white rounded-md shadow-md overflow-hidden hover:shadow-lg transition-shadow"
-        >
-          <div className="relative">
-            <img
-              src={course.image_url}
-              alt={course.title}
-              className="w-full h-48 object-cover"
-            />
-          </div>
-          <div className="p-5">
-            <div className="mb-3">
-              <h3 className="font-semibold text-[#004e64] text-lg mb-1 line-clamp-1">
-                {course.title}
-              </h3>
-              <p className="text-gray-600 text-sm line-clamp-2 leading-relaxed">
-                {course.description}
-              </p>
+      <div className="grid grid-cols-1 sm:grid-cols-2 mt-4 lg:grid-cols-2 gap-6">
+        {courses.map((course, index) => (
+          <div
+            key={course.id}
+            className="bg-white/80 backdrop-blur-sm rounded-xl shadow-xl hover:shadow-2xl transition-all duration-300 border border-white/50 overflow-hidden hover:scale-[1.02] hover:-translate-y-1 animate-fade-in-up"
+            style={{ animationDelay: `${index * 50}ms` }}
+          >
+            <div className="relative">
+              <img
+                src={course.image_url}
+                alt={course.title}
+                className="w-full h-48 object-cover"
+              />
             </div>
-
-            <div className="mb-4">
-              <div className="flex items-center justify-between mb-2">
-                <p className="text-[#004e64] font-semibold text-lg">
-                  {course.price}
+            <div className="p-5">
+              <div className="mb-3">
+                <h3 className="font-semibold text-[#004e64] text-lg mb-1 line-clamp-1">
+                  {course.title}
+                </h3>
+                <p className="text-gray-600 text-sm line-clamp-2 leading-relaxed">
+                  {course.description}
                 </p>
-                <LessonCountBadge courseId={course.id} />
               </div>
-            </div>
 
-            <div className="flex gap-3">
-              <button
-              onClick={()=>navigate(`${course.id}`)}
-                className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-white font-medium transition-all duration-200 
+              <div className="mb-4">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="bg-[#034153]/10 px-2.5 py-1 rounded-lg">
+                    <p className="text-[#034153] font-bold text-sm">
+                      RWF {course.price}
+                    </p>
+                  </div>
+                  <LessonCountBadge courseId={course.id} />
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => navigate(`${course.id}`)}
+                  className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-white font-medium transition-all duration-200 
                        bg-[#034153] hover:bg-[#025a70] cursor-pointer hover:shadow-md
                       `}
-              >
-                View
-              </button>
+                >
+                  View
+                </button>
 
-             <div className="flex gap-2 items-center pl-2 rounded-l-lg rounded-r-full shadow-md cursor-pointer" >
-             <p className=" text-gray-500 text-sm">{course.uploader.name.split(" ")[1]}</p>
-             <Link
-                to={`/profile/${course.uploader.id}`}
-                className="flex items-center gap-2"
-              >
-                <img
-                  src={course.uploader.avatar_url}
-                  alt={`${course.uploader.name} avatar`}
-                  className="w-10 h-10 rounded-full border-none shadow-sm object-cover"
-                />
-              </Link>
-             </div>
+                <div className="flex gap-2 items-center pl-2 rounded-l-lg rounded-r-full shadow-md cursor-pointer">
+                  <p className=" text-gray-500 text-sm">
+                    {course.uploader.name.split(" ")[1]}
+                  </p>
+                  <Link
+                    to={`/profile/${course.uploader.id}`}
+                    className="flex items-center gap-2"
+                  >
+                    <img
+                      src={course.uploader.avatar_url}
+                      alt={`${course.uploader.name} avatar`}
+                      className="w-10 h-10 rounded-full border-none shadow-sm object-cover"
+                    />
+                  </Link>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
-  </div>
   );
 };
-
 
 const CourseSkeleton: React.FC = () => (
   <div className="bg-white rounded-md shadow-md overflow-hidden animate-pulse">
@@ -183,15 +217,16 @@ const AdminCourseManagement: React.FC = () => {
     data: courses = [],
     isLoading,
     isFetching,
-  } = useCoursesQuery({unconfirmed:false});
+  } = useCoursesQuery({ unconfirmed: false });
 
   // Filter courses based on search query from context
   const filteredCourses = useMemo(() => {
     if (!searchQuery.trim()) return courses;
-    
-    return courses.filter(course => 
-      course.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      course.description.toLowerCase().includes(searchQuery.toLowerCase())
+
+    return courses.filter(
+      (course) =>
+        course.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        course.description.toLowerCase().includes(searchQuery.toLowerCase())
     );
   }, [courses, searchQuery]);
 
@@ -240,12 +275,13 @@ const AdminCourseManagement: React.FC = () => {
             No Courses Found
           </h3>
           <p className="text-gray-500 text-sm mb-6 text-center max-w-sm">
-            No courses match your search criteria "{searchQuery}". Try different keywords.
+            No courses match your search criteria "{searchQuery}". Try different
+            keywords.
           </p>
         </div>
       ) : (
-        <DashboardCard 
-          courses={filteredCourses} 
+        <DashboardCard
+          courses={filteredCourses}
           onCourseAction={handleCourseAction}
         />
       )}

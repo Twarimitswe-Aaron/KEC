@@ -230,53 +230,41 @@ const RequestedCourses = () => {
     );
 
   return (
-    <div className="min-h-screen bg-white p-4">
+    <div className="min-h-screen bg-white">
       <div className="max-w-7xl mx-auto">
-        {/* Compact Header */}
-        <div className="mb-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-[#004e64] mb-1">
-                Requested Courses
-              </h1>
-              <p className="text-gray-500 text-xs">
-                Review and manage course requests from instructors
-              </p>
-            </div>
-            <div className="flex items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-lg shadow-sm border border-gray-200">
-              <span className="text-gray-600 text-xs font-medium">Total:</span>
-              <span className="bg-[#034153] text-white px-2.5 py-0.5 rounded-md text-xs font-bold">
-                {coursesData?.length || 0}
-              </span>
-            </div>
+        {/* Header */}
+        <div className="flex justify-center text-center -mt-1 mb-8">
+          <div className="bg-white px-3 py-2 rounded-lg shadow-sm">
+            <h4 className="font-bold text-[17px] text-[#004e64]">
+              Requested Courses ({coursesData?.length || 0})
+            </h4>
           </div>
         </div>
 
-        {/* Compact Course Grid - 4 columns */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Courses Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 px-4 pb-8">
           {coursesData && coursesData.length > 0 ? (
             coursesData
-              .filter((course: any) => {
-                if (!searchQuery) return true;
-                const query = searchQuery.toLowerCase();
-                return (
-                  course.title?.toLowerCase().includes(query) ||
-                  course.description?.toLowerCase().includes(query) ||
-                  course.uploader?.name?.toLowerCase().includes(query)
-                );
-              })
-              .map((course: any, index: number) => (
+              .filter((course: Course) =>
+                course.title.toLowerCase().includes(searchQuery.toLowerCase())
+              )
+              .map((course: Course, index: number) => (
                 <div
                   key={course.id}
-                  className="group bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 border border-gray-200 overflow-hidden hover:scale-[1.01] hover:-translate-y-0.5 animate-fade-in-up"
-                  style={{ animationDelay: `${index * 50}ms` }}
+                  className="bg-white rounded-lg shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 group animate-fade-in-up"
+                  style={{ animationDelay: `${index * 0.1}s` }}
                 >
-                  {/* Smaller Image */}
-                  <div className="relative overflow-hidden">
+                  {/* Course Image */}
+                  <div className="relative h-40 overflow-hidden bg-gradient-to-br from-[#034153] to-[#004e64]">
                     <img
-                      src={course.image_url}
+                      src={
+                        course.image_url ||
+                        `https://via.placeholder.com/400x200/034153/white?text=${encodeURIComponent(
+                          course.title
+                        )}`
+                      }
                       alt={course.title}
-                      className="w-full h-36 object-cover group-hover:scale-105 transition-transform duration-300"
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                       onError={(e) => {
                         e.currentTarget.src = `https://via.placeholder.com/400x200/034153/white?text=${encodeURIComponent(
                           course.title
@@ -284,7 +272,7 @@ const RequestedCourses = () => {
                       }}
                     />
 
-                    {/* Compact Status Badge */}
+                    {/* Status Badge */}
                     <div className="absolute top-2 left-2">
                       <span className="bg-orange-500 text-white px-2 py-1 rounded-full text-[10px] font-semibold shadow-md backdrop-blur-sm flex items-center gap-1">
                         <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></div>
@@ -292,7 +280,7 @@ const RequestedCourses = () => {
                       </span>
                     </div>
 
-                    {/* Smaller View Button */}
+                    {/* View Button */}
                     <div className="absolute top-2 right-2">
                       <button
                         className="bg-white text-[#034153] p-1.5 rounded-lg hover:bg-[#034153] hover:text-white transition-all duration-200 shadow-md hover:shadow-lg hover:scale-105 cursor-pointer"
@@ -304,7 +292,7 @@ const RequestedCourses = () => {
                     </div>
                   </div>
 
-                  {/* Compact Content */}
+                  {/* Content */}
                   <div className="p-3">
                     {/* Title & Description */}
                     <div className="mb-3">
@@ -316,11 +304,11 @@ const RequestedCourses = () => {
                       </p>
                     </div>
 
-                    {/* Compact Price & Lessons */}
+                    {/* Price & Lessons */}
                     <div className="flex items-center justify-between mb-3 pb-3 border-b border-gray-100">
                       <div className="bg-[#034153]/10 px-2.5 py-1 rounded-lg">
                         <p className="text-[#034153] font-bold text-sm">
-                          {course.price}
+                          RWF {course.price}
                         </p>
                       </div>
                       <div className="flex items-center gap-1.5 bg-blue-50 px-2 py-1 rounded-lg">
@@ -331,7 +319,7 @@ const RequestedCourses = () => {
                       </div>
                     </div>
 
-                    {/* Compact Uploader Info */}
+                    {/* Uploader Info */}
                     <div className="mb-3">
                       <Link
                         to={`/profile/${course.uploader.id}`}
@@ -353,7 +341,7 @@ const RequestedCourses = () => {
                       </Link>
                     </div>
 
-                    {/* Compact Action Buttons */}
+                    {/* Action Buttons */}
                     <div className="flex gap-2">
                       <button
                         onClick={() => handleConfirmCourse(course)}
@@ -413,7 +401,7 @@ const RequestedCourses = () => {
                   <BookOpen className="w-10 h-10 text-gray-400" />
                 </div>
                 <h3 className="text-xl font-bold text-gray-800 mb-3">
-                  No Requested Courses
+                  No Course Requests
                 </h3>
                 <p className="text-gray-500 leading-relaxed">
                   There are currently no course requests to review. New requests
