@@ -6,6 +6,7 @@ import React, {
   useMemo,
 } from "react";
 import { GroupedVirtuoso, GroupedVirtuosoHandle } from "react-virtuoso";
+import { useNavigate } from "react-router-dom";
 
 import { MdOutlinePhoneInTalk, MdContentCopy } from "react-icons/md";
 import { FiSend } from "react-icons/fi";
@@ -460,6 +461,9 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
   const recordingTimerRef = useRef<NodeJS.Timeout | null>(null);
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   const audioPreviewRef = useRef<HTMLAudioElement | null>(null);
+
+  // Navigation
+  const navigate = useNavigate();
 
   // Scroll and upload progress helpers
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -1643,8 +1647,20 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
         avatar: participant.user?.profile?.avatar || "/images/chat.png",
         isOnline: onlineUsers.includes(participant.user?.id || 0),
         lastSeen: onlineUsers.includes(participant.user?.id || 0)
-          ? "Online"
-          : "Last seen recently",
+          ? "online"
+          : (() => {
+              const now = new Date();
+              const today = now.toLocaleDateString([], {
+                month: "short",
+                day: "numeric",
+              });
+              const time = now.toLocaleTimeString([], {
+                hour: "numeric",
+                minute: "2-digit",
+                hour12: true,
+              });
+              return `last seen today at ${time}`;
+            })(),
       };
       return participantInfo;
     }
@@ -1710,9 +1726,19 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
   return (
     <div className="flex w-full flex-col h-full overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 bg-white text-black border-b">
+      <div className="flex items-center justify-between p-4 bg-white text-black">
         <div className="flex items-center gap-3">
-          <div className="relative">
+          <div
+            className="relative cursor-pointer"
+            onClick={() => {
+              const participantId = activeChat?.participants?.find(
+                (p) => p.user?.id !== currentUser?.id
+              )?.user?.id;
+              if (participantId) {
+                navigate(`/profile/${participantId}`);
+              }
+            }}
+          >
             <img
               src={participant?.avatar || "/images/chat.png"}
               alt={participant?.name || "Chat"}
@@ -1746,14 +1772,15 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
           </div>
         </div>
         <div className="flex items-center gap-4 text-xl">
-          <GoDeviceCameraVideo className="cursor-pointer hover:text-blue-600 transition-colors" />
-          <MdOutlinePhoneInTalk className="cursor-pointer hover:text-blue-600 transition-colors" />
           <MdInfoOutline
             className="cursor-pointer hover:text-blue-600 transition-colors"
             onClick={onToggleRightSidebar}
           />
         </div>
       </div>
+
+      {/* Subtle separator */}
+      <div className="h-[1px] bg-gradient-to-r from-transparent via-gray-200 to-transparent"></div>
 
       {/* Messages */}
       <div
@@ -1930,7 +1957,15 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
                         }`}
                       >
                         {showAvatar && (
-                          <div className="relative">
+                          <div
+                            className="relative cursor-pointer"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (message.sender?.id) {
+                                navigate(`/profile/${message.sender.id}`);
+                              }
+                            }}
+                          >
                             <img
                               src={
                                 message.sender?.profile?.avatar ||
