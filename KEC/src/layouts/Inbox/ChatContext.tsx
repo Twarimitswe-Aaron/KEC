@@ -95,33 +95,8 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
   // Debug loaded chat data and auto-select first valid chat
   useEffect(() => {
     if (chatsData && chatsData.chats) {
-      console.log("💬 [ChatContext] Loaded chats:", chatsData.chats.length);
-
-      // Explicitly type firstValidChat so TypeScript knows this is a Chat when set
       let firstValidChat: Chat | null = null;
       chatsData.chats.forEach((chat, index) => {
-        console.log(`💬 [ChatContext] Chat ${index}:`, {
-          id: chat.id,
-          name: chat.name,
-          isGroup: chat.isGroup,
-          participantsCount: chat.participants?.length || 0,
-          participants: chat.participants?.map((p) => ({
-            id: p.id,
-            userId: p.user?.id,
-            userName: `${p.user?.firstName} ${p.user?.lastName}`,
-          })),
-        });
-
-        // Show detailed participant info for the first chat
-        if (index === 0 && chat.participants) {
-          console.log(
-            "🔍 [ChatContext] Detailed participants for Chat",
-            chat.id,
-            ":",
-            chat.participants
-          );
-        }
-
         // Track first valid chat (has participants)
         if (
           firstValidChat === null &&
@@ -135,20 +110,8 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
       // Auto-select first valid chat if no active chat is selected
       if (firstValidChat && !activeChat) {
         const chatToSelect: Chat = firstValidChat;
-        console.log(
-          "🎯 [ChatContext] Auto-selecting first valid chat:",
-          chatToSelect.id
-        );
         setActiveChat(chatToSelect);
       }
-    }
-
-    if (currentUser) {
-      console.log("👤 [ChatContext] Current user:", {
-        id: currentUser.id,
-        name: `${currentUser.firstName} ${currentUser.lastName}`,
-        email: currentUser.email,
-      });
     }
   }, [chatsData, currentUser, activeChat]);
   const {
@@ -184,16 +147,8 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
   // WebSocket connection with proper event listener cleanup
   useEffect(() => {
     if (currentUser) {
-      console.log(
-        "🔗 [ChatContext] Attempting WebSocket connection for user:",
-        currentUser.id
-      );
-
       // Check if already connected to avoid unnecessary reconnections
       if (websocketService.isConnected()) {
-        console.log(
-          "📋 [ChatContext] WebSocket already connected, setting up listeners only"
-        );
         setIsConnected(true);
       }
 
@@ -236,16 +191,57 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
               "getMessages",
               { chatId: message.chatId },
               (draft) => {
-                // Check if message already exists to prevent duplicates
-                const existingMessage = draft.messages.find(
+                // Check if message already exists (by real ID) to prevent duplicates
+                const existingMessageIndex = draft.messages.findIndex(
                   (msg) => msg.id === message.id
                 );
-                if (!existingMessage) {
+
+                // Check if there's an optimistic message (temp ID) that should be replaced
+                const optimisticMessageIndex = draft.messages.findIndex(
+                  (msg) =>
+                    typeof msg.id === "string" &&
+                    String(msg.id).startsWith("temp-")
+                );
+
+                if (existingMessageIndex !== -1) {
+                  // Message already exists with this real ID, don't add duplicate
+                  console.log(
+                    "⚠️ [ChatContext] Message already exists, skipping:",
+                    message.id
+                  );
+                  return;
+                }
+
+                if (optimisticMessageIndex !== -1) {
+                  // Replace optimistic message with real one
+                  console.log(
+                    "🔄 [ChatContext] Replacing optimistic message with real one:",
+                    message.id
+                  );
+                  draft.messages[optimisticMessageIndex] = {
+                    id: message.id,
+                    chatId: message.chatId,
+                    senderId: message.senderId,
+                    content: message.content || "",
+                    messageType: message.messageType || "TEXT",
+                    createdAt: message.createdAt || new Date().toISOString(),
+                    updatedAt: message.updatedAt,
+                    isRead: message.isRead || false,
+                    isDelivered: message.isDelivered || true,
+                    fileUrl: message.fileUrl,
+                    fileName: message.fileName,
+                    fileSize: message.fileSize,
+                    fileMimeType: message.fileMimeType,
+                    replyToId: message.replyToId,
+                    replyTo: message.replyTo,
+                    reactions: message.reactions || [],
+                  };
+                } else {
+                  // No optimistic message found, add as new message
                   console.log(
                     "✨ [ChatContext] Adding new message to cache:",
                     message.id
                   );
-                  // Add new message to the end of the array (newest last)
                   draft.messages.push({
                     id: message.id,
                     chatId: message.chatId,
@@ -253,32 +249,25 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
                     content: message.content || "",
                     messageType: message.messageType || "TEXT",
                     createdAt: message.createdAt || new Date().toISOString(),
-                    updatedAt: message.updatedAt || new Date().toISOString(),
-                    isRead: false, // New messages from others are unread
-                    isDelivered: true,
-                    sender: message.sender || null,
-                    replyToId: message.replyToId || null,
-                    replyTo: message.replyTo || null,
-                    fileUrl: message.fileUrl || null,
-                    fileName: message.fileName || null,
-                    fileSize: message.fileSize || null,
-                    fileMimeType: message.fileMimeType || null,
+                    updatedAt: message.updatedAt,
+                    isRead: message.isRead || false,
+                    isDelivered: message.isDelivered || true,
+                    fileUrl: message.fileUrl,
+                    fileName: message.fileName,
+                    fileSize: message.fileSize,
+                    fileMimeType: message.fileMimeType,
+                    replyToId: message.replyToId,
+                    replyTo: message.replyTo,
+                    reactions: message.reactions || [],
                   });
-
-                  // Sort messages by creation time to maintain order
-                  draft.messages.sort(
-                    (a, b) =>
-                      new Date(a.createdAt).getTime() -
-                      new Date(b.createdAt).getTime()
-                  );
-                } else {
-                  console.log(
-                    "📝 [ChatContext] Message already exists, updating:",
-                    message.id
-                  );
-                  // Update existing message
-                  Object.assign(existingMessage, message);
                 }
+
+                // Sort messages by creation time to maintain order
+                draft.messages.sort(
+                  (a, b) =>
+                    new Date(a.createdAt).getTime() -
+                    new Date(b.createdAt).getTime()
+                );
               }
             )
           );
@@ -333,19 +322,10 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
 
       // Define event handlers that we can properly clean up
       const messageHandler = (message: any) => {
-        console.log(
-          "🔥 [ChatContext] Message received via WebSocket:",
-          message
-        );
         handleNewMessageLocal(message);
       };
 
-      const chatJoinedHandler = (data: any) => {
-        console.log(
-          "✅ [ChatContext] Successfully joined chat room:",
-          data.chatId
-        );
-      };
+      const chatJoinedHandler = (data: any) => {};
 
       const errorHandler = (error: any) => {
         console.error("❌ [ChatContext] WebSocket error:", error);
@@ -663,7 +643,6 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
       websocketService
         .connect()
         .then(() => {
-          console.log("✅ [ChatContext] WebSocket connected successfully");
           setIsConnected(true);
 
           // Set up event listeners with proper references for cleanup
@@ -677,10 +656,6 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
           websocketService.on("message:deleted", messageDeletedHandler);
           websocketService.on("reaction:added", reactionAddedHandler);
           websocketService.on("reaction:removed", reactionRemovedHandler);
-
-          console.log(
-            "🎧 [ChatContext] All WebSocket event listeners registered (including reactions and deletion)"
-          );
         })
         .catch((error) => {
           console.error("❌ [ChatContext] WebSocket connection failed:", error);
@@ -688,7 +663,6 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
         });
 
       return () => {
-        console.log("🧹 [ChatContext] Cleaning up WebSocket event listeners");
         // Clean up event listeners properly
         websocketService.off("message:new", messageHandler);
         websocketService.off("chat:joined", chatJoinedHandler);
@@ -703,14 +677,7 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
 
         // Don't disconnect on cleanup in development (HMR)
         if (!import.meta.hot) {
-          console.log(
-            "🔌 [ChatContext] Disconnecting WebSocket (production mode)"
-          );
           websocketService.disconnect();
-        } else {
-          console.log(
-            "🏠 [ChatContext] Keeping WebSocket connected (development HMR)"
-          );
         }
         setIsConnected(false);
 
@@ -874,10 +841,6 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
   const markAllAsRead = useCallback(() => {
     if (unreadMessages.length > 0) {
       const unreadIds = unreadMessages.map((msg: Message) => msg.id);
-      console.log(
-        "📖 [ChatContext] Marking all messages as read:",
-        unreadIds.length
-      );
       markAsRead(unreadIds);
       setLastReadMessageId(
         unreadMessages[unreadMessages.length - 1]?.id || null
@@ -896,9 +859,6 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
   // Auto-mark as read when tab is visible and chat is active
   useEffect(() => {
     if (isTabVisible && activeChat && unreadMessages.length > 0) {
-      console.log(
-        "👁️ [ChatContext] Tab visible - auto-marking messages as read"
-      );
       // Small delay to ensure user actually sees the messages
       const timer = setTimeout(() => {
         markAllAsRead();

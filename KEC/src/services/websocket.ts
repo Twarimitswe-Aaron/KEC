@@ -84,7 +84,6 @@ class WebSocketService {
 
       const baseUrl =
         import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
-      console.log("🔗 [WebSocket] Creating new connection to:", baseUrl);
 
       this.socket = io(baseUrl, {
         transports: ["websocket", "polling"],
@@ -99,15 +98,6 @@ class WebSocketService {
       });
 
       this.socket.on("connect", () => {
-        console.log(
-          "✅ [WebSocket] Connected successfully with ID:",
-          this.socket?.id
-        );
-        console.log("🌍 [WebSocket] Connected to server:", baseUrl);
-        console.log(
-          "🔧 [WebSocket] Connection transport:",
-          this.socket?.io.engine.transport.name
-        );
         this.connected = true;
         this.reconnectAttempts = 0;
         resolve(this.socket!);
@@ -190,14 +180,9 @@ class WebSocketService {
     return this.connected && this.socket?.connected === true;
   }
 
-  // Event listeners with debugging
   on<K extends keyof WebSocketEvents>(event: K, callback: WebSocketEvents[K]) {
     if (this.socket) {
-      console.log(
-        `🎧 [WebSocket] Registering listener for event: ${event as string}`
-      );
       this.socket.on(event as string, (data: any) => {
-        console.log(`📨 [WebSocket] Event received: ${event as string}`, data);
         (callback as any)(data);
       });
     } else {
@@ -234,35 +219,11 @@ class WebSocketService {
 
   // Chat-specific methods
   joinChat(chatId: number) {
-    console.log("📨 [WebSocket] Joining chat room:", chatId);
-    const success = this.emit("chat:join", { chatId });
-    if (success) {
-      console.log(
-        "✅ [WebSocket] Successfully sent join request for chat:",
-        chatId
-      );
-    } else {
-      console.error(
-        "❌ [WebSocket] Failed to send join request for chat:",
-        chatId
-      );
-    }
+    this.emit("chat:join", { chatId });
   }
 
   leaveChat(chatId: number) {
-    console.log("📵 [WebSocket] Leaving chat room:", chatId);
-    const success = this.emit("chat:leave", { chatId });
-    if (success) {
-      console.log(
-        "✅ [WebSocket] Successfully sent leave request for chat:",
-        chatId
-      );
-    } else {
-      console.error(
-        "❌ [WebSocket] Failed to send leave request for chat:",
-        chatId
-      );
-    }
+    this.emit("chat:leave", { chatId });
   }
 
   sendMessage(chatId: number, content: string, messageType: string = "text") {
@@ -289,10 +250,8 @@ let websocketService: WebSocketService;
 // Preserve WebSocket connection across Hot Module Reloads
 if (import.meta.hot) {
   if (import.meta.hot.data.websocketService) {
-    console.log("🔄 [WebSocket] Reusing existing service across HMR");
     websocketService = import.meta.hot.data.websocketService;
   } else {
-    console.log("🆕 [WebSocket] Creating new service instance");
     websocketService = new WebSocketService();
     import.meta.hot.data.websocketService = websocketService;
   }

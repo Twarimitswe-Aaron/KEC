@@ -279,6 +279,7 @@ interface ReplyingToMessage {
   content: string;
   senderName: string;
   messageType: string;
+  fileUrl?: string; // For displaying image thumbnails in reply preview
 }
 
 const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
@@ -345,6 +346,21 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
       100% { 
         opacity: 0;
         transform: translate(-50%, -80%) scale(0.6);
+      }
+    }
+
+    /* Highlight animation for scrolled-to messages */
+    .message-highlight {
+      animation: messageHighlight 2s ease-in-out;
+    }
+
+    @keyframes messageHighlight {
+      0%, 100% {
+        background-color: transparent;
+      }
+      50% {
+        background-color: rgba(59, 130, 246, 0.15);
+        box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
       }
     }
   `;
@@ -697,6 +713,53 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
     setEditingContent("");
   }, []);
 
+  // Scroll to a specific message (for reply navigation)
+  const scrollToMessage = useCallback(
+    (messageId: number) => {
+      // First, try to find the message in the current DOM
+      const messageElement = document.querySelector(
+        `[data-message-id="${messageId}"]`
+      );
+
+      if (messageElement) {
+        // Message is in DOM, scroll to it directly
+        messageElement.scrollIntoView({ behavior: "smooth", block: "center" });
+
+        // Add highlight effect
+        messageElement.classList.add("message-highlight");
+        setTimeout(() => {
+          messageElement.classList.remove("message-highlight");
+        }, 2000);
+      } else {
+        // Message not in DOM (virtualized), find its index and use Virtuoso's scrollToIndex
+        const messageIndex = messages.findIndex((m) => m.id === messageId);
+
+        if (messageIndex !== -1 && virtuosoRef.current) {
+          // Use Virtuoso's scrollToIndex to scroll to the message
+          virtuosoRef.current.scrollToIndex({
+            index: messageIndex,
+            align: "center",
+            behavior: "smooth",
+          });
+
+          // Wait for scroll to complete, then highlight
+          setTimeout(() => {
+            const element = document.querySelector(
+              `[data-message-id="${messageId}"]`
+            );
+            if (element) {
+              element.classList.add("message-highlight");
+              setTimeout(() => {
+                element.classList.remove("message-highlight");
+              }, 2000);
+            }
+          }, 500);
+        }
+      }
+    },
+    [messages]
+  );
+
   // Setup scroll to unread functionality
   useEffect(() => {
     if (unreadIndicatorRef.current && firstUnreadMessageId) {
@@ -734,15 +797,14 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
     }
   }, [initialScrollDone, messages.length]);
 
-  // After sending a message while at bottom, re-anchor to the latest once it appears
+  // Reset justSentRef after a short delay to allow followOutput to work
   useEffect(() => {
     if (justSentRef.current && messages.length > 0) {
-      virtuosoRef.current?.scrollToIndex({
-        index: Math.max(0, messages.length - 1),
-        align: "end",
-        behavior: "auto",
-      });
-      justSentRef.current = false;
+      // Reset after a short delay to allow followOutput to trigger
+      const timer = setTimeout(() => {
+        justSentRef.current = false;
+      }, 100);
+      return () => clearTimeout(timer);
     }
   }, [messages.length]);
 
@@ -1209,6 +1271,7 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
         content: message.content || "",
         senderName: senderName,
         messageType: message.messageType,
+        fileUrl: message.fileUrl, // Include fileUrl for image thumbnails
       });
       setSelectedMessage(null);
       setShowEmojiPicker(null);
@@ -1575,20 +1638,10 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
   // Get chat participant info (excluding current user)
   const getChatParticipant = () => {
     if (!activeChat) {
-      console.log("⚠️ [Chat] No active chat for participant info");
       return null;
     }
 
-    console.log("🔍 [Chat] Debugging activeChat data:", {
-      chatId: activeChat.id,
-      isGroup: activeChat.isGroup,
-      participantsCount: activeChat.participants?.length || 0,
-      participants: activeChat.participants,
-      currentUserId: currentUser?.id,
-    });
-
     if (activeChat.isGroup) {
-      console.log("👥 [Chat] Group chat participant info:", activeChat.name);
       return {
         name: activeChat.name || "Group Chat",
         avatar: activeChat.groupAvatar || "/images/chat.png",
@@ -1599,7 +1652,6 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
 
     // Check if participants array exists and has data
     if (!activeChat.participants || activeChat.participants.length === 0) {
-      console.log("⚠️ [Chat] No participants array or empty participants");
       return {
         name: "Loading participants...",
         avatar: "/images/chat.png",
@@ -1607,20 +1659,6 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
         lastSeen: "Loading...",
       };
     }
-
-    console.log(
-      "🔍 [Chat] Looking for participant excluding current user ID:",
-      currentUser?.id
-    );
-    activeChat.participants.forEach((p, index) => {
-      console.log(`👤 [Chat] Participant ${index}:`, {
-        participantId: p.id,
-        userId: p.user?.id,
-        userFirstName: p.user?.firstName,
-        userLastName: p.user?.lastName,
-        isCurrentUser: p.user?.id === currentUser?.id,
-      });
-    });
 
     const participant = activeChat.participants.find(
       (p) => p.user?.id !== currentUser?.id
@@ -1637,13 +1675,9 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
           ? "Online"
           : "Last seen recently",
       };
-      console.log("👤 [Chat] Found 1-on-1 chat participant:", participantInfo);
       return participantInfo;
     }
 
-    console.log(
-      "⚠️ [Chat] No other participant found in chat - all participants might be current user"
-    );
     return {
       name: "Chat Loading...",
       avatar: "/images/chat.png",
@@ -1775,7 +1809,22 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
             style={{ height: "100%", overflowX: "hidden" }}
             groupCounts={groupCounts}
             alignToBottom
-            followOutput="smooth"
+            initialTopMostItemIndex={
+              flatItems.length > 0 ? flatItems.length - 1 : 0
+            }
+            computeItemKey={(index) => {
+              const item = flatItems[index];
+              return item ? `msg-${item.message.id}` : `item-${index}`;
+            }}
+            followOutput={(isAtBottom) => {
+              // Always follow output (scroll to bottom) when:
+              // 1. User is at the bottom of the chat
+              // 2. User just sent a message
+              if (isAtBottom || justSentRef.current) {
+                return "smooth";
+              }
+              return false;
+            }}
             increaseViewportBy={{ top: 400, bottom: 400 }}
             atBottomStateChange={(atBottom) => {
               setIsAtBottom(atBottom);
@@ -1834,20 +1883,6 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
                 !isAudioFile;
 
               // Debug logging for image detection
-              if (
-                message.fileUrl ||
-                message.messageType === "IMAGE" ||
-                message.messageType === "FILE"
-              ) {
-                console.log(
-                  `🖼️ [Chat] Message ${message.id} - Type: ${message.messageType} - isImageMessage: ${isImageMessage} - isAudioFile: ${isAudioFile}`
-                );
-                console.log("   Details:", {
-                  fileUrl: message.fileUrl,
-                  fileName: message.fileName,
-                  fileMimeType: message.fileMimeType,
-                });
-              }
 
               return (
                 <div
@@ -1952,16 +1987,21 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
                     >
                       {message.replyToId && (
                         <div
-                          className={`relative z-10 mb-2 p-2 border-l-4 rounded-r-lg text-xs ${
+                          onClick={() => {
+                            scrollToMessage(message.replyToId!);
+                          }}
+                          className={`relative z-10 mb-2 p-2 border-l-4 rounded-r-lg text-xs cursor-pointer transition-all ${
                             isCurrentUser
-                              ? "border-blue-300 bg-blue-50/50"
-                              : "border-gray-300 bg-gray-50"
+                              ? "border-blue-300 bg-blue-50/50 hover:bg-blue-50/70"
+                              : "border-gray-300 bg-gray-50 hover:bg-gray-100"
                           }`}
                         >
-                          <div className="text-gray-600 font-medium mb-1">
-                            {message.replyTo
-                              ? `Replying to ${
-                                  message.replyTo.sender.id === currentUser?.id
+                          <div className="flex items-center gap-2">
+                            <div className="flex-1 min-w-0">
+                              <div className="text-gray-600 font-medium mb-1">
+                                {message.replyTo
+                                  ? message.replyTo.sender.id ===
+                                    currentUser?.id
                                     ? "yourself"
                                     : `${
                                         message.replyTo.sender.firstName ||
@@ -1969,19 +2009,55 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
                                       } ${
                                         message.replyTo.sender.lastName || ""
                                       }`.trim()
-                                }`
-                              : `Replying to message #${message.replyToId}`}
-                          </div>
-                          <div className="text-gray-500 truncate">
-                            {message.replyTo
-                              ? message.replyTo.messageType === "TEXT"
-                                ? message.replyTo.content || "Message"
-                                : message.replyTo.messageType === "IMAGE"
-                                ? "📷 Image"
-                                : message.replyTo.messageType === "FILE"
-                                ? "📄 File"
-                                : "Message"
-                              : "Original message..."}
+                                  : "Loading..."}
+                              </div>
+                              <div className="text-gray-500 truncate flex items-center gap-1">
+                                {message.replyTo ? (
+                                  <>
+                                    {message.replyTo.messageType === "TEXT" ? (
+                                      <span className="truncate">
+                                        {message.replyTo.content || "Message"}
+                                      </span>
+                                    ) : message.replyTo.messageType ===
+                                      "IMAGE" ? (
+                                      <span className="flex items-center gap-1">
+                                        <span>📷</span>
+                                        <span>Photo</span>
+                                      </span>
+                                    ) : message.replyTo.messageType ===
+                                      "FILE" ? (
+                                      <span className="flex items-center gap-1">
+                                        <span>📄</span>
+                                        <span>File</span>
+                                      </span>
+                                    ) : message.replyTo.messageType ===
+                                      "LINK" ? (
+                                      <span className="flex items-center gap-1 truncate">
+                                        <span>🔗</span>
+                                        <span className="truncate">
+                                          {message.replyTo.content || "Link"}
+                                        </span>
+                                      </span>
+                                    ) : (
+                                      "Message"
+                                    )}
+                                  </>
+                                ) : (
+                                  "Tap to view original message"
+                                )}
+                              </div>
+                            </div>
+                            {/* Instagram-style image thumbnail on the right */}
+                            {message.replyTo?.messageType === "IMAGE" &&
+                              message.replyTo?.fileUrl && (
+                                <div className="flex-shrink-0">
+                                  <img
+                                    src={message.replyTo.fileUrl}
+                                    alt="Reply preview"
+                                    className="w-12 h-12 rounded object-cover"
+                                  />
+                                </div>
+                              )}
                           </div>
                         </div>
                       )}
@@ -2429,29 +2505,54 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
         {replyingTo && (
           <div className="px-4 pt-3 pb-2 border-b border-gray-100">
             <div className="flex items-center justify-between bg-gray-50 rounded-lg p-3">
-              <div className="flex items-center gap-3">
-                <div className="w-1 h-8 bg-blue-500 rounded-full"></div>
-                <div className="flex-1">
+              <div className="flex items-center gap-3 flex-1 min-w-0">
+                <div className="w-1 h-8 bg-blue-500 rounded-full flex-shrink-0"></div>
+                <div className="flex-1 min-w-0">
                   <div className="text-xs font-medium text-blue-600 mb-1">
                     Replying to {replyingTo!.senderName}
                   </div>
-                  <div className="text-sm text-gray-600 truncate max-w-[300px]">
-                    {replyingTo!.messageType === "TEXT"
-                      ? replyingTo!.content
-                      : replyingTo!.messageType === "IMAGE"
-                      ? "📷 Image"
-                      : replyingTo!.messageType === "FILE"
-                      ? `📄 ${replyingTo!.content}`
-                      : replyingTo!.content}
+                  <div className="text-sm text-gray-600 truncate flex items-center gap-1">
+                    {replyingTo!.messageType === "TEXT" ? (
+                      <span className="truncate">{replyingTo!.content}</span>
+                    ) : replyingTo!.messageType === "IMAGE" ? (
+                      <span className="flex items-center gap-1">
+                        <span>📷</span>
+                        <span>Photo</span>
+                      </span>
+                    ) : replyingTo!.messageType === "FILE" ? (
+                      <span className="flex items-center gap-1">
+                        <span>📄</span>
+                        <span>{replyingTo!.content || "File"}</span>
+                      </span>
+                    ) : replyingTo!.messageType === "LINK" ? (
+                      <span className="flex items-center gap-1 truncate">
+                        <span>🔗</span>
+                        <span className="truncate">
+                          {replyingTo!.content || "Link"}
+                        </span>
+                      </span>
+                    ) : (
+                      <span className="truncate">{replyingTo!.content}</span>
+                    )}
                   </div>
                 </div>
+                {/* Instagram-style image thumbnail */}
+                {replyingTo!.messageType === "IMAGE" && replyingTo!.fileUrl && (
+                  <div className="flex-shrink-0">
+                    <img
+                      src={replyingTo!.fileUrl}
+                      alt="Reply preview"
+                      className="w-10 h-10 rounded object-cover"
+                    />
+                  </div>
+                )}
               </div>
               <button
                 onClick={() => {
                   console.log("❌ [Chat] Canceling reply");
                   setReplyingTo(null);
                 }}
-                className="p-1 hover:bg-gray-200 rounded-full transition-colors"
+                className="p-1 hover:bg-gray-200 rounded-full transition-colors flex-shrink-0 ml-2"
               >
                 <MdClose className="h-4 w-4 text-gray-500" />
               </button>

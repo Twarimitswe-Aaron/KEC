@@ -36,6 +36,7 @@ export interface Message {
     id: number;
     content?: string;
     messageType: "TEXT" | "IMAGE" | "FILE" | "LINK";
+    fileUrl?: string; // For displaying image thumbnails in reply preview
     sender: {
       id: number;
       firstName: string;
@@ -249,54 +250,11 @@ export const chatApi = apiCore.apiSlice.injectEndpoints({
           console.log(
             "📨 [RTK Query] Received real message:",
             newMessage.id,
-            "replacing tempId:",
-            tempId
+            "- WebSocket will handle replacement"
           );
 
-          // Replace optimistic message with real one
-          dispatch(
-            chatApi.util.updateQueryData("getMessages", { chatId }, (draft) => {
-              const tempIndex = draft.messages.findIndex(
-                (msg) => String(msg.id) === tempId
-              );
-
-              if (tempIndex !== -1) {
-                // Replace the optimistic message
-                draft.messages[tempIndex] = newMessage;
-                console.log(
-                  "✅ [RTK Query] Replaced optimistic message with real one"
-                );
-              } else {
-                // Check if the real message already exists (prevent duplicates from WebSocket)
-                const realMessageExists = draft.messages.some(
-                  (msg) => msg.id === newMessage.id
-                );
-
-                if (!realMessageExists) {
-                  // Only add if it doesn't already exist
-                  draft.messages.push(newMessage);
-                  console.log(
-                    "✅ [RTK Query] Added real message (optimistic not found)"
-                  );
-                } else {
-                  console.log(
-                    "⚠️ [RTK Query] Real message already exists, skipping add"
-                  );
-                }
-              }
-            })
-          );
-
-          // Update chat list with new last message
-          dispatch(
-            chatApi.util.updateQueryData("getChats", {}, (draft) => {
-              const chat = draft.chats.find((c) => c.id === chatId);
-              if (chat) {
-                chat.lastMessage = newMessage;
-                chat.updatedAt = newMessage.createdAt;
-              }
-            })
-          );
+          // Note: ChatContext handles replacing optimistic messages via WebSocket
+          // No need to update cache here as it causes duplicates
         } catch (error) {
           console.error(
             "❌ [RTK Query] Message send failed, undoing optimistic update:",
