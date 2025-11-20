@@ -191,76 +191,44 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
               "getMessages",
               { chatId: message.chatId },
               (draft) => {
-                // Check if message already exists (by real ID) to prevent duplicates
-                const existingMessageIndex = draft.messages.findIndex(
-                  (msg) => msg.id === message.id
+                // Robust deduplication using a Map
+                // This handles both new duplicates and cleans up any existing ones
+                // It also handles type mismatches (string vs number IDs)
+                const messageMap = new Map();
+
+                // Add existing messages to Map
+                draft.messages.forEach((msg) => {
+                  messageMap.set(String(msg.id), msg);
+                });
+
+                // Add/Update the new message
+                // This ensures we always have the latest version
+                messageMap.set(String(message.id), {
+                  id: message.id,
+                  chatId: message.chatId,
+                  senderId: message.senderId,
+                  content: message.content || "",
+                  messageType: message.messageType || "TEXT",
+                  createdAt: message.createdAt || new Date().toISOString(),
+                  updatedAt: message.updatedAt,
+                  isRead: message.isRead || false,
+                  isDelivered: message.isDelivered || true,
+                  fileUrl: message.fileUrl,
+                  fileName: message.fileName,
+                  fileSize: message.fileSize,
+                  fileMimeType: message.fileMimeType,
+                  replyToId: message.replyToId,
+                  replyTo: message.replyTo,
+                  reactions: message.reactions || [],
+                });
+
+                // Convert back to array
+                draft.messages = Array.from(messageMap.values());
+
+                console.log(
+                  "✨ [ChatContext] Message added/updated. Total messages:",
+                  draft.messages.length
                 );
-
-                // Check if there's an optimistic message (temp ID) that should be replaced
-                const optimisticMessageIndex = draft.messages.findIndex(
-                  (msg) =>
-                    typeof msg.id === "string" &&
-                    String(msg.id).startsWith("temp-")
-                );
-
-                if (existingMessageIndex !== -1) {
-                  // Message already exists with this real ID, don't add duplicate
-                  console.log(
-                    "⚠️ [ChatContext] Message already exists, skipping:",
-                    message.id
-                  );
-                  return;
-                }
-
-                if (optimisticMessageIndex !== -1) {
-                  // Replace optimistic message with real one
-                  console.log(
-                    "🔄 [ChatContext] Replacing optimistic message with real one:",
-                    message.id
-                  );
-                  draft.messages[optimisticMessageIndex] = {
-                    id: message.id,
-                    chatId: message.chatId,
-                    senderId: message.senderId,
-                    content: message.content || "",
-                    messageType: message.messageType || "TEXT",
-                    createdAt: message.createdAt || new Date().toISOString(),
-                    updatedAt: message.updatedAt,
-                    isRead: message.isRead || false,
-                    isDelivered: message.isDelivered || true,
-                    fileUrl: message.fileUrl,
-                    fileName: message.fileName,
-                    fileSize: message.fileSize,
-                    fileMimeType: message.fileMimeType,
-                    replyToId: message.replyToId,
-                    replyTo: message.replyTo,
-                    reactions: message.reactions || [],
-                  };
-                } else {
-                  // No optimistic message found, add as new message
-                  console.log(
-                    "✨ [ChatContext] Adding new message to cache:",
-                    message.id
-                  );
-                  draft.messages.push({
-                    id: message.id,
-                    chatId: message.chatId,
-                    senderId: message.senderId,
-                    content: message.content || "",
-                    messageType: message.messageType || "TEXT",
-                    createdAt: message.createdAt || new Date().toISOString(),
-                    updatedAt: message.updatedAt,
-                    isRead: message.isRead || false,
-                    isDelivered: message.isDelivered || true,
-                    fileUrl: message.fileUrl,
-                    fileName: message.fileName,
-                    fileSize: message.fileSize,
-                    fileMimeType: message.fileMimeType,
-                    replyToId: message.replyToId,
-                    replyTo: message.replyTo,
-                    reactions: message.reactions || [],
-                  });
-                }
 
                 // Sort messages by creation time to maintain order
                 draft.messages.sort(
@@ -299,18 +267,8 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
             })
           );
 
-          // Force cache invalidation to ensure UI updates
-          if (message.chatId) {
-            dispatch(
-              chatApi.util.invalidateTags([
-                { type: "Message", id: message.chatId },
-                { type: "Chat", id: "LIST" },
-              ])
-            );
-          }
-
           console.log(
-            "✅ [ChatContext] Real-time message cache updated successfully with invalidation"
+            "✅ [ChatContext] Real-time message cache updated successfully"
           );
         } catch (error) {
           console.error(
@@ -935,11 +893,22 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
     [messagesData, currentUser?.id, markAsRead, isTabVisible, chatsData]
   );
 
+  // Deduplicate messages to prevent "same key" errors in UI
+  const messages = useMemo(() => {
+    if (!messagesData?.messages) return [];
+    const seen = new Set();
+    return messagesData.messages.filter((msg) => {
+      if (seen.has(msg.id)) return false;
+      seen.add(msg.id);
+      return true;
+    });
+  }, [messagesData?.messages]);
+
   const value: ChatContextType = {
     chats: chatsData?.chats || [],
     activeChat,
     currentUser: currentUser || null,
-    messages: messagesData?.messages || [],
+    messages: messages,
     setActiveChat: handleSetActiveChatWithUnread,
     sendMessage,
     markAsRead,

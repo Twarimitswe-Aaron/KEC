@@ -195,72 +195,13 @@ export const chatApi = apiCore.apiSlice.injectEndpoints({
         method: "POST",
         body,
       }),
-      // Optimistically update the UI
-      async onQueryStarted(
-        { chatId, senderId, ...message },
-        { dispatch, queryFulfilled }
-      ) {
-        const tempId = `temp-${Date.now()}-${Math.random()}`; // More unique temp ID
-        console.log(
-          "🔄 [RTK Query] Starting optimistic update with tempId:",
-          tempId
-        );
-
-        const patchResult = dispatch(
-          chatApi.util.updateQueryData("getMessages", { chatId }, (draft) => {
-            // Check if we already have this message (prevent duplicates from rapid clicks)
-            const isDuplicate = draft.messages.some(
-              (msg) =>
-                msg.content === message.content &&
-                msg.messageType === message.messageType &&
-                String(msg.id).startsWith("temp-") &&
-                Date.now() - new Date(msg.createdAt).getTime() < 1000 // Within 1 second
-            );
-
-            if (isDuplicate) {
-              console.log(
-                "⚠️ [RTK Query] Preventing duplicate optimistic update"
-              );
-              return;
-            }
-
-            const optimisticMessage = {
-              id: tempId, // Use string temp ID
-              senderId: senderId || -1, // Use provided senderId or default
-              chatId,
-              isRead: false,
-              isDelivered: false,
-              createdAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString(),
-              sender: {
-                id: senderId || -1,
-                firstName: "You",
-                lastName: "",
-              },
-              ...message,
-            } as any; // Use any to allow string ID
-
-            draft.messages.push(optimisticMessage); // Add to end
-            console.log("✅ [RTK Query] Added optimistic message:", tempId);
-          })
-        );
-
+      // No optimistic updates - rely on WebSocket for instant delivery
+      async onQueryStarted(args, { queryFulfilled }) {
         try {
-          const { data: newMessage } = await queryFulfilled;
-          console.log(
-            "📨 [RTK Query] Received real message:",
-            newMessage.id,
-            "- WebSocket will handle replacement"
-          );
-
-          // Note: ChatContext handles replacing optimistic messages via WebSocket
-          // No need to update cache here as it causes duplicates
+          await queryFulfilled;
+          console.log("✅ [RTK Query] Message sent successfully");
         } catch (error) {
-          console.error(
-            "❌ [RTK Query] Message send failed, undoing optimistic update:",
-            error
-          );
-          patchResult.undo();
+          console.error("❌ [RTK Query] Message send failed:", error);
         }
       },
       invalidatesTags: (_result, _error, { chatId }) => [

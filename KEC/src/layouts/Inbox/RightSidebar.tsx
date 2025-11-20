@@ -28,7 +28,17 @@ const RightSidebar = () => {
 
   // Filter messages for files and images
   // Sort by createdAt descending to show latest first
-  const sortedMessages = [...messages].sort(
+  // Deduplicate messages by ID to prevent key collisions
+  const uniqueMessages = React.useMemo(() => {
+    const seen = new Set();
+    return messages.filter((msg) => {
+      if (seen.has(msg.id)) return false;
+      seen.add(msg.id);
+      return true;
+    });
+  }, [messages]);
+
+  const sortedMessages = [...uniqueMessages].sort(
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
 
