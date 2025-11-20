@@ -22,7 +22,7 @@ import CourseManagement from "./routes/courseManagement";
 import AdminCourseManagement from "./routes/AdminCourseManagement";
 import Announcements from "./routes/Announcements";
 import MyProfile from "./routes/MyProfile";
-import ProfilePage from "./routes/ProfilePage"
+import ProfilePage from "./routes/ProfilePage";
 import Feedback from "./routes/Feedback";
 import Logout from "./routes/Logout";
 import PaymentManagement from "./routes/PaymentManagement";
@@ -60,7 +60,10 @@ function App() {
         <Route element={<DashboardLayout />}>
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/dashboard/course/:id" element={<UserLessonsView />} />
-          <Route path="/dashboard/course/:id/quiz/:quizId" element={<TakeQuiz />} />
+          <Route
+            path="/dashboard/course/:id/quiz/:quizId"
+            element={<TakeQuiz />}
+          />
           <Route path="/user-management" element={<UserManagement />} />
           <Route path="/course-creation" element={<CourseManagement />} />
           <Route path="/course-creation/course/:id" element={<LessonsView />} />
@@ -68,8 +71,9 @@ function App() {
             path="/course-management/create-modules"
             element={<CreateModule />}
           />
+          <Route path="/course-management/:id" element={<LessonsView />} />
           <Route
-            path="/course-management/:id"
+            path="/course-management/view-lessons/:id"
             element={<LessonsView />}
           />
           <Route
@@ -92,7 +96,6 @@ function App() {
         </Route>
         <Route path="/inbox" element={<Inbox />} />
       </Routes>
-      
     </>
   );
 }

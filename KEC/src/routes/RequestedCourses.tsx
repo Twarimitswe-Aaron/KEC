@@ -4,7 +4,12 @@ import { UserRoleContext } from "../UserRoleContext";
 import { FaEye, FaTimes, FaCheck, FaTrash } from "react-icons/fa";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import { useConfirmCourseMutation, useDeleteCourseMutation, useCoursesQuery } from "../state/api/courseApi";
+import {
+  useConfirmCourseMutation,
+  useDeleteCourseMutation,
+  useCoursesQuery,
+} from "../state/api/courseApi";
+import { SearchContext } from "../SearchContext";
 
 // Confirmation Modal Component
 interface ConfirmationModalProps {
@@ -18,15 +23,15 @@ interface ConfirmationModalProps {
   cancelColor?: string;
 }
 
-const ConfirmationModal = ({ 
-  isOpen, 
-  onClose, 
-  onConfirm, 
-  title, 
-  message, 
-  confirmText, 
+const ConfirmationModal = ({
+  isOpen,
+  onClose,
+  onConfirm,
+  title,
+  message,
+  confirmText,
   confirmColor = "bg-[#034153]",
-  cancelColor = "bg-gray-500" 
+  cancelColor = "bg-gray-500",
 }: ConfirmationModalProps) => {
   if (!isOpen) return null;
 
@@ -42,9 +47,9 @@ const ConfirmationModal = ({
             <FaTimes />
           </button>
         </div>
-        
+
         <p className="text-gray-600 mb-6">{message}</p>
-        
+
         <div className="flex gap-3 justify-end">
           <button
             onClick={onClose}
@@ -65,26 +70,33 @@ const ConfirmationModal = ({
 };
 
 const RequestedCourses = () => {
+  const { searchQuery } = useContext(SearchContext);
   const navigate = useNavigate();
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [confirmModal, setConfirmModal] = useState({
     isOpen: false,
-    type: null as 'confirm' | 'delete' | null,
-    course: null as Course | null
+    type: null as "confirm" | "delete" | null,
+    course: null as Course | null,
   });
-  
+
   const userRole = useContext(UserRoleContext);
 
   // RTK Query hooks
-  const { data: coursesData, isLoading, isError, refetch } = useCoursesQuery({unconfirmed:true});
+  const {
+    data: coursesData,
+    isLoading,
+    isError,
+    refetch,
+  } = useCoursesQuery({ unconfirmed: true });
   const [confirmCourse] = useConfirmCourseMutation();
   const [deleteCourse] = useDeleteCourseMutation();
 
-  const [loading, setLoading] = useState<{ [key: number]: { confirm: boolean; delete: boolean } }>({});
+  const [loading, setLoading] = useState<{
+    [key: number]: { confirm: boolean; delete: boolean };
+  }>({});
 
   const handleViewDetails = (course: Course) => {
-    setSelectedCourse(course);
-    navigate("/course-management/view-lessons");
+    navigate(`/course-management/view-lessons/${course.id}`);
   };
 
   const handleCloseDetails = () => {
@@ -94,26 +106,26 @@ const RequestedCourses = () => {
   const handleConfirmCourse = (course: Course) => {
     setConfirmModal({
       isOpen: true,
-      type: 'confirm',
-      course: course
+      type: "confirm",
+      course: course,
     });
   };
 
   const handleDeleteCourse = (course: Course) => {
     setConfirmModal({
       isOpen: true,
-      type: 'delete',
-      course: course
+      type: "delete",
+      course: course,
     });
   };
 
   const executeConfirmCourse = async () => {
     if (!confirmModal.course?.id) return;
-    
+
     const courseId = confirmModal.course.id;
-    setLoading(prev => ({
+    setLoading((prev) => ({
       ...prev,
-      [courseId]: { ...prev[courseId], confirm: true }
+      [courseId]: { ...prev[courseId], confirm: true },
     }));
 
     try {
@@ -128,9 +140,9 @@ const RequestedCourses = () => {
       toast.error(message);
       console.error("Error confirming course:", err);
     } finally {
-      setLoading(prev => ({
+      setLoading((prev) => ({
         ...prev,
-        [courseId]: { ...prev[courseId], confirm: false }
+        [courseId]: { ...prev[courseId], confirm: false },
       }));
       setConfirmModal({ isOpen: false, type: null, course: null });
     }
@@ -138,11 +150,11 @@ const RequestedCourses = () => {
 
   const executeDeleteCourse = async () => {
     if (!confirmModal.course?.id) return;
-    
+
     const courseId = confirmModal.course.id;
-    setLoading(prev => ({
+    setLoading((prev) => ({
       ...prev,
-      [courseId]: { ...prev[courseId], delete: true }
+      [courseId]: { ...prev[courseId], delete: true },
     }));
 
     try {
@@ -157,18 +169,18 @@ const RequestedCourses = () => {
       toast.error(message);
       console.error("Error deleting course:", err);
     } finally {
-      setLoading(prev => ({
+      setLoading((prev) => ({
         ...prev,
-        [courseId]: { ...prev[courseId], delete: false }
+        [courseId]: { ...prev[courseId], delete: false },
       }));
       setConfirmModal({ isOpen: false, type: null, course: null });
     }
   };
 
   const handleModalConfirm = () => {
-    if (confirmModal.type === 'confirm') {
+    if (confirmModal.type === "confirm") {
       executeConfirmCourse();
-    } else if (confirmModal.type === 'delete') {
+    } else if (confirmModal.type === "delete") {
       executeDeleteCourse();
     }
   };
@@ -177,8 +189,18 @@ const RequestedCourses = () => {
     setConfirmModal({ isOpen: false, type: null, course: null });
   };
 
-  if (isLoading) return <div className="min-h-screen p-4 flex justify-center items-center"><p className="text-gray-400">Loading courses...</p></div>;
-  if (isError) return <div className="min-h-screen p-4 flex justify-center items-center"><p className="text-red-500">Failed to load courses.</p></div>;
+  if (isLoading)
+    return (
+      <div className="min-h-screen p-4 flex justify-center items-center">
+        <p className="text-gray-400">Loading courses...</p>
+      </div>
+    );
+  if (isError)
+    return (
+      <div className="min-h-screen p-4 flex justify-center items-center">
+        <p className="text-red-500">Failed to load courses.</p>
+      </div>
+    );
 
   return (
     <div className="min-h-screen p-4">
@@ -193,101 +215,122 @@ const RequestedCourses = () => {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2 gap-6">
           {coursesData && coursesData.length > 0 ? (
-            coursesData.map((course: any) => (
-              <div
-                key={course.id}
-                className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-all duration-300 border border-gray-200"
-              >
-                <div className="relative">
-                  <img
-                    src={course.image_url}
-                    alt={course.title}
-                    className="w-full h-48 object-cover"
-                    onError={(e) => {
-                      e.currentTarget.src = `https://via.placeholder.com/400x200/004e64/white?text=${course.title}`;
-                    }}
-                  />
-                  <div className="absolute top-3 right-3">
-                    <button
-                      className="bg-white/90 cursor-pointer backdrop-blur-sm text-[#004e64] p-2 rounded-full hover:bg-white hover:text-[#003a4c] transition-all duration-200 shadow-md"
-                      onClick={() => handleViewDetails(course)}
-                      title="View course details"
-                    >
-                      <FaEye className="text-sm" />
-                    </button>
-                  </div>
-                </div>
-
-                <div className="p-5">
-                  <div className="mb-3">
-                    <h3 className="font-semibold text-[#004e64] text-lg mb-1 line-clamp-1">
-                      {course.title}
-                    </h3>
-                    <p className="text-gray-600 text-sm line-clamp-2 leading-relaxed">
-                      {course.description}
-                    </p>
-                  </div>
-
-                  <div className="mb-4">
-                    <p className="text-[#004e64] font-semibold text-lg">{course.price}</p>
-                    <div className="flex items-center gap-4 text-xs text-gray-500 mt-1">
-                      <span>{course.no_lessons || '0'} lessons</span>
-
+            coursesData
+              .filter((course: any) => {
+                if (!searchQuery) return true;
+                const query = searchQuery.toLowerCase();
+                return (
+                  course.title?.toLowerCase().includes(query) ||
+                  course.description?.toLowerCase().includes(query) ||
+                  course.uploader?.name?.toLowerCase().includes(query)
+                );
+              })
+              .map((course: any) => (
+                <div
+                  key={course.id}
+                  className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-all duration-300 border border-gray-200"
+                >
+                  <div className="relative">
+                    <img
+                      src={course.image_url}
+                      alt={course.title}
+                      className="w-full h-48 object-cover"
+                      onError={(e) => {
+                        e.currentTarget.src = `https://via.placeholder.com/400x200/004e64/white?text=${course.title}`;
+                      }}
+                    />
+                    <div className="absolute top-3 right-3">
+                      <button
+                        className="bg-white/90 cursor-pointer backdrop-blur-sm text-[#004e64] p-2 rounded-full hover:bg-white hover:text-[#003a4c] transition-all duration-200 shadow-md"
+                        onClick={() => handleViewDetails(course)}
+                        title="View course details"
+                      >
+                        <FaEye className="text-sm" />
+                      </button>
                     </div>
                   </div>
 
-                 <div className="flex my-3 gap-1.5">
-                 <Link
-                to={`/profile/${course.uploader.id}`}
-                className="flex items-center gap-2"
-              >
-                <img
-                  src={course.uploader.avatar_url}
-                  alt={`${course.uploader.name} avatar`}
-                  className="w-8 h-8 rounded-full border-none shadow-sm object-cover"
-                />
-                <p className=" text-gray-500 text-sm">{course.uploader.name.split(" ")[1]}</p>
-              </Link>
-                 </div>
+                  <div className="p-5">
+                    <div className="mb-3">
+                      <h3 className="font-semibold text-[#004e64] text-lg mb-1 line-clamp-1">
+                        {course.title}
+                      </h3>
+                      <p className="text-gray-600 text-sm line-clamp-2 leading-relaxed">
+                        {course.description}
+                      </p>
+                    </div>
 
-                  <div className="flex gap-3">
-                    <button
-                      onClick={() => handleConfirmCourse(course)}
-                      disabled={course.id ? loading[course.id]?.confirm : false}
-                      className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-white font-medium transition-all duration-200 ${
-                        course.id && loading[course.id]?.confirm
-                          ? 'bg-gray-400 cursor-not-allowed'
-                          : 'bg-[#034153] hover:bg-[#025a70] cursor-pointer hover:shadow-md'
-                      }`}
-                    >
-                      {course.id && loading[course.id]?.confirm ? (
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                      ) : (
-                        <FaCheck className="text-sm" />
-                      )}
-                      {course.id && loading[course.id]?.confirm ? 'Confirming...' : 'Confirm'}
-                    </button>
+                    <div className="mb-4">
+                      <p className="text-[#004e64] font-semibold text-lg">
+                        {course.price}
+                      </p>
+                      <div className="flex items-center gap-4 text-xs text-gray-500 mt-1">
+                        <span>{course.no_lessons || "0"} lessons</span>
+                      </div>
+                    </div>
 
-                    <button
-                      onClick={() => handleDeleteCourse(course)}
-                      disabled={course.id ? loading[course.id]?.delete : false}
-                      className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-white font-medium transition-all duration-200 ${
-                        course.id && loading[course.id]?.delete
-                          ? 'bg-gray-400 cursor-not-allowed'
-                          : 'bg-red-500 hover:bg-red-600 cursor-pointer hover:shadow-md'
-                      }`}
-                    >
-                      {course.id && loading[course.id]?.delete ? (
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                      ) : (
-                        <FaTrash className="text-sm" />
-                      )}
-                      {course.id && loading[course.id]?.delete ? 'Deleting...' : 'Delete'}
-                    </button>
+                    <div className="flex my-3 gap-1.5">
+                      <Link
+                        to={`/profile/${course.uploader.id}`}
+                        className="flex items-center gap-2"
+                      >
+                        <img
+                          src={course.uploader.avatar_url}
+                          alt={`${course.uploader.name} avatar`}
+                          className="w-8 h-8 rounded-full border-none shadow-sm object-cover"
+                        />
+                        <p className=" text-gray-500 text-sm">
+                          {course.uploader.name.split(" ")[1]}
+                        </p>
+                      </Link>
+                    </div>
+
+                    <div className="flex gap-3">
+                      <button
+                        onClick={() => handleConfirmCourse(course)}
+                        disabled={
+                          course.id ? loading[course.id]?.confirm : false
+                        }
+                        className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-white font-medium transition-all duration-200 ${
+                          course.id && loading[course.id]?.confirm
+                            ? "bg-gray-400 cursor-not-allowed"
+                            : "bg-[#034153] hover:bg-[#025a70] cursor-pointer hover:shadow-md"
+                        }`}
+                      >
+                        {course.id && loading[course.id]?.confirm ? (
+                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        ) : (
+                          <FaCheck className="text-sm" />
+                        )}
+                        {course.id && loading[course.id]?.confirm
+                          ? "Confirming..."
+                          : "Confirm"}
+                      </button>
+
+                      <button
+                        onClick={() => handleDeleteCourse(course)}
+                        disabled={
+                          course.id ? loading[course.id]?.delete : false
+                        }
+                        className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-white font-medium transition-all duration-200 ${
+                          course.id && loading[course.id]?.delete
+                            ? "bg-gray-400 cursor-not-allowed"
+                            : "bg-red-500 hover:bg-red-600 cursor-pointer hover:shadow-md"
+                        }`}
+                      >
+                        {course.id && loading[course.id]?.delete ? (
+                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        ) : (
+                          <FaTrash className="text-sm" />
+                        )}
+                        {course.id && loading[course.id]?.delete
+                          ? "Deleting..."
+                          : "Delete"}
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))
+              ))
           ) : (
             <div className="col-span-full text-center py-12">
               <p className="text-gray-400">No requested courses found.</p>
@@ -301,17 +344,21 @@ const RequestedCourses = () => {
           onClose={closeModal}
           onConfirm={handleModalConfirm}
           title={
-            confirmModal.type === 'confirm' 
-              ? 'Confirm Course Request' 
-              : 'Delete Course Request'
+            confirmModal.type === "confirm"
+              ? "Confirm Course Request"
+              : "Delete Course Request"
           }
           message={
-            confirmModal.type === 'confirm'
+            confirmModal.type === "confirm"
               ? `Are you sure you want to confirm the course "${confirmModal.course?.title}"? This action will approve the course request.`
               : `Are you sure you want to delete the course request "${confirmModal.course?.title}"? This action cannot be undone.`
           }
-          confirmText={confirmModal.type === 'confirm' ? 'Confirm Course' : 'Delete Course'}
-          confirmColor={confirmModal.type === 'confirm' ? 'bg-[#034153]' : 'bg-red-500'}
+          confirmText={
+            confirmModal.type === "confirm" ? "Confirm Course" : "Delete Course"
+          }
+          confirmColor={
+            confirmModal.type === "confirm" ? "bg-[#034153]" : "bg-red-500"
+          }
         />
       </div>
     </div>
