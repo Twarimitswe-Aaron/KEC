@@ -7,7 +7,7 @@ import React, {
 } from "react";
 import { GroupedVirtuoso, GroupedVirtuosoHandle } from "react-virtuoso";
 
-import { MdOutlinePhoneInTalk } from "react-icons/md";
+import { MdOutlinePhoneInTalk, MdContentCopy } from "react-icons/md";
 import { FiSend } from "react-icons/fi";
 import { GoDeviceCameraVideo } from "react-icons/go";
 import { GoPaperclip } from "react-icons/go";
@@ -2346,7 +2346,7 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
                         {!isImageMessage && (
                           <div
                             className={`absolute top-0 ${
-                              isCurrentUser ? "-left-24" : "-right-24"
+                              isCurrentUser ? "-left-32" : "-right-24"
                             } opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center gap-1 bg-white shadow-lg rounded-full p-1`}
                           >
                             <button
@@ -2356,19 +2356,41 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
                             >
                               <BsReply className="h-4 w-4 text-gray-600" />
                             </button>
-                            <button
-                              onClick={() =>
-                                setShowEmojiPicker(
-                                  showEmojiPicker === message.id
-                                    ? null
-                                    : message.id
-                                )
-                              }
-                              className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-                              title="React"
-                            >
-                              <BsEmojiSmile className="h-4 w-4 text-gray-600" />
-                            </button>
+
+                            {/* React button - Only for other users' messages */}
+                            {!isCurrentUser && (
+                              <button
+                                onClick={() =>
+                                  setShowEmojiPicker(
+                                    showEmojiPicker === message.id
+                                      ? null
+                                      : message.id
+                                  )
+                                }
+                                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                                title="React"
+                              >
+                                <BsEmojiSmile className="h-4 w-4 text-gray-600" />
+                              </button>
+                            )}
+
+                            {/* Copy button - For all text messages */}
+                            {message.messageType === "TEXT" && (
+                              <button
+                                onClick={() => {
+                                  navigator.clipboard.writeText(
+                                    message.content || ""
+                                  );
+                                  // Optional: Add toast notification here
+                                  console.log("📋 Copied to clipboard");
+                                }}
+                                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                                title="Copy"
+                              >
+                                <MdContentCopy className="h-4 w-4 text-gray-600" />
+                              </button>
+                            )}
+
                             {isCurrentUser &&
                               message.messageType === "TEXT" && (
                                 <button
@@ -2386,61 +2408,6 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
                                 title="Delete"
                               >
                                 <MdDelete className="h-4 w-4 text-red-600" />
-                              </button>
-                            )}
-                            <button
-                              onClick={() =>
-                                setSelectedMessage(
-                                  selectedMessage === message.id
-                                    ? null
-                                    : message.id
-                                )
-                              }
-                              className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-                              title="More options"
-                            >
-                              <BsThreeDots className="h-4 w-4 text-gray-600" />
-                            </button>
-                          </div>
-                        )}
-
-                        {/* Message options menu */}
-                        {selectedMessage === message.id && (
-                          <div
-                            className={`absolute z-50 mt-2 ${
-                              isCurrentUser ? "right-0" : "left-0"
-                            } bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-[120px] message-menu`}
-                          >
-                            <button
-                              onClick={() => handleReply(message)}
-                              className="w-full px-4 py-2 text-left hover:bg-gray-50 transition-colors text-sm"
-                            >
-                              Reply
-                            </button>
-                            <button
-                              onClick={() => {
-                                // TODO: Implement forward
-                                setSelectedMessage(null);
-                              }}
-                              className="w-full px-4 py-2 text-left hover:bg-gray-50 transition-colors text-sm"
-                            >
-                              Forward
-                            </button>
-                            {isCurrentUser &&
-                              message.messageType === "TEXT" && (
-                                <button
-                                  onClick={() => handleEditMessage(message)}
-                                  className="w-full px-4 py-2 text-left hover:bg-gray-50 transition-colors text-sm"
-                                >
-                                  Edit
-                                </button>
-                              )}
-                            {isCurrentUser && (
-                              <button
-                                onClick={() => handleDeleteMessage(message.id)}
-                                className="w-full px-4 py-2 text-left hover:bg-gray-50 transition-colors text-sm text-red-600"
-                              >
-                                Delete
                               </button>
                             )}
                           </div>
