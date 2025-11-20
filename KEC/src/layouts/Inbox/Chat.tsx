@@ -151,7 +151,15 @@ const ImageMessage = React.memo(
     const [isLoading, setIsLoading] = useState(true);
     const [hasError, setHasError] = useState(false);
     const imgRef = useRef<HTMLImageElement>(null);
-    const imageUrl = getFullUrl(message.fileUrl);
+    const imageUrl = (() => {
+      let url = message.fileUrl || "/images/default-image.png";
+      if (url && url.startsWith("/uploads/")) {
+        const backendUrl =
+          import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
+        url = `${backendUrl}${url}`;
+      }
+      return url;
+    })();
 
     // Check if image is already loaded (cached) on mount
     useEffect(() => {
@@ -440,7 +448,6 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
   useEffect(() => {
     const handleEscKey = (e: KeyboardEvent) => {
       if (e.key === "Escape" && showMainEmojiPicker) {
-        console.log("🎯 [DEBUG] ESC key pressed - closing emoji picker");
         setShowMainEmojiPicker(false);
       }
     };
@@ -451,7 +458,6 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
 
   // Handle emoji selection for input
   const handleEmojiSelect = useCallback((emoji: string) => {
-    console.log("🎯 [DEBUG] handleEmojiSelect called with emoji:", emoji);
     // Add emoji to input text
     setNewMessage((prev) => prev + emoji);
     // Keep picker open so users can add multiple emojis
@@ -586,17 +592,6 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
   const handleQuickReaction = useCallback(
     async (messageId: number, emoji: string = "❤️") => {
       console.log("⚡ [Chat] Quick reaction triggered:", { messageId, emoji });
-
-      // Show floating reaction animation
-      setFloatingReaction({ messageId, emoji, show: true });
-      console.log("🎬 [Chat] Floating reaction animation shown");
-
-      // Hide animation after delay
-      setTimeout(() => {
-        setFloatingReaction(null);
-        console.log("🎬 [Chat] Floating reaction animation hidden");
-      }, 1000);
-
       await handleMessageReaction(messageId, emoji);
     },
     [handleMessageReaction]
@@ -891,11 +886,6 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
   // Handle double-tap for quick reaction
   const [lastTapTime, setLastTapTime] = useState(0);
   const [tapCount, setTapCount] = useState(0);
-  const [floatingReaction, setFloatingReaction] = useState<{
-    messageId: number;
-    emoji: string;
-    show: boolean;
-  } | null>(null);
 
   const handleMessageTap = useCallback(
     (messageId: number) => {
@@ -2634,15 +2624,7 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      console.log(
-                        "🎯 [DEBUG] Emoji button clicked. Current state:",
-                        showMainEmojiPicker
-                      );
                       setShowMainEmojiPicker(!showMainEmojiPicker);
-                      console.log(
-                        "🎯 [DEBUG] Emoji button - toggling to:",
-                        !showMainEmojiPicker
-                      );
                     }}
                     className={`p-2 rounded-full transition-colors ${
                       showMainEmojiPicker
@@ -2732,7 +2714,6 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
               <div
                 className="fixed inset-0 bg-black/10 z-40"
                 onClick={() => {
-                  console.log("🎯 [DEBUG] Backdrop clicked - closing picker");
                   setShowMainEmojiPicker(false);
                 }}
               />
@@ -2741,7 +2722,6 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
               <div
                 className="fixed bottom-20 left-4 right-4 z-50 animate-in fade-in slide-in-from-bottom-2 duration-200"
                 onClick={(e) => {
-                  console.log("🎯 [DEBUG] Emoji picker container clicked");
                   e.stopPropagation();
                 }}
               >
@@ -2756,7 +2736,6 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
                     </div>
                     <button
                       onClick={() => {
-                        console.log("🎯 [DEBUG] Close button clicked");
                         setShowMainEmojiPicker(false);
                       }}
                       className="p-1.5 hover:bg-white/50 rounded-full transition-colors"
@@ -2769,10 +2748,6 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
                   {/* Emoji Picker */}
                   <EmojiPicker
                     onEmojiClick={(emojiData: EmojiClickData) => {
-                      console.log(
-                        "🎯 [DEBUG] EmojiPicker onEmojiClick triggered:",
-                        emojiData.emoji
-                      );
                       handleEmojiSelect(emojiData.emoji);
                     }}
                     width="100%"
