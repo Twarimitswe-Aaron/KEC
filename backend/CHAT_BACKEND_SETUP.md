@@ -336,3 +336,5 @@ The backend now supports:
 4. Add push notifications (optional)
 
 **🚀 Start chatting in real-time!**
+
+https://chatgpt.com/c/691f80aa-be64-8327-9c87-87b2f9a72c02 for payment

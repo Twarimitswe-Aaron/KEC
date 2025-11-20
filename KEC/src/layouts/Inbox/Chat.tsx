@@ -58,26 +58,26 @@ const formatFileSize = (bytes?: number) => {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i];
 };
 
-const getFileIcon = (fileName: string) => {
+const getFileIcon = (fileName: string, sizeClass: string = "w-8 h-8") => {
   const ext = fileName.split(".").pop()?.toLowerCase();
   switch (ext) {
     case "pdf":
-      return <BsFileEarmarkPdf className="w-8 h-8 text-red-500" />;
+      return <BsFileEarmarkPdf className={`${sizeClass} text-red-500`} />;
     case "doc":
     case "docx":
-      return <BsFileEarmarkWord className="w-8 h-8 text-blue-500" />;
+      return <BsFileEarmarkWord className={`${sizeClass} text-blue-500`} />;
     case "xls":
     case "xlsx":
-      return <BsFileEarmarkExcel className="w-8 h-8 text-green-500" />;
+      return <BsFileEarmarkExcel className={`${sizeClass} text-green-500`} />;
     case "ppt":
     case "pptx":
-      return <BsFileEarmarkPpt className="w-8 h-8 text-orange-500" />;
+      return <BsFileEarmarkPpt className={`${sizeClass} text-orange-500`} />;
     case "zip":
     case "rar":
     case "7z":
-      return <BsFileEarmarkZip className="w-8 h-8 text-yellow-600" />;
+      return <BsFileEarmarkZip className={`${sizeClass} text-yellow-600`} />;
     default:
-      return <BsFileEarmarkText className="w-8 h-8 text-gray-500" />;
+      return <BsFileEarmarkText className={`${sizeClass} text-gray-500`} />;
   }
 };
 
@@ -104,18 +104,18 @@ const FileMessage = React.memo(
 
     return (
       <div
-        className={`flex items-center gap-3 p-2 rounded-lg ${
+        className={`flex items-center gap-2 p-1 rounded-lg ${
           isCurrentUser ? "bg-black/10" : "bg-black/5"
-        } max-w-[300px]`}
+        } max-w-[240px]`}
       >
-        <div className="bg-white p-2 rounded-lg shadow-sm">
-          {getFileIcon(fileName)}
+        <div className="bg-white p-1.5 rounded-lg shadow-sm">
+          {getFileIcon(fileName, "w-6 h-6")}
         </div>
         <div className="flex-1 min-w-0 overflow-hidden">
-          <p className="text-sm font-medium truncate text-inherit">
+          <p className="text-xs font-medium truncate text-inherit">
             {fileName}
           </p>
-          <p className="text-xs opacity-70">
+          <p className="text-[10px] opacity-70">
             {size} • {ext}
           </p>
         </div>
@@ -125,14 +125,14 @@ const FileMessage = React.memo(
             download={fileName}
             target="_blank"
             rel="noreferrer"
-            className={`p-2 rounded-full transition-colors ${
+            className={`p-1 rounded-full transition-colors ${
               isCurrentUser
                 ? "hover:bg-white/20 text-white"
                 : "hover:bg-gray-200 text-gray-600"
             }`}
             title="Download"
           >
-            <MdDownload className="w-5 h-5" />
+            <MdDownload className="w-4 h-4" />
           </a>
         )}
       </div>
@@ -226,7 +226,7 @@ const ImageMessage = React.memo(
           ref={imgRef}
           src={imageUrl}
           alt={message.fileName || "Image"}
-          className={`block w-full h-auto max-h-[320px] object-cover transition-opacity duration-300 ${
+          className={`block w-full h-auto transition-opacity duration-300 ${
             isLoading ? "opacity-0" : "opacity-100"
           }`}
           onLoad={() => setIsLoading(false)}
@@ -806,37 +806,11 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
 
   const formatTime = (dateString: string): string => {
     const date = new Date(dateString);
-    const now = new Date();
-    const today = new Date();
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-
-    const messageDate = new Date(dateString);
-    const timeString = date.toLocaleTimeString([], {
+    return date.toLocaleTimeString([], {
       hour: "numeric",
       minute: "2-digit",
       hour12: true,
     });
-
-    if (messageDate.toDateString() === today.toDateString()) {
-      return timeString; // "2:30 PM"
-    } else if (messageDate.toDateString() === yesterday.toDateString()) {
-      return `Yesterday ${timeString}`; // "Yesterday 2:30 PM"
-    } else {
-      const diffInDays = Math.floor(
-        (today.getTime() - messageDate.getTime()) / (1000 * 60 * 60 * 24)
-      );
-      if (diffInDays < 7) {
-        return `${messageDate.toLocaleDateString([], {
-          weekday: "short",
-        })} ${timeString}`; // "Mon 2:30 PM"
-      } else {
-        return `${messageDate.toLocaleDateString([], {
-          month: "short",
-          day: "numeric",
-        })} ${timeString}`; // "Nov 10 2:30 PM"
-      }
-    }
   };
 
   // Format time for date separators
@@ -1784,8 +1758,7 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
       {/* Messages */}
       <div
         ref={messagesContainerRef}
-        className="relative flex-1 pl-2 sm:pl-4 pr-2 sm:pr-4 py-2 bg-white"
-        style={{ height: "100%" }}
+        className="relative flex-1 flex flex-col bg-white"
       >
         {isLoading ? (
           <div className="flex justify-center items-center h-full">
@@ -1800,687 +1773,685 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
             </p>
           </div>
         ) : (
-          <GroupedVirtuoso
-            ref={virtuosoRef}
-            className="scroll-hide"
-            style={{ height: "100%", overflowX: "hidden" }}
-            groupCounts={groupCounts}
-            alignToBottom
-            initialTopMostItemIndex={
-              flatItems.length > 0 ? flatItems.length - 1 : 0
-            }
-            computeItemKey={(index) => {
-              const item = flatItems[index];
-              return item ? `msg-${item.message.id}` : `item-${index}`;
+          /* Main Chat Area with WhatsApp Background */
+          <div
+            className="flex-1 overflow-hidden relative bg-[#efeae2]"
+            style={{
+              backgroundImage:
+                "radial-gradient(circle at center, #d5d5d5 1px, transparent 1px)",
+              backgroundSize: "20px 20px",
             }}
-            followOutput={(isAtBottom) => {
-              // Always follow output (scroll to bottom) when:
-              // 1. User is at the bottom of the chat
-              // 2. User just sent a message
-              if (isAtBottom || justSentRef.current) {
-                return "smooth";
+          >
+            <GroupedVirtuoso
+              ref={virtuosoRef}
+              className="scroll-hide"
+              style={{ height: "100%", overflowX: "hidden" }}
+              groupCounts={groupCounts}
+              alignToBottom
+              initialTopMostItemIndex={
+                flatItems.length > 0 ? flatItems.length - 1 : 0
               }
-              return false;
-            }}
-            increaseViewportBy={{ top: 400, bottom: 400 }}
-            atBottomStateChange={(atBottom) => {
-              setIsAtBottom(atBottom);
-              if (atBottom) setNewMessagesPending(false);
-            }}
-            groupContent={(index) => (
-              <div className="flex items-center justify-center my-4">
-                <div className="bg-green-100 text-green-800 text-xs px-3 py-1.5 rounded-full font-medium shadow-sm">
-                  {groupsArr[index]?.dateKey}
+              computeItemKey={(index) => {
+                const item = flatItems[index];
+                return item ? `msg-${item.message.id}` : `item-${index}`;
+              }}
+              followOutput={(isAtBottom) => {
+                // Always follow output (scroll to bottom) when:
+                // 1. User is at the bottom of the chat
+                // 2. User just sent a message
+                if (isAtBottom || justSentRef.current) {
+                  return "smooth";
+                }
+                return false;
+              }}
+              increaseViewportBy={{ top: 400, bottom: 400 }}
+              atBottomStateChange={(atBottom) => {
+                setIsAtBottom(atBottom);
+                if (atBottom) setNewMessagesPending(false);
+              }}
+              groupContent={(index) => (
+                <div className="flex items-center justify-center my-4">
+                  <div className="bg-green-100 text-green-800 text-xs px-3 py-1.5 rounded-full font-medium shadow-sm">
+                    {groupsArr[index]?.dateKey}
+                  </div>
                 </div>
-              </div>
-            )}
-            itemContent={(index) => {
-              const item = flatItems[index];
-              if (!item) return null;
-              const { message, group, idxInGroup } = item;
-              const dayMessages = group.dayMessages;
-              const isCurrentUser = message.senderId === currentUser?.id;
-              const isUnread = !isCurrentUser && !message.isRead;
-              const prevMessage =
-                idxInGroup > 0 ? dayMessages[idxInGroup - 1] : null;
-              const nextMessage =
-                idxInGroup < dayMessages.length - 1
-                  ? dayMessages[idxInGroup + 1]
-                  : null;
-              const isGrouped = shouldGroupMessage(message, prevMessage as any);
-              const isGroupedWithNext = nextMessage
-                ? shouldGroupMessage(nextMessage as any, message)
-                : false;
-              const showAvatar = !isCurrentUser && !isGrouped;
+              )}
+              itemContent={(index) => {
+                const item = flatItems[index];
+                if (!item) return null;
+                const { message, group, idxInGroup } = item;
+                const dayMessages = group.dayMessages;
+                const isCurrentUser = message.senderId === currentUser?.id;
+                const isUnread = !isCurrentUser && !message.isRead;
+                const prevMessage =
+                  idxInGroup > 0 ? dayMessages[idxInGroup - 1] : null;
+                const nextMessage =
+                  idxInGroup < dayMessages.length - 1
+                    ? dayMessages[idxInGroup + 1]
+                    : null;
+                const isGrouped = shouldGroupMessage(
+                  message,
+                  prevMessage as any
+                );
+                const isGroupedWithNext = nextMessage
+                  ? shouldGroupMessage(nextMessage as any, message)
+                  : false;
+                const showAvatar = !isCurrentUser && !isGrouped;
 
-              // Detect if this message represents an audio/voice file
-              const isAudioFile =
-                !!message.fileUrl &&
-                ((message.fileMimeType &&
-                  message.fileMimeType.toLowerCase().startsWith("audio/")) ||
-                  (message.fileUrl &&
-                    (message.fileUrl.toLowerCase().endsWith(".webm") ||
-                      message.fileUrl.toLowerCase().endsWith(".ogg") ||
-                      message.fileUrl.toLowerCase().endsWith(".mp3") ||
-                      message.fileUrl.toLowerCase().endsWith(".m4a"))) ||
-                  (message.fileName &&
-                    (message.fileName.toLowerCase().endsWith(".webm") ||
-                      message.fileName.toLowerCase().endsWith(".ogg") ||
-                      message.fileName.toLowerCase().endsWith(".mp3") ||
-                      message.fileName.toLowerCase().endsWith(".m4a"))));
+                // Detect if this message represents an audio/voice file
+                const isAudioFile =
+                  !!message.fileUrl &&
+                  ((message.fileMimeType &&
+                    message.fileMimeType.toLowerCase().startsWith("audio/")) ||
+                    (message.fileUrl &&
+                      (message.fileUrl.toLowerCase().endsWith(".webm") ||
+                        message.fileUrl.toLowerCase().endsWith(".ogg") ||
+                        message.fileUrl.toLowerCase().endsWith(".mp3") ||
+                        message.fileUrl.toLowerCase().endsWith(".m4a"))) ||
+                    (message.fileName &&
+                      (message.fileName.toLowerCase().endsWith(".webm") ||
+                        message.fileName.toLowerCase().endsWith(".ogg") ||
+                        message.fileName.toLowerCase().endsWith(".mp3") ||
+                        message.fileName.toLowerCase().endsWith(".m4a"))));
 
-              // Treat as image if type is IMAGE OR if it's a FILE with image mime/extension
-              const isImageMessage =
-                (message.messageType === "IMAGE" ||
-                  (message.messageType === "FILE" &&
-                    (message.fileMimeType?.startsWith("image/") ||
-                      message.fileName?.match(
-                        /\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i
-                      )))) &&
-                !isAudioFile;
+                // Treat as image if type is IMAGE OR if it's a FILE with image mime/extension
+                const isImageMessage =
+                  (message.messageType === "IMAGE" ||
+                    (message.messageType === "FILE" &&
+                      (message.fileMimeType?.startsWith("image/") ||
+                        message.fileName?.match(
+                          /\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i
+                        )))) &&
+                  !isAudioFile;
 
-              // Debug logging for image detection
+                // Debug logging for image detection
 
-              return (
-                <div
-                  key={`${message.id}-${message.createdAt}-${idxInGroup}`}
-                  className={`relative ${
-                    newMessageIds.has(message.id)
-                      ? message.messageType === "IMAGE"
-                        ? "message-image-enter"
-                        : "message-enter"
-                      : "message-stable"
-                  } ${
-                    showEmojiPicker === message.id ||
-                    selectedMessage === message.id
-                      ? "z-50"
-                      : ""
-                  }`}
-                  style={{
-                    animationDelay: newMessageIds.has(message.id)
-                      ? `${idxInGroup * 0.05}s`
-                      : "0s",
-                  }}
-                  data-message-id={message.id}
-                >
-                  {firstUnreadMessageId === message.id &&
-                    unreadMessages.length > 0 && (
-                      <div
-                        className="flex items-center justify-center my-3"
-                        ref={unreadIndicatorRef}
-                      >
-                        <div className="flex-1 h-px bg-gradient-to-r from-transparent via-blue-400 to-transparent"></div>
-                        <div className="px-3 py-1 bg-blue-500 text-white text-xs font-medium rounded-full shadow-sm">
-                          {unreadMessages.length} unread message
-                          {unreadMessages.length > 1 ? "s" : ""}
-                        </div>
-                        <div className="flex-1 h-px bg-gradient-to-r from-blue-400 via-transparent to-transparent"></div>
-                      </div>
-                    )}
-
+                return (
                   <div
-                    className={`flex items-start gap-1 sm:gap-2 ${
-                      isCurrentUser
-                        ? "justify-end pr-1 sm:pr-2"
-                        : "justify-start pl-0"
+                    key={`${message.id}-${message.createdAt}-${idxInGroup}`}
+                    className={`relative ${
+                      newMessageIds.has(message.id)
+                        ? message.messageType === "IMAGE"
+                          ? "message-image-enter"
+                          : "message-enter"
+                        : "message-stable"
                     } ${
-                      isUnread
-                        ? "bg-blue-50/30 -mx-2 sm:-mx-4 px-2 sm:px-3 py-1.5 rounded-lg"
+                      showEmojiPicker === message.id ||
+                      selectedMessage === message.id
+                        ? "z-50"
                         : ""
-                    } ${
-                      message.reactions && message.reactions.length > 0
-                        ? "mb-6"
-                        : isGrouped
-                        ? "mb-1"
-                        : "mb-2"
                     }`}
-                    onMouseDown={() => handleOptionsMouseDown(message.id)}
-                    onMouseUp={handleMouseUp}
-                    onMouseLeave={handleMouseUp}
-                    onClick={() => handleMessageTap(message.id)}
+                    style={{
+                      animationDelay: newMessageIds.has(message.id)
+                        ? `${idxInGroup * 0.05}s`
+                        : "0s",
+                    }}
+                    data-message-id={message.id}
                   >
-                    <div
-                      className={`w-6 sm:w-8 ${
-                        !isCurrentUser ? "block" : "hidden"
-                      }`}
-                    >
-                      {showAvatar && (
-                        <div className="relative">
-                          <img
-                            src={
-                              message.sender?.profile?.avatar ||
-                              "/images/chat.png"
-                            }
-                            className="h-6 w-6 sm:h-8 sm:w-8 rounded-full object-cover"
-                            alt={`${message.sender?.firstName} Avatar`}
-                          />
-                          {isUnread && (
-                            <div className="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 rounded-full border-2 border-white"></div>
-                          )}
+                    {firstUnreadMessageId === message.id &&
+                      unreadMessages.length > 0 && (
+                        <div
+                          className="flex items-center justify-center my-3"
+                          ref={unreadIndicatorRef}
+                        >
+                          <div className="flex-1 h-px bg-gradient-to-r from-transparent via-blue-400 to-transparent"></div>
+                          <div className="px-3 py-1 bg-blue-500 text-white text-xs font-medium rounded-full shadow-sm">
+                            {unreadMessages.length} unread message
+                            {unreadMessages.length > 1 ? "s" : ""}
+                          </div>
+                          <div className="flex-1 h-px bg-gradient-to-r from-blue-400 via-transparent to-transparent"></div>
                         </div>
                       )}
-                    </div>
 
                     <div
-                      className={`relative group ${
+                      className={`flex items-start gap-1 sm:gap-2 ${
                         isCurrentUser
-                          ? "max-w-[85%] sm:max-w-[75%] md:max-w-[320px] lg:max-w-[400px]"
-                          : "w-full max-w-[85%] sm:max-w-[75%] md:max-w-[320px] lg:max-w-[400px]"
+                          ? "justify-end pr-1 sm:pr-2"
+                          : "justify-start pl-0"
+                      } ${
+                        isUnread
+                          ? "bg-blue-50/30 -mx-2 sm:-mx-4 px-2 sm:px-3 py-1.5 rounded-lg"
+                          : ""
+                      } ${
+                        message.reactions && message.reactions.length > 0
+                          ? "mb-6"
+                          : isGrouped
+                          ? "mb-1"
+                          : "mb-2"
                       }`}
+                      onMouseDown={() => handleOptionsMouseDown(message.id)}
+                      onMouseUp={handleMouseUp}
+                      onMouseLeave={handleMouseUp}
+                      onClick={() => handleMessageTap(message.id)}
                     >
-                      {message.replyToId && (
+                      <div
+                        className={`w-6 sm:w-8 ${
+                          !isCurrentUser ? "block" : "hidden"
+                        }`}
+                      >
+                        {showAvatar && (
+                          <div className="relative">
+                            <img
+                              src={
+                                message.sender?.profile?.avatar ||
+                                "/images/chat.png"
+                              }
+                              className="h-6 w-6 sm:h-8 sm:w-8 rounded-full object-cover"
+                              alt={`${message.sender?.firstName} Avatar`}
+                            />
+                            {isUnread && (
+                              <div className="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 rounded-full border-2 border-white"></div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      <div
+                        className={`relative group ${
+                          isCurrentUser
+                            ? "max-w-[85%] sm:max-w-[70%] md:max-w-[60%]"
+                            : "w-full max-w-[85%] sm:max-w-[70%] md:max-w-[60%]"
+                        }`}
+                      >
                         <div
-                          onClick={() => {
-                            scrollToMessage(message.replyToId!);
-                          }}
-                          className={`relative z-10 mb-2 p-2 border-l-4 rounded-r-lg text-xs cursor-pointer transition-all ${
-                            isCurrentUser
-                              ? "border-blue-300 bg-blue-50/50 hover:bg-blue-50/70"
-                              : "border-gray-300 bg-gray-50 hover:bg-gray-100"
+                          className={`${
+                            message.messageType === "TEXT"
+                              ? isEmojiOnlyMessage(message.content || "")
+                                ? "inline-block bg-transparent border-0 shadow-none px-1 py-1"
+                                : "inline-block"
+                              : message.messageType === "IMAGE"
+                              ? "block w-full bg-transparent p-0" // Instagram-style: no bubble for images
+                              : "block w-full"
+                          } ${
+                            message.messageType === "TEXT" &&
+                            isEmojiOnlyMessage(message.content || "")
+                              ? ""
+                              : message.messageType === "IMAGE"
+                              ? "" // No padding for images
+                              : "px-2 py-1"
+                          } relative ${
+                            message.messageType === "TEXT" &&
+                            isEmojiOnlyMessage(message.content || "")
+                              ? ""
+                              : message.messageType === "IMAGE" || isAudioFile
+                              ? "" // No background for images or audio
+                              : isCurrentUser
+                              ? "bg-[#d9fdd3] text-gray-900 shadow-sm" // WhatsApp green for user
+                              : isUnread
+                              ? "bg-white border border-blue-200 text-gray-900 shadow-md"
+                              : "bg-white text-gray-900 shadow-sm" // WhatsApp white for others
+                          } ${
+                            message.messageType === "IMAGE"
+                              ? "rounded-[18px]"
+                              : isCurrentUser
+                              ? `${
+                                  !isGrouped && !isGroupedWithNext
+                                    ? "rounded-lg"
+                                    : !isGrouped && isGroupedWithNext
+                                    ? "rounded-lg rounded-br-sm"
+                                    : isGrouped && !isGroupedWithNext
+                                    ? "rounded-lg rounded-tr-sm"
+                                    : "rounded-lg rounded-tr-sm rounded-br-sm"
+                                }`
+                              : `${
+                                  !isGrouped && !isGroupedWithNext
+                                    ? "rounded-lg"
+                                    : !isGrouped && isGroupedWithNext
+                                    ? "rounded-lg rounded-bl-sm"
+                                    : isGrouped && !isGroupedWithNext
+                                    ? "rounded-lg rounded-tl-sm"
+                                    : "rounded-lg rounded-tl-sm rounded-bl-sm"
+                                }`
                           }`}
                         >
-                          <div className="flex items-center gap-2">
-                            <div className="flex-1 min-w-0">
-                              <div className="text-gray-600 font-medium mb-1">
-                                {message.replyTo
-                                  ? message.replyTo.sender.id ===
-                                    currentUser?.id
-                                    ? "yourself"
-                                    : `${
-                                        message.replyTo.sender.firstName ||
-                                        "User"
-                                      } ${
-                                        message.replyTo.sender.lastName || ""
-                                      }`.trim()
-                                  : "Loading..."}
+                          {/* Tail for received messages */}
+                          {!isCurrentUser &&
+                            !isGrouped &&
+                            message.messageType !== "IMAGE" && (
+                              <div className="absolute top-0 -left-[8px] w-[8px] h-[13px] overflow-hidden">
+                                <svg
+                                  viewBox="0 0 8 13"
+                                  width="8"
+                                  height="13"
+                                  className="fill-white"
+                                >
+                                  <path d="M1.533,3.568L8,12.193V1H2.812C1.042,1,0.474,2.156,1.533,3.568z" />
+                                </svg>
                               </div>
-                              <div className="text-gray-500 truncate flex items-center gap-1">
-                                {message.replyTo ? (
-                                  <>
-                                    {message.replyTo.messageType === "TEXT" ? (
-                                      <span className="truncate">
-                                        {message.replyTo.content || "Message"}
-                                      </span>
-                                    ) : message.replyTo.messageType ===
-                                      "IMAGE" ? (
+                            )}
+
+                          {/* Render Reply Preview INSIDE the bubble */}
+                          {message.replyTo && (
+                            <div
+                              className={`mb-1 rounded overflow-hidden border-l-4 ${
+                                isCurrentUser
+                                  ? "bg-black/5 border-green-600"
+                                  : "bg-black/5 border-purple-500"
+                              } cursor-pointer`}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const replyId = message.replyTo?.id;
+                                if (replyId) {
+                                  scrollToMessage(replyId);
+                                }
+                              }}
+                            >
+                              <div className="flex justify-between bg-black/5 p-1">
+                                <div className="flex-1 min-w-0">
+                                  <span
+                                    className={`block text-[10px] font-bold truncate ${
+                                      isCurrentUser
+                                        ? "text-green-700"
+                                        : "text-purple-600"
+                                    }`}
+                                  >
+                                    {message.replyTo.sender.id ===
+                                    currentUser?.id
+                                      ? "You"
+                                      : `${message.replyTo.sender?.firstName} ${message.replyTo.sender?.lastName}` ||
+                                        "User"}
+                                  </span>
+                                  <div className="text-[10px] text-gray-600 truncate">
+                                    {message.replyTo.messageType === "IMAGE" ? (
                                       <span className="flex items-center gap-1">
-                                        <BsImage className="text-gray-500" />
-                                        <span>
-                                          Photo
-                                          {message.replyTo.fileSize && (
-                                            <span className="text-xs text-gray-400 ml-1">
-                                              (
-                                              {formatFileSize(
-                                                message.replyTo.fileSize
-                                              )}
-                                              )
-                                            </span>
-                                          )}
-                                        </span>
+                                        <BsImage /> Photo
                                       </span>
                                     ) : message.replyTo.messageType ===
                                       "FILE" ? (
                                       <span className="flex items-center gap-1">
-                                        {getFileIcon(
-                                          message.replyTo.fileName || ""
-                                        )}
                                         <span className="truncate">
                                           {message.replyTo.fileName || "File"}
-                                          {message.replyTo.fileSize && (
-                                            <span className="text-xs text-gray-400 ml-1">
-                                              (
-                                              {formatFileSize(
-                                                message.replyTo.fileSize
-                                              )}
-                                              )
-                                            </span>
-                                          )}
                                         </span>
                                       </span>
                                     ) : message.replyTo.messageType ===
                                       "AUDIO" ? (
                                       <span className="flex items-center gap-1">
-                                        <MdMic className="text-gray-500" />
-                                        <span>
-                                          {message.replyTo.duration
-                                            ? `Voice Message (${Math.floor(
-                                                message.replyTo.duration / 60
-                                              )}:${(
-                                                message.replyTo.duration % 60
-                                              )
-                                                .toString()
-                                                .padStart(2, "0")})`
-                                            : "Voice Message"}
-                                        </span>
-                                      </span>
-                                    ) : message.replyTo.messageType ===
-                                      "LINK" ? (
-                                      <span className="truncate">
-                                        {message.replyTo.content || "Link"}
+                                        <MdMic /> Voice Message
                                       </span>
                                     ) : (
-                                      "Message"
+                                      message.replyTo.content || "Message"
                                     )}
-                                  </>
-                                ) : null}
-                              </div>
-                            </div>
-                            {/* Instagram-style image thumbnail on the right */}
-                            {message.replyTo?.messageType === "IMAGE" &&
-                              message.replyTo?.fileUrl && (
-                                <div className="flex-shrink-0">
-                                  <img
-                                    src={message.replyTo.fileUrl}
-                                    alt="Reply preview"
-                                    className="w-12 h-12 rounded object-cover"
-                                  />
+                                  </div>
                                 </div>
-                              )}
-                          </div>
-                        </div>
-                      )}
-
-                      <div
-                        className={`${
-                          message.messageType === "TEXT"
-                            ? isEmojiOnlyMessage(message.content || "")
-                              ? "inline-block bg-transparent border-0 shadow-none px-1 py-1"
-                              : "inline-block"
-                            : message.messageType === "IMAGE"
-                            ? "block w-full bg-transparent p-0" // Instagram-style: no bubble for images
-                            : "block w-full"
-                        } ${
-                          message.messageType === "TEXT" &&
-                          isEmojiOnlyMessage(message.content || "")
-                            ? ""
-                            : message.messageType === "IMAGE"
-                            ? "" // No padding for images
-                            : "px-2 sm:px-3 py-1.5"
-                        } ${
-                          // Add bottom padding if reactions exist to prevent overlap, but NOT for images
-                          message.reactions &&
-                          message.reactions.length > 0 &&
-                          message.messageType !== "IMAGE"
-                            ? "pb-3"
-                            : ""
-                        } relative ${
-                          message.messageType === "TEXT" &&
-                          isEmojiOnlyMessage(message.content || "")
-                            ? ""
-                            : message.messageType === "IMAGE" || isAudioFile
-                            ? "" // No background for images or audio
-                            : isCurrentUser
-                            ? "bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 text-white shadow-sm"
-                            : isUnread
-                            ? "bg-white border border-blue-200 text-gray-900 shadow-md"
-                            : "bg-gray-100 text-gray-900"
-                        } ${
-                          message.messageType === "IMAGE"
-                            ? "rounded-[18px]" // Images always rounded, allow overflow for hover elements
-                            : isCurrentUser
-                            ? `${
-                                !isGrouped && !isGroupedWithNext
-                                  ? "rounded-[22px]"
-                                  : !isGrouped && isGroupedWithNext
-                                  ? "rounded-[22px] rounded-br-md"
-                                  : isGrouped && !isGroupedWithNext
-                                  ? "rounded-[22px] rounded-tr-md"
-                                  : "rounded-[22px] rounded-tr-md rounded-br-md"
-                              }`
-                            : `${
-                                !isGrouped && !isGroupedWithNext
-                                  ? "rounded-[22px]"
-                                  : !isGrouped && isGroupedWithNext
-                                  ? "rounded-[22px] rounded-bl-md"
-                                  : isGrouped && !isGroupedWithNext
-                                  ? "rounded-[22px] rounded-tl-md"
-                                  : "rounded-[22px] rounded-tl-md rounded-bl-md"
-                              }`
-                        }`}
-                      >
-                        {message.messageType === "TEXT" &&
-                          (editingMessage === message.id ? (
-                            <div className="w-full editing-message">
-                              <textarea
-                                value={editingContent}
-                                onChange={(e) =>
-                                  setEditingContent(e.target.value)
-                                }
-                                className="w-full p-2 text-xs sm:text-sm bg-transparent border border-gray-300 rounded resize-none focus:outline-none focus:ring-2 focus:ring-blue-400"
-                                rows={2}
-                                autoFocus
-                                onKeyDown={(e) => {
-                                  if (e.key === "Enter" && !e.shiftKey) {
-                                    e.preventDefault();
-                                    handleSaveEdit(message.id);
-                                  } else if (e.key === "Escape") {
-                                    handleCancelEdit();
-                                  }
-                                }}
-                              />
-                              <div className="flex justify-end gap-2 mt-2">
-                                <button
-                                  onClick={handleCancelEdit}
-                                  className="px-3 py-1 text-xs text-gray-600 hover:text-gray-800 transition-colors"
-                                >
-                                  Cancel
-                                </button>
-                                <button
-                                  onClick={() => handleSaveEdit(message.id)}
-                                  className="px-3 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
-                                >
-                                  Save
-                                </button>
+                                {message.replyTo.messageType === "IMAGE" &&
+                                  message.replyTo.fileUrl && (
+                                    <img
+                                      src={message.replyTo.fileUrl}
+                                      alt="Reply"
+                                      className="w-8 h-8 rounded object-cover ml-2"
+                                    />
+                                  )}
                               </div>
                             </div>
-                          ) : (
-                            <div className="relative">
-                              <p
-                                className={`whitespace-pre-wrap leading-relaxed break-words ${
-                                  isEmojiOnlyMessage(message.content || "")
-                                    ? "text-4xl sm:text-5xl"
-                                    : "text-xs sm:text-sm"
-                                }`}
+                          )}
+
+                          {message.messageType === "TEXT" &&
+                            (editingMessage === message.id ? (
+                              <div className="w-full editing-message">
+                                <textarea
+                                  value={editingContent}
+                                  onChange={(e) =>
+                                    setEditingContent(e.target.value)
+                                  }
+                                  className="w-full p-2 text-xs sm:text-sm bg-transparent border border-gray-300 rounded resize-none focus:outline-none focus:ring-2 focus:ring-blue-400"
+                                  rows={2}
+                                  autoFocus
+                                  onKeyDown={(e) => {
+                                    if (e.key === "Enter" && !e.shiftKey) {
+                                      e.preventDefault();
+                                      handleSaveEdit(message.id);
+                                    } else if (e.key === "Escape") {
+                                      handleCancelEdit();
+                                    }
+                                  }}
+                                />
+                                <div className="flex justify-end gap-2 mt-2">
+                                  <button
+                                    onClick={handleCancelEdit}
+                                    className="px-3 py-1 text-xs text-gray-600 hover:text-gray-800 transition-colors"
+                                  >
+                                    Cancel
+                                  </button>
+                                  <button
+                                    onClick={() => handleSaveEdit(message.id)}
+                                    className="px-3 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+                                  >
+                                    Save
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="relative">
+                                <p
+                                  className={`whitespace-pre-wrap leading-relaxed break-words ${
+                                    isEmojiOnlyMessage(message.content || "")
+                                      ? "text-4xl sm:text-5xl"
+                                      : "text-xs sm:text-sm"
+                                  }`}
+                                >
+                                  {message.content}
+                                </p>
+                                <div
+                                  className={`flex items-center justify-end gap-1 mt-0.5 select-none leading-none ${
+                                    isCurrentUser
+                                      ? "text-gray-500"
+                                      : "text-gray-400"
+                                  }`}
+                                >
+                                  {message.isEdited && (
+                                    <span className="text-[9px] italic">
+                                      (edited)
+                                    </span>
+                                  )}
+                                  <span className="text-[9px]">
+                                    {formatTime(message.createdAt)}
+                                  </span>
+                                </div>
+                              </div>
+                            ))}
+
+                          {isImageMessage && (
+                            <div className="relative group">
+                              <ImageMessage
+                                message={message}
+                                onClick={setLightboxImage}
+                              />
+
+                              {/* Quick reaction bar (appears on hover like Instagram) */}
+                              <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center gap-1 bg-white/90 backdrop-blur-sm rounded-full px-2 py-1 shadow-lg">
+                                {commonReactions
+                                  .slice(0, 5)
+                                  .map((emoji: string) => (
+                                    <button
+                                      key={emoji}
+                                      onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        handleMessageReaction(
+                                          message.id,
+                                          emoji
+                                        );
+                                      }}
+                                      className="p-1 hover:scale-125 transition-transform text-lg pointer-events-auto"
+                                      title={`React with ${emoji}`}
+                                    >
+                                      {emoji}
+                                    </button>
+                                  ))}
+                                <button
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    setShowEmojiPicker(
+                                      showEmojiPicker === message.id
+                                        ? null
+                                        : message.id
+                                    );
+                                  }}
+                                  className="p-1 hover:scale-110 transition-transform pointer-events-auto"
+                                  title="More reactions"
+                                >
+                                  <BsEmojiSmile className="h-4 w-4 text-gray-600" />
+                                </button>
+                              </div>
+
+                              {/* Action buttons (bottom-left like Instagram) */}
+                              <div className="absolute bottom-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center gap-2">
+                                <button
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    handleReply(message);
+                                  }}
+                                  className="p-2 bg-white/90 backdrop-blur-sm rounded-full hover:bg-white transition-colors shadow-lg pointer-events-auto"
+                                  title="Reply"
+                                >
+                                  <BsReply className="h-4 w-4 text-gray-700" />
+                                </button>
+                                {isCurrentUser && (
+                                  <>
+                                    <button
+                                      onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        handleDeleteMessage(message.id);
+                                      }}
+                                      className="p-2 bg-white/90 backdrop-blur-sm rounded-full hover:bg-red-50 transition-colors shadow-lg pointer-events-auto"
+                                      title="Delete"
+                                    >
+                                      <MdDelete className="h-4 w-4 text-red-600" />
+                                    </button>
+                                    <button
+                                      onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        setSelectedMessage(message.id);
+                                      }}
+                                      className="p-2 bg-white/90 backdrop-blur-sm rounded-full hover:bg-white transition-colors shadow-lg pointer-events-auto"
+                                      title="More options"
+                                    >
+                                      <BsThreeDots className="h-4 w-4 text-gray-700" />
+                                    </button>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Voice / audio messages */}
+                          {isAudioFile && (
+                            <audio
+                              controls
+                              preload="metadata"
+                              className="w-full min-w-[250px]"
+                              src={message.fileUrl || ""}
+                            >
+                              Your browser does not support the audio element.
+                            </audio>
+                          )}
+
+                          {/* Generic file messages (exclude images and audio) */}
+                          {message.fileUrl &&
+                            !isAudioFile &&
+                            !isImageMessage && (
+                              <FileMessage
+                                message={message}
+                                isCurrentUser={isCurrentUser}
+                              />
+                            )}
+
+                          {/* Reactions bar - Overlay Style */}
+                          {message.reactions &&
+                            message.reactions.length > 0 && (
+                              <div
+                                className={`absolute -bottom-2 ${
+                                  isCurrentUser ? "right-0" : "left-0"
+                                } flex flex-wrap gap-0.5 z-10`}
                               >
-                                {message.content}
-                              </p>
-                              {message.isEdited && (
-                                <span className="text-xs text-gray-400 italic ml-2">
-                                  (edited)
-                                </span>
+                                {message.reactions.map((reaction) => {
+                                  const userReacted = reaction.users.includes(
+                                    currentUser?.id || 0
+                                  );
+                                  return (
+                                    <button
+                                      key={reaction.emoji}
+                                      onClick={() =>
+                                        handleMessageReaction(
+                                          message.id,
+                                          reaction.emoji
+                                        )
+                                      }
+                                      className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] shadow-sm border border-white transition-all hover:scale-110 ${
+                                        userReacted
+                                          ? "bg-blue-100 text-blue-800 border-blue-300"
+                                          : isCurrentUser
+                                          ? "bg-gray-100 text-gray-800 hover:bg-gray-200"
+                                          : "bg-white text-gray-800 hover:bg-gray-100"
+                                      }`}
+                                      title={
+                                        userReacted
+                                          ? "Click to remove your reaction"
+                                          : "Click to add this reaction"
+                                      }
+                                    >
+                                      <span>{reaction.emoji}</span>
+                                      {reaction.count > 1 && (
+                                        <span className="ml-1 text-[9px] font-bold">
+                                          {reaction.count}
+                                        </span>
+                                      )}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            )}
+
+                          {/* Hover actions - hidden for images since they have their own */}
+                          {!isImageMessage && (
+                            <div
+                              className={`absolute top-0 ${
+                                isCurrentUser
+                                  ? "right-full mr-2"
+                                  : "left-full ml-2"
+                              } opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center gap-1 bg-white shadow-lg rounded-full p-1 z-10`}
+                            >
+                              <button
+                                onClick={() => handleReply(message)}
+                                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                                title="Reply"
+                              >
+                                <BsReply className="h-4 w-4 text-gray-600" />
+                              </button>
+
+                              {/* React button - Only for other users' messages */}
+                              {!isCurrentUser && (
+                                <button
+                                  onClick={() =>
+                                    setShowEmojiPicker(
+                                      showEmojiPicker === message.id
+                                        ? null
+                                        : message.id
+                                    )
+                                  }
+                                  className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                                  title="React"
+                                >
+                                  <BsEmojiSmile className="h-4 w-4 text-gray-600" />
+                                </button>
+                              )}
+
+                              {/* Copy button - For all text messages */}
+                              {message.messageType === "TEXT" && (
+                                <button
+                                  onClick={() => {
+                                    navigator.clipboard.writeText(
+                                      message.content || ""
+                                    );
+                                    // Optional: Add toast notification here
+                                    console.log("📋 Copied to clipboard");
+                                  }}
+                                  className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                                  title="Copy"
+                                >
+                                  <MdContentCopy className="h-4 w-4 text-gray-600" />
+                                </button>
+                              )}
+
+                              {isCurrentUser &&
+                                message.messageType === "TEXT" && (
+                                  <button
+                                    onClick={() => handleEditMessage(message)}
+                                    className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                                    title="Edit"
+                                  >
+                                    <MdEdit className="h-4 w-4 text-gray-600" />
+                                  </button>
+                                )}
+                              {isCurrentUser && (
+                                <button
+                                  onClick={() =>
+                                    handleDeleteMessage(message.id)
+                                  }
+                                  className="p-2 hover:bg-red-50 rounded-full transition-colors"
+                                  title="Delete"
+                                >
+                                  <MdDelete className="h-4 w-4 text-red-600" />
+                                </button>
                               )}
                             </div>
-                          ))}
+                          )}
 
-                        {isImageMessage && (
-                          <div className="relative group">
-                            <ImageMessage
-                              message={message}
-                              onClick={setLightboxImage}
-                            />
-
-                            {/* Quick reaction bar (appears on hover like Instagram) */}
-                            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center gap-1 bg-white/90 backdrop-blur-sm rounded-full px-2 py-1 shadow-lg">
-                              {commonReactions
-                                .slice(0, 5)
-                                .map((emoji: string) => (
+                          {/* Reaction picker */}
+                          {showEmojiPicker === message.id && (
+                            <div
+                              className={`absolute z-50 mt-2 ${
+                                isCurrentUser ? "right-0" : "left-0"
+                              } bg-white border border-gray-200 rounded-lg shadow-lg p-3 emoji-picker`}
+                            >
+                              <div className="text-xs text-gray-500 mb-2 font-medium">
+                                Quick reactions
+                              </div>
+                              <div className="flex gap-2 mb-3">
+                                {commonReactions.map((emoji: string) => (
                                   <button
                                     key={emoji}
-                                    onClick={(e) => {
-                                      e.preventDefault();
-                                      e.stopPropagation();
+                                    onClick={() => {
+                                      console.log(
+                                        `🎯 [Chat] Message reaction button clicked: ${emoji} for message ${message.id}`
+                                      );
                                       handleMessageReaction(message.id, emoji);
+                                      setShowEmojiPicker(null);
                                     }}
-                                    className="p-1 hover:scale-125 transition-transform text-lg pointer-events-auto"
+                                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-lg"
                                     title={`React with ${emoji}`}
                                   >
                                     {emoji}
                                   </button>
                                 ))}
-                              <button
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  setShowEmojiPicker(
-                                    showEmojiPicker === message.id
-                                      ? null
-                                      : message.id
-                                  );
-                                }}
-                                className="p-1 hover:scale-110 transition-transform pointer-events-auto"
-                                title="More reactions"
-                              >
-                                <BsEmojiSmile className="h-4 w-4 text-gray-600" />
-                              </button>
-                            </div>
-
-                            {/* Action buttons (bottom-left like Instagram) */}
-                            <div className="absolute bottom-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center gap-2">
-                              <button
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  handleReply(message);
-                                }}
-                                className="p-2 bg-white/90 backdrop-blur-sm rounded-full hover:bg-white transition-colors shadow-lg pointer-events-auto"
-                                title="Reply"
-                              >
-                                <BsReply className="h-4 w-4 text-gray-700" />
-                              </button>
-                              {isCurrentUser && (
-                                <>
-                                  <button
-                                    onClick={(e) => {
-                                      e.preventDefault();
-                                      e.stopPropagation();
-                                      handleDeleteMessage(message.id);
-                                    }}
-                                    className="p-2 bg-white/90 backdrop-blur-sm rounded-full hover:bg-red-50 transition-colors shadow-lg pointer-events-auto"
-                                    title="Delete"
-                                  >
-                                    <MdDelete className="h-4 w-4 text-red-600" />
-                                  </button>
-                                  <button
-                                    onClick={(e) => {
-                                      e.preventDefault();
-                                      e.stopPropagation();
-                                      setSelectedMessage(message.id);
-                                    }}
-                                    className="p-2 bg-white/90 backdrop-blur-sm rounded-full hover:bg-white transition-colors shadow-lg pointer-events-auto"
-                                    title="More options"
-                                  >
-                                    <BsThreeDots className="h-4 w-4 text-gray-700" />
-                                  </button>
-                                </>
-                              )}
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Voice / audio messages */}
-                        {isAudioFile && (
-                          <audio
-                            controls
-                            preload="metadata"
-                            className="w-full min-w-[250px]"
-                            src={message.fileUrl || ""}
-                          >
-                            Your browser does not support the audio element.
-                          </audio>
-                        )}
-
-                        {/* Generic file messages (exclude images and audio) */}
-                        {message.fileUrl && !isAudioFile && !isImageMessage && (
-                          <FileMessage
-                            message={message}
-                            isCurrentUser={isCurrentUser}
-                          />
-                        )}
-
-                        {/* Reactions bar - Overlay Style */}
-                        {message.reactions && message.reactions.length > 0 && (
-                          <div
-                            className={`absolute -bottom-2 ${
-                              isCurrentUser ? "right-0" : "left-0"
-                            } flex flex-wrap gap-0.5 z-10`}
-                          >
-                            {message.reactions.map((reaction) => {
-                              const userReacted = reaction.users.includes(
-                                currentUser?.id || 0
-                              );
-                              return (
-                                <button
-                                  key={reaction.emoji}
-                                  onClick={() =>
+                              </div>
+                              <div className="border-t border-gray-200 pt-2">
+                                <EmojiPicker
+                                  onEmojiClick={(emojiData: EmojiClickData) => {
                                     handleMessageReaction(
                                       message.id,
-                                      reaction.emoji
-                                    )
-                                  }
-                                  className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] shadow-sm border border-white transition-all hover:scale-110 ${
-                                    userReacted
-                                      ? "bg-blue-100 text-blue-800 border-blue-300"
-                                      : isCurrentUser
-                                      ? "bg-gray-100 text-gray-800 hover:bg-gray-200"
-                                      : "bg-white text-gray-800 hover:bg-gray-100"
-                                  }`}
-                                  title={
-                                    userReacted
-                                      ? "Click to remove your reaction"
-                                      : "Click to add this reaction"
-                                  }
-                                >
-                                  <span>{reaction.emoji}</span>
-                                  {reaction.count > 1 && (
-                                    <span className="ml-1 text-[9px] font-bold">
-                                      {reaction.count}
-                                    </span>
-                                  )}
-                                </button>
-                              );
-                            })}
-                          </div>
-                        )}
-
-                        {/* Hover actions - hidden for images since they have their own */}
-                        {!isImageMessage && (
-                          <div
-                            className={`absolute top-0 ${
-                              isCurrentUser ? "-left-32" : "-right-24"
-                            } opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center gap-1 bg-white shadow-lg rounded-full p-1`}
-                          >
-                            <button
-                              onClick={() => handleReply(message)}
-                              className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-                              title="Reply"
-                            >
-                              <BsReply className="h-4 w-4 text-gray-600" />
-                            </button>
-
-                            {/* React button - Only for other users' messages */}
-                            {!isCurrentUser && (
-                              <button
-                                onClick={() =>
-                                  setShowEmojiPicker(
-                                    showEmojiPicker === message.id
-                                      ? null
-                                      : message.id
-                                  )
-                                }
-                                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-                                title="React"
-                              >
-                                <BsEmojiSmile className="h-4 w-4 text-gray-600" />
-                              </button>
-                            )}
-
-                            {/* Copy button - For all text messages */}
-                            {message.messageType === "TEXT" && (
-                              <button
-                                onClick={() => {
-                                  navigator.clipboard.writeText(
-                                    message.content || ""
-                                  );
-                                  // Optional: Add toast notification here
-                                  console.log("📋 Copied to clipboard");
-                                }}
-                                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-                                title="Copy"
-                              >
-                                <MdContentCopy className="h-4 w-4 text-gray-600" />
-                              </button>
-                            )}
-
-                            {isCurrentUser &&
-                              message.messageType === "TEXT" && (
-                                <button
-                                  onClick={() => handleEditMessage(message)}
-                                  className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-                                  title="Edit"
-                                >
-                                  <MdEdit className="h-4 w-4 text-gray-600" />
-                                </button>
-                              )}
-                            {isCurrentUser && (
-                              <button
-                                onClick={() => handleDeleteMessage(message.id)}
-                                className="p-2 hover:bg-red-50 rounded-full transition-colors"
-                                title="Delete"
-                              >
-                                <MdDelete className="h-4 w-4 text-red-600" />
-                              </button>
-                            )}
-                          </div>
-                        )}
-
-                        {/* Reaction picker */}
-                        {showEmojiPicker === message.id && (
-                          <div
-                            className={`absolute z-50 mt-2 ${
-                              isCurrentUser ? "right-0" : "left-0"
-                            } bg-white border border-gray-200 rounded-lg shadow-lg p-3 emoji-picker`}
-                          >
-                            <div className="text-xs text-gray-500 mb-2 font-medium">
-                              Quick reactions
-                            </div>
-                            <div className="flex gap-2 mb-3">
-                              {commonReactions.map((emoji: string) => (
-                                <button
-                                  key={emoji}
-                                  onClick={() => {
-                                    console.log(
-                                      `🎯 [Chat] Message reaction button clicked: ${emoji} for message ${message.id}`
+                                      emojiData.emoji
                                     );
-                                    handleMessageReaction(message.id, emoji);
                                     setShowEmojiPicker(null);
                                   }}
-                                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-lg"
-                                  title={`React with ${emoji}`}
-                                >
-                                  {emoji}
-                                </button>
-                              ))}
+                                  width={300}
+                                  height={300}
+                                  searchPlaceHolder="Search emojis..."
+                                  previewConfig={{ showPreview: false }}
+                                />
+                              </div>
                             </div>
-                            <div className="border-t border-gray-200 pt-2">
-                              <EmojiPicker
-                                onEmojiClick={(emojiData: EmojiClickData) => {
-                                  handleMessageReaction(
-                                    message.id,
-                                    emojiData.emoji
-                                  );
-                                  setShowEmojiPicker(null);
-                                }}
-                                width={300}
-                                height={300}
-                                searchPlaceHolder="Search emojis..."
-                                previewConfig={{ showPreview: false }}
-                              />
-                            </div>
-                          </div>
-                        )}
-                      </div>
+                          )}
+                        </div>
 
-                      {/* Current user avatar */}
-                      <div
-                        className={`w-8 ${isCurrentUser ? "block" : "hidden"}`}
-                      >
-                        {showAvatar && isCurrentUser && (
-                          <img
-                            src={
-                              currentUser?.profile?.avatar ||
-                              "/images/user-avatar.png"
-                            }
-                            className="h-8 w-8 rounded-full object-cover"
-                            alt="Your Avatar"
-                          />
-                        )}
+                        {/* Current user avatar */}
+                        <div
+                          className={`w-8 ${
+                            isCurrentUser ? "block" : "hidden"
+                          }`}
+                        >
+                          {showAvatar && isCurrentUser && (
+                            <img
+                              src={
+                                currentUser?.profile?.avatar ||
+                                "/images/user-avatar.png"
+                              }
+                              className="h-8 w-8 rounded-full object-cover"
+                              alt="Your Avatar"
+                            />
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              );
-            }}
-          />
+                );
+              }}
+            />
+          </div>
         )}
       </div>
 
