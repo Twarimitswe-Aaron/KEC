@@ -65,14 +65,16 @@ export class AuthController {
       res.cookie('jwt_access', access_token, {
         httpOnly: true,
         secure: this.configService.get('NODE_ENV') === 'production',
-        sameSite: 'strict',
+        sameSite:
+          this.configService.get('NODE_ENV') === 'production' ? 'none' : 'lax',
         path: '/',
       });
 
       res.cookie('jwt_refresh', refresh_token, {
         httpOnly: true,
         secure: this.configService.get('NODE_ENV') === 'production',
-        sameSite: 'strict',
+        sameSite:
+          this.configService.get('NODE_ENV') === 'production' ? 'none' : 'lax',
         path: '/',
       });
 
@@ -138,44 +140,46 @@ export class AuthController {
   }
 
   @UseGuards(AuthGuard)
-  @Put("update-profile")
+  @Put('update-profile')
   @UseInterceptors(
-    FileInterceptor("avatar", {
+    FileInterceptor('avatar', {
       storage: diskStorage({
-        destination: "./uploads/avatars",
+        destination: './uploads/avatars',
         filename: (req, file, cb) => {
-          const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-          const ext = file.originalname.split(".").pop();
+          const uniqueSuffix =
+            Date.now() + '-' + Math.round(Math.random() * 1e9);
+          const ext = file.originalname.split('.').pop();
           cb(null, `${file.fieldname}-${uniqueSuffix}.${ext}`);
         },
       }),
-    })
+    }),
   )
   async updateProfile(
     @Req() req,
     @UploadedFile() avatar: Express.Multer.File,
-    @Body() body?: UpdateUserDto
+    @Body() body?: UpdateUserDto,
   ) {
     const email = req.user?.email;
     if (!email) {
-      throw new BadRequestException("User not found");
+      throw new BadRequestException('User not found');
     }
-  
 
     let parsedProfile: any = {};
     if (body?.profile) {
       try {
         parsedProfile =
-          typeof body.profile === "string" ? JSON.parse(body.profile) : body.profile;
+          typeof body.profile === 'string'
+            ? JSON.parse(body.profile)
+            : body.profile;
       } catch (err) {
-        throw new BadRequestException("Invalid profile JSON format");
+        throw new BadRequestException('Invalid profile JSON format');
       }
     }
-  
+
     const avatarUrl = avatar
-      ? `${this.configService.get("BACKEND_URL")}/uploads/avatars/${avatar.filename}`
+      ? `${this.configService.get('BACKEND_URL')}/uploads/avatars/${avatar.filename}`
       : undefined;
-  
+
     try {
       const updatedUser = await this.prisma.user.update({
         where: { email },
@@ -209,30 +213,25 @@ export class AuthController {
         },
         include: { profile: true },
       });
-  
-      console.log("Profile updated:", updatedUser);
-      return { message: "Profile updated successfully" };
+
+      console.log('Profile updated:', updatedUser);
+      return { message: 'Profile updated successfully' };
     } catch (error: any) {
-      if (error.code === "P2025") {
-        throw new NotFoundException("Profile not found for the given user");
+      if (error.code === 'P2025') {
+        throw new NotFoundException('Profile not found for the given user');
       }
-      throw new InternalServerErrorException("Failed to update profile");
+      throw new InternalServerErrorException('Failed to update profile');
     }
   }
-  
 
+  @UseGuards(AuthGuard)
+  @Get('profile/:id')
+  async getUser(@Param('id') id: string) {
+    const userId = Number(id);
+    if (isNaN(userId)) throw new NotFoundException('Invalid user ID');
 
-@UseGuards(AuthGuard)
-@Get("profile/:id")
-async getUser(@Param("id") id: string) {
-  const userId = Number(id);
-  if (isNaN(userId)) throw new NotFoundException("Invalid user ID");
-
-  return this.authService.findUserProfile(userId);
-}
-
-
-  
+    return this.authService.findUserProfile(userId);
+  }
 
   @Post('refresh')
   async refresh(
@@ -248,7 +247,8 @@ async getUser(@Param("id") id: string) {
     res.cookie('jwt_access', access_token, {
       httpOnly: true,
       secure: this.configService.get('NODE_ENV') === 'production',
-      sameSite: 'strict',
+      sameSite:
+        this.configService.get('NODE_ENV') === 'production' ? 'none' : 'lax',
       path: '/',
     });
   }
@@ -348,24 +348,23 @@ async getUser(@Param("id") id: string) {
     return { message: 'Password reset successful' };
   }
 
-  @Post("resetKnownPassword")
-  async resetKnownPass(@Body() resetKnowPassDto:ResetKnownPassDto){
-  const record=await this.prisma.user.findUnique({
-    where:{email:resetKnowPassDto.email}
-  })
-  if(!record){
-    throw new BadRequestException("Invalid Credentials");
-  }
-  const hashedPassword = await this.authService.hashPassword(
-    resetKnowPassDto.password,
-  );
-  await this.prisma.user.update({
-    where:{email:resetKnowPassDto.email},
-    data:{password:hashedPassword}
-  })
+  @Post('resetKnownPassword')
+  async resetKnownPass(@Body() resetKnowPassDto: ResetKnownPassDto) {
+    const record = await this.prisma.user.findUnique({
+      where: { email: resetKnowPassDto.email },
+    });
+    if (!record) {
+      throw new BadRequestException('Invalid Credentials');
+    }
+    const hashedPassword = await this.authService.hashPassword(
+      resetKnowPassDto.password,
+    );
+    await this.prisma.user.update({
+      where: { email: resetKnowPassDto.email },
+      data: { password: hashedPassword },
+    });
 
-  return {message:"Password reset successfull"}
-
+    return { message: 'Password reset successfull' };
   }
 
   @Post('logout')

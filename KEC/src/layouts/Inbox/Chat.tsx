@@ -479,6 +479,7 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
   const [removeReaction] = useRemoveReactionMutation();
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const messageInputRef = useRef<HTMLTextAreaElement>(null);
   const unreadIndicatorRef = useRef<HTMLDivElement>(null);
   const [showUnreadIndicator, setShowUnreadIndicator] = useState(false);
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
@@ -1267,6 +1268,10 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
       });
       setSelectedMessage(null);
       setShowEmojiPicker(null);
+      // Auto-focus the input
+      setTimeout(() => {
+        messageInputRef.current?.focus();
+      }, 0);
     },
     [currentUser]
   );
@@ -2809,6 +2814,7 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
 
                   {/* Text input */}
                   <textarea
+                    ref={messageInputRef}
                     value={newMessage}
                     onChange={handleInputChange}
                     onKeyDown={(e) => {
