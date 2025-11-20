@@ -323,6 +323,25 @@ export class ChatService {
           sender: { include: { profile: true } },
           readBy: true,
           messageReactions: { select: { emoji: true, userId: true } },
+          replyTo: {
+            select: {
+              id: true,
+              content: true,
+              messageType: true,
+              fileUrl: true,
+              fileName: true,
+              fileSize: true,
+              fileMimeType: true,
+              duration: true,
+              sender: {
+                select: {
+                  id: true,
+                  firstName: true,
+                  lastName: true,
+                },
+              },
+            },
+          },
         },
         orderBy: { createdAt: 'desc' },
         skip,
@@ -446,6 +465,25 @@ export class ChatService {
       include: {
         sender: { include: { profile: true } },
         readBy: true,
+        replyTo: {
+          select: {
+            id: true,
+            content: true,
+            messageType: true,
+            fileUrl: true,
+            fileName: true,
+            fileSize: true,
+            fileMimeType: true,
+            duration: true,
+            sender: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+              },
+            },
+          },
+        },
       },
     });
 

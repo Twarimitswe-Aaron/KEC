@@ -23,11 +23,12 @@ export interface Message {
   senderId: number;
   chatId: number;
   content?: string;
-  messageType: "TEXT" | "IMAGE" | "FILE" | "LINK";
+  messageType: "TEXT" | "IMAGE" | "FILE" | "AUDIO" | "LINK";
   fileUrl?: string;
   fileName?: string;
   fileSize?: number;
   fileMimeType?: string;
+  duration?: number; // Duration in seconds for voice/audio messages
   isRead: boolean;
   isDelivered?: boolean;
   isEdited?: boolean;
@@ -35,8 +36,12 @@ export interface Message {
   replyTo?: {
     id: number;
     content?: string;
-    messageType: "TEXT" | "IMAGE" | "FILE" | "LINK";
+    messageType: "TEXT" | "IMAGE" | "FILE" | "AUDIO" | "LINK";
     fileUrl?: string; // For displaying image thumbnails in reply preview
+    fileName?: string; // For displaying file names in reply preview
+    fileSize?: number; // For displaying file sizes in reply preview
+    fileMimeType?: string; // For determining file types in reply preview
+    duration?: number; // For displaying audio duration in reply preview
     sender: {
       id: number;
       firstName: string;
@@ -89,7 +94,7 @@ export interface CreateChatRequest {
 export interface SendMessageRequest {
   chatId: number;
   content?: string;
-  messageType: "TEXT" | "IMAGE" | "FILE" | "LINK";
+  messageType: "TEXT" | "IMAGE" | "FILE" | "AUDIO" | "LINK";
   fileUrl?: string;
   fileName?: string;
   fileSize?: number;

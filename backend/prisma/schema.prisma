@@ -4,7 +4,6 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 enum Role {
@@ -331,6 +330,7 @@ model Message {
   fileName     String?
   fileSize     Int?
   fileMimeType String?
+  duration     Int? // Duration in seconds for audio/voice messages
   replyToId    Int? // ID of message being replied to
   isRead       Boolean     @default(false)
   isEdited     Boolean     @default(false)
@@ -391,5 +391,6 @@ enum MessageType {
   TEXT
   IMAGE
   FILE
+  AUDIO
   LINK
 }

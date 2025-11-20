@@ -7,10 +7,10 @@ import { PrismaService } from './prisma.service';
   providers: [
     {
       provide: PrismaClient,
-      useValue: new PrismaClient(),
+      useExisting: PrismaService,
     },
     PrismaService,
   ],
-  exports: [PrismaService,PrismaClient],
+  exports: [PrismaService, PrismaClient],
 })
 export class PrismaModule {}

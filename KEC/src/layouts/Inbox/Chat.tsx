@@ -280,6 +280,10 @@ interface ReplyingToMessage {
   senderName: string;
   messageType: string;
   fileUrl?: string; // For displaying image thumbnails in reply preview
+  fileName?: string;
+  fileSize?: number;
+  fileMimeType?: string;
+  duration?: number;
 }
 
 const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
@@ -289,32 +293,30 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
 
   // Add smooth message insertion styles
   const messageAnimationStyle = `
-    .message-enter {
-      opacity: 0;
-      transform: translateY(20px) scale(0.95);
-      transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    @keyframes messageEnter {
+      from { 
+        opacity: 0;
+        transform: translateY(20px) scale(0.95);
+      }
+      to { 
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
     }
-    
-    .message-enter-active {
-      opacity: 1;
-      transform: translateY(0) scale(1);
+
+    .message-enter {
+      animation: messageEnter 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
     }
     
     .message-stable {
       opacity: 1;
       transform: translateY(0) scale(1);
-      transition: all 0.3s ease;
     }
     
     .message-image-enter {
       opacity: 0;
       transform: translateY(8px);
-      transition: opacity 0.25s ease-out, transform 0.25s ease-out;
-    }
-    
-    .message-image-enter-active {
-      opacity: 1;
-      transform: translateY(0);
+      animation: messageEnter 0.4s ease-out forwards;
     }
     
     /* Smooth image loading */
@@ -716,45 +718,30 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
   // Scroll to a specific message (for reply navigation)
   const scrollToMessage = useCallback(
     (messageId: number) => {
-      // First, try to find the message in the current DOM
-      const messageElement = document.querySelector(
-        `[data-message-id="${messageId}"]`
-      );
+      const messageIndex = messages.findIndex((m) => m.id === messageId);
 
-      if (messageElement) {
-        // Message is in DOM, scroll to it directly
-        messageElement.scrollIntoView({ behavior: "smooth", block: "center" });
+      if (messageIndex !== -1 && virtuosoRef.current) {
+        // Always use Virtuoso for scrolling to ensure proper alignment and virtualization handling
+        virtuosoRef.current.scrollToIndex({
+          index: messageIndex,
+          align: "center",
+          behavior: "smooth",
+        });
 
-        // Add highlight effect
-        messageElement.classList.add("message-highlight");
+        // Add highlight effect after a short delay to allow scroll to start
         setTimeout(() => {
-          messageElement.classList.remove("message-highlight");
-        }, 2000);
+          const messageElement = document.querySelector(
+            `[data-message-id="${messageId}"]`
+          );
+          if (messageElement) {
+            messageElement.classList.add("message-highlight");
+            setTimeout(() => {
+              messageElement.classList.remove("message-highlight");
+            }, 2000);
+          }
+        }, 300); // Wait for scroll to likely bring item into view
       } else {
-        // Message not in DOM (virtualized), find its index and use Virtuoso's scrollToIndex
-        const messageIndex = messages.findIndex((m) => m.id === messageId);
-
-        if (messageIndex !== -1 && virtuosoRef.current) {
-          // Use Virtuoso's scrollToIndex to scroll to the message
-          virtuosoRef.current.scrollToIndex({
-            index: messageIndex,
-            align: "center",
-            behavior: "smooth",
-          });
-
-          // Wait for scroll to complete, then highlight
-          setTimeout(() => {
-            const element = document.querySelector(
-              `[data-message-id="${messageId}"]`
-            );
-            if (element) {
-              element.classList.add("message-highlight");
-              setTimeout(() => {
-                element.classList.remove("message-highlight");
-              }, 2000);
-            }
-          }, 500);
-        }
+        console.warn(`[Chat] Could not find message ${messageId} to scroll to`);
       }
     },
     [messages]
@@ -801,9 +788,10 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
   useEffect(() => {
     if (justSentRef.current && messages.length > 0) {
       // Reset after a short delay to allow followOutput to trigger
+      // Increased to 500ms to ensure it works reliably across browsers (Edge/Chrome)
       const timer = setTimeout(() => {
         justSentRef.current = false;
-      }, 100);
+      }, 500);
       return () => clearTimeout(timer);
     }
   }, [messages.length]);
@@ -1272,6 +1260,10 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
         senderName: senderName,
         messageType: message.messageType,
         fileUrl: message.fileUrl, // Include fileUrl for image thumbnails
+        fileName: message.fileName,
+        fileSize: message.fileSize,
+        fileMimeType: message.fileMimeType,
+        duration: message.duration,
       });
       setSelectedMessage(null);
       setShowEmojiPicker(null);
@@ -1904,20 +1896,6 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
                       ? `${idxInGroup * 0.05}s`
                       : "0s",
                   }}
-                  onTransitionEnd={() => {
-                    if (newMessageIds.has(message.id)) {
-                      const element = document.querySelector(
-                        `[data-message-id="${message.id}"]`
-                      );
-                      if (element) {
-                        element.classList.remove(
-                          "message-enter",
-                          "message-image-enter"
-                        );
-                        element.classList.add("message-stable");
-                      }
-                    }
-                  }}
                   data-message-id={message.id}
                 >
                   {firstUnreadMessageId === message.id &&
@@ -2021,30 +1999,65 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
                                     ) : message.replyTo.messageType ===
                                       "IMAGE" ? (
                                       <span className="flex items-center gap-1">
-                                        <span>📷</span>
-                                        <span>Photo</span>
+                                        <BsImage className="text-gray-500" />
+                                        <span>
+                                          Photo
+                                          {message.replyTo.fileSize && (
+                                            <span className="text-xs text-gray-400 ml-1">
+                                              (
+                                              {formatFileSize(
+                                                message.replyTo.fileSize
+                                              )}
+                                              )
+                                            </span>
+                                          )}
+                                        </span>
                                       </span>
                                     ) : message.replyTo.messageType ===
                                       "FILE" ? (
                                       <span className="flex items-center gap-1">
-                                        <span>📄</span>
-                                        <span>File</span>
+                                        {getFileIcon(
+                                          message.replyTo.fileName || ""
+                                        )}
+                                        <span className="truncate">
+                                          {message.replyTo.fileName || "File"}
+                                          {message.replyTo.fileSize && (
+                                            <span className="text-xs text-gray-400 ml-1">
+                                              (
+                                              {formatFileSize(
+                                                message.replyTo.fileSize
+                                              )}
+                                              )
+                                            </span>
+                                          )}
+                                        </span>
+                                      </span>
+                                    ) : message.replyTo.messageType ===
+                                      "AUDIO" ? (
+                                      <span className="flex items-center gap-1">
+                                        <MdMic className="text-gray-500" />
+                                        <span>
+                                          {message.replyTo.duration
+                                            ? `Voice Message (${Math.floor(
+                                                message.replyTo.duration / 60
+                                              )}:${(
+                                                message.replyTo.duration % 60
+                                              )
+                                                .toString()
+                                                .padStart(2, "0")})`
+                                            : "Voice Message"}
+                                        </span>
                                       </span>
                                     ) : message.replyTo.messageType ===
                                       "LINK" ? (
-                                      <span className="flex items-center gap-1 truncate">
-                                        <span>🔗</span>
-                                        <span className="truncate">
-                                          {message.replyTo.content || "Link"}
-                                        </span>
+                                      <span className="truncate">
+                                        {message.replyTo.content || "Link"}
                                       </span>
                                     ) : (
                                       "Message"
                                     )}
                                   </>
-                                ) : (
-                                  "Tap to view original message"
-                                )}
+                                ) : null}
                               </div>
                             </div>
                             {/* Instagram-style image thumbnail on the right */}
@@ -2504,7 +2517,10 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
         {/* Reply preview */}
         {replyingTo && (
           <div className="px-4 pt-3 pb-2 border-b border-gray-100">
-            <div className="flex items-center justify-between bg-gray-50 rounded-lg p-3">
+            <div
+              className="flex items-center justify-between bg-gray-50 rounded-lg p-3 cursor-pointer hover:bg-gray-100 transition-colors"
+              onClick={() => scrollToMessage(replyingTo!.id)}
+            >
               <div className="flex items-center gap-3 flex-1 min-w-0">
                 <div className="w-1 h-8 bg-blue-500 rounded-full flex-shrink-0"></div>
                 <div className="flex-1 min-w-0">
@@ -2516,20 +2532,44 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
                       <span className="truncate">{replyingTo!.content}</span>
                     ) : replyingTo!.messageType === "IMAGE" ? (
                       <span className="flex items-center gap-1">
-                        <span>📷</span>
-                        <span>Photo</span>
+                        <BsImage className="text-gray-500" />
+                        <span>
+                          Photo
+                          {replyingTo!.fileSize && (
+                            <span className="text-xs text-gray-400 ml-1">
+                              ({formatFileSize(replyingTo!.fileSize)})
+                            </span>
+                          )}
+                        </span>
                       </span>
                     ) : replyingTo!.messageType === "FILE" ? (
                       <span className="flex items-center gap-1">
-                        <span>📄</span>
-                        <span>{replyingTo!.content || "File"}</span>
+                        {getFileIcon(replyingTo!.fileName || "")}
+                        <span className="truncate">
+                          {replyingTo!.fileName || "File"}
+                          {replyingTo!.fileSize && (
+                            <span className="text-xs text-gray-400 ml-1">
+                              ({formatFileSize(replyingTo!.fileSize)})
+                            </span>
+                          )}
+                        </span>
+                      </span>
+                    ) : replyingTo!.messageType === "AUDIO" ? (
+                      <span className="flex items-center gap-1">
+                        <MdMic className="text-gray-500" />
+                        <span>
+                          {replyingTo!.duration
+                            ? `Voice Message (${Math.floor(
+                                replyingTo!.duration / 60
+                              )}:${(replyingTo!.duration % 60)
+                                .toString()
+                                .padStart(2, "0")})`
+                            : "Voice Message"}
+                        </span>
                       </span>
                     ) : replyingTo!.messageType === "LINK" ? (
-                      <span className="flex items-center gap-1 truncate">
-                        <span>🔗</span>
-                        <span className="truncate">
-                          {replyingTo!.content || "Link"}
-                        </span>
+                      <span className="truncate">
+                        {replyingTo!.content || "Link"}
                       </span>
                     ) : (
                       <span className="truncate">{replyingTo!.content}</span>
@@ -2548,7 +2588,8 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
                 )}
               </div>
               <button
-                onClick={() => {
+                onClick={(e) => {
+                  e.stopPropagation();
                   console.log("❌ [Chat] Canceling reply");
                   setReplyingTo(null);
                 }}
