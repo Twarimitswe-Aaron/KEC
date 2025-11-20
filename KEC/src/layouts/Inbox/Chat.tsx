@@ -25,7 +25,17 @@ import {
   MdPlayArrow,
   MdPause,
   MdStop,
+  MdDownload,
 } from "react-icons/md";
+import {
+  BsImage,
+  BsFileEarmarkText,
+  BsFileEarmarkPdf,
+  BsFileEarmarkWord,
+  BsFileEarmarkExcel,
+  BsFileEarmarkPpt,
+  BsFileEarmarkZip,
+} from "react-icons/bs";
 import { useChat } from "../../hooks/useChat";
 import {
   Message,
@@ -34,6 +44,190 @@ import {
   useAddReactionMutation,
   useRemoveReactionMutation,
 } from "../../state/api/chatApi";
+import EmojiPicker, { EmojiClickData } from "emoji-picker-react";
+import { commonReactions } from "../../utils/emojiData";
+
+// --- Helper Functions & Components ---
+
+const formatFileSize = (bytes?: number) => {
+  if (!bytes) return "";
+  if (bytes === 0) return "0 B";
+  const k = 1024;
+  const sizes = ["B", "KB", "MB", "GB", "TB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i];
+};
+
+const getFileIcon = (fileName: string) => {
+  const ext = fileName.split(".").pop()?.toLowerCase();
+  switch (ext) {
+    case "pdf":
+      return <BsFileEarmarkPdf className="w-8 h-8 text-red-500" />;
+    case "doc":
+    case "docx":
+      return <BsFileEarmarkWord className="w-8 h-8 text-blue-500" />;
+    case "xls":
+    case "xlsx":
+      return <BsFileEarmarkExcel className="w-8 h-8 text-green-500" />;
+    case "ppt":
+    case "pptx":
+      return <BsFileEarmarkPpt className="w-8 h-8 text-orange-500" />;
+    case "zip":
+    case "rar":
+    case "7z":
+      return <BsFileEarmarkZip className="w-8 h-8 text-yellow-600" />;
+    default:
+      return <BsFileEarmarkText className="w-8 h-8 text-gray-500" />;
+  }
+};
+
+const getFullUrl = (url?: string) => {
+  if (!url) return "";
+  if (url.startsWith("http") || url.startsWith("blob:")) return url;
+  const backendUrl =
+    import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
+  return `${backendUrl.replace(/\/$/, "")}/${url.replace(/^\//, "")}`;
+};
+
+const FileMessage = React.memo(
+  ({
+    message,
+    isCurrentUser,
+  }: {
+    message: Message;
+    isCurrentUser: boolean;
+  }) => {
+    const fileName = message.fileName || "File";
+    const ext = fileName.split(".").pop()?.toUpperCase() || "FILE";
+    const size = formatFileSize(message.fileSize);
+    const fileUrl = getFullUrl(message.fileUrl);
+
+    return (
+      <div
+        className={`flex items-center gap-3 p-2 rounded-lg ${
+          isCurrentUser ? "bg-black/10" : "bg-black/5"
+        } max-w-[300px]`}
+      >
+        <div className="bg-white p-2 rounded-lg shadow-sm">
+          {getFileIcon(fileName)}
+        </div>
+        <div className="flex-1 min-w-0 overflow-hidden">
+          <p className="text-sm font-medium truncate text-inherit">
+            {fileName}
+          </p>
+          <p className="text-xs opacity-70">
+            {size} • {ext}
+          </p>
+        </div>
+        {fileUrl && (
+          <a
+            href={fileUrl}
+            download={fileName}
+            target="_blank"
+            rel="noreferrer"
+            className={`p-2 rounded-full transition-colors ${
+              isCurrentUser
+                ? "hover:bg-white/20 text-white"
+                : "hover:bg-gray-200 text-gray-600"
+            }`}
+            title="Download"
+          >
+            <MdDownload className="w-5 h-5" />
+          </a>
+        )}
+      </div>
+    );
+  }
+);
+
+const ImageMessage = React.memo(
+  ({
+    message,
+    onClick,
+  }: {
+    message: Message;
+    onClick: (src: string) => void;
+  }) => {
+    const [isLoading, setIsLoading] = useState(true);
+    const [hasError, setHasError] = useState(false);
+    const imgRef = useRef<HTMLImageElement>(null);
+    const imageUrl = getFullUrl(message.fileUrl);
+
+    // Check if image is already loaded (cached) on mount
+    useEffect(() => {
+      if (imgRef.current && imgRef.current.complete) {
+        if (imgRef.current.naturalWidth > 0) {
+          setIsLoading(false);
+        }
+      }
+    }, []);
+
+    if (hasError) {
+      return (
+        <div className="flex flex-col items-center justify-center w-full h-40 bg-gray-100 rounded-lg text-gray-400">
+          <BsImage className="w-8 h-8 mb-2" />
+          <span className="text-xs">Image failed to load</span>
+        </div>
+      );
+    }
+
+    return (
+      <div
+        className="relative group cursor-pointer overflow-hidden rounded-lg bg-gray-100 min-h-[150px]"
+        onClick={() => imageUrl && onClick(imageUrl)}
+      >
+        {isLoading && (
+          <div className="absolute inset-0 flex items-center justify-center bg-gray-200 animate-pulse z-10">
+            <BsImage className="w-8 h-8 text-gray-400" />
+          </div>
+        )}
+        <img
+          ref={imgRef}
+          src={imageUrl}
+          alt={message.fileName || "Image"}
+          className={`w-full h-auto max-h-[320px] object-cover transition-opacity duration-300 ${
+            isLoading ? "opacity-0" : "opacity-100"
+          }`}
+          onLoad={() => setIsLoading(false)}
+          onError={() => {
+            setIsLoading(false);
+            setHasError(true);
+          }}
+        />
+      </div>
+    );
+  }
+);
+
+const Lightbox = ({ src, onClose }: { src: string; onClose: () => void }) => {
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", handleEsc);
+    return () => window.removeEventListener("keydown", handleEsc);
+  }, [onClose]);
+
+  return (
+    <div
+      className="fixed inset-0 z-[9999] bg-black/90 flex items-center justify-center p-4 animate-in fade-in duration-200"
+      onClick={onClose}
+    >
+      <button
+        onClick={onClose}
+        className="absolute top-4 right-4 p-2 text-white hover:bg-white/10 rounded-full transition-colors"
+      >
+        <MdClose className="w-8 h-8" />
+      </button>
+      <img
+        src={src}
+        alt="Full view"
+        className="max-w-full max-h-[90vh] object-contain rounded-md shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      />
+    </div>
+  );
+};
 
 interface ChatProps {
   onToggleRightSidebar: () => void;
@@ -228,6 +422,7 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const unreadIndicatorRef = useRef<HTMLDivElement>(null);
   const [showUnreadIndicator, setShowUnreadIndicator] = useState(false);
+  const [lightboxImage, setLightboxImage] = useState<string | null>(null);
 
   // Handle unread message indicator visibility
   useEffect(() => {
@@ -241,32 +436,26 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
     setInitialScrollDone(false);
   }, []);
 
-  // Handle emoji selection for input
-  const handleEmojiSelect = useCallback(
-    async (emoji: string) => {
-      // Check if it's a single emoji and the input is empty - send as emoji message
-      if (
-        !newMessage.trim() &&
-        /^[\p{Emoji_Presentation}\p{Emoji}\uFE0F\u200D]+$/u.test(emoji)
-      ) {
-        // Send emoji directly as a message
-        if (activeChat && isConnected) {
-          try {
-            await sendMessage(emoji, "TEXT");
-            setShowMainEmojiPicker(false);
-            return;
-          } catch (error) {
-            console.error("Failed to send emoji message:", error);
-          }
-        }
+  // Handle ESC key to close emoji picker
+  useEffect(() => {
+    const handleEscKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && showMainEmojiPicker) {
+        console.log("🎯 [DEBUG] ESC key pressed - closing emoji picker");
+        setShowMainEmojiPicker(false);
       }
+    };
 
-      // Otherwise add to input text
-      setNewMessage((prev) => prev + emoji);
-      setShowMainEmojiPicker(false);
-    },
-    [newMessage, activeChat, isConnected, sendMessage]
-  );
+    window.addEventListener("keydown", handleEscKey);
+    return () => window.removeEventListener("keydown", handleEscKey);
+  }, [showMainEmojiPicker]);
+
+  // Handle emoji selection for input
+  const handleEmojiSelect = useCallback((emoji: string) => {
+    console.log("🎯 [DEBUG] handleEmojiSelect called with emoji:", emoji);
+    // Add emoji to input text
+    setNewMessage((prev) => prev + emoji);
+    // Keep picker open so users can add multiple emojis
+  }, []);
 
   // Handle message reaction (toggle: add if not exists, remove if exists)
   const handleMessageReaction = useCallback(
@@ -695,176 +884,9 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
       ""
     );
 
-    // Allow up to 3 emojis for large display, and ensure no other text exists
-    return nonEmojiChars.length === 0 && emojiCount >= 1 && emojiCount <= 3;
+    // Only allow 1 emoji for large display
+    return nonEmojiChars.length === 0 && emojiCount === 1;
   };
-
-  // Common emoji reactions
-  const commonReactions = ["❤️", "😂", "😮", "😢", "😠", "👍", "👎", "🔥"];
-
-  // Main emoji picker emojis
-  const mainEmojis = [
-    "😀",
-    "😃",
-    "😄",
-    "😁",
-    "😆",
-    "😅",
-    "😂",
-    "🤣",
-    "😊",
-    "😇",
-    "🙂",
-    "🙃",
-    "😉",
-    "😌",
-    "😍",
-    "🥰",
-    "😘",
-    "😗",
-    "😙",
-    "😚",
-    "😋",
-    "😛",
-    "😝",
-    "😜",
-    "🤪",
-    "🤨",
-    "🧐",
-    "🤓",
-    "😎",
-    "🤩",
-    "🥳",
-    "😏",
-    "😒",
-    "😞",
-    "😔",
-    "😟",
-    "😕",
-    "🙁",
-    "☹️",
-    "😣",
-    "😖",
-    "😫",
-    "😩",
-    "🥺",
-    "😢",
-    "😭",
-    "😤",
-    "😠",
-    "😡",
-    "🤬",
-    "🤯",
-    "😳",
-    "🥵",
-    "🥶",
-    "😱",
-    "😨",
-    "😰",
-    "😥",
-    "😓",
-    "🤗",
-    "🤔",
-    "🤭",
-    "🤫",
-    "🤥",
-    "😶",
-    "😐",
-    "😑",
-    "😬",
-    "🙄",
-    "😯",
-    "😦",
-    "😧",
-    "😮",
-    "😲",
-    "🥱",
-    "😴",
-    "🤤",
-    "😪",
-    "😵",
-    "🤐",
-    "🥴",
-    "🤢",
-    "🤮",
-    "🤧",
-    "😷",
-    "🤒",
-    "🤕",
-    "🤑",
-    "🤠",
-    "😈",
-    "👿",
-    "👹",
-    "👺",
-    "🤡",
-    "💩",
-    "👻",
-    "💀",
-    "☠️",
-    "👽",
-    "👾",
-    "🤖",
-    "🎃",
-    "😺",
-    "😸",
-    "😹",
-    "😻",
-    "😼",
-    "😽",
-    "🙀",
-    "😿",
-    "👋",
-    "🤚",
-    "🖐️",
-    "✋",
-    "🖖",
-    "👌",
-    "🤌",
-    "🤏",
-    "✌️",
-    "🤞",
-    "🤟",
-    "🤘",
-    "🤙",
-    "👈",
-    "👉",
-    "👆",
-    "🖕",
-    "👇",
-    "☝️",
-    "👍",
-    "👎",
-    "👊",
-    "✊",
-    "🤛",
-    "🤜",
-    "👏",
-    "🙌",
-    "👐",
-    "🤲",
-    "🤝",
-    "🙏",
-    "✍️",
-    "💅",
-    "🤳",
-    "💪",
-    "🦾",
-    "🦵",
-    "🦿",
-    "🦶",
-    "👂",
-    "🦻",
-    "👃",
-    "🧠",
-    "🫀",
-    "🫁",
-    "🦷",
-    "🦴",
-    "👀",
-    "👁️",
-    "👅",
-  ];
 
   // Handle double-tap for quick reaction
   const [lastTapTime, setLastTapTime] = useState(0);
@@ -1813,6 +1835,11 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
                         ? "message-image-enter"
                         : "message-enter"
                       : "message-stable"
+                  } ${
+                    showEmojiPicker === message.id ||
+                    selectedMessage === message.id
+                      ? "z-50"
+                      : ""
                   }`}
                   style={{
                     animationDelay: newMessageIds.has(message.id)
@@ -1859,7 +1886,13 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
                       isUnread
                         ? "bg-blue-50/30 -mx-2 sm:-mx-4 px-2 sm:px-3 py-1.5 rounded-lg"
                         : ""
-                    } ${isGrouped ? "mb-1" : "mb-2"}`}
+                    } ${
+                      message.reactions && message.reactions.length > 0
+                        ? "mb-6"
+                        : isGrouped
+                        ? "mb-1"
+                        : "mb-2"
+                    }`}
                     onMouseDown={() => handleOptionsMouseDown(message.id)}
                     onMouseUp={handleMouseUp}
                     onMouseLeave={handleMouseUp}
@@ -1946,6 +1979,13 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
                             : message.messageType === "IMAGE"
                             ? "" // No padding for images
                             : "px-2 sm:px-3 py-1.5"
+                        } ${
+                          // Add bottom padding if reactions exist to prevent overlap, but NOT for images
+                          message.reactions &&
+                          message.reactions.length > 0 &&
+                          message.messageType !== "IMAGE"
+                            ? "pb-3"
+                            : ""
                         } relative ${
                           message.messageType === "TEXT" &&
                           isEmojiOnlyMessage(message.content || "")
@@ -2037,17 +2077,9 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
 
                         {isImageMessage && (
                           <div className="relative group">
-                            <img
-                              alt={message.fileName || "Image"}
-                              className="w-full object-cover hover:opacity-80 cursor-pointer rounded-[18px] max-h-80"
-                              src={message.fileUrl || ""}
-                              onError={(e) => {
-                                console.error(
-                                  "Image failed to load:",
-                                  message.fileUrl
-                                );
-                                console.error("Message data:", message);
-                              }}
+                            <ImageMessage
+                              message={message}
+                              onClick={setLightboxImage}
                             />
 
                             {/* Instagram-style hover overlay - subtle white overlay */}
@@ -2055,20 +2087,22 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
 
                             {/* Quick reaction bar (appears on hover like Instagram) */}
                             <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center gap-1 bg-white/90 backdrop-blur-sm rounded-full px-2 py-1 shadow-lg">
-                              {commonReactions.slice(0, 5).map((emoji) => (
-                                <button
-                                  key={emoji}
-                                  onClick={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    handleQuickReaction(message.id, emoji);
-                                  }}
-                                  className="p-1 hover:scale-125 transition-transform text-lg pointer-events-auto"
-                                  title={`React with ${emoji}`}
-                                >
-                                  {emoji}
-                                </button>
-                              ))}
+                              {commonReactions
+                                .slice(0, 5)
+                                .map((emoji: string) => (
+                                  <button
+                                    key={emoji}
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      handleMessageReaction(message.id, emoji);
+                                    }}
+                                    className="p-1 hover:scale-125 transition-transform text-lg pointer-events-auto"
+                                    title={`React with ${emoji}`}
+                                  >
+                                    {emoji}
+                                  </button>
+                                ))}
                               <button
                                 onClick={(e) => {
                                   e.preventDefault();
@@ -2143,25 +2177,10 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
 
                         {/* Generic file messages (exclude images and audio) */}
                         {message.fileUrl && !isAudioFile && !isImageMessage && (
-                          <a
-                            href={message.fileUrl || "#"}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center gap-2 p-2 rounded-md hover:bg-gray-50"
-                          >
-                            <GoPaperclip className="h-5 w-5 text-gray-500" />
-                            <span className="text-xs sm:text-sm truncate max-w-[220px]">
-                              {message.fileName || "File"}
-                            </span>
-                            {typeof message.fileSize === "number" && (
-                              <span className="text-[10px] text-gray-400">
-                                {Math.round(
-                                  (message.fileSize / 1024 / 1024) * 10
-                                ) / 10}{" "}
-                                MB
-                              </span>
-                            )}
-                          </a>
+                          <FileMessage
+                            message={message}
+                            isCurrentUser={isCurrentUser}
+                          />
                         )}
 
                         {/* Reactions bar - Overlay Style */}
@@ -2324,7 +2343,7 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
                               Quick reactions
                             </div>
                             <div className="flex gap-2 mb-3">
-                              {commonReactions.map((emoji) => (
+                              {commonReactions.map((emoji: string) => (
                                 <button
                                   key={emoji}
                                   onClick={() => {
@@ -2332,6 +2351,7 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
                                       `🎯 [Chat] Message reaction button clicked: ${emoji} for message ${message.id}`
                                     );
                                     handleMessageReaction(message.id, emoji);
+                                    setShowEmojiPicker(null);
                                   }}
                                   className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-lg"
                                   title={`React with ${emoji}`}
@@ -2341,26 +2361,19 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
                               ))}
                             </div>
                             <div className="border-t border-gray-200 pt-2">
-                              <div className="text-xs text-gray-500 mb-2 font-medium">
-                                More emojis
-                              </div>
-                              <div className="grid grid-cols-6 gap-1 max-h-32 overflow-y-auto">
-                                {mainEmojis.slice(0, 24).map((emoji) => (
-                                  <button
-                                    key={emoji}
-                                    onClick={() => {
-                                      console.log(
-                                        `🎯 [Chat] Full emoji reaction button clicked: ${emoji} for message ${message.id}`
-                                      );
-                                      handleMessageReaction(message.id, emoji);
-                                    }}
-                                    className="p-1 hover:bg-gray-100 rounded transition-colors text-sm"
-                                    title={`React with ${emoji}`}
-                                  >
-                                    {emoji}
-                                  </button>
-                                ))}
-                              </div>
+                              <EmojiPicker
+                                onEmojiClick={(emojiData: EmojiClickData) => {
+                                  handleMessageReaction(
+                                    message.id,
+                                    emojiData.emoji
+                                  );
+                                  setShowEmojiPicker(null);
+                                }}
+                                width={300}
+                                height={300}
+                                searchPlaceHolder="Search emojis..."
+                                previewConfig={{ showPreview: false }}
+                              />
                             </div>
                           </div>
                         )}
@@ -2619,7 +2632,18 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
                 <div className="flex items-center bg-gray-100 rounded-3xl px-2 py-1 border border-transparent focus-within:border-gray-300 focus-within:bg-white transition-all duration-200">
                   {/* Emoji button */}
                   <button
-                    onClick={() => setShowMainEmojiPicker(!showMainEmojiPicker)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      console.log(
+                        "🎯 [DEBUG] Emoji button clicked. Current state:",
+                        showMainEmojiPicker
+                      );
+                      setShowMainEmojiPicker(!showMainEmojiPicker);
+                      console.log(
+                        "🎯 [DEBUG] Emoji button - toggling to:",
+                        !showMainEmojiPicker
+                      );
+                    }}
                     className={`p-2 rounded-full transition-colors ${
                       showMainEmojiPicker
                         ? "text-blue-600 bg-blue-50"
@@ -2701,21 +2725,71 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
             </div>
           )}
 
-          {/* Emoji Picker */}
+          {/* Enhanced Emoji Picker */}
           {showMainEmojiPicker && (
-            <div className="mt-2 bg-white border border-gray-200 rounded-lg shadow-lg p-4 max-h-48 overflow-y-auto">
-              <div className="grid grid-cols-10 gap-2">
-                {mainEmojis.map((emoji, index) => (
-                  <button
-                    key={index}
-                    onClick={() => handleEmojiSelect(emoji)}
-                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-lg flex items-center justify-center"
-                  >
-                    {emoji}
-                  </button>
-                ))}
+            <>
+              {/* Backdrop - click to close */}
+              <div
+                className="fixed inset-0 bg-black/10 z-40"
+                onClick={() => {
+                  console.log("🎯 [DEBUG] Backdrop clicked - closing picker");
+                  setShowMainEmojiPicker(false);
+                }}
+              />
+
+              {/* Emoji Picker Container */}
+              <div
+                className="fixed bottom-20 left-4 right-4 z-50 animate-in fade-in slide-in-from-bottom-2 duration-200"
+                onClick={(e) => {
+                  console.log("🎯 [DEBUG] Emoji picker container clicked");
+                  e.stopPropagation();
+                }}
+              >
+                <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden max-w-2xl mx-auto">
+                  {/* Header with close button */}
+                  <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-purple-50">
+                    <div className="flex items-center gap-2">
+                      <span className="text-2xl">😊</span>
+                      <span className="font-semibold text-gray-700">
+                        Choose Emoji
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => {
+                        console.log("🎯 [DEBUG] Close button clicked");
+                        setShowMainEmojiPicker(false);
+                      }}
+                      className="p-1.5 hover:bg-white/50 rounded-full transition-colors"
+                      title="Close"
+                    >
+                      <MdClose className="h-5 w-5 text-gray-600" />
+                    </button>
+                  </div>
+
+                  {/* Emoji Picker */}
+                  <EmojiPicker
+                    onEmojiClick={(emojiData: EmojiClickData) => {
+                      console.log(
+                        "🎯 [DEBUG] EmojiPicker onEmojiClick triggered:",
+                        emojiData.emoji
+                      );
+                      handleEmojiSelect(emojiData.emoji);
+                    }}
+                    width="100%"
+                    height={400}
+                    searchPlaceHolder="Search emojis..."
+                    previewConfig={{ showPreview: false }}
+                  />
+
+                  {/* Footer tip */}
+                  <div className="px-4 py-2 bg-gray-50 border-t border-gray-200">
+                    <p className="text-xs text-gray-500 text-center">
+                      💡 Tip: Click multiple emojis or press ESC to close
+                    </p>
+                  </div>
+                </div>
               </div>
-            </div>
+            </>
           )}
 
           {/* Connection status */}
@@ -2831,6 +2905,11 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
             setShowMainEmojiPicker(false);
           }}
         ></div>
+      )}
+
+      {/* Lightbox for viewing images */}
+      {lightboxImage && (
+        <Lightbox src={lightboxImage} onClose={() => setLightboxImage(null)} />
       )}
     </div>
   );

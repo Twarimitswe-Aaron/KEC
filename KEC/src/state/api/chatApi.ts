@@ -175,7 +175,6 @@ export const chatApi = apiCore.apiSlice.injectEndpoints({
         return currentArg?.page !== previousArg?.page;
       },
       keepUnusedDataFor: 600, // Keep messages for 10 minutes
-      refetchOnFocus: false, // Don't refetch when window regains focus
     }),
 
     // Create a new chat
