@@ -1,8 +1,7 @@
 import React, { useState, useMemo } from "react";
-import { IoSearch, IoAddCircle } from "react-icons/io5";
-import { MdCheck, MdDoneAll } from "react-icons/md";
+import { IoSearch } from "react-icons/io5";
+import { MdCheck, MdDoneAll, MdFilterList } from "react-icons/md";
 import { IoArrowBack } from "react-icons/io5";
-import { BsImage, BsMic } from "react-icons/bs";
 import { useGetUserQuery } from "../../state/api/authApi";
 import { useGetChatsQuery, Chat } from "../../state/api/chatApi";
 import { useChat } from "../../hooks/useChat";
@@ -12,14 +11,17 @@ interface LeftSideInboxProps {
   onCloseSidebar: () => void;
 }
 
+type SortFilter = "all" | "unread" | "groups" | "personal";
+
 const LeftSideInbox: React.FC<LeftSideInboxProps> = ({ onCloseSidebar }) => {
   const { data: currentUser } = useGetUserQuery();
   const { data: chatsResponse, isLoading, error } = useGetChatsQuery({});
-  const { activeChat, setActiveChat, onlineUsers } = useChat();
+  const { activeChat, setActiveChat, onlineUsers, typingUsers } = useChat();
   const navigate = useNavigate();
   const location = useLocation();
 
   const [searchTerm, setSearchTerm] = useState("");
+  const [sortFilter, setSortFilter] = useState<SortFilter>("all");
 
   const previousRoute = location.state?.from || "/dashboard";
 
@@ -126,16 +128,25 @@ const LeftSideInbox: React.FC<LeftSideInboxProps> = ({ onCloseSidebar }) => {
   const sortedAndFilteredChats = useMemo(() => {
     const chats = chatsResponse?.chats || [];
 
-    // Filter by search term
+    // Apply sort filter first
     let filtered = chats.filter((chat) => {
-      if (!searchTerm) return true;
-      const chatName = getChatName(chat).toLowerCase();
-      const lastMessage = chat.lastMessage?.content?.toLowerCase() || "";
-      return (
-        chatName.includes(searchTerm.toLowerCase()) ||
-        lastMessage.includes(searchTerm.toLowerCase())
-      );
+      if (sortFilter === "unread") return chat.unreadCount > 0;
+      if (sortFilter === "groups") return chat.isGroup;
+      if (sortFilter === "personal") return !chat.isGroup;
+      return true; // 'all'
     });
+
+    // Then filter by search term
+    if (searchTerm) {
+      filtered = filtered.filter((chat) => {
+        const chatName = getChatName(chat).toLowerCase();
+        const lastMessage = chat.lastMessage?.content?.toLowerCase() || "";
+        return (
+          chatName.includes(searchTerm.toLowerCase()) ||
+          lastMessage.includes(searchTerm.toLowerCase())
+        );
+      });
+    }
 
     // Sort: active chat first, then by most recent message
     return filtered.sort((a, b) => {
@@ -148,16 +159,11 @@ const LeftSideInbox: React.FC<LeftSideInboxProps> = ({ onCloseSidebar }) => {
       const bTime = b.lastMessageTime || b.updatedAt;
       return new Date(bTime).getTime() - new Date(aTime).getTime();
     });
-  }, [chatsResponse?.chats, searchTerm, activeChat?.id]);
+  }, [chatsResponse?.chats, searchTerm, sortFilter, activeChat?.id]);
 
   const handleChatSelect = (chat: Chat) => {
     setActiveChat(chat);
     onCloseSidebar();
-  };
-
-  const handleNewChat = () => {
-    // Navigate to a user selection view or show modal
-    navigate("/inbox/new-chat");
   };
 
   if (isLoading) {
@@ -202,31 +208,37 @@ const LeftSideInbox: React.FC<LeftSideInboxProps> = ({ onCloseSidebar }) => {
   return (
     <div className="flex flex-col h-full bg-[#f0f2f5]">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 bg-white">
-        <div className="flex items-center gap-3">
+      <div className="flex items-center justify-between p-3 bg-white">
+        <div className="flex items-center gap-2">
           <button
             onClick={handleGoBack}
-            className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors"
+            className="p-1.5 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors"
             title="Go Back"
           >
             <IoArrowBack size={20} />
           </button>
-          <h1 className="text-xl font-semibold text-gray-800">Chats</h1>
+          <h1 className="text-lg font-semibold text-gray-800">Chats</h1>
         </div>
-        <button
-          onClick={handleNewChat}
-          className="p-2 text-green-600 hover:text-green-700 hover:bg-green-50 rounded-full transition-colors"
-          title="New Chat"
-        >
-          <IoAddCircle size={28} />
-        </button>
+        <div className="flex items-center gap-1">
+          <select
+            value={sortFilter}
+            onChange={(e) => setSortFilter(e.target.value as SortFilter)}
+            className="text-sm px-2 py-1 border-0 bg-transparent text-gray-600 focus:outline-none cursor-pointer font-medium"
+          >
+            <option value="all">All Chats</option>
+            <option value="unread">Unread</option>
+            <option value="personal">Personal</option>
+            <option value="groups">Groups</option>
+          </select>
+          <MdFilterList className="text-gray-500" size={18} />
+        </div>
       </div>
 
       {/* Subtle separator */}
       <div className="h-[1px] bg-gradient-to-r from-transparent via-gray-200 to-transparent"></div>
 
       {/* Search Bar */}
-      <div className="p-3 bg-white">
+      <div className="p-2 bg-white">
         <div className="relative">
           <IoSearch
             className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
@@ -237,7 +249,7 @@ const LeftSideInbox: React.FC<LeftSideInboxProps> = ({ onCloseSidebar }) => {
             placeholder="Search chats..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 bg-[#f0f2f5] rounded-lg focus:outline-none focus:bg-white focus:shadow-sm transition-all text-sm"
+            className="w-full pl-10 pr-4 py-1.5 bg-[#f0f2f5] rounded-lg focus:outline-none focus:bg-white focus:shadow-sm transition-all text-sm"
           />
         </div>
       </div>
@@ -260,7 +272,7 @@ const LeftSideInbox: React.FC<LeftSideInboxProps> = ({ onCloseSidebar }) => {
               <div
                 key={chat.id}
                 onClick={() => handleChatSelect(chat)}
-                className={`flex items-center gap-3 p-3 cursor-pointer transition-colors border-b border-gray-100 ${
+                className={`flex items-center gap-2.5 p-2.5 cursor-pointer transition-colors border-b border-gray-100 ${
                   isActive ? "bg-[#f0f2f5]" : "hover:bg-[#f5f6f6]"
                 }`}
               >
@@ -302,7 +314,28 @@ const LeftSideInbox: React.FC<LeftSideInboxProps> = ({ onCloseSidebar }) => {
                           : "text-gray-600"
                       }`}
                     >
-                      {getLastMessagePreview(chat)}
+                      {(() => {
+                        // Check if anyone is typing in this chat
+                        const chatTypingUsers = chat.participants
+                          .filter(
+                            (p) =>
+                              p.user?.id !== currentUser?.id &&
+                              typingUsers.includes(p.user?.id || 0)
+                          )
+                          .map((p) => `${p.user?.firstName || "Someone"}`);
+
+                        if (chatTypingUsers.length > 0) {
+                          return (
+                            <span className="text-blue-500 italic">
+                              {chatTypingUsers.length === 1
+                                ? `${chatTypingUsers[0]} typing...`
+                                : "Someone typing..."}
+                            </span>
+                          );
+                        }
+
+                        return getLastMessagePreview(chat);
+                      })()}
                     </p>
                     {hasUnread && (
                       <span className="ml-2 flex-shrink-0 bg-green-500 text-white text-xs font-semibold rounded-full min-w-[20px] h-5 flex items-center justify-center px-1.5">

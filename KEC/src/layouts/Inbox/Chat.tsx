@@ -1649,17 +1649,47 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
         lastSeen: onlineUsers.includes(participant.user?.id || 0)
           ? "online"
           : (() => {
+              // Use the actual lastSeen timestamp from the user data
+              const lastSeenDate = participant.user?.lastSeen
+                ? new Date(participant.user.lastSeen)
+                : null;
+
+              if (!lastSeenDate) {
+                return "last seen recently";
+              }
+
               const now = new Date();
-              const today = now.toLocaleDateString([], {
-                month: "short",
-                day: "numeric",
-              });
-              const time = now.toLocaleTimeString([], {
+              const today = new Date(
+                now.getFullYear(),
+                now.getMonth(),
+                now.getDate()
+              );
+              const lastSeenDay = new Date(
+                lastSeenDate.getFullYear(),
+                lastSeenDate.getMonth(),
+                lastSeenDate.getDate()
+              );
+
+              const time = lastSeenDate.toLocaleTimeString([], {
                 hour: "numeric",
                 minute: "2-digit",
                 hour12: true,
               });
-              return `last seen today at ${time}`;
+
+              if (lastSeenDay.getTime() === today.getTime()) {
+                // Today - show "last seen today at [time]"
+                return `last seen today at ${time}`;
+              } else if (lastSeenDay.getTime() === today.getTime() - 86400000) {
+                // Yesterday
+                return `last seen yesterday at ${time}`;
+              } else {
+                // Older - show date
+                const date = lastSeenDate.toLocaleDateString([], {
+                  month: "short",
+                  day: "numeric",
+                });
+                return `last seen ${date}`;
+              }
             })(),
       };
       return participantInfo;
