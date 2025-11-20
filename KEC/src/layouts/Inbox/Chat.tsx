@@ -161,14 +161,47 @@ const ImageMessage = React.memo(
       return url;
     })();
 
-    // Check if image is already loaded (cached) on mount
+    // Reset loading state when URL changes
     useEffect(() => {
-      if (imgRef.current && imgRef.current.complete) {
-        if (imgRef.current.naturalWidth > 0) {
+      setIsLoading(true);
+      setHasError(false);
+    }, [imageUrl]);
+
+    // Check if image is already loaded (for cached images)
+    useEffect(() => {
+      const checkIfLoaded = () => {
+        if (imgRef.current) {
+          if (imgRef.current.complete) {
+            if (imgRef.current.naturalWidth > 0) {
+              setIsLoading(false);
+            } else if (imgRef.current.naturalWidth === 0) {
+              // Image exists but has no dimensions - likely an error
+              setHasError(true);
+              setIsLoading(false);
+            }
+          }
+        }
+      };
+
+      // Check immediately
+      checkIfLoaded();
+
+      // Also check after a small delay (for images that load very quickly)
+      const timer = setTimeout(checkIfLoaded, 100);
+
+      // Safety timeout: hide loading after 3 seconds max
+      const safetyTimeout = setTimeout(() => {
+        if (isLoading) {
+          console.warn("[ImageMessage] Loading timeout for:", imageUrl);
           setIsLoading(false);
         }
-      }
-    }, []);
+      }, 3000);
+
+      return () => {
+        clearTimeout(timer);
+        clearTimeout(safetyTimeout);
+      };
+    }, [imageUrl, isLoading]);
 
     if (hasError) {
       return (
@@ -193,7 +226,7 @@ const ImageMessage = React.memo(
           ref={imgRef}
           src={imageUrl}
           alt={message.fileName || "Image"}
-          className={`w-full h-auto max-h-[320px] object-cover transition-opacity duration-300 ${
+          className={`block w-full h-auto max-h-[320px] object-cover transition-opacity duration-300 ${
             isLoading ? "opacity-0" : "opacity-100"
           }`}
           onLoad={() => setIsLoading(false)}
@@ -2071,9 +2104,6 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
                               message={message}
                               onClick={setLightboxImage}
                             />
-
-                            {/* Instagram-style hover overlay - subtle white overlay */}
-                            <div className="absolute inset-0 bg-white bg-opacity-0 group-hover:bg-opacity-5 transition-all duration-200 rounded-[18px] pointer-events-none" />
 
                             {/* Quick reaction bar (appears on hover like Instagram) */}
                             <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center gap-1 bg-white/90 backdrop-blur-sm rounded-full px-2 py-1 shadow-lg">
