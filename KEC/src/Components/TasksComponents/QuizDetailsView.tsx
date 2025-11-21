@@ -299,7 +299,7 @@ const QuizDetailsView: React.FC<QuizDetailsViewProps> = ({
                 {!isEditing ? (
                   <button
                     onClick={() => setIsEditing(true)}
-                    className="px-3 py-1 bg-blue-600 text-white rounded-md text-sm"
+                    className="px-4 py-2 bg-blue-600/90 backdrop-blur-sm text-white rounded-xl shadow-lg hover:shadow-blue-500/30 hover:bg-blue-600 transition-all duration-300 border border-blue-500/50 text-sm font-medium"
                   >
                     Edit Marks
                   </button>
@@ -307,14 +307,14 @@ const QuizDetailsView: React.FC<QuizDetailsViewProps> = ({
                   <>
                     <button
                       onClick={() => setIsEditing(false)}
-                      className="px-3 py-1 bg-gray-200 text-gray-800 rounded-md text-sm"
+                      className="px-4 py-2 bg-gray-100/80 backdrop-blur-sm text-gray-700 rounded-xl shadow-sm hover:bg-gray-200/80 transition-all duration-300 border border-gray-200 text-sm font-medium"
                     >
                       Cancel
                     </button>
                     <button
                       onClick={handleSave}
                       disabled={isSaving}
-                      className="px-3 py-1 bg-green-600 text-white rounded-md text-sm disabled:bg-gray-400"
+                      className="px-4 py-2 bg-green-600/90 backdrop-blur-sm text-white rounded-xl shadow-lg hover:shadow-green-500/30 hover:bg-green-600 transition-all duration-300 border border-green-500/50 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {isSaving ? "Saving..." : "Save"}
                     </button>
