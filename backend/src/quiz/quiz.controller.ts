@@ -242,6 +242,33 @@ export class QuizController {
     return this.quizService.getQuizParticipants(quizId, courseId);
   }
 
+  // Upload student marks file (images only)
+  @Post('quiz/:quizId/student/:studentId/upload-marks')
+  @UseInterceptors(
+    FileInterceptor('marksFile', {
+      storage: questionImageStorage,
+      fileFilter: quizImageFilter,
+      limits: {
+        fileSize: 5 * 1024 * 1024, // 5MB limit
+      },
+    }),
+  )
+  async uploadStudentMarks(
+    @Param('quizId', ParseIntPipe) quizId: number,
+    @Param('studentId', ParseIntPipe) studentId: number,
+    @UploadedFile() file: Express.Multer.File,
+  ): Promise<{ url: string; filename: string }> {
+    if (!file) {
+      throw new BadRequestException('No file uploaded');
+    }
+
+    // Return relative URL for consistency
+    return {
+      url: `/uploads/course_url/${file.filename}`,
+      filename: file.filename,
+    };
+  }
+
   // Student submits a quiz attempt
   @UseGuards(AuthGuard)
   @Post('quiz/:quizId/attempt')

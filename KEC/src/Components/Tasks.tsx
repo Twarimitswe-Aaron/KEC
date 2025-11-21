@@ -1,5 +1,11 @@
 import React, { useState, useMemo, useEffect, useContext } from "react";
-import { ArrowLeft, ChevronRight, Filter, SortAsc, SortDesc } from "lucide-react";
+import {
+  ArrowLeft,
+  ChevronRight,
+  Filter,
+  SortAsc,
+  SortDesc,
+} from "lucide-react";
 import { SearchContext } from "../SearchContext";
 import {
   useGetCoursesWithDataQuery,
@@ -34,15 +40,27 @@ const initialMockData = [
             maxPoints: 200,
             weight: 0.4,
             students: [
-              { id: 5, name: "David Chen", email: "david@university.edu", mark: 172, submissionDate: "2024-11-15" },
-              { id: 6, name: "Eve Martinez", email: "eve@university.edu", mark: 160, submissionDate: "2024-11-13" },
+              {
+                id: 5,
+                name: "David Chen",
+                email: "david@university.edu",
+                mark: 172,
+                submissionDate: "2024-11-15",
+              },
+              {
+                id: 6,
+                name: "Eve Martinez",
+                email: "eve@university.edu",
+                mark: 160,
+                submissionDate: "2024-11-13",
+              },
             ],
           },
-        ]
-      }
+        ],
+      },
     ],
-    enrolledStudents: []
-  }
+    enrolledStudents: [],
+  },
 ];
 
 const Tasks = () => {
@@ -60,64 +78,71 @@ const Tasks = () => {
   const [selectedCourse, setSelectedCourse] = useState<any>(null);
   const [selectedLesson, setSelectedLesson] = useState<any>(null);
   const [selectedQuiz, setSelectedQuiz] = useState<string | null>(null);
-  const [viewLevel, setViewLevel] = useState<"courses" | "lessons" | "quizzes">("courses");
+  const [viewLevel, setViewLevel] = useState<"courses" | "lessons" | "quizzes">(
+    "courses"
+  );
   const [filterType, setFilterType] = useState<string>("all");
   const [sortBy, setSortBy] = useState<string>("name");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
-  const [expandedCourses, setExpandedCourses] = useState<Record<number, boolean>>({});
-  const [expandedLessons, setExpandedLessons] = useState<Record<string, boolean>>({});
+  const [expandedCourses, setExpandedCourses] = useState<
+    Record<number, boolean>
+  >({});
+  const [expandedLessons, setExpandedLessons] = useState<
+    Record<string, boolean>
+  >({});
   const [courseMenus, setCourseMenus] = useState<Record<number, boolean>>({});
   const [isQuizCreationModalOpen, setIsQuizCreationModalOpen] = useState(false);
   const [currentCourse, setCurrentCourse] = useState<any>(null);
   const [selectedQuizDetails, setSelectedQuizDetails] = useState<any>(null);
   const [showUnifiedAnalytics, setShowUnifiedAnalytics] = useState(false);
-  const [analyticsSelectedCourse, setAnalyticsSelectedCourse] = useState<any>(null);
+  const [analyticsSelectedCourse, setAnalyticsSelectedCourse] =
+    useState<any>(null);
   const [lessonMenus, setLessonMenus] = useState<Record<number, boolean>>({});
-  const [selectedQuizType, setSelectedQuizType] = useState<string>('assignment');
+  const [selectedQuizType, setSelectedQuizType] =
+    useState<string>("assignment");
 
   // Course analytics - fetch when analytics are selected
-  const {
-    data: courseAnalytics,
-    isLoading: analyticsLoading,
-  } = useGetCourseAnalyticsQuery(selectedCourse?.id || 0, {
-    skip: !selectedCourse?.id || (!selectedQuiz?.includes("analytics") && selectedQuiz !== "overall-performance")
-  });
+  const { data: courseAnalytics, isLoading: analyticsLoading } =
+    useGetCourseAnalyticsQuery(selectedCourse?.id || 0, {
+      skip:
+        !selectedCourse?.id ||
+        (!selectedQuiz?.includes("analytics") &&
+          selectedQuiz !== "overall-performance"),
+    });
 
   // Unified course analytics - fetch when unified modal is open
-  const {
-    data: unifiedCourseAnalytics,
-    isLoading: unifiedAnalyticsLoading,
-  } = useGetCourseAnalyticsQuery(analyticsSelectedCourse?.id || 0, {
-    skip: !analyticsSelectedCourse?.id || !showUnifiedAnalytics
-  });
-
-
-  
+  const { data: unifiedCourseAnalytics, isLoading: unifiedAnalyticsLoading } =
+    useGetCourseAnalyticsQuery(analyticsSelectedCourse?.id || 0, {
+      skip: !analyticsSelectedCourse?.id || !showUnifiedAnalytics,
+    });
 
   // Transform API data
   const transformApiDataToMockFormat = (apiData: CourseWithData[]) => {
-    return apiData.map(course => ({
+    return apiData.map((course) => ({
       ...course,
       semester: course.semester || "Current Semester",
       credits: course.credits || 3,
-      lessons: course.lessons?.map(lesson => ({
-        ...lesson,
-        description: lesson.description || "Course lesson",
-        quizzes: lesson.quizzes?.map(quiz => ({
-          ...quiz,
-          type: quiz.type || 'quiz',
-          dueDate: quiz.dueDate || new Date().toISOString().split('T')[0],
-          maxPoints: quiz.maxPoints || 100,
-          students: quiz.students?.map(student => ({
-            studentId: student.studentId,
-            name: student.name,
-            email: student.email,
-            mark: student.mark || 0,
-            submissionDate: student.submissionDate || null
-          })) || []
-        })) || []
-      })) || [],
-      enrolledStudents: course.enrolledStudents || []
+      lessons:
+        course.lessons?.map((lesson) => ({
+          ...lesson,
+          description: lesson.description || "Course lesson",
+          quizzes:
+            lesson.quizzes?.map((quiz) => ({
+              ...quiz,
+              type: quiz.type || "quiz",
+              dueDate: quiz.dueDate || new Date().toISOString().split("T")[0],
+              maxPoints: quiz.maxPoints || 100,
+              students:
+                quiz.students?.map((student) => ({
+                  studentId: student.studentId,
+                  name: student.name,
+                  email: student.email,
+                  mark: student.mark || 0,
+                  submissionDate: student.submissionDate || null,
+                })) || [],
+            })) || [],
+        })) || [],
+      enrolledStudents: course.enrolledStudents || [],
     }));
   };
 
@@ -129,7 +154,9 @@ const Tasks = () => {
   }, [coursesData]);
 
   const loading = coursesLoading;
-  const error = coursesError ? 'Failed to load courses. Using demo data.' : null;
+  const error = coursesError
+    ? "Failed to load courses. Using demo data."
+    : null;
 
   // Utility functions
   const getGradeColor = (percentage: number) => {
@@ -149,14 +176,25 @@ const Tasks = () => {
   };
 
   const calculateLessonTotalScore = (lesson: any) => {
-    return lesson.quizzes?.reduce((total: number, quiz: any) => {
-      const avgScore = quiz.students?.reduce((sum: number, student: any) => sum + student.mark, 0) / quiz.students?.length || 0;
-      return total + avgScore;
-    }, 0) || 0;
+    return (
+      lesson.quizzes?.reduce((total: number, quiz: any) => {
+        const avgScore =
+          quiz.students?.reduce(
+            (sum: number, student: any) => sum + student.mark,
+            0
+          ) / quiz.students?.length || 0;
+        return total + avgScore;
+      }, 0) || 0
+    );
   };
 
   const calculateLessonTotalMaxPoints = (lesson: any) => {
-    return lesson.quizzes?.reduce((total: number, quiz: any) => total + quiz.maxPoints, 0) || 0;
+    return (
+      lesson.quizzes?.reduce(
+        (total: number, quiz: any) => total + quiz.maxPoints,
+        0
+      ) || 0
+    );
   };
 
   function computeCourseAnalytics(course: any) {
@@ -168,11 +206,11 @@ const Tasks = () => {
     const enrolled = course.enrolledStudents || [];
     const studentMap: Record<number, any> = {};
     enrolled.forEach((s: any) => {
-      if (s && typeof s.id === 'number') {
+      if (s && typeof s.id === "number") {
         studentMap[s.id] = {
           studentId: s.id,
-          name: s.name || '',
-          email: s.email || '',
+          name: s.name || "",
+          email: s.email || "",
           assignmentsCompleted: 0,
           totalAssignments,
           _sumPerc: 0,
@@ -184,20 +222,20 @@ const Tasks = () => {
       const maxPts = Number(q?.maxPoints) || 100;
       const students = q?.students || [];
       students.forEach((st: any) => {
-        const id = typeof st?.studentId === 'number' ? st.studentId : st?.id;
-        if (typeof id !== 'number') return;
+        const id = typeof st?.studentId === "number" ? st.studentId : st?.id;
+        if (typeof id !== "number") return;
         if (!studentMap[id]) {
           studentMap[id] = {
             studentId: id,
-            name: st.name || '',
-            email: st.email || '',
+            name: st.name || "",
+            email: st.email || "",
             assignmentsCompleted: 0,
             totalAssignments,
             _sumPerc: 0,
             _countPerc: 0,
           };
         }
-        const mark = typeof st?.mark === 'number' ? st.mark : null;
+        const mark = typeof st?.mark === "number" ? st.mark : null;
         if (mark !== null) {
           studentMap[id].assignmentsCompleted += 1;
           studentMap[id]._sumPerc += (mark / maxPts) * 100;
@@ -218,33 +256,41 @@ const Tasks = () => {
         lessonsProgress: [],
       };
     });
-    const studentsWithMarks = topPerformingStudents.filter((s: any) => s.assignmentsCompleted > 0);
+    const studentsWithMarks = topPerformingStudents.filter(
+      (s: any) => s.assignmentsCompleted > 0
+    );
     const courseAverage =
       studentsWithMarks.length > 0
-        ? studentsWithMarks.reduce((acc: number, s: any) => acc + s.overallAverage, 0) / studentsWithMarks.length
+        ? studentsWithMarks.reduce(
+            (acc: number, s: any) => acc + s.overallAverage,
+            0
+          ) / studentsWithMarks.length
         : 0;
     const totalStudents =
-      enrolled.length > 0
-        ? enrolled.length
-        : Object.keys(studentMap).length;
+      enrolled.length > 0 ? enrolled.length : Object.keys(studentMap).length;
     const completionRate =
       totalStudents > 0 && totalAssignments > 0
-        ? (topPerformingStudents.reduce((acc: number, s: any) => acc + s.assignmentsCompleted, 0) /
+        ? (topPerformingStudents.reduce(
+            (acc: number, s: any) => acc + s.assignmentsCompleted,
+            0
+          ) /
             (totalStudents * totalAssignments)) *
           100
         : 0;
-    const studentsAtRisk = topPerformingStudents.filter((s: any) => s.overallAverage < 65).length;
+    const studentsAtRisk = topPerformingStudents.filter(
+      (s: any) => s.overallAverage < 65
+    ).length;
     const gradeDistribution = topPerformingStudents.reduce(
       (acc: any, s: any) => {
-        const g = s.letterGrade.startsWith('A')
-          ? 'A'
-          : s.letterGrade.startsWith('B')
-          ? 'B'
-          : s.letterGrade.startsWith('C')
-          ? 'C'
-          : s.letterGrade.startsWith('D')
-          ? 'D'
-          : 'F';
+        const g = s.letterGrade.startsWith("A")
+          ? "A"
+          : s.letterGrade.startsWith("B")
+          ? "B"
+          : s.letterGrade.startsWith("C")
+          ? "C"
+          : s.letterGrade.startsWith("D")
+          ? "D"
+          : "F";
         acc[g] = (acc[g] || 0) + 1;
         return acc;
       },
@@ -260,7 +306,7 @@ const Tasks = () => {
         const maxPts = Number(q?.maxPoints) || 100;
         const students = q?.students || [];
         students.forEach((st: any) => {
-          const mark = typeof st?.mark === 'number' ? st.mark : null;
+          const mark = typeof st?.mark === "number" ? st.mark : null;
           if (mark !== null) {
             sumPerc += (mark / maxPts) * 100;
             countPerc += 1;
@@ -277,9 +323,9 @@ const Tasks = () => {
       lQuizzes.forEach((q: any) => {
         const maxPts = Number(q?.maxPoints) || 100;
         (q?.students || []).forEach((st: any) => {
-          const id = typeof st?.studentId === 'number' ? st.studentId : st?.id;
-          if (typeof id !== 'number') return;
-          const mark = typeof st?.mark === 'number' ? st.mark : null;
+          const id = typeof st?.studentId === "number" ? st.studentId : st?.id;
+          if (typeof id !== "number") return;
+          const mark = typeof st?.mark === "number" ? st.mark : null;
           if (mark !== null) {
             if (!perStudentMap[id]) perStudentMap[id] = { sum: 0, cnt: 0 };
             perStudentMap[id].sum += (mark / maxPts) * 100;
@@ -287,7 +333,9 @@ const Tasks = () => {
           }
         });
       });
-      const studentsAtRiskLesson = Object.values(perStudentMap).filter((v: any) => (v.sum / v.cnt) < 65).length;
+      const studentsAtRiskLesson = Object.values(perStudentMap).filter(
+        (v: any) => v.sum / v.cnt < 65
+      ).length;
       return {
         lessonId: l.id,
         lessonTitle: l.title,
@@ -314,30 +362,36 @@ const Tasks = () => {
 
   const computedUnifiedAnalytics = useMemo(() => {
     if (!analyticsSelectedCourse) return undefined as any;
-    const baseCourse = (data || []).find((c: any) => c.id === analyticsSelectedCourse.id) || analyticsSelectedCourse;
+    const baseCourse =
+      (data || []).find((c: any) => c.id === analyticsSelectedCourse.id) ||
+      analyticsSelectedCourse;
     return computeCourseAnalytics(baseCourse);
   }, [analyticsSelectedCourse, data]);
-  
 
   // Filter and search functionality
   const filteredData = useMemo(() => {
     let filtered = [...data];
-    
-    if (searchQuery && searchQuery.trim() !== '') {
+
+    if (searchQuery && searchQuery.trim() !== "") {
       const searchLower = searchQuery.toLowerCase();
-      filtered = filtered.filter(course => {
-        return course.name.toLowerCase().includes(searchLower) ||
-               course.instructor?.toLowerCase().includes(searchLower) ||
-               course.lessons?.some((lesson: any) => 
-                 lesson.title.toLowerCase().includes(searchLower) ||
-                 lesson.quizzes?.some((quiz: any) => quiz.title.toLowerCase().includes(searchLower))
-               );
+      filtered = filtered.filter((course) => {
+        return (
+          course.name.toLowerCase().includes(searchLower) ||
+          course.instructor?.toLowerCase().includes(searchLower) ||
+          course.lessons?.some(
+            (lesson: any) =>
+              lesson.title.toLowerCase().includes(searchLower) ||
+              lesson.quizzes?.some((quiz: any) =>
+                quiz.title.toLowerCase().includes(searchLower)
+              )
+          )
+        );
       });
     }
 
     if (filterType !== "all") {
-      filtered = filtered.filter(course => 
-        course.lessons?.some((lesson: any) => 
+      filtered = filtered.filter((course) =>
+        course.lessons?.some((lesson: any) =>
           lesson.quizzes?.some((quiz: any) => quiz.type === filterType)
         )
       );
@@ -359,7 +413,7 @@ const Tasks = () => {
           aValue = a.name;
           bValue = b.name;
       }
-      
+
       const result = aValue.localeCompare(bValue);
       return sortOrder === "asc" ? result : -result;
     });
@@ -369,22 +423,29 @@ const Tasks = () => {
 
   // Auto-expand accordions based on search results
   useEffect(() => {
-    if (searchQuery && searchQuery.trim() !== '') {
+    if (searchQuery && searchQuery.trim() !== "") {
       const searchLower = searchQuery.toLowerCase();
       const newExpandedCourses: Record<number, boolean> = {};
       const newExpandedLessons: Record<string, boolean> = {};
 
-      filteredData.forEach(course => {
-        const hasMatchingContent = course.lessons?.some((lesson: any) => 
-          lesson.title.toLowerCase().includes(searchLower) ||
-          lesson.quizzes?.some((quiz: any) => quiz.title.toLowerCase().includes(searchLower))
+      filteredData.forEach((course) => {
+        const hasMatchingContent = course.lessons?.some(
+          (lesson: any) =>
+            lesson.title.toLowerCase().includes(searchLower) ||
+            lesson.quizzes?.some((quiz: any) =>
+              quiz.title.toLowerCase().includes(searchLower)
+            )
         );
-        
+
         if (hasMatchingContent) {
           newExpandedCourses[course.id] = true;
           course.lessons?.forEach((lesson: any) => {
-            if (lesson.title.toLowerCase().includes(searchLower) ||
-                lesson.quizzes?.some((quiz: any) => quiz.title.toLowerCase().includes(searchLower))) {
+            if (
+              lesson.title.toLowerCase().includes(searchLower) ||
+              lesson.quizzes?.some((quiz: any) =>
+                quiz.title.toLowerCase().includes(searchLower)
+              )
+            ) {
               newExpandedLessons[lesson.id.toString()] = true;
             }
           });
@@ -397,51 +458,62 @@ const Tasks = () => {
   }, [searchQuery, filteredData]);
 
   // Event handlers
-  const toggleCourseAccordion = (courseId: number, event?: React.MouseEvent) => {
+  const toggleCourseAccordion = (
+    courseId: number,
+    event?: React.MouseEvent
+  ) => {
     if (event) event.stopPropagation();
-    
+
     if (!searchQuery) {
-      setExpandedCourses(prev => ({
-        [courseId]: !prev[courseId]
+      setExpandedCourses((prev) => ({
+        [courseId]: !prev[courseId],
       }));
     } else {
-      setExpandedCourses(prev => ({
+      setExpandedCourses((prev) => ({
         ...prev,
-        [courseId]: !prev[courseId]
+        [courseId]: !prev[courseId],
       }));
     }
   };
 
-  const toggleLessonAccordion = (lessonId: number, event?: React.MouseEvent) => {
+  const toggleLessonAccordion = (
+    lessonId: number,
+    event?: React.MouseEvent
+  ) => {
     if (event) event.stopPropagation();
-    
+
     const lessonKey = lessonId.toString();
     if (!searchQuery) {
-      setExpandedLessons(prev => ({
-        [lessonKey]: !prev[lessonKey]
+      setExpandedLessons((prev) => ({
+        [lessonKey]: !prev[lessonKey],
       }));
     } else {
-      setExpandedLessons(prev => ({
+      setExpandedLessons((prev) => ({
         ...prev,
-        [lessonKey]: !prev[lessonKey]
+        [lessonKey]: !prev[lessonKey],
       }));
     }
   };
 
   const toggleLessonMenu = (lessonId: number, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
-    setLessonMenus(prev => ({
+    setLessonMenus((prev) => ({
       ...prev,
-      [lessonId]: !prev[lessonId]
+      [lessonId]: !prev[lessonId],
     }));
   };
 
-  const handleCreateQuiz = (course: any, lessonId?: number, lessonTitle?: string, quizType?: string) => {
+  const handleCreateQuiz = (
+    course: any,
+    lessonId?: number,
+    lessonTitle?: string,
+    quizType?: string
+  ) => {
     setCurrentCourse(course);
     if (lessonId && lessonTitle) {
       setSelectedLesson({ lessonId, lessonTitle });
     }
-    setSelectedQuizType(quizType ?? 'assignment');
+    setSelectedQuizType(quizType ?? "assignment");
     setIsQuizCreationModalOpen(true);
   };
 
@@ -455,7 +527,7 @@ const Tasks = () => {
       quiz,
       courseId: course.id,
       courseName: course.name,
-      lessonTitle: lesson.title
+      lessonTitle: lesson.title,
     });
   };
 
@@ -466,9 +538,9 @@ const Tasks = () => {
   };
 
   const toggleCourseMenu = (courseId: number) => {
-    setCourseMenus(prev => ({
+    setCourseMenus((prev) => ({
       ...prev,
-      [courseId]: !prev[courseId]
+      [courseId]: !prev[courseId],
     }));
   };
 
@@ -480,9 +552,9 @@ const Tasks = () => {
     setAnalyticsSelectedCourse(course);
     setShowUnifiedAnalytics(true);
     // Close the course menu
-    setCourseMenus(prev => ({
+    setCourseMenus((prev) => ({
       ...prev,
-      [course.id]: false
+      [course.id]: false,
     }));
   };
 
@@ -517,7 +589,7 @@ const Tasks = () => {
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
           <div className="flex items-center">
             <div className="text-yellow-800">⚠️ {error}</div>
-            <button 
+            <button
               onClick={() => refetchCourses()}
               className="ml-auto px-3 py-1 bg-yellow-600 text-white rounded text-sm hover:bg-yellow-700"
             >
@@ -567,14 +639,16 @@ const Tasks = () => {
 
       {/* Filter and Sort Controls */}
       {viewLevel === "courses" && (
-        <div className="bg-white rounded-xl shadow-sm mb-6">
+        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/50 mb-6">
           <div className="p-4">
             <div className="flex flex-wrap gap-4 items-center justify-between">
               {/* Filter Controls */}
               <div className="flex items-center space-x-4">
                 <div className="flex items-center space-x-2">
                   <Filter className="h-4 w-4 text-gray-500" />
-                  <span className="text-sm font-medium text-gray-700">Filter:</span>
+                  <span className="text-sm font-medium text-gray-700">
+                    Filter:
+                  </span>
                   <select
                     value={filterType}
                     onChange={(e) => setFilterType(e.target.value)}
@@ -593,7 +667,9 @@ const Tasks = () => {
               {/* Sort Controls */}
               <div className="flex items-center space-x-4">
                 <div className="flex items-center space-x-2">
-                  <span className="text-sm font-medium text-gray-700">Sort by:</span>
+                  <span className="text-sm font-medium text-gray-700">
+                    Sort by:
+                  </span>
                   <select
                     value={sortBy}
                     onChange={(e) => setSortBy(e.target.value)}
@@ -605,17 +681,26 @@ const Tasks = () => {
                   </select>
                 </div>
                 <button
-                  onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
+                  onClick={() =>
+                    setSortOrder(sortOrder === "asc" ? "desc" : "asc")
+                  }
                   className="p-1 hover:bg-gray-100 rounded"
                 >
-                  {sortOrder === "asc" ? <SortAsc className="h-4 w-4" /> : <SortDesc className="h-4 w-4" />}
+                  {sortOrder === "asc" ? (
+                    <SortAsc className="h-4 w-4" />
+                  ) : (
+                    <SortDesc className="h-4 w-4" />
+                  )}
                 </button>
               </div>
 
               {/* Results Count */}
               <div className="text-sm text-gray-500">
-                {filteredData.length} {filteredData.length === 1 ? "course" : "courses"} found
-                {searchQuery && <span className="ml-1">for "{searchQuery}"</span>}
+                {filteredData.length}{" "}
+                {filteredData.length === 1 ? "course" : "courses"} found
+                {searchQuery && (
+                  <span className="ml-1">for "{searchQuery}"</span>
+                )}
               </div>
             </div>
           </div>

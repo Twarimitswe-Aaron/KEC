@@ -629,7 +629,7 @@ export class QuizService {
 
       // Process each student mark: update existing attempt for the user if present, else create new
       for (const studentMark of studentMarks) {
-        const { userId, mark, maxPoints } = studentMark;
+        const { userId, mark, maxPoints, marksFileUrl } = studentMark;
         let existingForUser = latestByUser.get(userId);
 
         const payload = {
@@ -644,6 +644,7 @@ export class QuizService {
             percentage: maxPoints > 0 ? (mark / maxPoints) * 100 : 0,
           }),
           submittedAt: new Date(),
+          marksFileUrl: marksFileUrl || null,
         } as any;
 
         if (existingForUser) {
@@ -794,6 +795,7 @@ export class QuizService {
             submissionDate:
               attempt.submittedAt?.toISOString().split('T')[0] || '',
             hasSubmitted: true,
+            marksFileUrl: attempt.marksFileUrl || null,
           };
         }
         return student;

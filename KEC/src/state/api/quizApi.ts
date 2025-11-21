@@ -9,12 +9,10 @@ export interface QuizIdentifiers {
   formId: number;
 }
 
-
 export interface QuizQuestion extends QuestionProp {
   imageUrl?: string;
   imageFile?: File;
 }
-
 
 export interface QuizSettings {
   title: string;
@@ -144,7 +142,7 @@ export interface StudentQuizResult {
   percentage: number;
   letterGrade: string;
   submissionDate: string;
-  status: 'completed' | 'pending' | 'late';
+  status: "completed" | "pending" | "late";
 }
 
 export interface LessonWithQuizzes {
@@ -201,10 +199,9 @@ export interface UpdateManualMarksRequest {
     userId: number;
     mark: number;
     maxPoints: number;
+    marksFileUrl?: string;
   }[];
 }
-
-
 
 export const quizApi = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
@@ -222,31 +219,31 @@ export const quizApi = apiSlice.injectEndpoints({
     >({
       query: ({ id, data }) => {
         const formData = new FormData();
-        
+
         // Handle questions with image files
         const processedQuestions = data.questions?.map((question, index) => {
           const processedQuestion = { ...question };
-          
+
           // If the question has an image file, add it to FormData and remove it from question data
           if (question.imageFile) {
             formData.append(`question-${index}-image`, question.imageFile);
             delete processedQuestion.imageFile; // Remove from question data
-            delete processedQuestion.imageUrl;  // Remove preview URL (backend will generate proper URL)
+            delete processedQuestion.imageUrl; // Remove preview URL (backend will generate proper URL)
           } else {
             // If no new image file, preserve existing imageUrl for backend
             // Remove imageFile key even if it doesn't exist to keep data clean
             delete processedQuestion.imageFile;
           }
-          
+
           return processedQuestion;
         });
-        
+
         // Append all non-file fields to formData
         Object.entries(data).forEach(([key, value]) => {
-          if (key === 'questions') {
+          if (key === "questions") {
             // Use processed questions (without imageFile objects)
             formData.append(key, JSON.stringify(processedQuestions));
-          } else if (key === 'settings') {
+          } else if (key === "settings") {
             // Stringify settings object
             formData.append(key, JSON.stringify(value));
           } else if (value !== undefined && value !== null) {
@@ -257,25 +254,22 @@ export const quizApi = apiSlice.injectEndpoints({
 
         return {
           url: `quizzes/${id}`,
-          method: 'PATCH',
+          method: "PATCH",
           body: formData,
           // Don't set Content-Type header - let the browser set it with the correct boundary
           headers: {},
         };
       },
-      invalidatesTags: (_, __, { id }) => [
-        { type: "Quiz", id },
-        "Quiz",
-      ],
+      invalidatesTags: (_, __, { id }) => [{ type: "Quiz", id }, "Quiz"],
     }),
 
     // New endpoints for Tasks component
     // Get all courses with lessons and quizzes
     getCoursesWithData: builder.query<CourseWithData[], void>({
       query: () => ({
-        url: 'quizzes/courses-with-data',
+        url: "quizzes/courses-with-data",
       }),
-      providesTags: ['Course', 'Quiz', 'QuizAttempt'],
+      providesTags: ["Course", "Quiz", "QuizAttempt"],
     }),
 
     // Get lessons with quizzes for a specific course
@@ -284,47 +278,73 @@ export const quizApi = apiSlice.injectEndpoints({
         url: `quizzes/course/${courseId}/lessons`,
       }),
       providesTags: (result, error, courseId) => [
-        { type: 'Course', id: courseId },
-        'Quiz',
-        'QuizAttempt',
+        { type: "Course", id: courseId },
+        "Quiz",
+        "QuizAttempt",
       ],
     }),
 
     // Get quiz participants with marks
-    getQuizParticipants: builder.query<QuizParticipant[], { quizId: number; courseId: number }>({
+    getQuizParticipants: builder.query<
+      QuizParticipant[],
+      { quizId: number; courseId: number }
+    >({
       query: ({ quizId, courseId }) => ({
         url: `quizzes/quiz/${quizId}/participants?courseId=${courseId}`,
       }),
       providesTags: (result, error, { quizId }) => [
-        { type: 'Quiz', id: quizId },
-        'QuizAttempt',
+        { type: "Quiz", id: quizId },
+        "QuizAttempt",
       ],
     }),
 
     // Create manual quiz for practical assessments
-    createManualQuiz: builder.mutation<{ quiz: any; resource: any }, CreateManualQuizRequest>({
+    createManualQuiz: builder.mutation<
+      { quiz: any; resource: any },
+      CreateManualQuizRequest
+    >({
       query: (quizData) => ({
-        url: 'quizzes/manual-quiz',
-        method: 'POST',
+        url: "quizzes/manual-quiz",
+        method: "POST",
         body: quizData,
       }),
       invalidatesTags: (result, error, { courseId, lessonId }) => [
-        { type: 'Course', id: courseId },
-        'Quiz',
+        { type: "Course", id: courseId },
+        "Quiz",
       ],
     }),
 
     // Update manual marks for students
-    updateManualMarks: builder.mutation<{ message: string; updates: any[] }, UpdateManualMarksRequest>({
+    updateManualMarks: builder.mutation<
+      { message: string; updates: any[] },
+      UpdateManualMarksRequest
+    >({
       query: (marksData) => ({
-        url: 'quizzes/update-manual-marks',
-        method: 'PUT',
+        url: "quizzes/update-manual-marks",
+        method: "PUT",
         body: marksData,
       }),
       invalidatesTags: (result, error, { quizId }) => [
-        { type: 'Quiz', id: quizId },
-        'QuizAttempt',
+        { type: "Quiz", id: quizId },
+        "QuizAttempt",
       ],
+    }),
+
+    // Upload student marks file
+    uploadStudentMarksFile: builder.mutation<
+      { url: string; filename: string },
+      { quizId: number; studentId: number; file: File }
+    >({
+      query: ({ quizId, studentId, file }) => {
+        const formData = new FormData();
+        formData.append("marksFile", file);
+
+        return {
+          url: `quizzes/quiz/${quizId}/student/${studentId}/upload-marks`,
+          method: "POST",
+          body: formData,
+        };
+      },
     }),
 
     // Get quiz details (bonus endpoint)
@@ -332,33 +352,43 @@ export const quizApi = apiSlice.injectEndpoints({
       query: (quizId) => ({
         url: `quizzes/quiz/${quizId}/details`,
       }),
-      providesTags: (result, error, quizId) => [
-        { type: 'Quiz', id: quizId },
-      ],
+      providesTags: (result, error, quizId) => [{ type: "Quiz", id: quizId }],
     }),
 
     // Submit a quiz attempt (auto-graded on backend)
     submitQuizAttempt: builder.mutation<
-      { message: string; score: number; totalPoints: number; attemptId: number },
+      {
+        message: string;
+        score: number;
+        totalPoints: number;
+        attemptId: number;
+      },
       { quizId: number; responses: { questionId: number; answer: any }[] }
     >({
       query: ({ quizId, responses }) => ({
         url: `quizzes/quiz/${quizId}/attempt`,
-        method: 'POST',
+        method: "POST",
         body: { responses },
       }),
-      invalidatesTags: ['QuizAttempt'],
+      invalidatesTags: ["QuizAttempt"],
     }),
 
     // Get my attempt for a quiz
     getMyAttempt: builder.query<
-      { attemptId: number; score: number; totalPoints: number; submittedAt: string | null; responses: any[]; perQuestion: Record<string, { awarded: number; points: number }> } | null,
+      {
+        attemptId: number;
+        score: number;
+        totalPoints: number;
+        submittedAt: string | null;
+        responses: any[];
+        perQuestion: Record<string, { awarded: number; points: number }>;
+      } | null,
       number
     >({
       query: (quizId) => ({
         url: `quizzes/quiz/${quizId}/my-attempt`,
       }),
-      providesTags: ['QuizAttempt'],
+      providesTags: ["QuizAttempt"],
     }),
 
     // Get comprehensive course analytics with all lesson data
@@ -367,9 +397,9 @@ export const quizApi = apiSlice.injectEndpoints({
         url: `courses/${courseId}/analytics`,
       }),
       providesTags: (result, error, courseId) => [
-        { type: 'Course', id: courseId },
-        'Quiz',
-        'QuizAttempt',
+        { type: "Course", id: courseId },
+        "Quiz",
+        "QuizAttempt",
       ],
     }),
   }),
@@ -379,13 +409,14 @@ export const {
   // Existing hooks
   useUpdateQuizMutation,
   useGetQuizDataByQuizIdQuery,
-  
+
   // New hooks for Tasks component
   useGetCoursesWithDataQuery,
   useGetLessonsWithQuizzesQuery,
   useGetQuizParticipantsQuery,
   useCreateManualQuizMutation,
   useUpdateManualMarksMutation,
+  useUploadStudentMarksFileMutation,
   useGetQuizDetailsQuery,
   useGetCourseAnalyticsQuery,
   useSubmitQuizAttemptMutation,

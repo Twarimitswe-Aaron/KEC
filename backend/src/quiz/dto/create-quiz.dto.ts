@@ -32,11 +32,12 @@ export class UpdateManualMarksDto {
     userId: number;
     mark: number;
     maxPoints: number;
+    marksFileUrl?: string;
   }[];
 }
 
 export class QuizSettingsDto {
-  [key: string]: any;  // Index signature for JSON serialization
+  [key: string]: any; // Index signature for JSON serialization
   title: string;
   description?: string;
   shuffleQuestions?: boolean;

@@ -151,6 +151,7 @@ model QuizAttempt {
   score           Int      @default(0)
   totalPoints     Int      @default(0)
   detailedResults String?
+  marksFileUrl    String?
   quiz            Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 }
 
