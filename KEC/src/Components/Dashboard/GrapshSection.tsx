@@ -1,7 +1,5 @@
 // Import necessary libraries
-import React, { useEffect, useState } from "react";
-import axios from "axios";
-import Skeleton from "./Skeleton";
+import React from "react";
 import {
   ResponsiveContainer,
   BarChart,
@@ -22,54 +20,12 @@ interface DataPoint {
   revenue: number;
 }
 
-const GrapshSection = () => {
-  const [data, setData] = useState<DataPoint[]>([]);
-  const [loading, setLoading] = useState(true);
+interface GrapshSectionProps {
+  data: DataPoint[];
+}
 
-  // Fallback data in case backend is not ready
-  const fallbackData = [
-    { month: "Jan", sales: 50, revenue: 400 },
-    { month: "Feb", sales: 45, revenue: 350 },
-    { month: "Mar", sales: 60, revenue: 500 },
-    { month: "Apr", sales: 80, revenue: 650 },
-    { month: "May", sales: 60, revenue: 600 },
-    { month: "Jun", sales: 40, revenue: 300 },
-    { month: "Jul", sales: 50, revenue: 400 },
-    { month: "Aug", sales: 75, revenue: 700 },
-    { month: "Sep", sales: 65, revenue: 620 },
-    { month: "Oct", sales: 70, revenue: 690 },
-    { month: "Nov", sales: 55, revenue: 450 },
-  ];
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const response = await axios.get("/api/course-overview");
-        // Ensure the data is in the correct format
-        const formattedData = Array.isArray(response.data)
-          ? response.data
-          : fallbackData;
-        setData(formattedData);
-      } catch (error) {
-        console.error(
-          "Failed to fetch data from backend, using fallback",
-          error
-        );
-        setData(fallbackData);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
-  }, []);
-
-  if (loading) {
-    return (
-      <div className="w-full h-[270px] p-4 rounded-xl">
-        <Skeleton width="w-full" height="h-[270px]" rounded="rounded-xl" />
-      </div>
-    );
-  }
+const GrapshSection: React.FC<GrapshSectionProps> = ({ data }) => {
+  // Removed internal fetching logic as data is now passed via props
 
   return (
     <div className="w-full h-[270px] p-4 rounded-xl">

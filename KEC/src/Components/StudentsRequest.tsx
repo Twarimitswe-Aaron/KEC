@@ -31,6 +31,93 @@ type Course = {
   image_url?: string;
 };
 
+// Polymorphic CourseCardHeader Component
+interface CourseCardHeaderProps {
+  course: Course;
+  isExpanded: boolean;
+  onToggle: () => void;
+  highlightText: (text: string, query: string) => React.ReactNode;
+  searchQuery: string;
+  variant?: "default" | "highlighted";
+}
+
+const CourseCardHeader: React.FC<CourseCardHeaderProps> = ({
+  course,
+  isExpanded,
+  onToggle,
+  highlightText,
+  searchQuery,
+  variant = "default",
+}) => {
+  const studentCount = course.students.length;
+  const hasStudents = studentCount > 0;
+
+  // Polymorphic styling based on student count
+  const getStudentCountStyles = () => {
+    if (hasStudents) {
+      return "bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-800";
+    }
+    return "bg-gray-100 text-gray-600";
+  };
+
+  // Polymorphic text based on count
+  const getStudentCountText = () => {
+    return `${studentCount} ${studentCount === 1 ? "student" : "students"}`;
+  };
+
+  return (
+    <div
+      className={`flex justify-between items-center px-6 py-5 cursor-pointer hover:bg-gray-100 transition-all duration-300 ${
+        variant === "highlighted" ? "bg-blue-50/30" : ""
+      }`}
+      onClick={onToggle}
+    >
+      <div className="flex items-center gap-8">
+        {course.image_url ? (
+          <img
+            src={course.image_url}
+            alt={course.title}
+            className="w-12 h-12 object-cover rounded-full"
+          />
+        ) : (
+          <div className="p-2 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg">
+            <BookOpen className="w-5 h-5 text-white" />
+          </div>
+        )}
+
+        <div>
+          <h3 className="text-xl font-bold text-gray-900">
+            {highlightText(course.title, searchQuery)}
+          </h3>
+          <p className="text-sm sm:block hidden text-gray-600">
+            Click to view enrollments
+          </p>
+
+          <span
+            className={`px-4 py-2 sm:hidden block w-[50%] rounded-full text-sm font-semibold ${getStudentCountStyles()}`}
+          >
+            {getStudentCountText()}
+          </span>
+        </div>
+      </div>
+      <div className="flex items-center gap-4">
+        <span
+          className={`px-4 py-2 sm:block hidden rounded-full text-sm font-semibold ${getStudentCountStyles()}`}
+        >
+          {getStudentCountText()}
+        </span>
+        <div>
+          {isExpanded ? (
+            <ChevronDown className="w-5 h-5 text-gray-600" />
+          ) : (
+            <ChevronRight className="w-5 h-5 text-gray-600" />
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const StudentsRequest: React.FC = () => {
   const { searchQuery } = useContext(SearchContext);
   const { data: courses = [], isLoading } = useGetCourseEnrollmentsQuery();
@@ -202,63 +289,13 @@ const StudentsRequest: React.FC = () => {
               className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/50 overflow-hidden transition-all duration-300 hover:shadow-2xl"
             >
               {/* Course Header */}
-              <div
-                className="flex justify-between items-center px-6 py-5 cursor-pointer hover:bg-gray-100 transition-all duration-300"
-                onClick={() => toggleCourse(course.id)}
-              >
-                <div className="flex items-center gap-8">
-                  {course.image_url ? (
-                    <img
-                      src={course.image_url}
-                      alt={course.title}
-                      className="w-12 h-12 object-cover rounded-full"
-                    />
-                  ) : (
-                    <div className="p-2 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg">
-                      <BookOpen className="w-5 h-5 text-white" />
-                    </div>
-                  )}
-
-                  <div>
-                    <h3 className="text-xl font-bold text-gray-900">
-                      {highlightText(course.title, searchQuery)}
-                    </h3>
-                    <p className="text-sm sm:block hidden text-gray-600">
-                      Click to view enrollments
-                    </p>
-
-                    <span
-                      className={`px-4 py-2 sm:hidden block w-[50%] rounded-full text-sm font-semibold ${
-                        course.students.length > 0
-                          ? "bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-800"
-                          : "bg-gray-100 text-gray-600"
-                      }`}
-                    >
-                      {course.students.length}{" "}
-                      {course.students.length === 1 ? "student" : "students"}
-                    </span>
-                  </div>
-                </div>
-                <div className="flex items-center gap-4">
-                  <span
-                    className={`px-4 py-2 sm:block hidden rounded-full text-sm font-semibold ${
-                      course.students.length > 0
-                        ? "bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-800"
-                        : "bg-gray-100 text-gray-600"
-                    }`}
-                  >
-                    {course.students.length}{" "}
-                    {course.students.length === 1 ? "student" : "students"}
-                  </span>
-                  <div>
-                    {expandedCourses.has(course.id) ? (
-                      <ChevronDown className="w-5 h-5 text-gray-600" />
-                    ) : (
-                      <ChevronRight className="w-5 h-5 text-gray-600" />
-                    )}
-                  </div>
-                </div>
-              </div>
+              <CourseCardHeader
+                course={course}
+                isExpanded={expandedCourses.has(course.id)}
+                onToggle={() => toggleCourse(course.id)}
+                highlightText={highlightText}
+                searchQuery={searchQuery}
+              />
 
               {/* Expanded Student Table */}
               {expandedCourses.has(course.id) && (

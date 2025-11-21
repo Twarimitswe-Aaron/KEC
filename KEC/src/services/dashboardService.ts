@@ -1,8 +1,6 @@
-import { Course, DashboardStats } from '../types/dashboard';
-import { mockCourses, mockStats, mockGraphData } from './mockData';
+import { Course, DashboardStats } from "../types/dashboard";
 
-// Simulate API delay
-const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+const BASE_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
 
 interface DataPoint {
   month: string;
@@ -12,30 +10,34 @@ interface DataPoint {
 
 export const dashboardService = {
   async getCourses(): Promise<Course[]> {
-    // Simulate API delay
-    await delay(1000);
-    return mockCourses;
+    const response = await fetch(`${BASE_URL}/dashboard/courses`, {
+      credentials: "include",
+    });
+    if (!response.ok) throw new Error("Failed to fetch courses");
+    return response.json();
   },
 
   async getDashboardStats(): Promise<DashboardStats> {
-    // Simulate API delay
-    await delay(800);
-    return mockStats;
+    const response = await fetch(`${BASE_URL}/dashboard/stats`, {
+      credentials: "include",
+    });
+    if (!response.ok) throw new Error("Failed to fetch stats");
+    return response.json();
   },
 
   async getGraphData(): Promise<DataPoint[]> {
-    // Simulate API delay
-    await delay(1200);
-    return mockGraphData;
+    const response = await fetch(`${BASE_URL}/dashboard/graph`, {
+      credentials: "include",
+    });
+    if (!response.ok) throw new Error("Failed to fetch graph data");
+    return response.json();
   },
 
-  async updateCourseProgress(courseId: string, progress: number): Promise<void> {
-    // Simulate API delay
-    await delay(500);
-    // Find and update the course in mock data
-    const courseIndex = mockCourses.findIndex(course => course.id === courseId);
-    if (courseIndex !== -1) {
-      mockCourses[courseIndex].progress = progress;
-    }
-  }
-}; 
+  async updateCourseProgress(
+    courseId: string,
+    progress: number
+  ): Promise<void> {
+    // Placeholder for future implementation
+    console.warn("updateCourseProgress not implemented on backend yet");
+  },
+};

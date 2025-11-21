@@ -8,6 +8,7 @@ import {
 import { PiStudentDuotone } from "react-icons/pi";
 
 import { UserRoleContext } from "../../UserRoleContext";
+import { DashboardStats as DashboardStatsType } from "../../types/dashboard";
 
 interface StatCard {
   label: string;
@@ -17,13 +18,17 @@ interface StatCard {
   iconBg: string;
 }
 
+interface DashboardStatsProps {
+  stats: DashboardStatsType;
+}
+
 const chunk = (arr: StatCard[], size: number): StatCard[][] => {
   const out: StatCard[][] = [];
   for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
   return out;
 };
 
-const DashboardStats = () => {
+const DashboardStats: React.FC<DashboardStatsProps> = ({ stats }) => {
   const userRole = useContext(UserRoleContext);
 
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -33,48 +38,48 @@ const DashboardStats = () => {
   // carouselWindow: how many cards are included in the carousel buffer
   const [visibleCards, setVisibleCards] = useState<number>(3);
   const [carouselWindow, setCarouselWindow] = useState<number | "all">("all");
-  const [belowMs, setBelowMs]=useState(false);
+  const [belowMs, setBelowMs] = useState(false);
 
-  // Base stat cards (mock data)
+  // Base stat cards (using real data)
   const baseCards: StatCard[] = [
     {
       label: "Profit",
-      value: "4.8/5",
+      value: `${stats.rating}/5`, // Assuming rating is profit for now or just mapping it
       icon: <FaStar className="text-2xl text-white" />,
       bg: "bg-yellow-50",
       iconBg: "bg-yellow-500",
     },
     {
       label: "Expenses",
-      value: "1200 USD",
+      value: "1200 USD", // Placeholder as we don't have expenses in stats yet
       icon: <FaGraduationCap className="text-2xl text-white" />,
       bg: "bg-green-50",
       iconBg: "bg-green-500",
     },
     {
       label: "Students",
-      value: "450",
+      value: stats.students.toString(),
       icon: <PiStudentDuotone className="text-2xl text-white" />,
       bg: "bg-slate-100",
       iconBg: "bg-gray-700",
     },
     {
       label: "Teachers",
-      value: "30",
+      value: "30", // Placeholder
       icon: <FaChartLine className="text-2xl text-white" />,
       bg: "bg-blue-50",
       iconBg: "bg-blue-500",
     },
     {
       label: "Revenue",
-      value: "9,800 USD",
+      value: `${stats.revenue.toLocaleString()} USD`,
       icon: <FaMoneyBillWave className="text-2xl text-white" />,
       bg: "bg-purple-50",
       iconBg: "bg-purple-600",
     },
     {
       label: "Courses",
-      value: "45",
+      value: stats.courses.toString(),
       icon: <PiStudentDuotone className="text-2xl text-white" />,
       bg: "bg-slate-100",
       iconBg: "bg-gray-700",
@@ -89,72 +94,72 @@ const DashboardStats = () => {
     statCards = [
       {
         label: "Courses",
-        value: "12",
+        value: stats.courses.toString(),
         icon: <FaGraduationCap className="text-2xl text-white" />,
         bg: "bg-indigo-50",
         iconBg: "bg-indigo-500",
       },
       {
         label: "Users",
-        value: "8",
+        value: stats.students.toString(),
         icon: <FaStar className="text-2xl text-white" />,
         bg: "bg-green-50",
         iconBg: "bg-green-500",
       },
       {
         label: "Certificates",
-        value: "5",
+        value: stats.certificates.toString(),
         icon: <FaMoneyBillWave className="text-2xl text-white" />,
         bg: "bg-purple-50",
         iconBg: "bg-purple-600",
       },
-      ...(
-        belowMs ? [
-          {
-            label: "Average Score",
-            value: "3",
-            icon: <FaStar className="text-2xl text-white" />,
-            bg: "bg-yellow-50",
-            iconBg: "bg-yellow-500",
-          }
-        ] :[]
-      )
+      ...(belowMs
+        ? [
+            {
+              label: "Average Score",
+              value: stats.averageScore.toString(),
+              icon: <FaStar className="text-2xl text-white" />,
+              bg: "bg-yellow-50",
+              iconBg: "bg-yellow-500",
+            },
+          ]
+        : []),
     ];
   } else {
     // student
     statCards = [
       {
         label: "Ongoing Courses",
-        value: "12",
+        value: stats.ongoingCourses.toString(),
         icon: <FaGraduationCap className="text-2xl text-white" />,
         bg: "bg-indigo-50",
         iconBg: "bg-indigo-500",
       },
       {
         label: "Completed Courses",
-        value: "8",
+        value: stats.completedCourses.toString(),
         icon: <FaStar className="text-2xl text-white" />,
         bg: "bg-green-50",
         iconBg: "bg-green-500",
       },
       {
         label: "Certificates",
-        value: "5",
+        value: stats.certificates.toString(),
         icon: <FaMoneyBillWave className="text-2xl text-white" />,
         bg: "bg-purple-50",
         iconBg: "bg-purple-600",
       },
-      ...(
-        belowMs ? [
-          {
-            label: "Average",
-            value: "3",
-            icon: <FaStar className="text-2xl text-white" />,
-            bg: "bg-yellow-50",
-            iconBg: "bg-yellow-500",
-          }
-        ] :[]
-      )
+      ...(belowMs
+        ? [
+            {
+              label: "Average",
+              value: stats.averageScore.toString(),
+              icon: <FaStar className="text-2xl text-white" />,
+              bg: "bg-yellow-50",
+              iconBg: "bg-yellow-500",
+            },
+          ]
+        : []),
     ];
   }
 
@@ -181,7 +186,9 @@ const DashboardStats = () => {
 
   // Determine which cards are included in carousel window
   const carouselCards =
-    carouselWindow === "all" ? statCards : statCards.slice(0, Math.min(statCards.length, carouselWindow));
+    carouselWindow === "all"
+      ? statCards
+      : statCards.slice(0, Math.min(statCards.length, carouselWindow));
 
   // Build slides by chunking with visibleCards (so each slide contains visibleCards items)
   const slides = chunk(carouselCards, visibleCards);
@@ -213,31 +220,45 @@ const DashboardStats = () => {
   }, [currentIndex, slidesWithClone.length]);
 
   // Helper to pick grid-cols class
-  const gridColsClass = visibleCards === 2 ? "grid-cols-2" : visibleCards === 3 ? "grid-cols-3" : "grid-cols-2";
+  const gridColsClass =
+    visibleCards === 2
+      ? "grid-cols-2"
+      : visibleCards === 3
+      ? "grid-cols-3"
+      : "grid-cols-2";
 
   return (
     <div className="relative w-full max-w-4xl mx-auto overflow-hidden">
       <div
-        className={`flex ${isTransitioning ? "transition-transform duration-700 ease-in-out" : ""}`}
+        className={`flex ${
+          isTransitioning ? "transition-transform duration-700 ease-in-out" : ""
+        }`}
         style={{ transform: `translateX(-${currentIndex * 100}%)` }}
       >
         {slidesWithClone.map((group, idx) => (
-          <div key={idx} className={`flex-shrink-0 w-full grid gap-4 p-4 ${gridColsClass}`}>
+          <div
+            key={idx}
+            className={`flex-shrink-0 w-full grid gap-4 p-4 ${gridColsClass}`}
+          >
             {group.map((card, subIdx) => (
               <div
                 key={subIdx}
                 className={`flex flex-col items-center justify-center rounded-xl p-4 ${card.bg}`}
               >
-                <div className={`p-3 rounded-full mb-2 shadow-inner ${card.iconBg}`}>{card.icon}</div>
-                <p className="text-sm font-medium text-gray-500">{card.label}</p>
+                <div
+                  className={`p-3 rounded-full mb-2 shadow-inner ${card.iconBg}`}
+                >
+                  {card.icon}
+                </div>
+                <p className="text-sm font-medium text-gray-500">
+                  {card.label}
+                </p>
                 <p className="text-xl font-bold text-gray-800">{card.value}</p>
               </div>
             ))}
           </div>
         ))}
       </div>
-
-    
     </div>
   );
 };
