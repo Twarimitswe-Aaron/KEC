@@ -76,6 +76,16 @@ export const userApi = apiSlice.injectEndpoints({
       }),
       providesTags: (result, error, id) => [{ type: "User", id }],
     }),
+    toggleTeamVisibility: builder.mutation<
+      { message: string; isVisibleOnTeam: boolean },
+      number
+    >({
+      query: (id) => ({
+        url: `/user/${id}/toggle-visibility`,
+        method: "POST",
+      }),
+      invalidatesTags: ["User"],
+    }),
   }),
   overrideExisting: false,
 });
@@ -88,4 +98,5 @@ export const {
   useDeleteUserMutation,
   useGetTeamMembersQuery,
   useGetUserDetailsQuery,
+  useToggleTeamVisibilityMutation,
 } = userApi;

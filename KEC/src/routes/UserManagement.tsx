@@ -19,13 +19,21 @@ import {
   FaRegClock,
 } from "react-icons/fa";
 import { IoClose } from "react-icons/io5";
-import { Filter, ArrowUpNarrowWide, ArrowDownNarrowWide } from "lucide-react";
+import {
+  Filter,
+  ArrowUpNarrowWide,
+  ArrowDownNarrowWide,
+  MoreVertical,
+  Eye,
+  EyeOff,
+} from "lucide-react";
 import { UserRoleContext } from "../UserRoleContext";
 import { toast } from "react-toastify";
 import {
   useCreateUserMutation,
   useDeleteUserMutation,
   useGetAllUsersQuery,
+  useToggleTeamVisibilityMutation,
 } from "../state/api/userApi";
 import clsx from "clsx";
 import { SearchContext } from "../SearchContext";
@@ -69,6 +77,7 @@ const UserManagement = () => {
 
   const [createUser, { isLoading: isCreating }] = useCreateUserMutation();
   const [deleteUser] = useDeleteUserMutation();
+  const [toggleTeamVisibility] = useToggleTeamVisibilityMutation();
   const { searchQuery } = useContext(SearchContext);
   const userRole = useContext(UserRoleContext);
   const [users, setUsers] = useState<User[]>([]);
@@ -109,6 +118,7 @@ const UserManagement = () => {
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [filterRole, setFilterRole] = useState<string>("all");
   const [showSortMenu, setShowSortMenu] = useState(false);
+  const [openActionMenuId, setOpenActionMenuId] = useState<number | null>(null);
 
   useEffect(() => {
     try {
@@ -131,34 +141,30 @@ const UserManagement = () => {
           ? user.role
           : "student") as User["role"],
         avatar: user.avatar || "/images/default-avatar.png",
-        lessons: 0,
         time: user.createdAt
-          ? new Date(user.createdAt).toLocaleDateString("en-US", {
-              month: "short",
-              day: "numeric",
-              year: "numeric",
-            })
-          : "--",
-        createdAt: user.createdAt,
+          ? new Date(user.createdAt).toLocaleDateString()
+          : "Unknown",
+        lessons: user.lessons || 0,
         showMenu: false,
+        createdAt: user.createdAt,
       }));
 
       setUsers(processedUsers);
-    } catch (error) {
-      console.error("Error processing users:", error);
-      toast.error("Failed to load users");
+    } catch (error: any) {
+      console.error("Effect error processing users:", error);
       setUsers([]);
     }
-  }, [data, refetch]);
+  }, [data]);
 
   const handleAddUser = async () => {
-    setIsSubmitting(true);
+    if (isSubmitting) return;
 
     if (!validateAllFields()) {
-      setIsSubmitting(false);
       shakeForm();
       return;
     }
+
+    setIsSubmitting(true);
 
     try {
       const payload = {
@@ -176,6 +182,7 @@ const UserManagement = () => {
 
       setTimeout(() => {
         closeAddUserModal();
+        refetch(); // Refresh the user list
         const newTotalPages = Math.ceil((users.length + 1) / itemsPerPage);
         setCurrentPage(newTotalPages);
       }, 500);
@@ -419,6 +426,18 @@ const UserManagement = () => {
     if (user) {
       setUserToDelete(user);
     }
+    setOpenActionMenuId(null); // Close menu after action
+  };
+
+  const handleToggleVisibility = async (userId: number) => {
+    try {
+      const result = await toggleTeamVisibility(userId).unwrap();
+      toast.success(result.message);
+      setOpenActionMenuId(null); // Close menu after action
+      refetch(); // Refresh data
+    } catch (error: any) {
+      toast.error(error.data?.message || "Failed to toggle visibility");
+    }
   };
 
   const confirmDelete = async () => {
@@ -656,21 +675,57 @@ const UserManagement = () => {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <div className="flex justify-end items-center gap-2 opacity-0 group-hover:opacity-100 transition-all duration-200 transform translate-x-2 group-hover:translate-x-0">
+                        <div className="relative flex justify-end">
                           <button
-                            onClick={() => handleView(user.id)}
-                            className="p-2 text-gray-400 hover:text-[#1a3c34] hover:bg-[#1a3c34]/5 rounded-lg transition-all duration-200"
-                            title="View Details"
+                            onClick={() =>
+                              setOpenActionMenuId(
+                                openActionMenuId === user.id ? null : user.id
+                              )
+                            }
+                            className="p-2 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-all duration-200"
+                            title="Actions"
                           >
-                            <FaEye size={16} />
+                            <MoreVertical size={18} />
                           </button>
-                          <button
-                            onClick={() => handleDelete(user.id)}
-                            className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200"
-                            title="Delete User"
-                          >
-                            <FaTrash size={15} />
-                          </button>
+
+                          {/* Dropdown Menu */}
+                          {openActionMenuId === user.id && (
+                            <div className="absolute right-0 top-10 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
+                              <div className="py-1">
+                                <button
+                                  onClick={() => {
+                                    handleView(user.id);
+                                    setOpenActionMenuId(null);
+                                  }}
+                                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                                >
+                                  <FaEye size={14} className="text-gray-400" />
+                                  View Details
+                                </button>
+
+                                {(user.role === "admin" ||
+                                  user.role === "teacher") && (
+                                  <button
+                                    onClick={() =>
+                                      handleToggleVisibility(user.id)
+                                    }
+                                    className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                                  >
+                                    <Eye size={14} className="text-gray-400" />
+                                    Toggle Visibility
+                                  </button>
+                                )}
+
+                                <button
+                                  onClick={() => handleDelete(user.id)}
+                                  className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                                >
+                                  <FaTrash size={14} className="text-red-400" />
+                                  Delete User
+                                </button>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       </td>
                     </tr>

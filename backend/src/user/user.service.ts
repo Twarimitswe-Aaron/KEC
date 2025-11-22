@@ -337,6 +337,51 @@ export class UserService {
     };
   }
 
+  async toggleTeamVisibility(userId: number) {
+    // First, find the user and check their role
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        admin: true,
+        teacher: true,
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    if (user.role === 'admin' && user.admin) {
+      // Toggle admin visibility
+      const updated = await this.prisma.admin.update({
+        where: { userId },
+        data: {
+          isVisibleOnTeam: !user.admin.isVisibleOnTeam,
+        },
+      });
+      return {
+        message: 'Visibility updated successfully',
+        isVisibleOnTeam: updated.isVisibleOnTeam,
+      };
+    } else if (user.role === 'teacher' && user.teacher) {
+      // Toggle teacher visibility
+      const updated = await this.prisma.teacher.update({
+        where: { userId },
+        data: {
+          isVisibleOnTeam: !user.teacher.isVisibleOnTeam,
+        },
+      });
+      return {
+        message: 'Visibility updated successfully',
+        isVisibleOnTeam: updated.isVisibleOnTeam,
+      };
+    } else {
+      throw new NotFoundException(
+        'User is not an admin or teacher, or admin/teacher record not found',
+      );
+    }
+  }
+
   async remove(id: number) {
     return this.prisma.user.delete({
       where: { id },

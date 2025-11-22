@@ -46,6 +46,11 @@ export class UserController {
     return this.userService.getUserDetails(id);
   }
 
+  @Post(':id/toggle-visibility')
+  async toggleTeamVisibility(@Param('id', ParseIntPipe) id: number) {
+    return this.userService.toggleTeamVisibility(id);
+  }
+
   @Delete(':id')
   async remove(@Param('id') id: string) {
     return this.userService.remove(parseInt(id));
