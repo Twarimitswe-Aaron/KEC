@@ -7,21 +7,19 @@ import React, {
   useMemo,
 } from "react";
 
-import { CiUndo, CiRedo } from "react-icons/ci";
 import {
-  FaRegSquare,
   FaUser,
   FaEnvelope,
   FaUserTag,
   FaLock,
   FaChevronLeft,
   FaChevronRight,
+  FaEye,
+  FaTrash,
+  FaRegClock,
 } from "react-icons/fa";
-import { FaRegCheckSquare } from "react-icons/fa";
-import { HiOutlineAdjustmentsHorizontal } from "react-icons/hi2";
-import { FaEye, FaTrash, FaEyeSlash } from "react-icons/fa";
-import { FaRegClock } from "react-icons/fa";
 import { IoClose } from "react-icons/io5";
+import { Filter, ArrowUpNarrowWide, ArrowDownNarrowWide } from "lucide-react";
 import { UserRoleContext } from "../UserRoleContext";
 import { toast } from "react-toastify";
 import {
@@ -30,8 +28,9 @@ import {
   useGetAllUsersQuery,
 } from "../state/api/userApi";
 import clsx from "clsx";
-import { Link } from "react-router-dom";
 import { SearchContext } from "../SearchContext";
+import UserDetailsModal from "../Components/UserManagement/UserDetailsModal";
+import { FaEyeSlash } from "react-icons/fa6";
 
 interface User {
   id: number;
@@ -42,6 +41,7 @@ interface User {
   time: string;
   avatar: string;
   showMenu: boolean;
+  createdAt?: Date | string;
 }
 
 interface NewUser {
@@ -74,6 +74,7 @@ const UserManagement = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
+  const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
   const [showAddUserModal, setShowAddUserModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [newUser, setNewUser] = useState<NewUser>({
@@ -103,25 +104,26 @@ const UserManagement = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(5);
 
-  // New state for Sorting
-  const [sortField, setSortField] = useState<SortField>(null);
+  // New state for Sorting and Filtering
+  const [sortField, setSortField] = useState<SortField>("name");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
+  const [filterRole, setFilterRole] = useState<string>("all");
   const [showSortMenu, setShowSortMenu] = useState(false);
+
   useEffect(() => {
     try {
       if (!Array.isArray(data)) {
-        console.warn("Invalid or no user data received:", data);
+        if (data) console.warn("Invalid or no user data received:", data);
         setUsers([]);
-        refetch();
+        // Only refetch if data is undefined (initial load or error), not if it's just empty array
+        if (data === undefined) refetch();
         return;
       }
-
-      console.log("Raw user data:", data); // Debug logging
 
       const processedUsers = data.map((user: any) => ({
         id: user.id,
         name:
-          user.name || `${user.firstName} ${user.lastName}` || "Unknown User", // Handle name composition
+          user.name || `${user.firstName} ${user.lastName}` || "Unknown User",
         email: user.email,
         role: (user.role === "teacher" ||
         user.role === "admin" ||
@@ -130,7 +132,14 @@ const UserManagement = () => {
           : "student") as User["role"],
         avatar: user.avatar || "/images/default-avatar.png",
         lessons: 0,
-        time: "--",
+        time: user.createdAt
+          ? new Date(user.createdAt).toLocaleDateString("en-US", {
+              month: "short",
+              day: "numeric",
+              year: "numeric",
+            })
+          : "--",
+        createdAt: user.createdAt,
         showMenu: false,
       }));
 
@@ -140,7 +149,7 @@ const UserManagement = () => {
       toast.error("Failed to load users");
       setUsers([]);
     }
-  }, [data]);
+  }, [data, refetch]);
 
   const handleAddUser = async () => {
     setIsSubmitting(true);
@@ -167,8 +176,6 @@ const UserManagement = () => {
 
       setTimeout(() => {
         closeAddUserModal();
-        // Since we refetch on success, the useEffect will handle state update.
-        // We ensure we land on the new page if necessary.
         const newTotalPages = Math.ceil((users.length + 1) / itemsPerPage);
         setCurrentPage(newTotalPages);
       }, 500);
@@ -371,7 +378,12 @@ const UserManagement = () => {
       );
     }
 
-    // 2. Sorting (Horizontal Adjustments feature)
+    // 2. Filtering (Role)
+    if (filterRole && filterRole !== "all") {
+      list = list.filter((user) => user.role === filterRole);
+    }
+
+    // 3. Sorting (Horizontal Adjustments feature)
     if (sortField) {
       list.sort((a, b) => {
         const aValue = a[sortField]?.toString().toLowerCase() || "";
@@ -384,7 +396,7 @@ const UserManagement = () => {
     }
 
     return list;
-  }, [users, searchQuery, sortField, sortDirection]);
+  }, [users, searchQuery, sortField, sortDirection, filterRole]);
 
   // 3. Pagination calculation
   const totalItems = sortedAndFilteredUsers.length;
@@ -399,10 +411,7 @@ const UserManagement = () => {
   // --- End Combined Logic ---
 
   const handleView = (userId: number) => {
-    const user = users.find((u) => u.id === userId);
-    if (user) {
-      setSelectedUser(user);
-    }
+    setSelectedUserId(userId);
   };
 
   const handleDelete = (userId: number) => {
@@ -443,10 +452,6 @@ const UserManagement = () => {
     setUserToDelete(null);
   };
 
-  const closeModal = () => {
-    setSelectedUser(null);
-  };
-
   const closeAddUserModal = () => {
     setShowAddUserModal(false);
     setNewUser({
@@ -469,10 +474,6 @@ const UserManagement = () => {
     setIsFocused({});
   };
 
-  const goToPage = (page: number) => {
-    setCurrentPage(page);
-  };
-
   const goToPreviousPage = () => {
     if (currentPage > 1) {
       setCurrentPage(currentPage - 1);
@@ -491,12 +492,13 @@ const UserManagement = () => {
     setItemsPerPage(Number(e.target.value));
     setCurrentPage(1);
   };
+
   return (
     <div className="min-h-screen bg-gray-50/30">
       {userRole === "admin" && (
         <div className="max-w-7xl mx-auto">
           {/* Header */}
-          <div className="sticky top-20 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-6 bg-white/80 backdrop-blur-sm rounded-xl shadow-sm mb-6 z-10">
+          <div className="sticky top-20 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-6 bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/50 mb-6 z-10">
             <div>
               <h1 className="text-2xl font-semibold text-gray-800">
                 User Management
@@ -506,47 +508,6 @@ const UserManagement = () => {
               </p>
             </div>
             <div className="flex items-center gap-3">
-              {/* Sorting Menu (Horizontal Adjustments) */}
-              <div className="relative">
-                <button
-                  onClick={() => setShowSortMenu(!showSortMenu)}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
-                >
-                  <HiOutlineAdjustmentsHorizontal
-                    size={18}
-                    className="text-gray-600"
-                  />
-                </button>
-
-                {showSortMenu && (
-                  <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-100 py-2 z-20 animate-in fade-in zoom-in-95 origin-top-right">
-                    <h4 className="px-4 py-1 text-xs font-semibold uppercase text-gray-500">
-                      Sort By
-                    </h4>
-                    {(
-                      [
-                        { key: "name", label: "Name" },
-                        { key: "email", label: "Email" },
-                        { key: "role", label: "Role" },
-                      ] as { key: SortField; label: string }[]
-                    ).map(({ key, label }) => (
-                      <button
-                        key={key}
-                        onClick={() => handleSort(key)}
-                        className="w-full flex justify-between items-center text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                      >
-                        <span>{label}</span>
-                        {sortField === key && (
-                          <span className="font-semibold text-[#1a3c34] text-lg">
-                            {sortDirection === "asc" ? "↓" : "↑"}
-                          </span>
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-
               <button
                 onClick={() => setShowAddUserModal(true)}
                 className="flex items-center gap-2 px-4 py-2 bg-[#1a3c34] text-white rounded-lg hover:bg-[#2e856e] transition-colors text-sm font-medium"
@@ -557,8 +518,65 @@ const UserManagement = () => {
             </div>
           </div>
 
-          {/* User List */}
-          <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-sm overflow-hidden border border-gray-100">
+          {/* Filter and Sort Toolbar */}
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/50 mb-6">
+            <div className="p-4">
+              <div className="flex flex-wrap gap-4 items-center justify-between">
+                <div className="flex items-center space-x-4">
+                  <div className="flex items-center space-x-2">
+                    <Filter className="h-4 w-4 text-gray-500" />
+                    <span className="text-sm font-medium text-gray-700">
+                      Filter:
+                    </span>
+                    <select
+                      value={filterRole}
+                      onChange={(e) => setFilterRole(e.target.value)}
+                      className="border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-transparent"
+                    >
+                      <option value="all">All Roles</option>
+                      <option value="student">Student</option>
+                      <option value="teacher">Teacher</option>
+                      <option value="admin">Admin</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-4">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-sm font-medium text-gray-700">
+                      Sort by:
+                    </span>
+                    <select
+                      value={sortField || "name"}
+                      onChange={(e) => handleSort(e.target.value as SortField)}
+                      className="border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-transparent"
+                    >
+                      <option value="name">Name</option>
+                      <option value="email">Email</option>
+                      <option value="role">Role</option>
+                    </select>
+                  </div>
+                  <button
+                    onClick={() =>
+                      setSortDirection(sortDirection === "asc" ? "desc" : "asc")
+                    }
+                    className="p-1 hover:bg-gray-100 rounded transition-colors"
+                    title={sortDirection === "asc" ? "Ascending" : "Descending"}
+                  >
+                    {sortDirection === "asc" ? (
+                      <ArrowUpNarrowWide className="h-4 w-4 text-gray-600" />
+                    ) : (
+                      <ArrowDownNarrowWide className="h-4 w-4 text-gray-600" />
+                    )}
+                  </button>
+                </div>
+                <div className="text-sm text-gray-500">
+                  {sortedAndFilteredUsers.length} users found
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/50 overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
@@ -856,22 +874,19 @@ const UserManagement = () => {
                         onChange={handleChange}
                         onFocus={handleFocus}
                         onBlur={handleBlur}
-                        className={getInputClass("password") + " pr-8"}
+                        className={getInputClass("password")}
                         placeholder="Enter password"
                         disabled={isSubmitting}
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors cursor-pointer"
-                        aria-label={
-                          showPassword ? "Hide password" : "Show password"
-                        }
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                       >
                         {showPassword ? (
-                          <FaEyeSlash size={14} />
+                          <FaEyeSlash size={16} />
                         ) : (
-                          <FaEye size={14} />
+                          <FaEye size={16} />
                         )}
                       </button>
                     </div>
@@ -898,7 +913,7 @@ const UserManagement = () => {
                         onChange={handleChange}
                         onFocus={handleFocus}
                         onBlur={handleBlur}
-                        className={getInputClass("confirmPassword") + " pr-8"}
+                        className={getInputClass("confirmPassword")}
                         placeholder="Confirm password"
                         disabled={isSubmitting}
                       />
@@ -907,17 +922,12 @@ const UserManagement = () => {
                         onClick={() =>
                           setShowConfirmPassword(!showConfirmPassword)
                         }
-                        className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors cursor-pointer"
-                        aria-label={
-                          showConfirmPassword
-                            ? "Hide confirm password"
-                            : "Show confirm password"
-                        }
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                       >
                         {showConfirmPassword ? (
-                          <FaEyeSlash size={14} />
+                          <FaEyeSlash size={16} />
                         ) : (
-                          <FaEye size={14} />
+                          <FaEye size={16} />
                         )}
                       </button>
                     </div>
@@ -929,37 +939,75 @@ const UserManagement = () => {
                       </ul>
                     )}
                   </div>
-                </form>
 
-                {/* Footer */}
-                <div className="p-6 border-t border-gray-100 flex-shrink-0 flex justify-end gap-3">
+                  {/* Submit Button */}
+                  <div className="pt-2">
+                    <button
+                      type="submit"
+                      disabled={isSubmitting}
+                      className="w-full bg-[#1a3c34] text-white py-2.5 rounded-lg hover:bg-[#2e856e] transition-all duration-300 font-medium shadow-lg shadow-[#1a3c34]/20 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+                    >
+                      {isSubmitting ? (
+                        <>
+                          <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                          <span>Creating...</span>
+                        </>
+                      ) : (
+                        <>
+                          <FaUser size={16} />
+                          <span>Create User</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* Delete Confirmation Modal */}
+          {userToDelete && (
+            <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
+              <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 transform transition-all scale-100">
+                <div className="text-center">
+                  <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
+                    <FaTrash className="h-6 w-6 text-red-600" />
+                  </div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">
+                    Delete User
+                  </h3>
+                  <p className="text-sm text-gray-500 mb-6">
+                    Are you sure you want to delete{" "}
+                    <span className="font-semibold text-gray-900">
+                      {userToDelete.name}
+                    </span>
+                    ? This action cannot be undone.
+                  </p>
+                </div>
+                <div className="flex gap-3">
                   <button
-                    onClick={closeAddUserModal}
-                    disabled={isSubmitting}
-                    className="px-6 py-2.5 text-gray-700 hover:bg-gray-100 rounded-xl transition-colors text-sm font-medium cursor-pointer disabled:opacity-50"
+                    onClick={cancelDelete}
+                    className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
                   >
                     Cancel
                   </button>
                   <button
-                    type="submit"
-                    form={formRef.current?.id} // Use the ref's id for form submission
-                    onClick={(e) => {
-                      e.preventDefault();
-                      handleAddUser();
-                    }}
-                    disabled={isSubmitting}
-                    className="flex items-center justify-center gap-2 px-6 py-2.5 bg-gradient-to-r from-[#1a3c34] to-[#2e856e] text-white rounded-xl hover:from-[#2e856e] hover:to-[#1a3c34] transition-all duration-200 shadow-lg text-sm font-medium disabled:opacity-50 cursor-pointer"
+                    onClick={confirmDelete}
+                    className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium shadow-lg shadow-red-600/20"
                   >
-                    {isSubmitting ? (
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    ) : (
-                      <FaRegCheckSquare size={14} />
-                    )}
-                    <span>{isSubmitting ? "Creating..." : "Create User"}</span>
+                    Delete
                   </button>
                 </div>
               </div>
             </div>
+          )}
+
+          {/* User Details Modal */}
+          {selectedUserId && (
+            <UserDetailsModal
+              userId={selectedUserId}
+              onClose={() => setSelectedUserId(null)}
+            />
           )}
         </div>
       )}

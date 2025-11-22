@@ -5,19 +5,17 @@ export interface CreateUserDto {
   lastName: string;
   email: string;
   password: string;
-  
+
   role: string;
 }
 
 export interface MinimalUser {
-    id: number;
-    name: string;      
-    role: string;
-    email: string;
-    avatar?: string;
-
-  }
-  
+  id: number;
+  name: string;
+  role: string;
+  email: string;
+  avatar?: string;
+}
 
 export const userApi = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
@@ -55,6 +53,13 @@ export const userApi = apiSlice.injectEndpoints({
       }),
       invalidatesTags: ["User"],
     }),
+    getUserDetails: builder.query<any, number>({
+      query: (id) => ({
+        url: `/user/${id}/details`,
+        method: "GET",
+      }),
+      providesTags: (result, error, id) => [{ type: "User", id }],
+    }),
   }),
   overrideExisting: false,
 });
@@ -65,4 +70,5 @@ export const {
   useCreateUserMutation,
   useGetAllUsersQuery,
   useDeleteUserMutation,
+  useGetUserDetailsQuery,
 } = userApi;

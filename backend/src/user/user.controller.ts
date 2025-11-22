@@ -9,6 +9,7 @@ import {
   ConflictException,
   UnauthorizedException,
   UseGuards,
+  ParseIntPipe,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -32,10 +33,12 @@ export class UserController {
 
   @Get('findAll')
   async getAll() {
-    
-
     return this.userService.findAll();
-    
+  }
+
+  @Get(':id/details')
+  async getUserDetails(@Param('id', ParseIntPipe) id: number) {
+    return this.userService.getUserDetails(id);
   }
 
   @Delete(':id')
