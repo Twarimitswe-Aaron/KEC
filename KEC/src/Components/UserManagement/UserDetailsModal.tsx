@@ -29,17 +29,17 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({
   if (!userId) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
       <div
-        className="bg-[#1e1e1e] rounded-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden shadow-2xl border border-white/10 flex flex-col"
+        className="bg-white/90 backdrop-blur-md rounded-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden shadow-2xl border border-white/50 flex flex-col"
         role="dialog"
         aria-modal="true"
       >
         {/* Header */}
-        <div className="p-6 border-b border-white/10 flex justify-between items-start bg-[#252525]">
+        <div className="p-6 border-b border-gray-200/50 flex justify-between items-start bg-white/80 backdrop-blur-sm">
           <div className="flex items-center gap-5">
             <div className="relative">
-              <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-purple-500/50 shadow-lg bg-[#1a1a1a]">
+              <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-purple-500/30 shadow-lg bg-gray-50">
                 {data?.user?.avatar ? (
                   <img
                     src={data.user.avatar}
@@ -47,13 +47,13 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-white/20">
+                  <div className="w-full h-full flex items-center justify-center text-gray-300">
                     <User size={40} />
                   </div>
                 )}
               </div>
               <div
-                className={`absolute bottom-0 right-0 w-5 h-5 rounded-full border-2 border-[#252525] ${
+                className={`absolute bottom-0 right-0 w-5 h-5 rounded-full border-2 border-white ${
                   data?.user?.role === "student"
                     ? "bg-green-500"
                     : data?.user?.role === "teacher"
@@ -64,19 +64,19 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({
             </div>
 
             <div>
-              <h2 className="text-2xl font-bold text-white mb-1 flex items-center gap-2">
+              <h2 className="text-2xl font-bold text-gray-900 mb-1 flex items-center gap-2">
                 {isLoading ? (
-                  <div className="h-8 w-48 bg-white/10 rounded animate-pulse" />
+                  <div className="h-8 w-48 bg-gray-200 rounded animate-pulse" />
                 ) : (
                   <>
                     {data?.user?.name}
                     <span
                       className={`text-xs px-2 py-0.5 rounded-full border ${
                         data?.user?.role === "student"
-                          ? "bg-green-500/10 border-green-500/30 text-green-400"
+                          ? "bg-green-50 border-green-200 text-green-700"
                           : data?.user?.role === "teacher"
-                          ? "bg-blue-500/10 border-blue-500/30 text-blue-400"
-                          : "bg-purple-500/10 border-purple-500/30 text-purple-400"
+                          ? "bg-blue-50 border-blue-200 text-blue-700"
+                          : "bg-purple-50 border-purple-200 text-purple-700"
                       } uppercase tracking-wider font-medium`}
                     >
                       {data?.user?.role}
@@ -85,11 +85,11 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({
                 )}
               </h2>
 
-              <div className="flex flex-col gap-1 text-gray-400 text-sm">
+              <div className="flex flex-col gap-1 text-gray-600 text-sm">
                 <div className="flex items-center gap-2">
                   <Mail size={14} />
                   {isLoading ? (
-                    <div className="h-4 w-32 bg-white/10 rounded animate-pulse" />
+                    <div className="h-4 w-32 bg-gray-200 rounded animate-pulse" />
                   ) : (
                     data?.user?.email
                   )}
@@ -97,7 +97,7 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({
                 <div className="flex items-center gap-2">
                   <Calendar size={14} />
                   {isLoading ? (
-                    <div className="h-4 w-24 bg-white/10 rounded animate-pulse" />
+                    <div className="h-4 w-24 bg-gray-200 rounded animate-pulse" />
                   ) : (
                     `Joined ${new Date(
                       data?.user?.joinedAt
@@ -110,7 +110,7 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({
 
           <button
             onClick={onClose}
-            className="p-2 hover:bg-white/10 rounded-full transition-colors text-gray-400 hover:text-white"
+            className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-500 hover:text-gray-700"
           >
             <X size={24} />
           </button>
@@ -123,7 +123,7 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500" />
             </div>
           ) : error ? (
-            <div className="flex flex-col items-center justify-center h-64 text-red-400 gap-2">
+            <div className="flex flex-col items-center justify-center h-64 text-red-500 gap-2">
               <AlertCircle size={48} />
               <p>Failed to load user details</p>
             </div>
@@ -132,63 +132,65 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({
               {/* Stats Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                 <StatCard
-                  icon={<BookOpen className="text-blue-400" size={20} />}
+                  icon={<BookOpen className="text-blue-600" size={20} />}
                   label="Enrolled"
                   value={data?.stats?.enrolledCount}
                   subtext="Active Courses"
-                  color="bg-blue-500/10 border-blue-500/20"
+                  color="bg-blue-50/80 border-blue-200/50"
                 />
                 <StatCard
-                  icon={<CheckCircle className="text-green-400" size={20} />}
+                  icon={<CheckCircle className="text-green-600" size={20} />}
                   label="Completed"
                   value={data?.stats?.completedCount}
                   subtext="Courses Finished"
-                  color="bg-green-500/10 border-green-500/20"
+                  color="bg-green-50/80 border-green-200/50"
                 />
                 <StatCard
-                  icon={<XCircle className="text-red-400" size={20} />}
+                  icon={<XCircle className="text-red-600" size={20} />}
                   label="Failed"
                   value={data?.stats?.failedCount}
                   subtext="Courses Failed"
-                  color="bg-red-500/10 border-red-500/20"
+                  color="bg-red-50/80 border-red-200/50"
                 />
                 <StatCard
-                  icon={<DollarSign className="text-yellow-400" size={20} />}
+                  icon={<DollarSign className="text-yellow-600" size={20} />}
                   label="Total Paid"
                   value={`$${data?.stats?.totalPaid}`}
                   subtext="Lifetime Value"
-                  color="bg-yellow-500/10 border-yellow-500/20"
+                  color="bg-yellow-50/80 border-yellow-200/50"
                 />
                 <StatCard
-                  icon={<Award className="text-purple-400" size={20} />}
+                  icon={<Award className="text-purple-600" size={20} />}
                   label="Avg. Score"
                   value={`${data?.stats?.averageQuizScore}%`}
                   subtext="Quiz Performance"
-                  color="bg-purple-500/10 border-purple-500/20"
+                  color="bg-purple-50/80 border-purple-200/50"
                 />
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Courses Section */}
                 <div className="lg:col-span-1 space-y-4">
-                  <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-                    <GraduationCap size={20} className="text-purple-400" />
+                  <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+                    <GraduationCap size={20} className="text-purple-600" />
                     Enrolled Courses
                   </h3>
-                  <div className="bg-[#252525] rounded-xl border border-white/5 overflow-hidden">
+                  <div className="bg-white/80 backdrop-blur-sm rounded-xl border border-gray-200/50 overflow-hidden shadow-sm">
                     {data?.courses?.enrolled?.length > 0 ? (
-                      <div className="divide-y divide-white/5">
+                      <div className="divide-y divide-gray-100">
                         {data.courses.enrolled.map((course: any) => (
                           <div
                             key={course.id}
-                            className="p-4 hover:bg-white/5 transition-colors"
+                            className="p-4 hover:bg-gray-50/80 transition-colors"
                           >
-                            <div className="font-medium text-white mb-1">
+                            <div className="font-medium text-gray-900 mb-1">
                               {course.title}
                             </div>
-                            <div className="flex justify-between items-center text-sm text-gray-400">
+                            <div className="flex justify-between items-center text-sm text-gray-600">
                               <span>{course.price}</span>
-                              <span className="text-blue-400">In Progress</span>
+                              <span className="text-blue-600 font-medium">
+                                In Progress
+                              </span>
                             </div>
                           </div>
                         ))}
@@ -204,18 +206,18 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({
                   {(data?.courses?.completed?.length > 0 ||
                     data?.courses?.failed?.length > 0) && (
                     <div className="space-y-4 mt-6">
-                      <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-                        <Clock size={20} className="text-gray-400" />
+                      <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+                        <Clock size={20} className="text-gray-500" />
                         History
                       </h3>
-                      <div className="bg-[#252525] rounded-xl border border-white/5 overflow-hidden p-4 space-y-2">
+                      <div className="bg-white/80 backdrop-blur-sm rounded-xl border border-gray-200/50 overflow-hidden p-4 space-y-2 shadow-sm">
                         {data?.courses?.completed?.map((c: any) => (
                           <div
                             key={c.id}
                             className="flex items-center gap-2 text-sm"
                           >
-                            <CheckCircle size={14} className="text-green-500" />
-                            <span className="text-gray-300 truncate">
+                            <CheckCircle size={14} className="text-green-600" />
+                            <span className="text-gray-700 truncate">
                               {c.title}
                             </span>
                           </div>
@@ -225,8 +227,8 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({
                             key={c.id}
                             className="flex items-center gap-2 text-sm"
                           >
-                            <XCircle size={14} className="text-red-500" />
-                            <span className="text-gray-300 truncate">
+                            <XCircle size={14} className="text-red-600" />
+                            <span className="text-gray-700 truncate">
                               {c.title}
                             </span>
                           </div>
@@ -238,15 +240,15 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({
 
                 {/* Quizzes Section */}
                 <div className="lg:col-span-2 space-y-4">
-                  <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-                    <Award size={20} className="text-purple-400" />
+                  <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+                    <Award size={20} className="text-purple-600" />
                     Quiz Performance
                   </h3>
-                  <div className="bg-[#252525] rounded-xl border border-white/5 overflow-hidden">
+                  <div className="bg-white/80 backdrop-blur-sm rounded-xl border border-gray-200/50 overflow-hidden shadow-sm">
                     {data?.quizzes?.length > 0 ? (
                       <div className="overflow-x-auto">
                         <table className="w-full text-left text-sm">
-                          <thead className="bg-white/5 text-gray-400 font-medium">
+                          <thead className="bg-gray-50/80 text-gray-700 font-medium border-b border-gray-200">
                             <tr>
                               <th className="p-4">Quiz Title</th>
                               <th className="p-4">Course</th>
@@ -255,19 +257,19 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({
                               <th className="p-4 text-center">Status</th>
                             </tr>
                           </thead>
-                          <tbody className="divide-y divide-white/5">
+                          <tbody className="divide-y divide-gray-100">
                             {data.quizzes.map((quiz: any) => (
                               <tr
                                 key={quiz.id}
-                                className="hover:bg-white/5 transition-colors"
+                                className="hover:bg-gray-50/80 transition-colors"
                               >
-                                <td className="p-4 font-medium text-white">
+                                <td className="p-4 font-medium text-gray-900">
                                   {quiz.title}
                                 </td>
-                                <td className="p-4 text-gray-400">
+                                <td className="p-4 text-gray-600">
                                   {quiz.courseName}
                                 </td>
-                                <td className="p-4 text-gray-400">
+                                <td className="p-4 text-gray-600">
                                   {quiz.submittedAt
                                     ? new Date(
                                         quiz.submittedAt
@@ -279,10 +281,10 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({
                                     <span
                                       className={`font-bold ${
                                         quiz.percentage >= 80
-                                          ? "text-green-400"
+                                          ? "text-green-600"
                                           : quiz.percentage >= 60
-                                          ? "text-yellow-400"
-                                          : "text-red-400"
+                                          ? "text-yellow-600"
+                                          : "text-red-600"
                                       }`}
                                     >
                                       {quiz.score}/{quiz.maxPoints}
@@ -296,8 +298,8 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({
                                   <span
                                     className={`px-2 py-1 rounded-full text-xs font-medium ${
                                       quiz.status === "Completed"
-                                        ? "bg-green-500/10 text-green-400 border border-green-500/20"
-                                        : "bg-gray-500/10 text-gray-400 border border-gray-500/20"
+                                        ? "bg-green-100 text-green-700 border border-green-200"
+                                        : "bg-gray-100 text-gray-700 border border-gray-200"
                                     }`}
                                   >
                                     {quiz.status}
@@ -326,12 +328,14 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({
 };
 
 const StatCard = ({ icon, label, value, subtext, color }: any) => (
-  <div className={`p-4 rounded-xl border ${color} flex flex-col gap-1`}>
+  <div
+    className={`p-4 rounded-xl border ${color} flex flex-col gap-1 backdrop-blur-sm`}
+  >
     <div className="flex items-center gap-2 mb-2">
       {icon}
-      <span className="text-gray-400 text-sm font-medium">{label}</span>
+      <span className="text-gray-600 text-sm font-medium">{label}</span>
     </div>
-    <div className="text-2xl font-bold text-white">{value}</div>
+    <div className="text-2xl font-bold text-gray-900">{value}</div>
     <div className="text-xs text-gray-500">{subtext}</div>
   </div>
 );
