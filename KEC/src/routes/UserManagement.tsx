@@ -38,47 +38,48 @@ import {
 } from "../state/api/userApi";
 import clsx from "clsx";
 import { SearchContext } from "../SearchContext";
-import UserDetailsModal from "../Components/UserManagement/UserDetailsModal";
 import { FaEyeSlash } from "react-icons/fa6";
+import UserDetailsModal from "../Components/UserManagement/UserDetailsModal";
 
 interface User {
   id: number;
   name: string;
-  role: "student" | "teacher" | "admin";
   email: string;
-  lessons: number;
-  time: string;
+  role: "admin" | "teacher" | "student";
   avatar: string;
+  time: string;
+  lessons: number;
   showMenu: boolean;
-  createdAt?: Date | string;
+  createdAt: string;
 }
 
 interface NewUser {
   firstName: string;
   lastName: string;
   email: string;
-  role: "student" | "teacher" | "admin";
+  role: "admin" | "teacher" | "student";
+  title: string;
   password: string;
   confirmPassword: string;
 }
 
-type FormErrors = {
+interface FormErrors {
   firstName: string[];
   lastName: string[];
   email: string[];
   role: string[];
+  title: string[];
   password: string[];
   confirmPassword: string[];
-};
+}
 
-type SortField = "name" | "email" | "role" | null;
+type SortField = "name" | "email" | "role";
 
 const UserManagement = () => {
-  const { data, isLoading, refetch } = useGetAllUsersQuery();
-
   const [createUser, { isLoading: isCreating }] = useCreateUserMutation();
   const [deleteUser] = useDeleteUserMutation();
   const [toggleTeamVisibility] = useToggleTeamVisibilityMutation();
+  const { data, refetch } = useGetAllUsersQuery();
   const { searchQuery } = useContext(SearchContext);
   const userRole = useContext(UserRoleContext);
   const [users, setUsers] = useState<User[]>([]);
@@ -92,6 +93,7 @@ const UserManagement = () => {
     lastName: "",
     email: "",
     role: "student",
+    title: "",
     password: "",
     confirmPassword: "",
   });
@@ -100,6 +102,7 @@ const UserManagement = () => {
     lastName: [],
     email: [],
     role: [],
+    title: [],
     password: [],
     confirmPassword: [],
   });
@@ -203,6 +206,7 @@ const UserManagement = () => {
         email: newUser.email,
         password: newUser.password,
         role: newUser.role,
+        title: newUser.title,
       } as any;
 
       const result = await createUser(payload).unwrap();
@@ -238,6 +242,7 @@ const UserManagement = () => {
       lastName: [],
       email: [],
       role: [],
+      title: [],
       password: [],
       confirmPassword: [],
     };
@@ -352,11 +357,16 @@ const UserManagement = () => {
 
   const getInputClass = (field: keyof FormErrors) => {
     return clsx(
-      "w-full px-3 py-2 bg-gray-50 border rounded-md focus:outline-none transition-all duration-300",
+      "w-full rounded-lg px-3 py-2 text-sm border transition-all focus:outline-none focus:ring-2 focus:border-transparent",
       {
-        "border-[#022F40] ": !touched[field] || isFocused[field],
-        "border-red-500 ": touched[field] && formErrors[field]?.length,
-        "border-green-500 ": touched[field] && !formErrors[field]?.length,
+        "border-gray-300 hover:border-blue-400 hover:shadow-sm focus:ring-blue-500":
+          !touched[field] && !formErrors[field]?.length,
+        "border-red-500 focus:ring-red-500":
+          touched[field] && formErrors[field]?.length,
+        "border-green-500 focus:ring-green-500":
+          touched[field] && !formErrors[field]?.length,
+        "border-blue-500 ring-2 ring-blue-500":
+          isFocused[field] && !formErrors[field]?.length,
       }
     );
   };
@@ -508,6 +518,7 @@ const UserManagement = () => {
       lastName: "",
       email: "",
       role: "student",
+      title: "",
       password: "",
       confirmPassword: "",
     });
@@ -516,6 +527,7 @@ const UserManagement = () => {
       lastName: [],
       email: [],
       role: [],
+      title: [],
       password: [],
       confirmPassword: [],
     });
@@ -757,230 +769,267 @@ const UserManagement = () => {
           </div>
 
           {showAddUserModal && (
-            <div
-              className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4"
-              role="dialog"
-              aria-modal="true"
-            >
-              <div className="bg-white rounded-2xl shadow-xl max-w-md w-full max-h-[90vh] flex flex-col">
+            <div className="fixed inset-0 scroll-hide bg-black/50 flex justify-center items-center z-50 px-4">
+              <div className="bg-white/80 backdrop-blur-sm scroll-hide w-full max-w-3xl p-6 rounded-2xl shadow-xl overflow-y-auto max-h-[90vh] border border-white/50 mt-8">
                 {/* Header */}
-                <div className="flex justify-between items-center p-6 border-b border-gray-100 flex-shrink-0">
-                  <h2 className="text-xl font-semibold text-gray-800">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-2xl font-bold text-gray-900">
                     Add New User
                   </h2>
                   <button
+                    type="button"
                     onClick={closeAddUserModal}
-                    className="p-1 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
-                    aria-label="Close add user modal"
+                    className="p-2 z-1000 hover:bg-gray-100 rounded-full transition-colors"
                   >
                     <IoClose size={24} className="text-gray-500" />
                   </button>
                 </div>
 
-                {/* Form body (scrollable) */}
+                {/* Form body */}
                 <form
                   ref={formRef}
                   onSubmit={(e) => {
                     e.preventDefault();
                     handleAddUser();
                   }}
-                  className="p-4 flex-1 overflow-y-auto scroll-hide space-y-4"
-                  style={{
-                    transition:
-                      "transform 0.3s ease-in-out, opacity 0.3s ease-in-out",
-                  }}
+                  className="space-y-4"
                 >
-                  {/* First Name Field */}
-                  <div>
-                    <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1">
-                      <FaUser size={12} />
-                      First Name *
-                    </label>
-                    <input
-                      name="firstName"
-                      type="text"
-                      value={newUser.firstName}
-                      onChange={handleChange}
-                      onFocus={handleFocus}
-                      onBlur={handleBlur}
-                      className={getInputClass("firstName")}
-                      placeholder="Enter first name"
-                      disabled={isSubmitting}
-                    />
-                    {formErrors.firstName?.length > 0 && (
-                      <ul className="text-left mt-1 text-xs text-red-600 space-y-0.5">
-                        {formErrors.firstName.map((err, idx) => (
-                          <li key={idx}>{err}</li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
-                  {/* Last Name Field */}
-                  <div>
-                    <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1">
-                      <FaUser size={12} />
-                      Last Name *
-                    </label>
-                    <input
-                      name="lastName"
-                      type="text"
-                      value={newUser.lastName}
-                      onChange={handleChange}
-                      onFocus={handleFocus}
-                      onBlur={handleBlur}
-                      className={getInputClass("lastName")}
-                      placeholder="Enter last name"
-                      disabled={isSubmitting}
-                    />
-                    {formErrors.lastName?.length > 0 && (
-                      <ul className="text-left mt-1 text-xs text-red-600 space-y-0.5">
-                        {formErrors.lastName.map((err, idx) => (
-                          <li key={idx}>{err}</li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
+                  {/* Personal Information Card */}
+                  <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/50 p-6 transition-all duration-300 hover:shadow-2xl">
+                    <h3 className="text-lg font-semibold text-[#004e64] mb-4 border-b border-gray-200 pb-2">
+                      Personal Information
+                    </h3>
 
-                  {/* Email Field */}
-                  <div>
-                    <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1">
-                      <FaEnvelope size={12} />
-                      Email Address *
-                    </label>
-                    <input
-                      name="email"
-                      type="email"
-                      value={newUser.email}
-                      onChange={handleChange}
-                      onFocus={handleFocus}
-                      onBlur={handleBlur}
-                      className={getInputClass("email")}
-                      placeholder="Enter email address"
-                      disabled={isSubmitting}
-                    />
-                    {formErrors.email?.length > 0 && (
-                      <ul className="text-left mt-1 text-xs text-red-600 space-y-0.5">
-                        {formErrors.email.map((err, idx) => (
-                          <li key={idx}>{err}</li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
-
-                  {/* Role Field */}
-                  <div>
-                    <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1">
-                      <FaUserTag size={12} />
-                      Role *
-                    </label>
-                    <select
-                      name="role"
-                      value={newUser.role}
-                      onChange={handleChange}
-                      onFocus={handleFocus}
-                      onBlur={handleBlur}
-                      className={getInputClass("role")}
-                      disabled={isSubmitting}
-                    >
-                      <option value="student">Student</option>
-                      <option value="teacher">Teacher</option>
-                      <option value="admin">Admin</option>
-                    </select>
-                    {formErrors.role?.length > 0 && (
-                      <ul className="text-left mt-1 text-xs text-red-600 space-y-0.5">
-                        {formErrors.role.map((err, idx) => (
-                          <li key={idx}>{err}</li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
-
-                  {/* Password Field */}
-                  <div>
-                    <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1">
-                      <FaLock size={12} />
-                      Password *
-                    </label>
-                    <div className="relative">
-                      <input
-                        name="password"
-                        type={showPassword ? "text" : "password"}
-                        value={newUser.password}
-                        onChange={handleChange}
-                        onFocus={handleFocus}
-                        onBlur={handleBlur}
-                        className={getInputClass("password")}
-                        placeholder="Enter password"
-                        disabled={isSubmitting}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                      >
-                        {showPassword ? (
-                          <FaEyeSlash size={16} />
-                        ) : (
-                          <FaEye size={16} />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {/* First Name Field */}
+                      <div>
+                        <label className="block mb-2 text-sm font-medium text-gray-700">
+                          First Name *
+                        </label>
+                        <input
+                          name="firstName"
+                          type="text"
+                          value={newUser.firstName}
+                          onChange={handleChange}
+                          onFocus={handleFocus}
+                          onBlur={handleBlur}
+                          className={getInputClass("firstName")}
+                          placeholder="Enter first name"
+                          disabled={isSubmitting}
+                        />
+                        {formErrors.firstName?.length > 0 && (
+                          <ul className="text-left mt-1 text-xs text-red-600 space-y-0.5">
+                            {formErrors.firstName.map((err, idx) => (
+                              <li key={idx}>{err}</li>
+                            ))}
+                          </ul>
                         )}
-                      </button>
+                      </div>
+
+                      {/* Last Name Field */}
+                      <div>
+                        <label className="block mb-2 text-sm font-medium text-gray-700">
+                          Last Name *
+                        </label>
+                        <input
+                          name="lastName"
+                          type="text"
+                          value={newUser.lastName}
+                          onChange={handleChange}
+                          onFocus={handleFocus}
+                          onBlur={handleBlur}
+                          className={getInputClass("lastName")}
+                          placeholder="Enter last name"
+                          disabled={isSubmitting}
+                        />
+                        {formErrors.lastName?.length > 0 && (
+                          <ul className="text-left mt-1 text-xs text-red-600 space-y-0.5">
+                            {formErrors.lastName.map((err, idx) => (
+                              <li key={idx}>{err}</li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+
+                      {/* Email Field */}
+                      <div className="col-span-full">
+                        <label className="block mb-2 text-sm font-medium text-gray-700">
+                          Email Address *
+                        </label>
+                        <input
+                          name="email"
+                          type="email"
+                          value={newUser.email}
+                          onChange={handleChange}
+                          onFocus={handleFocus}
+                          onBlur={handleBlur}
+                          className={getInputClass("email")}
+                          placeholder="Enter email address"
+                          disabled={isSubmitting}
+                        />
+                        {formErrors.email?.length > 0 && (
+                          <ul className="text-left mt-1 text-xs text-red-600 space-y-0.5">
+                            {formErrors.email.map((err, idx) => (
+                              <li key={idx}>{err}</li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+
+                      {/* Role Field */}
+                      <div>
+                        <label className="block mb-2 text-sm font-medium text-gray-700">
+                          Role *
+                        </label>
+                        <select
+                          name="role"
+                          value={newUser.role}
+                          onChange={handleChange}
+                          onFocus={handleFocus}
+                          onBlur={handleBlur}
+                          className={getInputClass("role")}
+                          disabled={isSubmitting}
+                        >
+                          <option value="student">Student</option>
+                          <option value="teacher">Teacher</option>
+                          <option value="admin">Admin</option>
+                        </select>
+                        {formErrors.role?.length > 0 && (
+                          <ul className="text-left mt-1 text-xs text-red-600 space-y-0.5">
+                            {formErrors.role.map((err, idx) => (
+                              <li key={idx}>{err}</li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+
+                      {/* Title Field (Conditional) */}
+                      {(newUser.role === "teacher" ||
+                        newUser.role === "admin") && (
+                        <div className="animate-fadeIn">
+                          <label className="block mb-2 text-sm font-medium text-gray-700">
+                            Title{" "}
+                            <span className="text-gray-400 text-xs font-normal">
+                              (Optional)
+                            </span>
+                          </label>
+                          <input
+                            name="title"
+                            type="text"
+                            value={newUser.title || ""}
+                            onChange={handleChange}
+                            onFocus={handleFocus}
+                            onBlur={handleBlur}
+                            className={getInputClass("title")}
+                            placeholder="e.g. Senior Instructor"
+                            disabled={isSubmitting}
+                          />
+                        </div>
+                      )}
                     </div>
-                    {formErrors.password?.length > 0 && (
-                      <ul className="text-left mt-1 text-xs text-red-600 space-y-0.5">
-                        {formErrors.password.map((err, idx) => (
-                          <li key={idx}>{err}</li>
-                        ))}
-                      </ul>
-                    )}
                   </div>
 
-                  {/* Confirm Password Field */}
-                  <div>
-                    <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1">
-                      <FaLock size={12} />
-                      Confirm Password *
-                    </label>
-                    <div className="relative">
-                      <input
-                        name="confirmPassword"
-                        type={showConfirmPassword ? "text" : "password"}
-                        value={newUser.confirmPassword}
-                        onChange={handleChange}
-                        onFocus={handleFocus}
-                        onBlur={handleBlur}
-                        className={getInputClass("confirmPassword")}
-                        placeholder="Confirm password"
-                        disabled={isSubmitting}
-                      />
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setShowConfirmPassword(!showConfirmPassword)
-                        }
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                      >
-                        {showConfirmPassword ? (
-                          <FaEyeSlash size={16} />
-                        ) : (
-                          <FaEye size={16} />
+                  {/* Security Information Card */}
+                  <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/50 p-6 transition-all duration-300 hover:shadow-2xl">
+                    <h3 className="text-lg font-semibold text-[#004e64] mb-4 border-b border-gray-200 pb-2">
+                      Security Information
+                    </h3>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {/* Password Field */}
+                      <div>
+                        <label className="block mb-2 text-sm font-medium text-gray-700">
+                          Password *
+                        </label>
+                        <div className="relative">
+                          <input
+                            name="password"
+                            type={showPassword ? "text" : "password"}
+                            value={newUser.password}
+                            onChange={handleChange}
+                            onFocus={handleFocus}
+                            onBlur={handleBlur}
+                            className={getInputClass("password")}
+                            placeholder="Enter password"
+                            disabled={isSubmitting}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                          >
+                            {showPassword ? (
+                              <FaEyeSlash size={16} />
+                            ) : (
+                              <FaEye size={16} />
+                            )}
+                          </button>
+                        </div>
+                        {formErrors.password?.length > 0 && (
+                          <ul className="text-left mt-1 text-xs text-red-600 space-y-0.5">
+                            {formErrors.password.map((err, idx) => (
+                              <li key={idx}>{err}</li>
+                            ))}
+                          </ul>
                         )}
-                      </button>
+                      </div>
+
+                      {/* Confirm Password Field */}
+                      <div>
+                        <label className="block mb-2 text-sm font-medium text-gray-700">
+                          Confirm Password *
+                        </label>
+                        <div className="relative">
+                          <input
+                            name="confirmPassword"
+                            type={showConfirmPassword ? "text" : "password"}
+                            value={newUser.confirmPassword}
+                            onChange={handleChange}
+                            onFocus={handleFocus}
+                            onBlur={handleBlur}
+                            className={getInputClass("confirmPassword")}
+                            placeholder="Confirm password"
+                            disabled={isSubmitting}
+                          />
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setShowConfirmPassword(!showConfirmPassword)
+                            }
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                          >
+                            {showConfirmPassword ? (
+                              <FaEyeSlash size={16} />
+                            ) : (
+                              <FaEye size={16} />
+                            )}
+                          </button>
+                        </div>
+                        {formErrors.confirmPassword?.length > 0 && (
+                          <ul className="text-left mt-1 text-xs text-red-600 space-y-0.5">
+                            {formErrors.confirmPassword.map((err, idx) => (
+                              <li key={idx}>{err}</li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
                     </div>
-                    {formErrors.confirmPassword?.length > 0 && (
-                      <ul className="text-left mt-1 text-xs text-red-600 space-y-0.5">
-                        {formErrors.confirmPassword.map((err, idx) => (
-                          <li key={idx}>{err}</li>
-                        ))}
-                      </ul>
-                    )}
                   </div>
 
                   {/* Submit Button */}
-                  <div className="pt-2">
+                  <div className="flex justify-end gap-4 pt-4">
+                    <button
+                      type="button"
+                      onClick={closeAddUserModal}
+                      disabled={isSubmitting}
+                      className="px-6 py-3 rounded-md cursor-pointer bg-gradient-to-r from-gray-50 to-gray-100 text-gray-700 font-medium hover:from-gray-100 hover:to-gray-200 transition-all duration-300 border border-gray-300 hover:shadow-md disabled:opacity-50"
+                    >
+                      Cancel
+                    </button>
                     <button
                       type="submit"
                       disabled={isSubmitting}
-                      className="w-full bg-[#1a3c34] text-white py-2.5 rounded-lg hover:bg-[#2e856e] transition-all duration-300 font-medium shadow-lg shadow-[#1a3c34]/20 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+                      className="px-6 py-3 rounded-md cursor-pointer bg-gradient-to-r from-[#004e64] via-[#025d75] to-[#022F40] text-white font-semibold hover:from-[#022F40] hover:to-[#011d2b] transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 disabled:opacity-50 disabled:hover:scale-100 flex items-center gap-2"
                     >
                       {isSubmitting ? (
                         <>

@@ -279,14 +279,17 @@ const LessonsView = () => {
     }
 
     // Create a properly typed CourseToUpdate object
-    const courseUpdateData: CourseToUpdate & { image_url?: string; imageChanged?: string } = {
+    const courseUpdateData: CourseToUpdate & {
+      image_url?: string;
+      imageChanged?: string;
+    } = {
       id: Number(id),
       title: course.title.trim(),
       description: course.description.trim(),
       coursePrice: course.price.trim(),
       category: (course.category || "").trim(),
       open: course.isOpen,
-      maximum: course.maxStudents
+      maximum: course.maxStudents,
     };
 
     // Handle image updates
@@ -612,103 +615,111 @@ const LessonsView = () => {
       </div>
          
       {modals.showAddModule && (
-        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
-           
-          <div className="bg-white rounded-lg shadow-2xl w-full max-w-lg transform transition-all animate-in zoom-in-95 duration-200">
-               
-            <ModalHeader
-              title="Create New Lesson"
-              subtitle="Add a new lesson to your course"
-              onClose={() => {
-                updateModals({ showAddModule: false });
-                resetForm("lesson");
-              }}
-            />
-               
-            <div className="p-6 space-y-5">
-                   
-              <div>
-                       
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                              Lesson Title{" "}
-                  <span className="text-red-500">*</span>       
-                </label>
-                       
-                <input
-                  type="text"
-                  placeholder="e.g., Introduction to Thermodynamics"
-                  value={forms.lesson.title}
-                  onChange={(e) =>
-                    updateForm("lesson", { title: e.target.value })
-                  }
-                  className="w-full bg-white border border-gray-200 px-4 py-2.5 rounded-lg focus:border-[#034153] focus:ring-2 focus:ring-[#034153]/20 transition-all outline-none"
-                />
-                     
-              </div>
-                   
-              <div>
-                       
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                              Lesson Description{" "}
-                  <span className="text-red-500">*</span>       
-                </label>
-                       
-                <textarea
-                  placeholder="Provide a brief overview of what students will learn in this lesson..."
-                  value={forms.lesson.description}
-                  onChange={(e) =>
-                    updateForm("lesson", { description: e.target.value })
-                  }
-                  rows={4}
-                  className="w-full bg-white border border-gray-200 px-4 py-2.5 rounded-lg focus:border-[#034153] focus:ring-2 focus:ring-[#034153]/20 transition-all outline-none resize-none"
-                />
-                     
-              </div>
-                   
-              <ActionButtons
-                onPrimary={handleAddModule}
-                onSecondary={() => {
+        <div className="fixed inset-0 scroll-hide bg-black/50 flex justify-center items-center z-50 px-4">
+          <div className="bg-white/80 backdrop-blur-sm scroll-hide w-full max-w-3xl p-6 rounded-2xl shadow-xl overflow-y-auto max-h-[90vh] border border-white/50 mt-8">
+            {/* Header */}
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-gray-900">
+                Create New Lesson
+              </h2>
+              <button
+                onClick={() => {
                   updateModals({ showAddModule: false });
                   resetForm("lesson");
                 }}
-                primaryText="Create Lesson"
-                secondaryText="Cancel"
-                loading={isCreatingLesson}
-              />
-                 
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <X size={24} className="text-gray-500" />
+              </button>
             </div>
-             
+
+            <div className="space-y-4">
+              <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/50 p-6 transition-all duration-300 hover:shadow-2xl">
+                <div className="space-y-4">
+                  {/* Lesson Title */}
+                  <div>
+                    <label className="block mb-2 text-sm font-medium text-gray-700">
+                      Lesson Title <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g., Introduction to Thermodynamics"
+                      value={forms.lesson.title}
+                      onChange={(e) =>
+                        updateForm("lesson", { title: e.target.value })
+                      }
+                      className="w-full rounded-lg px-3 py-2 text-sm border border-gray-300 hover:border-blue-400 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    />
+                  </div>
+
+                  {/* Lesson Description */}
+                  <div>
+                    <label className="block mb-2 text-sm font-medium text-gray-700">
+                      Lesson Description <span className="text-red-500">*</span>
+                    </label>
+                    <textarea
+                      placeholder="Provide a brief overview of what students will learn in this lesson..."
+                      value={forms.lesson.description}
+                      onChange={(e) =>
+                        updateForm("lesson", { description: e.target.value })
+                      }
+                      rows={4}
+                      className="w-full rounded-lg px-3 py-2 text-sm border border-gray-300 hover:border-blue-400 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex justify-end gap-4 pt-4">
+              <button
+                onClick={() => {
+                  updateModals({ showAddModule: false });
+                  resetForm("lesson");
+                }}
+                disabled={isCreatingLesson}
+                className="px-6 py-3 rounded-md cursor-pointer bg-gradient-to-r from-gray-50 to-gray-100 text-gray-700 font-medium hover:from-gray-100 hover:to-gray-200 transition-all duration-300 border border-gray-300 hover:shadow-md disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleAddModule}
+                disabled={isCreatingLesson}
+                className="px-6 py-3 rounded-md cursor-pointer bg-gradient-to-r from-[#004e64] via-[#025d75] to-[#022F40] text-white font-semibold hover:from-[#022F40] hover:to-[#011d2b] transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 disabled:opacity-50 disabled:hover:scale-100"
+              >
+                {isCreatingLesson ? "Creating..." : "Create Lesson"}
+              </button>
+            </div>
           </div>
         </div>
       )}
-         
       {modals.showEditForm && (
-        <div className="fixed inset-0 bg-gradient-to-br from-black/70 via-black/60 to-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
-                 
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl transform transition-all max-h-[90vh] overflow-hidden flex flex-col animate-in zoom-in-95 duration-200">
-                     
-            <ModalHeader
-              title="Edit Course"
-              subtitle="Update your course information"
-              onClose={() => {
-                updateModals({ showEditForm: false });
-                resetCourseForm();
-              }}
-            />
-                     
-            <div className="p-6 space-y-6 overflow-y-auto">
-                         
-              <div>
-                <label className="block text-sm font-bold text-gray-800 mb-3">
+        <div className="fixed inset-0 scroll-hide bg-black/50 flex justify-center items-center z-50 px-4">
+          <div className="bg-white/80 backdrop-blur-sm scroll-hide w-full max-w-3xl p-6 rounded-2xl shadow-xl overflow-y-auto max-h-[90vh] border border-white/50 mt-8">
+            {/* Header */}
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-gray-900">Edit Course</h2>
+              <button
+                onClick={() => {
+                  updateModals({ showEditForm: false });
+                  resetCourseForm();
+                }}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <X size={24} className="text-gray-500" />
+              </button>
+            </div>
+
+            <div className="space-y-6">
+              {/* Image Upload Card */}
+              <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/50 p-6 transition-all duration-300 hover:shadow-2xl">
+                <h3 className="text-lg font-semibold text-[#004e64] mb-4 border-b border-gray-200 pb-2">
                   Course Image
-                </label>
-                             
-                <label className="w-full cursor-pointer group">
-                                 
+                </h3>
+                <label className="w-full cursor-pointer group block">
                   <div className="relative border-2 border-dashed border-[#004e64]/30 rounded-xl p-8 hover:border-[#004e64] hover:bg-gradient-to-br hover:from-[#004e64]/5 hover:to-[#034153]/5 transition-all duration-300 text-center group-hover:shadow-lg">
-                                     
                     <div className="flex flex-col items-center gap-3">
-                                         
                       {forms.course.imagePreview ? (
                         <div className="relative">
                           <img
@@ -725,7 +736,6 @@ const LessonsView = () => {
                           <Image className="w-12 h-12 text-[#004e64]" />
                         </div>
                       )}
-                                         
                       <div className="space-y-1">
                         <span className="text-[#034153] font-semibold block group-hover:text-[#004e64] transition-colors">
                           {forms.course.imageFile
@@ -736,11 +746,8 @@ const LessonsView = () => {
                           JPG, PNG, or WEBP up to 10MB
                         </span>
                       </div>
-                                       
                     </div>
-                                   
                   </div>
-                                 
                   <input
                     type="file"
                     accept="image/*"
@@ -754,184 +761,178 @@ const LessonsView = () => {
                     }}
                     className="hidden"
                   />
-                               
                 </label>
-                           
               </div>
-                         
-              <div>
-                <label className="block text-sm font-bold text-gray-800 mb-3">
-                  Course Title <span className="text-red-500">*</span>
-                </label>
-                             
-                <input
-                  type="text"
-                  placeholder="e.g., Advanced Web Development"
-                  value={forms.course.title}
-                  onChange={(e) => handleInputChange(e, "title")}
-                  className="w-full bg-gray-50 border-2 border-gray-200 px-4 py-3 rounded-xl focus:border-[#034153] focus:bg-white focus:ring-2 focus:ring-[#034153]/10 transition-all outline-none font-medium"
-                />
-                           
-              </div>
-                         
-              <div>
-                <label className="block text-sm font-bold text-gray-800 mb-3">
-                  Course Description <span className="text-red-500">*</span>
-                </label>
-                             
-                <textarea
-                  placeholder="Provide a detailed description of what students will learn..."
-                  value={forms.course.description}
-                  onChange={(e) => handleInputChange(e, "description")}
-                  rows={4}
-                  className="w-full bg-gray-50 border-2 border-gray-200 focus:border-[#034153] focus:bg-white px-4 py-3 rounded-xl transition-all outline-none resize-none focus:ring-2 focus:ring-[#034153]/10 font-medium"
-                />
-                           
-              </div>
-                         
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                             
-                <div>
-                  <label className="block text-sm font-bold text-gray-800 mb-3">
-                    Course Price (RWF) <span className="text-red-500">*</span>
-                  </label>
-                                 
-                  <div className="relative">
-                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-semibold">
-                      ₣
-                    </span>
-                                     
+
+              {/* Course Details Card */}
+              <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/50 p-6 transition-all duration-300 hover:shadow-2xl">
+                <h3 className="text-lg font-semibold text-[#004e64] mb-4 border-b border-gray-200 pb-2">
+                  Course Details
+                </h3>
+                <div className="space-y-4">
+                  {/* Title */}
+                  <div>
+                    <label className="block mb-2 text-sm font-medium text-gray-700">
+                      Course Title *
+                    </label>
                     <input
-                      type="number"
-                      placeholder="0.00"
-                      value={forms.course.price}
-                      onChange={(e) => handleInputChange(e, "price", "string")}
-                      className="w-full bg-gray-50 border-2 border-gray-200 pl-9 pr-4 py-3 rounded-xl focus:border-[#034153] focus:bg-white focus:ring-2 focus:ring-[#034153]/10 transition-all outline-none font-medium"
-                      min="0"
-                      step="0.01"
+                      type="text"
+                      placeholder="e.g., Advanced Web Development"
+                      value={forms.course.title}
+                      onChange={(e) => handleInputChange(e, "title")}
+                      className="w-full rounded-lg px-3 py-2 text-sm border border-gray-300 hover:border-blue-400 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                     />
-                                   
                   </div>
-                               
+
+                  {/* Description */}
+                  <div>
+                    <label className="block mb-2 text-sm font-medium text-gray-700">
+                      Course Description *
+                    </label>
+                    <textarea
+                      placeholder="Provide a detailed description..."
+                      value={forms.course.description}
+                      onChange={(e) => handleInputChange(e, "description")}
+                      rows={4}
+                      className="w-full rounded-lg px-3 py-2 text-sm border border-gray-300 hover:border-blue-400 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Price */}
+                    <div>
+                      <label className="block mb-2 text-sm font-medium text-gray-700">
+                        Course Price (RWF) *
+                      </label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 font-semibold">
+                          ₣
+                        </span>
+                        <input
+                          type="number"
+                          placeholder="0.00"
+                          value={forms.course.price}
+                          onChange={(e) =>
+                            handleInputChange(e, "price", "string")
+                          }
+                          className="w-full rounded-lg pl-8 pr-3 py-2 text-sm border border-gray-300 hover:border-blue-400 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                          min="0"
+                          step="0.01"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Max Students */}
+                    <div>
+                      <label className="block mb-2 text-sm font-medium text-gray-700">
+                        Maximum Students *
+                      </label>
+                      <input
+                        type="number"
+                        placeholder="e.g., 100"
+                        value={forms.course.maxStudents ?? ""}
+                        onChange={(e) =>
+                          handleInputChange(e, "maxStudents", "number")
+                        }
+                        className="w-full rounded-lg px-3 py-2 text-sm border border-gray-300 hover:border-blue-400 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                        min="1"
+                      />
+                    </div>
+
+                    {/* Category */}
+                    <div className="col-span-full">
+                      <label className="block mb-2 text-sm font-medium text-gray-700">
+                        Category
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g., Thermodynamics"
+                        value={(forms.course as any).category || ""}
+                        onChange={(e) => handleInputChange(e, "category")}
+                        className="w-full rounded-lg px-3 py-2 text-sm border border-gray-300 hover:border-blue-400 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Open/Close Toggle */}
+                  <div className="bg-gray-50 rounded-xl p-4 border border-gray-200 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="checkbox"
+                        id="courseStatus"
+                        checked={forms.course.isOpen}
+                        onChange={(e) =>
+                          updateForm("course", { isOpen: e.target.checked })
+                        }
+                        className="w-5 h-5 text-[#034153] border-gray-300 rounded focus:ring-[#034153] cursor-pointer"
+                      />
+                      <label
+                        htmlFor="courseStatus"
+                        className="text-sm font-medium text-gray-700 cursor-pointer"
+                      >
+                        Course is open for enrollment
+                      </label>
+                    </div>
+                    <span
+                      className={`text-xs font-semibold px-3 py-1 rounded-full ${
+                        forms.course.isOpen
+                          ? "bg-green-100 text-green-700"
+                          : "bg-gray-100 text-gray-600"
+                      }`}
+                    >
+                      {forms.course.isOpen ? "Open" : "Closed"}
+                    </span>
+                  </div>
                 </div>
-                             
-                <div>
-                  <label className="block text-sm font-bold text-gray-800 mb-3">
-                    Maximum Students <span className="text-red-500">*</span>
-                  </label>
-                                 
-                  <input
-                    type="number"
-                    placeholder="e.g., 100"
-                    value={forms.course.maxStudents ?? ""}
-                    onChange={(e) =>
-                      handleInputChange(e, "maxStudents", "number")
-                    }
-                    className="w-full bg-gray-50 border-2 border-gray-200 px-4 py-3 rounded-xl focus:border-[#034153] focus:bg-white focus:ring-2 focus:ring-[#034153]/10 transition-all outline-none font-medium"
-                    min="1"
-                  />
-                               
-                </div>
-                             
-                <div>
-                  <label className="block text-sm font-bold text-gray-800 mb-3">
-                    Category
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g., Thermodynamics"
-                    value={(forms.course as any).category || ""}
-                    onChange={(e) => handleInputChange(e, "category")}
-                    className="w-full bg-gray-50 border-2 border-gray-200 px-4 py-3 rounded-xl focus:border-[#034153] focus:bg-white focus:ring-2 focus:ring-[#034153]/10 transition-all outline-none font-medium"
-                  />
-                </div>
-                           
               </div>
-                         
-              <div className="bg-gradient-to-r from-[#034153]/5 to-[#004e64]/5 border-2 border-[#034153]/10 rounded-xl p-4">
-                             
-                <div className="flex items-center gap-3">
-                                 
-                  <input
-                    type="checkbox"
-                    id="courseStatus"
-                    checked={forms.course.isOpen}
-                    onChange={(e) =>
-                      updateForm("course", { isOpen: e.target.checked })
-                    }
-                    className="w-5 h-5 text-[#034153] border-gray-300 rounded focus:ring-[#034153] cursor-pointer"
-                  />
-                                 
-                  <label
-                    htmlFor="courseStatus"
-                    className="text-sm font-bold text-gray-800 cursor-pointer flex-1"
-                  >
-                    Course is open for enrollment
-                  </label>
-                                 
-                  <span
-                    className={`text-xs font-semibold px-3 py-1 rounded-full ${
-                      forms.course.isOpen
-                        ? "bg-green-100 text-green-700"
-                        : "bg-gray-100 text-gray-600"
-                    }`}
-                  >
-                    {forms.course.isOpen ? "Open" : "Closed"}
-                  </span>
-                               
-                </div>
-                           
-              </div>
-                         
-              <ActionButtons
-                onPrimary={handleUpdateCourse}
-                onSecondary={() => {
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex justify-end gap-4 mt-6">
+              <button
+                onClick={() => {
                   updateModals({ showEditForm: false });
                   resetCourseForm();
                 }}
-                primaryText="Update Course"
-                secondaryText="Cancel"
-                loading={isUpdatingCourse}
-              />
-                       
+                disabled={isUpdatingCourse}
+                className="px-6 py-2.5 rounded-lg border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleUpdateCourse}
+                disabled={isUpdatingCourse}
+                className="px-6 py-2.5 rounded-lg bg-gradient-to-r from-[#004e64] to-[#002a36] text-white font-medium hover:shadow-lg transform hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:transform-none"
+              >
+                {isUpdatingCourse ? "Updating..." : "Update Course"}
+              </button>
             </div>
-                   
           </div>
-               
         </div>
       )}
-         
       {modals.showDeleteConfirm && (
         <div className="fixed inset-0 bg-gradient-to-br from-black/70 via-black/60 to-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
-                 
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 animate-in zoom-in-95 duration-200">
-                     
             <div className="flex items-center justify-center w-16 h-16 bg-red-100 rounded-full mx-auto mb-4">
               <Trash2 className="w-8 h-8 text-red-600" />
             </div>
-                     
             <h2 className="text-2xl font-bold mb-3 text-center text-gray-900">
               Delete Course?
             </h2>
-                     
             <p className="text-gray-600 mb-6 text-center">
               Are you sure you want to delete{" "}
               <span className="font-semibold">"{courseData?.title}"</span>? This
               action cannot be undone and all lessons will be permanently
               removed.
             </p>
-                     
             <div className="flex gap-3">
-                         
               <button
                 onClick={confirmDeleteCourse}
                 disabled={isDeletingCourse}
                 className="flex-1 bg-gradient-to-r from-red-500 to-red-600 text-white px-4 py-3.5 cursor-pointer rounded-xl hover:shadow-lg transition-all font-bold disabled:opacity-50 disabled:cursor-not-allowed transform hover:-translate-y-0.5 active:translate-y-0"
               >
-                             
-                {isDeletingCourse ? "Deleting..." : "Delete Course"}           
+                {isDeletingCourse ? "Deleting..." : "Delete Course"}
               </button>
-                         
               <button
                 onClick={() => updateModals({ showDeleteConfirm: false })}
                 disabled={isDeletingCourse}
@@ -939,11 +940,8 @@ const LessonsView = () => {
               >
                 Cancel
               </button>
-                       
             </div>
-                 
           </div>
-               
         </div>
       )}
             <ModuleManagement courseId={Number(id)} lessons={lessons || []} /> 

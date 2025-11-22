@@ -32,6 +32,7 @@ interface NewCourseFormData {
   title: string;
   description: string;
   price: string;
+  category?: string;
 }
 
 interface ImageUploadAreaProps {
@@ -307,6 +308,7 @@ const CourseManagement = () => {
     title: "",
     description: "",
     price: "",
+    category: "",
   });
 
   useEffect(() => {
@@ -409,8 +411,8 @@ const CourseManagement = () => {
       </div>
 
       {showModal && (
-        <div className="fixed inset-0 scroll-hide bg-black/50 justify-center items-center z-50 px-4">
-          <div className="bg-white/80 backdrop-blur-sm mx-auto scroll-hide w-full max-w-3xl p-6 rounded-2xl shadow-xl overflow-y-auto max-h-[90vh] border border-white/50 mt-8">
+        <div className="fixed inset-0 scroll-hide bg-black/50 flex justify-center items-center z-50 px-4">
+          <div className="bg-white/80 backdrop-blur-sm scroll-hide w-full max-w-3xl p-6 rounded-2xl shadow-xl overflow-y-auto max-h-[90vh] border border-white/50 mt-8">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-bold text-gray-900">
                 Create Course
@@ -418,14 +420,12 @@ const CourseManagement = () => {
               <button
                 type="button"
                 onClick={handleCloseModal}
-                className="p-2 z-1000 cursor-pointer hover:bg-gray-100 rounded-full transition-colors"
+                className="p-2 z-1000 hover:bg-gray-100 rounded-full transition-colors"
               >
                 <X className="w-5 h-5 text-gray-500" />
               </button>
             </div>
-
             <div className="space-y-4">
-              {/* Image Upload Card */}
               <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/50 p-6 transition-all duration-300 hover:shadow-2xl">
                 <ImageUploadArea
                   onImageSelect={handleImageSelect}
@@ -438,55 +438,67 @@ const CourseManagement = () => {
                   }}
                 />
               </div>
-
-              {/* Form Fields Card */}
               <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/50 p-6 transition-all duration-300 hover:shadow-2xl">
-                {/* title and price row */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                  <div className="">
+                  <div>
                     <label className="block mb-2 text-sm font-medium text-gray-700">
                       Course Title *
                     </label>
                     <input
-                      type="text"
-                      name="title"
-                      value={newCourse.title}
-                      onChange={handleInputChange}
                       placeholder="Enter course title..."
                       maxLength={50}
                       className="w-full rounded-lg px-3 py-2 text-sm border border-gray-300 hover:border-blue-400 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                      type="text"
+                      value={newCourse.title}
+                      name="title"
+                      onChange={handleInputChange}
                     />
+                    <div className="flex justify-between items-center mt-1">
+                      <span className="text-xs text-gray-400">
+                        {newCourse.title.length}/50 characters
+                      </span>
+                    </div>
                   </div>
-
                   <div>
                     <label className="block mb-2 text-sm font-medium text-gray-700">
                       Course Price *
                     </label>
                     <input
-                      type="text"
-                      name="price"
-                      value={newCourse.price}
-                      onChange={handleInputChange}
                       placeholder="e.g., 100,000 RWF"
                       className="w-full rounded-lg px-3 py-2 text-sm border border-gray-300 hover:border-blue-400 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                      type="text"
+                      value={newCourse.price}
+                      name="price"
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                  <div>
+                    <label className="block mb-2 text-sm font-medium text-gray-700">
+                      Category
+                    </label>
+                    <input
+                      placeholder="e.g., Thermodynamics"
+                      className="w-full rounded-lg px-3 py-2 text-sm border border-gray-300 hover:border-blue-400 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                      type="text"
+                      value={newCourse.category || ""}
+                      name="category"
+                      onChange={handleInputChange}
                     />
                   </div>
                 </div>
-
-                <div className="">
+                <div>
                   <label className="block mb-2 text-sm font-medium text-gray-700">
                     Course Description *
                   </label>
                   <textarea
-                    maxLength={250}
-                    onChange={handleInputChange}
-                    value={newCourse.description}
-                    placeholder="Describe what students will learn in this course..."
                     name="description"
-                    id=""
-                    className="w-full rounded-lg px-3 py-2 text-sm border border-gray-300 hover:border-blue-400 hover:shadow-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                     rows={4}
-                  />
+                    maxLength={250}
+                    placeholder="Describe what students will learn in this course..."
+                    className="w-full rounded-lg px-3 py-2 text-sm border border-gray-300 hover:border-blue-400 hover:shadow-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    value={newCourse.description}
+                    onChange={handleInputChange}
+                  ></textarea>
                   <div className="flex justify-between items-center mt-1">
                     <span className="text-xs text-gray-400">
                       {newCourse.description.length}/250 characters
@@ -494,24 +506,22 @@ const CourseManagement = () => {
                   </div>
                 </div>
               </div>
-
-              {/* Action Buttons */}
-              <div className="flex justify-end gap-4 pt-4">
-                <button
-                  onClick={handleCloseModal}
-                  type="button"
-                  className="px-6 py-3 rounded-md cursor-pointer bg-gradient-to-r from-gray-50 to-gray-100 text-gray-700 font-medium hover:from-gray-100 hover:to-gray-200 transition-all duration-300 border border-gray-300 hover:shadow-md"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleAddCourse}
-                  type="button"
-                  className="px-6 py-3 rounded-md cursor-pointer bg-gradient-to-r from-[#004e64] via-[#025d75] to-[#022F40] text-white font-semibold hover:from-[#022F40] hover:to-[#011d2b] transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105"
-                >
-                  Create Course
-                </button>
-              </div>
+            </div>
+            <div className="flex justify-end gap-4 pt-4">
+              <button
+                type="button"
+                onClick={handleCloseModal}
+                className="px-6 py-3 rounded-md cursor-pointer bg-gradient-to-r from-gray-50 to-gray-100 text-gray-700 font-medium hover:from-gray-100 hover:to-gray-200 transition-all duration-300 border border-gray-300 hover:shadow-md disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleAddCourse}
+                className="px-6 py-3 rounded-md cursor-pointer bg-gradient-to-r from-[#004e64] via-[#025d75] to-[#022F40] text-white font-semibold hover:from-[#022F40] hover:to-[#011d2b] transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 disabled:opacity-50 disabled:hover:scale-100"
+              >
+                Create Course
+              </button>
             </div>
           </div>
         </div>
