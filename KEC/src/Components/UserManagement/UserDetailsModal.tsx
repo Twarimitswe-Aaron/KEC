@@ -29,7 +29,7 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({
   if (!userId) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
+    <div className="fixed inset-0 bg-black/80  flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
       <div
         className="bg-white/90 backdrop-blur-md rounded-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden shadow-2xl border border-white/50 flex flex-col"
         role="dialog"
