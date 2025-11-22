@@ -7,7 +7,6 @@ import React, {
   useMemo,
 } from "react";
 
-
 import { CiUndo, CiRedo } from "react-icons/ci";
 import {
   FaRegSquare,
@@ -63,11 +62,11 @@ type FormErrors = {
   confirmPassword: string[];
 };
 
-type SortField = 'name' | 'email' | 'role' | null;
+type SortField = "name" | "email" | "role" | null;
 
 const UserManagement = () => {
   const { data, isLoading, refetch } = useGetAllUsersQuery();
-  
+
   const [createUser, { isLoading: isCreating }] = useCreateUserMutation();
   const [deleteUser] = useDeleteUserMutation();
   const { searchQuery } = useContext(SearchContext);
@@ -103,36 +102,38 @@ const UserManagement = () => {
 
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(5);
-  
+
   // New state for Sorting
   const [sortField, setSortField] = useState<SortField>(null);
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [showSortMenu, setShowSortMenu] = useState(false);
-  
-
   useEffect(() => {
     try {
-  
       if (!Array.isArray(data)) {
         console.warn("Invalid or no user data received:", data);
         setUsers([]);
-        refetch()
+        refetch();
         return;
       }
-  
+
+      console.log("Raw user data:", data); // Debug logging
+
       const processedUsers = data.map((user: any) => ({
         id: user.id,
-        name: user.name || `${user.firstName} ${user.lastName}` || "Unknown User", // Handle name composition
+        name:
+          user.name || `${user.firstName} ${user.lastName}` || "Unknown User", // Handle name composition
         email: user.email,
-        role: (user.role === "teacher" || user.role === "admin" || user.role === "student"
+        role: (user.role === "teacher" ||
+        user.role === "admin" ||
+        user.role === "student"
           ? user.role
           : "student") as User["role"],
         avatar: user.avatar || "/images/default-avatar.png",
-        lessons: 0,        
-        time: "--",        
-        showMenu: false,  
+        lessons: 0,
+        time: "--",
+        showMenu: false,
       }));
-      
+
       setUsers(processedUsers);
     } catch (error) {
       console.error("Error processing users:", error);
@@ -140,7 +141,6 @@ const UserManagement = () => {
       setUsers([]);
     }
   }, [data]);
-  
 
   const handleAddUser = async () => {
     setIsSubmitting(true);
@@ -167,7 +167,7 @@ const UserManagement = () => {
 
       setTimeout(() => {
         closeAddUserModal();
-        // Since we refetch on success, the useEffect will handle state update. 
+        // Since we refetch on success, the useEffect will handle state update.
         // We ensure we land on the new page if necessary.
         const newTotalPages = Math.ceil((users.length + 1) / itemsPerPage);
         setCurrentPage(newTotalPages);
@@ -282,7 +282,6 @@ const UserManagement = () => {
     const { name } = e.target;
     setIsFocused((prev) => ({ ...prev, [name]: false }));
 
-    
     const value = newUser[name as keyof NewUser];
     const errors = validate({ [name]: value });
     setFormErrors((prev) => ({
@@ -297,7 +296,6 @@ const UserManagement = () => {
     const { name, value } = e.target;
 
     setNewUser((prev) => ({ ...prev, [name]: value }));
-
 
     if (name === "password" || name === "confirmPassword") {
       const errors = validate({ [name]: value, password: newUser.password });
@@ -349,12 +347,12 @@ const UserManagement = () => {
     if (!field) return;
 
     if (sortField === field) {
-      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
     } else {
       setSortField(field);
-      setSortDirection('asc');
+      setSortDirection("asc");
     }
-    setShowSortMenu(false); 
+    setShowSortMenu(false);
     setCurrentPage(1); // Reset to first page after sorting
   };
 
@@ -365,10 +363,11 @@ const UserManagement = () => {
     // 1. Filtering (Search Context)
     if (searchQuery) {
       const lowercasedQuery = searchQuery.toLowerCase();
-      list = list.filter(user =>
-        user.name.toLowerCase().includes(lowercasedQuery) ||
-        user.email.toLowerCase().includes(lowercasedQuery) ||
-        user.role.toLowerCase().includes(lowercasedQuery)
+      list = list.filter(
+        (user) =>
+          user.name.toLowerCase().includes(lowercasedQuery) ||
+          user.email.toLowerCase().includes(lowercasedQuery) ||
+          user.role.toLowerCase().includes(lowercasedQuery)
       );
     }
 
@@ -378,8 +377,8 @@ const UserManagement = () => {
         const aValue = a[sortField]?.toString().toLowerCase() || "";
         const bValue = b[sortField]?.toString().toLowerCase() || "";
 
-        if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
-        if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
+        if (aValue < bValue) return sortDirection === "asc" ? -1 : 1;
+        if (aValue > bValue) return sortDirection === "asc" ? 1 : -1;
         return 0;
       });
     }
@@ -398,7 +397,6 @@ const UserManagement = () => {
     [sortedAndFilteredUsers, startIndex, endIndex]
   );
   // --- End Combined Logic ---
-
 
   const handleView = (userId: number) => {
     const user = users.find((u) => u.id === userId);
@@ -419,13 +417,15 @@ const UserManagement = () => {
       try {
         await deleteUser(userToDelete.id).unwrap();
         // Optimistic update: filter out the deleted user from the main users state
-        const remainingUsers = users.filter((user) => user.id !== userToDelete.id);
+        const remainingUsers = users.filter(
+          (user) => user.id !== userToDelete.id
+        );
         setUsers(remainingUsers); // Set the updated list
 
         setUserToDelete(null);
 
         // Adjust page if current page is now empty
-        const newTotalPages = Math.ceil((remainingUsers.length) / itemsPerPage);
+        const newTotalPages = Math.ceil(remainingUsers.length / itemsPerPage);
         if (currentPage > newTotalPages && newTotalPages > 0) {
           setCurrentPage(newTotalPages);
         } else if (remainingUsers.length === 0) {
@@ -491,13 +491,12 @@ const UserManagement = () => {
     setItemsPerPage(Number(e.target.value));
     setCurrentPage(1);
   };
-
   return (
     <div className="min-h-screen bg-gray-50/30">
       {userRole === "admin" && (
         <div className="max-w-7xl mx-auto">
           {/* Header */}
-          <div className="sticky top-20 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-6 bg-white/80 backdrop-blur-sm rounded-xl shadow-sm mb-6">
+          <div className="sticky top-20 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-6 bg-white/80 backdrop-blur-sm rounded-xl shadow-sm mb-6 z-10">
             <div>
               <h1 className="text-2xl font-semibold text-gray-800">
                 User Management
@@ -507,9 +506,6 @@ const UserManagement = () => {
               </p>
             </div>
             <div className="flex items-center gap-3">
-
-        
-
               {/* Sorting Menu (Horizontal Adjustments) */}
               <div className="relative">
                 <button
@@ -521,36 +517,39 @@ const UserManagement = () => {
                     className="text-gray-600"
                   />
                 </button>
-                
+
                 {showSortMenu && (
-                    <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-100 py-2 z-20 animate-in fade-in zoom-in-95 origin-top-right">
-                        <h4 className="px-4 py-1 text-xs font-semibold uppercase text-gray-500">Sort By</h4>
-                        {([
-                            { key: 'name', label: 'Name' },
-                            { key: 'email', label: 'Email' },
-                            { key: 'role', label: 'Role' },
-                        ] as { key: SortField, label: string }[]).map(({ key, label }) => (
-                            <button
-                                key={key}
-                                onClick={() => handleSort(key)}
-                                className="w-full flex justify-between items-center text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                            >
-                                <span>{label}</span>
-                                {sortField === key && (
-                                    <span className="font-semibold text-[#1a3c34] text-lg">
-                                        {sortDirection === 'asc' ? '↓' : '↑'}
-                                    </span>
-                                )}
-                            </button>
-                        ))}
-                    </div>
+                  <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-100 py-2 z-20 animate-in fade-in zoom-in-95 origin-top-right">
+                    <h4 className="px-4 py-1 text-xs font-semibold uppercase text-gray-500">
+                      Sort By
+                    </h4>
+                    {(
+                      [
+                        { key: "name", label: "Name" },
+                        { key: "email", label: "Email" },
+                        { key: "role", label: "Role" },
+                      ] as { key: SortField; label: string }[]
+                    ).map(({ key, label }) => (
+                      <button
+                        key={key}
+                        onClick={() => handleSort(key)}
+                        className="w-full flex justify-between items-center text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                      >
+                        <span>{label}</span>
+                        {sortField === key && (
+                          <span className="font-semibold text-[#1a3c34] text-lg">
+                            {sortDirection === "asc" ? "↓" : "↑"}
+                          </span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
                 )}
               </div>
-              
-              {/* Add User Button */}
+
               <button
                 onClick={() => setShowAddUserModal(true)}
-                className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-[#1a3c34] to-[#2e856e] text-white rounded-xl hover:from-[#2e856e] hover:to-[#1a3c34] transition-all duration-200 shadow-sm cursor-pointer"
+                className="flex items-center gap-2 px-4 py-2 bg-[#1a3c34] text-white rounded-lg hover:bg-[#2e856e] transition-colors text-sm font-medium"
               >
                 <FaUser size={14} />
                 <span>Add User</span>
@@ -558,270 +557,152 @@ const UserManagement = () => {
             </div>
           </div>
 
-          {/* Content Card */}
-          <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-            {/* Controls Bar */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-6 border-b border-gray-100">
-              <div className="flex items-center gap-3">
-                <span className="text-sm font-medium text-gray-700">Show:</span>
+          {/* User List */}
+          <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-sm overflow-hidden border border-gray-100">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="bg-gray-50/50 border-b border-gray-100">
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                      User
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                      Role
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                      Status
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                      Joined
+                    </th>
+                    <th className="px-6 py-4 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {currentUsers.map((user) => (
+                    <tr
+                      key={user.id}
+                      className="group hover:bg-gray-50/80 transition-colors duration-200"
+                    >
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center gap-4">
+                          <div className="relative">
+                            <img
+                              className="h-10 w-10 rounded-full object-cover ring-2 ring-white shadow-sm group-hover:scale-105 transition-transform duration-200"
+                              src={user.avatar}
+                              alt=""
+                            />
+                            <div className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-green-500 ring-2 ring-white"></div>
+                          </div>
+                          <div>
+                            <div className="text-sm font-semibold text-gray-900 group-hover:text-[#1a3c34] transition-colors">
+                              {user.name}
+                            </div>
+                            <div className="text-xs text-gray-500 flex items-center gap-1.5">
+                              <FaEnvelope size={10} />
+                              {user.email}
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span
+                          className={clsx(
+                            "px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full border shadow-sm",
+                            {
+                              "bg-purple-50 text-purple-700 border-purple-100":
+                                user.role === "admin",
+                              "bg-blue-50 text-blue-700 border-blue-100":
+                                user.role === "teacher",
+                              "bg-emerald-50 text-emerald-700 border-emerald-100":
+                                user.role === "student",
+                            }
+                          )}
+                        >
+                          {user.role.charAt(0).toUpperCase() +
+                            user.role.slice(1)}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="px-2.5 py-1 inline-flex items-center gap-1.5 text-xs font-medium rounded-md bg-green-50 text-green-700 border border-green-100">
+                          <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
+                          Active
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <div className="flex items-center gap-1.5">
+                          <FaRegClock size={12} />
+                          {user.time}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <div className="flex justify-end items-center gap-2 opacity-0 group-hover:opacity-100 transition-all duration-200 transform translate-x-2 group-hover:translate-x-0">
+                          <button
+                            onClick={() => handleView(user.id)}
+                            className="p-2 text-gray-400 hover:text-[#1a3c34] hover:bg-[#1a3c34]/5 rounded-lg transition-all duration-200"
+                            title="View Details"
+                          >
+                            <FaEye size={16} />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(user.id)}
+                            className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200"
+                            title="Delete User"
+                          >
+                            <FaTrash size={15} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Pagination */}
+            <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-between bg-gray-50/30">
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <span>Show</span>
                 <select
                   value={itemsPerPage}
                   onChange={handleItemsPerPageChange}
-                  className="bg-gray-50 border-0 rounded-lg px-3 py-2 text-sm focus:outline-none cursor-pointer"
+                  className="bg-white border border-gray-200 rounded-lg px-2 py-1 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-[#1a3c34]/20"
                 >
-                  <option value={5}>5 per page</option>
-                  <option value={10}>10 per page</option>
-                  <option value={20}>20 per page</option>
-                  <option value={50}>50 per page</option>
+                  <option value={5}>5</option>
+                  <option value={10}>10</option>
+                  <option value={20}>20</option>
+                  <option value={50}>50</option>
                 </select>
+                <span>entries</span>
               </div>
-              <div className="text-sm text-gray-600 bg-gray-50 px-3 py-2 rounded-lg">
-                Showing{" "}
-                <span className="font-semibold text-gray-800">
-                  {startIndex + 1}-{Math.min(endIndex, totalItems)}
-                </span>{" "}
-                of{" "}
-                <span className="font-semibold text-gray-800">
-                  {totalItems}
-                </span>{" "}
-                users
+
+              <div className="flex items-center gap-4">
+                <span className="text-sm text-gray-600">
+                  Page <span className="font-semibold">{currentPage}</span> of{" "}
+                  <span className="font-semibold">{totalPages}</span>
+                </span>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={goToPreviousPage}
+                    disabled={currentPage === 1}
+                    className="p-2 rounded-lg border border-gray-200 hover:bg-white hover:border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 bg-white shadow-sm"
+                  >
+                    <FaChevronLeft size={14} className="text-gray-600" />
+                  </button>
+                  <button
+                    onClick={goToNextPage}
+                    disabled={currentPage === totalPages}
+                    className="p-2 rounded-lg border border-gray-200 hover:bg-white hover:border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 bg-white shadow-sm"
+                  >
+                    <FaChevronRight size={14} className="text-gray-600" />
+                  </button>
+                </div>
               </div>
-            </div>
-
-            {/* Users List */}
-            <div className="p-6">
-              {isLoading ? (
-                <div className="flex justify-center items-center h-64">
-                  <div className="w-8 h-8 border-4 border-[#1a3c34] border-t-transparent rounded-full animate-spin"></div>
-                </div>
-              ) : currentUsers.length === 0 ? (
-                <div className="text-center text-gray-600 py-8">
-                  {searchQuery ? (
-                    `No users found matching "${searchQuery}".`
-                  ) : (
-                    "No users found."
-                  )}
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {currentUsers.map((user) => (
-                    <div
-                      key={user.id}
-                      className="flex items-start sm:items-center justify-between p-4 bg-gray-50/50 hover:bg-gray-50 rounded-xl transition-all duration-200 group"
-                    >
-                      <div className="flex items-center gap-4 mb-3 sm:mb-0">
-                       <Link to={`/profile/${user.id}`}>
-                       <img
-                          src={user.avatar}
-                          alt={`${user.name}'s avatar`}
-                          className="w-12 h-12 rounded-full object-cover shadow-sm"
-                        /></Link>
-                        <div>
-                          <p className="font-semibold text-gray-800 group-hover:text-[#1a3c34] transition-colors">
-                            {user.name}
-                          </p>
-                          <div className="flex items-center gap-3 mt-1">
-                            <span
-                              className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                user.role === "teacher"
-                                  ? "bg-blue-100 text-blue-700"
-                                  : user.role === "admin"
-                                  ? "bg-purple-100 text-purple-700"
-                                  : "bg-green-100 text-green-700"
-                              }`}
-                            >
-                              {user.role}
-                            </span>
-                            <span className="text-gray-500 text-sm">
-                              {user.email} 
-                            </span>
-                          
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Three dots menu */}
-                      <div className="relative">
-                        <button
-                          onClick={() => {
-                            setUsers(
-                              users.map((u) =>
-                                u.id === user.id
-                                  ? { ...u, showMenu: !u.showMenu }
-                                  : { ...u, showMenu: false }
-                              )
-                            );
-                          }}
-                          className="p-2 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer group"
-                        >
-                          <div className="flex flex-col gap-0.5">
-                            <div className="w-1 h-1 bg-gray-400 rounded-full group-hover:bg-gray-600 transition-colors"></div>
-                            <div className="w-1 h-1 bg-gray-400 rounded-full group-hover:bg-gray-600 transition-colors"></div>
-                            <div className="w-1 h-1 bg-gray-400 rounded-full group-hover:bg-gray-600 transition-colors"></div>
-                          </div>
-                        </button>
-
-                        {user.showMenu && (
-                          <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-xl shadow-lg border border-gray-100 py-2 z-10 animate-in fade-in zoom-in-95">
-                            <button
-                              onClick={() => {
-                                handleView(user.id);
-                                setUsers(
-                                  users.map((u) => ({ ...u, showMenu: false }))
-                                );
-                              }}
-                              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer group"
-                            >
-                              <FaEye
-                                size={14}
-                                className="text-blue-500 group-hover:text-blue-600"
-                              />
-                              <span>View Details</span>
-                            </button>
-                            <button
-                              onClick={() => {
-                                handleDelete(user.id);
-                                setUsers(
-                                  users.map((u) => ({ ...u, showMenu: false }))
-                                );
-                              }}
-                              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors cursor-pointer group"
-                            >
-                              <FaTrash
-                                size={14}
-                                className="text-red-500 group-hover:text-red-600"
-                              />
-                              <span>Delete User</span>
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* Pagination */}
-              {totalPages > 1 && (
-                <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mt-8 pt-6 border-t border-gray-100">
-                  <div className="text-sm text-gray-600">
-                    Page{" "}
-                    <span className="font-semibold text-gray-800">
-                      {currentPage}
-                    </span>{" "}
-                    of{" "}
-                    <span className="font-semibold text-gray-800">
-                      {totalPages}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={goToPreviousPage}
-                      disabled={currentPage === 1}
-                      className={`p-2.5 rounded-lg transition-all ${
-                        currentPage === 1
-                          ? "text-gray-300 cursor-not-allowed"
-                          : "text-gray-600 hover:bg-gray-100 cursor-pointer hover:shadow-sm"
-                      }`}
-                    >
-                      <FaChevronLeft size={16} />
-                    </button>
-
-                    <div className="flex items-center gap-1">
-                      {Array.from({ length: totalPages }, (_, i) => i + 1).map(
-                        (page) => (
-                          <button
-                            key={page}
-                            onClick={() => goToPage(page)}
-                            className={`px-3.5 py-2 rounded-lg text-sm font-medium transition-all ${
-                              currentPage === page
-                                ? "bg-[#1a3c34] text-white shadow-sm"
-                                : "text-gray-600 hover:bg-gray-100 cursor-pointer"
-                            }`}
-                          >
-                            {page}
-                          </button>
-                        )
-                      )}
-                    </div>
-
-                    <button
-                      onClick={goToNextPage}
-                      disabled={currentPage === totalPages}
-                      className={`p-2.5 rounded-lg transition-all ${
-                        currentPage === totalPages
-                          ? "text-gray-300 cursor-not-allowed"
-                          : "text-gray-600 hover:bg-gray-100 cursor-pointer hover:shadow-sm"
-                      }`}
-                    >
-                      <FaChevronRight size={16} />
-                    </button>
-                  </div>
-                </div>
-              )}
             </div>
           </div>
 
-          {/* Delete Confirmation Modal */}
-          {userToDelete && (
-            <div
-              className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4"
-              role="dialog"
-              aria-modal="true"
-            >
-              <div className="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6 animate-in fade-in zoom-in-95">
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-lg font-semibold text-red-600">
-                    Delete User
-                  </h2>
-                  <button
-                    onClick={cancelDelete}
-                    className="p-1 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
-                    aria-label="Close delete modal"
-                  >
-                    <IoClose size={20} className="text-gray-500" />
-                  </button>
-                </div>
-
-                <div className="flex items-center gap-4 mb-5">
-                  <img
-                    src={userToDelete.avatar}
-                    alt={`${userToDelete.name}'s avatar`}
-                    className="w-14 h-14 rounded-xl object-cover shadow-sm"
-                  />
-                  <div>
-                    <h3 className="font-semibold text-gray-800">
-                      {userToDelete.name}
-                    </h3>
-                    <p className="text-gray-600 text-sm">{userToDelete.role}</p>
-                  </div>
-                </div>
-
-                <p className="text-gray-700 text-sm mb-6 leading-relaxed">
-                  This will permanently delete{" "}
-                  <span className="font-semibold">{userToDelete.name}</span> and
-                  all associated data. This action cannot be undone.
-                </p>
-
-                <div className="flex justify-end gap-3">
-                  <button
-                    onClick={cancelDelete}
-                    className="px-4 py-2.5 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors text-sm font-medium cursor-pointer"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={confirmDelete}
-                    className="px-4 py-2.5 bg-red-600 text-white hover:bg-red-700 rounded-lg transition-colors text-sm font-medium cursor-pointer"
-                  >
-                    Delete User
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Add User Modal */}
           {showAddUserModal && (
             <div
               className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4"
@@ -936,30 +817,30 @@ const UserManagement = () => {
                   {/* Role Field */}
                   <div>
                     <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1">
-                        <FaUserTag size={12} />
-                        Role *
+                      <FaUserTag size={12} />
+                      Role *
                     </label>
                     <select
-                        name="role"
-                        value={newUser.role}
-                        onChange={handleChange}
-                        onFocus={handleFocus}
-                        onBlur={handleBlur}
-                        className={getInputClass("role")}
-                        disabled={isSubmitting}
+                      name="role"
+                      value={newUser.role}
+                      onChange={handleChange}
+                      onFocus={handleFocus}
+                      onBlur={handleBlur}
+                      className={getInputClass("role")}
+                      disabled={isSubmitting}
                     >
-                        <option value="student">Student</option>
-                        <option value="teacher">Teacher</option>
-                        <option value="admin">Admin</option>
+                      <option value="student">Student</option>
+                      <option value="teacher">Teacher</option>
+                      <option value="admin">Admin</option>
                     </select>
                     {formErrors.role?.length > 0 && (
-                        <ul className="text-left mt-1 text-xs text-red-600 space-y-0.5">
-                            {formErrors.role.map((err, idx) => (
-                                <li key={idx}>{err}</li>
-                            ))}
-                        </ul>
+                      <ul className="text-left mt-1 text-xs text-red-600 space-y-0.5">
+                        {formErrors.role.map((err, idx) => (
+                          <li key={idx}>{err}</li>
+                        ))}
+                      </ul>
                     )}
-                </div>
+                  </div>
 
                   {/* Password Field */}
                   <div>

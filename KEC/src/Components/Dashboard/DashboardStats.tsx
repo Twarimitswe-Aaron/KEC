@@ -44,7 +44,7 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({ stats }) => {
   const baseCards: StatCard[] = [
     {
       label: "Profit",
-      value: `${stats.rating}/5`, // Assuming rating is profit for now or just mapping it
+      value: `${stats?.rating ?? 0}/5`, // Assuming rating is profit for now or just mapping it
       icon: <FaStar className="text-2xl text-white" />,
       bg: "bg-yellow-50",
       iconBg: "bg-yellow-500",
@@ -58,7 +58,7 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({ stats }) => {
     },
     {
       label: "Students",
-      value: stats.students.toString(),
+      value: (stats?.students ?? 0).toString(),
       icon: <PiStudentDuotone className="text-2xl text-white" />,
       bg: "bg-slate-100",
       iconBg: "bg-gray-700",
@@ -72,14 +72,14 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({ stats }) => {
     },
     {
       label: "Revenue",
-      value: `${stats.revenue.toLocaleString()} USD`,
+      value: `${(stats?.revenue ?? 0).toLocaleString()} USD`,
       icon: <FaMoneyBillWave className="text-2xl text-white" />,
       bg: "bg-purple-50",
       iconBg: "bg-purple-600",
     },
     {
       label: "Courses",
-      value: stats.courses.toString(),
+      value: (stats?.courses ?? 0).toString(),
       icon: <PiStudentDuotone className="text-2xl text-white" />,
       bg: "bg-slate-100",
       iconBg: "bg-gray-700",
@@ -94,21 +94,21 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({ stats }) => {
     statCards = [
       {
         label: "Courses",
-        value: stats.courses.toString(),
+        value: (stats?.courses ?? 0).toString(),
         icon: <FaGraduationCap className="text-2xl text-white" />,
         bg: "bg-indigo-50",
         iconBg: "bg-indigo-500",
       },
       {
         label: "Users",
-        value: stats.students.toString(),
+        value: (stats?.students ?? 0).toString(),
         icon: <FaStar className="text-2xl text-white" />,
         bg: "bg-green-50",
         iconBg: "bg-green-500",
       },
       {
         label: "Certificates",
-        value: stats.certificates.toString(),
+        value: (stats?.certificates ?? 0).toString(),
         icon: <FaMoneyBillWave className="text-2xl text-white" />,
         bg: "bg-purple-50",
         iconBg: "bg-purple-600",
@@ -117,7 +117,7 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({ stats }) => {
         ? [
             {
               label: "Average Score",
-              value: stats.averageScore.toString(),
+              value: (stats?.averageScore ?? 0).toString(),
               icon: <FaStar className="text-2xl text-white" />,
               bg: "bg-yellow-50",
               iconBg: "bg-yellow-500",
@@ -130,21 +130,21 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({ stats }) => {
     statCards = [
       {
         label: "Ongoing Courses",
-        value: stats.ongoingCourses.toString(),
+        value: (stats?.ongoingCourses ?? 0).toString(),
         icon: <FaGraduationCap className="text-2xl text-white" />,
         bg: "bg-indigo-50",
         iconBg: "bg-indigo-500",
       },
       {
         label: "Completed Courses",
-        value: stats.completedCourses.toString(),
+        value: (stats?.completedCourses ?? 0).toString(),
         icon: <FaStar className="text-2xl text-white" />,
         bg: "bg-green-50",
         iconBg: "bg-green-500",
       },
       {
         label: "Certificates",
-        value: stats.certificates.toString(),
+        value: (stats?.certificates ?? 0).toString(),
         icon: <FaMoneyBillWave className="text-2xl text-white" />,
         bg: "bg-purple-50",
         iconBg: "bg-purple-600",
@@ -153,7 +153,7 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({ stats }) => {
         ? [
             {
               label: "Average",
-              value: stats.averageScore.toString(),
+              value: (stats?.averageScore ?? 0).toString(),
               icon: <FaStar className="text-2xl text-white" />,
               bg: "bg-yellow-50",
               iconBg: "bg-yellow-500",

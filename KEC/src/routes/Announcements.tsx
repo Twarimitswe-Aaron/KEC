@@ -2,12 +2,7 @@ import React, { useState, useContext } from "react";
 import { UserRoleContext as UserRoleContextImport } from "../UserRoleContext";
 import { useUser } from "../hooks/useUser";
 import { Link } from "react-router-dom";
-import {
-  Filter,
-  ArrowUpNarrowWide,
-  MoreHorizontal,
-  ChevronDown,
-} from "lucide-react";
+import { Filter, ArrowUpNarrowWide, MoreHorizontal } from "lucide-react";
 import {
   useAnnounceMutation,
   useGetAnnounceQuery,
@@ -174,42 +169,44 @@ const Announcements = () => {
                       to={`/profile/${posterId}`}
                       className="flex items-center gap-3 group"
                     >
-                      <div>
-                        <h3 className="text-lg font-bold text-gray-900 group-hover:text-blue-600 transition-colors">
-                          {name}
-                        </h3>
-                      </div>
-                    </Link>
-                    <div className="flex items-center space-x-2">
-                      {isOwner && (
-                        <div className="relative">
-                          <button
-                            onClick={(e) => {
-                              e.preventDefault();
-                              setMenuOpen((prev) => !prev);
-                            }}
-                            className="p-1.5 hover:bg-gray-100 rounded-full transition-colors"
-                            aria-label="Course options"
-                          >
-                            <MoreHorizontal className="h-4 w-4 text-gray-400" />
-                          </button>
-                          {menuOpen && (
-                            <div className="absolute right-0 top-full mt-2 w-32 bg-white/90 backdrop-blur-md border border-white/50 rounded-xl shadow-xl z-30 overflow-hidden animate-fadeIn">
-                              <button
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  setMenuOpen(false);
-                                  onDeleteClick(id, userDialogData);
-                                }}
-                                className="w-full text-left px-4 py-2.5 text-xs text-red-600 hover:bg-red-50/80 transition-colors duration-200 font-medium"
-                              >
-                                Delete
-                              </button>
-                            </div>
-                          )}
-                        </div>
+                      <span className="font-bold text-gray-900 group-hover:text-[#034153] transition-colors">
+                        {name}
+                      </span>
+                      {userDialogData.role && (
+                        <span className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full border border-gray-200">
+                          {userDialogData.role}
+                        </span>
                       )}
-                    </div>
+                    </Link>
+
+                    {(isOwner || UserRole === "admin") && (
+                      <div className="relative">
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            setMenuOpen(!menuOpen);
+                          }}
+                          className="p-1 rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-all"
+                        >
+                          <MoreHorizontal className="w-5 h-5" />
+                        </button>
+
+                        {menuOpen && (
+                          <div className="absolute right-0 top-full mt-2 w-32 bg-white/90 backdrop-blur-md border border-white/50 rounded-xl shadow-xl z-30 overflow-hidden animate-fadeIn">
+                            <button
+                              onClick={(e) => {
+                                e.preventDefault();
+                                setMenuOpen(false);
+                                onDeleteClick(id, userDialogData);
+                              }}
+                              className="w-full text-left px-4 py-2.5 text-xs text-red-600 hover:bg-red-50/80 transition-colors duration-200 font-medium"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                   <div className="mt-1 text-gray-700 leading-relaxed text-sm">
                     {message}
