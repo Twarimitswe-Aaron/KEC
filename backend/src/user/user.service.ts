@@ -30,24 +30,52 @@ export class UserService {
     };
     const avatarUrl = getAvatarUrl(firstName, lastName);
 
-    await this.prisma.user.create({
-      data: {
-        firstName,
-        lastName,
-        email,
-        password: hashedPassword,
-        isEmailVerified: true,
-        role,
-        profile: {
-          create: {
-            avatar: avatarUrl,
-          },
+    // Create user with profile and role-specific record
+    const createData: any = {
+      firstName,
+      lastName,
+      email,
+      password: hashedPassword,
+      isEmailVerified: true,
+      role,
+      profile: {
+        create: {
+          avatar: avatarUrl,
         },
       },
+    };
+
+    // Add role-specific record
+    if (role === 'admin') {
+      createData.admin = {
+        create: {
+          title: 'Administrator',
+          isVisibleOnTeam: true,
+        },
+      };
+    } else if (role === 'teacher') {
+      createData.teacher = {
+        create: {
+          title: 'Instructor',
+          isVisibleOnTeam: false,
+        },
+      };
+    } else if (role === 'student') {
+      createData.student = {
+        create: {},
+      };
+    }
+
+    await this.prisma.user.create({
+      data: createData,
       include: {
         profile: true,
+        admin: true,
+        teacher: true,
+        student: true,
       },
     });
+
     return { message: 'User created successfully' };
   }
 
