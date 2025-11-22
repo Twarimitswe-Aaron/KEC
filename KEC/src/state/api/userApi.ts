@@ -53,6 +53,22 @@ export const userApi = apiSlice.injectEndpoints({
       }),
       invalidatesTags: ["User"],
     }),
+    getTeamMembers: builder.query<
+      Array<{
+        id: number;
+        name: string;
+        title: string;
+        avatar: string;
+        role: string;
+      }>,
+      void
+    >({
+      query: () => ({
+        url: "/user/team-members",
+        method: "GET",
+      }),
+      providesTags: ["User"],
+    }),
     getUserDetails: builder.query<any, number>({
       query: (id) => ({
         url: `/user/${id}/details`,
@@ -70,5 +86,6 @@ export const {
   useCreateUserMutation,
   useGetAllUsersQuery,
   useDeleteUserMutation,
+  useGetTeamMembersQuery,
   useGetUserDetailsQuery,
 } = userApi;

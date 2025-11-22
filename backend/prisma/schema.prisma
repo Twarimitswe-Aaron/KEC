@@ -35,24 +35,28 @@ model User {
   responses    Response[]
 
   // Chat relationships
-  chatParticipants ChatParticipant[]
-  sentMessages     Message[]
-  messageReads     MessageRead[]
-  userStatus       UserStatus?
-  messageReactions MessageReaction[]
-  lastAnnouncementView DateTime @default(now())
+  chatParticipants     ChatParticipant[]
+  sentMessages         Message[]
+  messageReads         MessageRead[]
+  userStatus           UserStatus?
+  messageReactions     MessageReaction[]
+  lastAnnouncementView DateTime          @default(now())
 }
 
 model Admin {
-  id     Int  @id @default(autoincrement())
-  userId Int  @unique
-  user   User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  id              Int     @id @default(autoincrement())
+  userId          Int     @unique
+  title           String? @default("Administrator")
+  isVisibleOnTeam Boolean @default(true)
+  user            User    @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 }
 
 model Teacher {
-  id     Int  @id @default(autoincrement())
-  userId Int  @unique
-  user   User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  id              Int     @id @default(autoincrement())
+  userId          Int     @unique
+  title           String? @default("Instructor")
+  isVisibleOnTeam Boolean @default(false)
+  user            User    @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 }
 
 model Student {

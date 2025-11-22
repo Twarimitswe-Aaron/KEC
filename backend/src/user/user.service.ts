@@ -91,6 +91,72 @@ export class UserService {
     }));
   }
 
+  async getTeamMembers(): Promise<
+    Array<{
+      id: number;
+      name: string;
+      title: string;
+      avatar: string;
+      role: string;
+    }>
+  > {
+    // Fetch all users with admin or teacher role who are visible on team page
+    const users = await this.prisma.user.findMany({
+      where: {
+        OR: [
+          {
+            role: 'admin',
+            admin: {
+              isVisibleOnTeam: true,
+            },
+          },
+          {
+            role: 'teacher',
+            teacher: {
+              isVisibleOnTeam: true,
+            },
+          },
+        ],
+      },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        role: true,
+        profile: {
+          select: {
+            avatar: true,
+          },
+        },
+        admin: {
+          select: {
+            title: true,
+          },
+        },
+        teacher: {
+          select: {
+            title: true,
+          },
+        },
+      },
+    });
+
+    const backgroundColor = Math.floor(Math.random() * 16777215).toString(16);
+
+    return users.map((u) => ({
+      id: u.id,
+      name: `${u.firstName || ''} ${u.lastName || ''}`.trim() || 'Unknown User',
+      title:
+        u.role === 'admin'
+          ? u.admin?.title || 'Administrator'
+          : u.teacher?.title || 'Instructor',
+      avatar:
+        u.profile?.avatar ||
+        `https://ui-avatars.com/api/?name=${encodeURIComponent(u.firstName.charAt(0))}&background=${backgroundColor}&color=fff&size=64&font-size=0.5&length=2&rounded=false&bold=true`,
+      role: u.role,
+    }));
+  }
+
   async getUserDetails(userId: number) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
