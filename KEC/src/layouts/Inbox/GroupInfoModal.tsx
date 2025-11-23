@@ -9,12 +9,10 @@ import {
   Check,
   UserPlus,
   Loader2,
-  Upload,
 } from "lucide-react";
 import { Chat, useGetUsersQuery } from "../../state/api/chatApi";
 import { useGetUserQuery } from "../../state/api/authApi";
 import { useChat } from "../../hooks/useChat";
-import axios from "axios";
 
 interface GroupInfoModalProps {
   isOpen: boolean;
@@ -33,7 +31,6 @@ const GroupInfoModal: React.FC<GroupInfoModalProps> = ({
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedUserIds, setSelectedUserIds] = useState<number[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -92,7 +89,6 @@ const GroupInfoModal: React.FC<GroupInfoModalProps> = ({
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      setAvatarFile(file);
       const reader = new FileReader();
       reader.onloadend = () => {
         setAvatarPreview(reader.result as string);
@@ -102,28 +98,13 @@ const GroupInfoModal: React.FC<GroupInfoModalProps> = ({
       // Upload immediately
       setIsProcessing(true);
       try {
-        const formData = new FormData();
-        formData.append("file", file);
-
-        const response = await axios.post(
-          `${import.meta.env.VITE_BACKEND_URL}/chat/upload`,
-          formData,
-          {
-            headers: {
-              "Content-Type": "multipart/form-data",
-              Authorization: `Bearer ${localStorage.getItem("token")}`,
-            },
-          }
-        );
-
-        await updateChatAvatar(activeChat.id, response.data.fileUrl);
+        await updateChatAvatar(activeChat.id, file);
       } catch (error) {
         console.error("Failed to update group avatar:", error);
         // Revert preview on error
         setAvatarPreview(activeChat.groupAvatar || null);
       } finally {
         setIsProcessing(false);
-        setAvatarFile(null);
       }
     }
   };

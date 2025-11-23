@@ -33,12 +33,35 @@ export class ChatController {
   constructor(private readonly chatService: ChatService) {}
 
   @Post()
-  async createChat(@Request() req, @Body() createChatDto: CreateChatDto) {
+  @UseInterceptors(
+    FileInterceptor('groupAvatar', {
+      storage: diskStorage({
+        destination: './uploads/chat',
+        filename: (req, file, cb) => {
+          const uniqueSuffix =
+            Date.now() + '-' + Math.round(Math.random() * 1e9);
+          const ext = file.originalname.split('.').pop();
+          cb(null, `group-avatar-${uniqueSuffix}.${ext}`);
+        },
+      }),
+    }),
+  )
+  async createChat(
+    @Request() req,
+    @Body() createChatDto: CreateChatDto,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
     console.log('📨 [ChatController] Create chat request:', {
       userId: req.user.sub,
       participantIds: createChatDto.participantIds,
       isGroup: createChatDto.isGroup,
+      hasFile: !!file,
     });
+
+    // If file uploaded, set the groupAvatar URL
+    if (file && createChatDto.isGroup) {
+      createChatDto.groupAvatar = `/uploads/chat/${file.filename}`;
+    }
 
     try {
       const result = await this.chatService.createChat(
@@ -235,12 +258,30 @@ export class ChatController {
   }
 
   @Patch(':id/avatar')
+  @UseInterceptors(
+    FileInterceptor('groupAvatar', {
+      storage: diskStorage({
+        destination: './uploads/chat',
+        filename: (req, file, cb) => {
+          const uniqueSuffix =
+            Date.now() + '-' + Math.round(Math.random() * 1e9);
+          const ext = file.originalname.split('.').pop();
+          cb(null, `group-avatar-${uniqueSuffix}.${ext}`);
+        },
+      }),
+    }),
+  )
   async updateChatAvatar(
     @Request() req,
-    @Param('id', ParseIntPipe) id: number,
-    @Body() body: { avatarUrl: string },
+    @Param('id', ParseIntPipe) chatId: number,
+    @UploadedFile() file: Express.Multer.File,
   ) {
-    return this.chatService.updateChatAvatar(req.user.sub, id, body.avatarUrl);
+    if (!file) {
+      throw new BadRequestException('No file provided');
+    }
+
+    const avatarUrl = `/uploads/chat/${file.filename}`;
+    return this.chatService.updateChatAvatar(req.user.sub, chatId, avatarUrl);
   }
 
   @Post(':id/participants')

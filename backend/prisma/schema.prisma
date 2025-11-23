@@ -41,6 +41,10 @@ model User {
   userStatus           UserStatus?
   messageReactions     MessageReaction[]
   lastAnnouncementView DateTime          @default(now())
+
+  // Payment relationships
+  payments    Payment[]
+  enrollments Enrollment[]
 }
 
 model Admin {
@@ -97,6 +101,10 @@ model Course {
   onGoingStudents   Student[] @relation("OnGoingCourses")
   completedStudents Student[] @relation("CompletedCourses")
   failedStudents    Student[] @relation("FailedCourses")
+
+  // Payment relationships
+  payments    Payment[]
+  enrollments Enrollment[]
 }
 
 model Assignment {
@@ -248,10 +256,18 @@ model Profile {
   resident    String?
   phone       String?
   dateOfBirth DateTime?
-  userId      Int       @unique
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+
+  // Location fields
+  address           String?
+  city              String?
+  province          String?
+  country           String?
+  locationUpdatedAt DateTime?
+
+  userId    Int      @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 enum Category {
@@ -399,4 +415,72 @@ enum MessageType {
   FILE
   AUDIO
   LINK
+}
+
+// Payment Integration Models
+enum PaymentStatus {
+  PENDING
+  SUCCESSFUL
+  FAILED
+  CANCELLED
+  EXPIRED
+}
+
+model Payment {
+  id           Int           @id @default(autoincrement())
+  referenceId  String        @unique // MTN MoMo reference
+  userId       Int
+  courseId     Int
+  amount       Decimal       @db.Decimal(10, 2)
+  currency     String        @default("RWF")
+  status       PaymentStatus @default(PENDING)
+  phoneNumber  String
+  externalId   String? // MTN external ID
+  payerMessage String?
+  payeeNote    String?
+
+  // Location data (captured during payment)
+  location String? // Address/location text
+  city     String?
+  province String?
+  country  String? @default("Rwanda")
+
+  // Tracking
+  initiatedAt   DateTime  @default(now())
+  completedAt   DateTime?
+  failedAt      DateTime?
+  lastCheckedAt DateTime?
+
+  // Metadata
+  errorCode    String?
+  errorMessage String?
+
+  // Relations
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course     Course      @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  enrollment Enrollment?
+
+  @@index([userId])
+  @@index([courseId])
+  @@index([status])
+  @@index([referenceId])
+}
+
+model Enrollment {
+  id             Int       @id @default(autoincrement())
+  userId         Int
+  courseId       Int
+  paymentId      Int?      @unique
+  enrollmentDate DateTime  @default(now())
+  expiresAt      DateTime? // for subscription-based courses
+
+  // Relations
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course  Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  payment Payment? @relation(fields: [paymentId], references: [id])
+
+  @@unique([userId, courseId])
+  @@index([userId])
+  @@index([courseId])
+  @@index([paymentId])
 }

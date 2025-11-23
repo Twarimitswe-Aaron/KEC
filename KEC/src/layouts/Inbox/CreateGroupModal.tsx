@@ -65,32 +65,43 @@ const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
 
     setIsCreating(true);
     try {
-      let avatarUrl = "";
+      // Create FormData to send file with other data
+      const formData = new FormData();
+      formData.append("isGroup", "true");
+      formData.append("name", groupName);
+      formData.append("participantIds", JSON.stringify(selectedUserIds));
 
-      // Upload avatar if selected
       if (avatarFile) {
-        const formData = new FormData();
-        formData.append("file", avatarFile);
-
-        const response = await axios.post(
-          `${import.meta.env.VITE_BACKEND_URL}/chat/upload`,
-          formData,
-          {
-            headers: {
-              "Content-Type": "multipart/form-data",
-              Authorization: `Bearer ${localStorage.getItem("token")}`,
-            },
-          }
-        );
-        avatarUrl = response.data.fileUrl;
+        formData.append("groupAvatar", avatarFile);
       }
 
-      await createChat({
-        participantIds: selectedUserIds,
-        isGroup: true,
-        name: groupName,
-        groupAvatar: avatarUrl || undefined,
-      }).unwrap();
+      // Fetch CSRF token
+      const backendUrl =
+        import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
+      let csrfToken = "";
+      try {
+        const res = await fetch(`${backendUrl}/csrf/token`, {
+          credentials: "include",
+        });
+        if (res.ok) {
+          const data = await res.json();
+          csrfToken = data.csrfToken || "";
+        }
+      } catch (e) {
+        console.warn("Failed to fetch CSRF token:", e);
+      }
+
+      // Send request with FormData
+      const response = await axios.post(`${backendUrl}/chat`, formData, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          ...(csrfToken && { "x-csrf-token": csrfToken }),
+        },
+        withCredentials: true,
+      });
+
+      // Manually trigger refetch or invalidate cache
+      // The response should trigger the WebSocket update too
 
       onClose();
       setGroupName("");

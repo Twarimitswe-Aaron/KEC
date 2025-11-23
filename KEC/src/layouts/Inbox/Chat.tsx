@@ -1759,22 +1759,22 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
     <div className="flex w-full flex-col h-full overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between p-4 bg-white text-black">
-        <div className="flex items-center gap-3">
-          <div
-            className="relative cursor-pointer"
-            onClick={() => {
-              if (activeChat?.isGroup) {
-                setIsGroupInfoModalOpen(true);
-              } else {
-                const participantId = activeChat?.participants?.find(
-                  (p) => p.user?.id !== currentUser?.id
-                )?.user?.id;
-                if (participantId) {
-                  navigate(`/profile/${participantId}`);
-                }
+        <div
+          className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 rounded-lg p-1 transition-colors"
+          onClick={() => {
+            if (activeChat?.isGroup) {
+              setIsGroupInfoModalOpen(true);
+            } else {
+              const participantId = activeChat?.participants?.find(
+                (p) => p.user?.id !== currentUser?.id
+              )?.user?.id;
+              if (participantId) {
+                navigate(`/profile/${participantId}`);
               }
-            }}
-          >
+            }
+          }}
+        >
+          <div className="relative">
             <img
               src={participant?.avatar || "/images/chat.png"}
               alt={participant?.name || "Chat"}
@@ -3077,6 +3077,7 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
       <GroupInfoModal
         isOpen={isGroupInfoModalOpen}
         onClose={() => setIsGroupInfoModalOpen(false)}
+        activeChat={activeChat}
       />
     </div>
   );
