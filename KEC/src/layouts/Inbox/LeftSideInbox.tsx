@@ -3,27 +3,46 @@ import { IoSearch } from "react-icons/io5";
 import { MdCheck, MdDoneAll, MdFilterList, MdGroupAdd } from "react-icons/md";
 import { IoArrowBack } from "react-icons/io5";
 import { useGetUserQuery } from "../../state/api/authApi";
-import { useGetChatsQuery, Chat } from "../../state/api/chatApi";
+import {
+  useGetChatsQuery,
+  Chat,
+  useGetUsersQuery,
+  useCreateChatMutation,
+} from "../../state/api/chatApi";
 import { useChat } from "../../hooks/useChat";
 import { useNavigate, useLocation } from "react-router-dom";
-import CreateGroupModal from "./CreateGroupModal";
 
 interface LeftSideInboxProps {
   onCloseSidebar: () => void;
+  onOpenCreateGroup: () => void;
 }
 
 type SortFilter = "all" | "unread" | "groups" | "personal";
 
-const LeftSideInbox: React.FC<LeftSideInboxProps> = ({ onCloseSidebar }) => {
+const LeftSideInbox: React.FC<LeftSideInboxProps> = ({
+  onCloseSidebar,
+  onOpenCreateGroup,
+}) => {
   const { data: currentUser } = useGetUserQuery();
-  const { data: chatsResponse, isLoading, error } = useGetChatsQuery({});
+  const {
+    data: chatsResponse,
+    isLoading: isLoadingChats,
+    error,
+  } = useGetChatsQuery({});
   const { activeChat, setActiveChat, onlineUsers, typingUsers } = useChat();
   const navigate = useNavigate();
   const location = useLocation();
 
   const [searchTerm, setSearchTerm] = useState("");
   const [sortFilter, setSortFilter] = useState<SortFilter>("all");
-  const [isCreateGroupModalOpen, setIsCreateGroupModalOpen] = useState(false);
+
+  // Fetch all users for "New Chat" functionality
+  const { data: allUsers, isLoading: isLoadingUsers } = useGetUsersQuery({
+    search: searchTerm,
+    excludeIds: currentUser ? [currentUser.id] : [],
+  });
+
+  const [createChat] = useCreateChatMutation();
 
   const previousRoute = location.state?.from || "/dashboard";
 
@@ -163,12 +182,48 @@ const LeftSideInbox: React.FC<LeftSideInboxProps> = ({ onCloseSidebar }) => {
     });
   }, [chatsResponse?.chats, searchTerm, sortFilter, activeChat?.id]);
 
+  // Filter users who don't have a chat yet (for "All Users" section)
+  const usersWithoutChat = useMemo(() => {
+    if (!allUsers || !chatsResponse?.chats) return [];
+
+    // Get IDs of users we already have a 1-on-1 chat with
+    const existingChatUserIds = new Set<number>();
+    chatsResponse.chats.forEach((chat) => {
+      if (!chat.isGroup) {
+        const otherParticipant = chat.participants.find(
+          (p) => p.userId !== currentUser?.id
+        );
+        if (otherParticipant) {
+          existingChatUserIds.add(otherParticipant.userId);
+        }
+      }
+    });
+
+    return allUsers.filter((user) => !existingChatUserIds.has(user.id));
+  }, [allUsers, chatsResponse?.chats, currentUser]);
+
   const handleChatSelect = (chat: Chat) => {
     setActiveChat(chat);
     onCloseSidebar();
   };
 
-  if (isLoading) {
+  const handleUserSelect = async (userId: number) => {
+    try {
+      // Create or get existing chat
+      const chat = await createChat({
+        participantIds: [userId],
+        isGroup: false,
+      }).unwrap();
+
+      setActiveChat(chat);
+      onCloseSidebar();
+      setSearchTerm(""); // Clear search after selecting
+    } catch (error) {
+      console.error("Failed to start chat with user:", error);
+    }
+  };
+
+  if (isLoadingChats) {
     return (
       <div className="flex flex-col h-full bg-white">
         <div className="p-4 border-b">
@@ -223,7 +278,7 @@ const LeftSideInbox: React.FC<LeftSideInboxProps> = ({ onCloseSidebar }) => {
         </div>
         <div className="flex items-center gap-2">
           <button
-            onClick={() => setIsCreateGroupModalOpen(true)}
+            onClick={onOpenCreateGroup}
             className="p-1.5 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors"
             title="Create Group"
           >
@@ -257,7 +312,7 @@ const LeftSideInbox: React.FC<LeftSideInboxProps> = ({ onCloseSidebar }) => {
           />
           <input
             type="text"
-            placeholder="Search chats..."
+            placeholder="Search chats or users..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-10 pr-4 py-1.5 bg-[#f0f2f5] rounded-lg focus:outline-none focus:bg-white focus:shadow-sm transition-all text-sm"
@@ -267,115 +322,154 @@ const LeftSideInbox: React.FC<LeftSideInboxProps> = ({ onCloseSidebar }) => {
 
       {/* Chat List */}
       <div className="flex-1 overflow-y-auto bg-white">
-        {sortedAndFilteredChats.length === 0 ? (
+        {sortedAndFilteredChats.length === 0 &&
+        usersWithoutChat.length === 0 ? (
           <div className="p-4 text-center text-gray-500">
             {searchTerm
-              ? "No chats found matching your search."
+              ? "No chats or users found matching your search."
               : "No chats yet. Start a new conversation!"}
           </div>
         ) : (
-          sortedAndFilteredChats.map((chat) => {
-            const isActive = chat.id === activeChat?.id;
-            const hasUnread = chat.unreadCount > 0;
-            const isOnline = isUserOnline(chat);
+          <>
+            {/* Existing Chats */}
+            {sortedAndFilteredChats.map((chat) => {
+              const isActive = chat.id === activeChat?.id;
+              const hasUnread = chat.unreadCount > 0;
+              const isOnline = isUserOnline(chat);
 
-            return (
-              <div
-                key={chat.id}
-                onClick={() => handleChatSelect(chat)}
-                className={`flex items-center gap-2.5 p-2.5 cursor-pointer transition-colors border-b border-gray-100 ${
-                  isActive ? "bg-[#f0f2f5]" : "hover:bg-[#f5f6f6]"
-                }`}
-              >
-                {/* Avatar */}
-                <div className="relative flex-shrink-0">
-                  <img
-                    src={getChatAvatar(chat)}
-                    alt={getChatName(chat)}
-                    className="w-12 h-12 rounded-full object-cover"
-                  />
-                  {isOnline && (
-                    <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
-                  )}
-                </div>
-
-                {/* Chat Info */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between mb-1">
-                    <h3
-                      className={`truncate ${
-                        hasUnread
-                          ? "font-semibold text-gray-900"
-                          : "font-medium text-gray-800"
-                      }`}
-                    >
-                      {getChatName(chat)}
-                    </h3>
-                    <span className="text-xs text-gray-500 ml-2 flex-shrink-0">
-                      {chat.lastMessageTime &&
-                        formatTimestamp(chat.lastMessageTime)}
-                    </span>
+              return (
+                <div
+                  key={chat.id}
+                  onClick={() => handleChatSelect(chat)}
+                  className={`flex items-center gap-2.5 p-2.5 cursor-pointer transition-colors border-b border-gray-100 ${
+                    isActive ? "bg-[#f0f2f5]" : "hover:bg-[#f5f6f6]"
+                  }`}
+                >
+                  {/* Avatar */}
+                  <div className="relative flex-shrink-0">
+                    <img
+                      src={getChatAvatar(chat)}
+                      alt={getChatName(chat)}
+                      className="w-12 h-12 rounded-full object-cover"
+                    />
+                    {isOnline && (
+                      <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
+                    )}
                   </div>
 
-                  <div className="flex items-center justify-between">
-                    <p
-                      className={`text-sm truncate ${
-                        hasUnread
-                          ? "text-gray-900 font-medium"
-                          : "text-gray-600"
-                      }`}
-                    >
-                      {(() => {
-                        // Check if anyone is typing in this chat
-                        const chatTypingUsers = chat.participants
-                          .filter(
-                            (p) =>
-                              p.user?.id !== currentUser?.id &&
-                              typingUsers.includes(p.user?.id || 0)
-                          )
-                          .map((p) => `${p.user?.firstName || "Someone"}`);
-
-                        if (chatTypingUsers.length > 0) {
-                          return (
-                            <span className="text-blue-500 italic">
-                              {chatTypingUsers.length === 1
-                                ? `${chatTypingUsers[0]} typing...`
-                                : "Someone typing..."}
-                            </span>
-                          );
-                        }
-
-                        return getLastMessagePreview(chat);
-                      })()}
-                    </p>
-                    {hasUnread && (
-                      <span className="ml-2 flex-shrink-0 bg-green-500 text-white text-xs font-semibold rounded-full min-w-[20px] h-5 flex items-center justify-center px-1.5">
-                        {chat.unreadCount}
+                  {/* Chat Info */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between mb-1">
+                      <h3
+                        className={`truncate ${
+                          hasUnread
+                            ? "font-semibold text-gray-900"
+                            : "font-medium text-gray-800"
+                        }`}
+                      >
+                        {getChatName(chat)}
+                      </h3>
+                      <span className="text-xs text-gray-500 ml-2 flex-shrink-0">
+                        {chat.lastMessageTime &&
+                          formatTimestamp(chat.lastMessageTime)}
                       </span>
-                    )}
-                    {chat.lastMessage &&
-                      chat.lastMessage.senderId === currentUser?.id &&
-                      !hasUnread && (
-                        <span className="ml-2 flex-shrink-0 text-blue-500">
-                          {chat.lastMessage.isRead ? (
-                            <MdDoneAll className="text-sm" />
-                          ) : (
-                            <MdCheck className="text-sm" />
-                          )}
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <p
+                        className={`text-sm truncate ${
+                          hasUnread
+                            ? "text-gray-900 font-medium"
+                            : "text-gray-600"
+                        }`}
+                      >
+                        {(() => {
+                          // Check if anyone is typing in this chat
+                          const chatTypingUsers = chat.participants
+                            .filter(
+                              (p) =>
+                                p.user?.id !== currentUser?.id &&
+                                typingUsers.includes(p.user?.id || 0)
+                            )
+                            .map((p) => `${p.user?.firstName || "Someone"}`);
+
+                          if (chatTypingUsers.length > 0) {
+                            return (
+                              <span className="text-blue-500 italic">
+                                {chatTypingUsers.length === 1
+                                  ? `${chatTypingUsers[0]} typing...`
+                                  : "Someone typing..."}
+                              </span>
+                            );
+                          }
+
+                          return getLastMessagePreview(chat);
+                        })()}
+                      </p>
+                      {hasUnread && (
+                        <span className="ml-2 flex-shrink-0 bg-green-500 text-white text-xs font-semibold rounded-full min-w-[20px] h-5 flex items-center justify-center px-1.5">
+                          {chat.unreadCount}
                         </span>
                       )}
+                      {chat.lastMessage &&
+                        chat.lastMessage.senderId === currentUser?.id &&
+                        !hasUnread && (
+                          <span className="ml-2 flex-shrink-0 text-blue-500">
+                            {chat.lastMessage.isRead ? (
+                              <MdDoneAll className="text-sm" />
+                            ) : (
+                              <MdCheck className="text-sm" />
+                            )}
+                          </span>
+                        )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            );
-          })
+              );
+            })}
+
+            {/* Other Users Section */}
+            {usersWithoutChat.length > 0 && (
+              <>
+                <div className="px-4 py-2 bg-gray-50 text-xs font-semibold text-gray-500 uppercase tracking-wider sticky top-0">
+                  Other Users
+                </div>
+                {usersWithoutChat.map((user) => (
+                  <div
+                    key={user.id}
+                    onClick={() => handleUserSelect(user.id)}
+                    className="flex items-center gap-2.5 p-2.5 cursor-pointer transition-colors border-b border-gray-100 hover:bg-[#f5f6f6]"
+                  >
+                    {/* Avatar */}
+                    <div className="relative flex-shrink-0">
+                      <img
+                        src={user.profile?.avatar || "/images/chat.png"}
+                        alt={user.firstName}
+                        className="w-12 h-12 rounded-full object-cover grayscale opacity-80"
+                      />
+                      {onlineUsers.includes(user.id) && (
+                        <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
+                      )}
+                    </div>
+
+                    {/* User Info */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-1">
+                        <h3 className="font-medium text-gray-800 truncate">
+                          {user.firstName} {user.lastName}
+                        </h3>
+                      </div>
+                      <p className="text-sm text-gray-500 truncate">
+                        Start a conversation
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </>
+            )}
+          </>
         )}
       </div>
-
-      <CreateGroupModal
-        isOpen={isCreateGroupModalOpen}
-        onClose={() => setIsCreateGroupModalOpen(false)}
-      />
     </div>
   );
 };

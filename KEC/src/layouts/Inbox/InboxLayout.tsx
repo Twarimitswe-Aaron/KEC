@@ -4,10 +4,12 @@ import ChatComponent from "./Chat";
 import RightSidebar from "./RightSidebar";
 import { IoMenu } from "react-icons/io5";
 import { CgChevronLeft } from "react-icons/cg";
+import CreateGroupModal from "./CreateGroupModal";
 
 const InboxLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [rightSidebarOpen, setRightSidebarOpen] = useState(false);
+  const [isCreateGroupModalOpen, setIsCreateGroupModalOpen] = useState(false);
 
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
   const toggleRightSidebar = () => setRightSidebarOpen(!rightSidebarOpen);
@@ -40,7 +42,10 @@ const InboxLayout = () => {
         >
           <CgChevronLeft size={24} />
         </button>
-        <LeftSideInbox onCloseSidebar={() => setSidebarOpen(false)} />
+        <LeftSideInbox
+          onCloseSidebar={() => setSidebarOpen(false)}
+          onOpenCreateGroup={() => setIsCreateGroupModalOpen(true)}
+        />
       </div>
 
       {/* Chat Area */}
@@ -70,6 +75,11 @@ const InboxLayout = () => {
         {/* Render RightSidebar content here or pass open state */}
         <RightSidebar />
       </div>
+
+      <CreateGroupModal
+        isOpen={isCreateGroupModalOpen}
+        onClose={() => setIsCreateGroupModalOpen(false)}
+      />
     </div>
   );
 };
