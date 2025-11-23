@@ -799,34 +799,17 @@ export class ChatService {
       },
     });
 
-    // Get user IDs for each emoji
-    const reactionDetails = await Promise.all(
-      reactions.map(async (r) => {
-        const users = await this.prisma.messageReaction.findMany({
-          where: { messageId, emoji: r.emoji },
-          select: { userId: true },
-        });
-        return {
-          emoji: r.emoji,
-          count: r._count.emoji,
-          users: users.map((u) => u.userId),
-        };
-      }),
-    );
-
-    // Emit the reaction via WebSocket for real-time updates
+    // Notify via WebSocket
     if (this.chatGateway) {
       this.chatGateway.server.to(`chat:${chatId}`).emit('reaction:added', {
-        chatId,
         messageId,
-        emoji: body.emoji,
         userId,
-        reactions: reactionDetails, // Send all reactions for the message
+        emoji: body.emoji,
+        chatId,
       });
     }
 
-    console.log('✅ [ChatService] Reaction added successfully');
-    return { messageId, emoji: body.emoji, userId, reactions: reactionDetails };
+    return { success: true };
   }
 
   async removeReaction(
@@ -835,14 +818,14 @@ export class ChatService {
     messageId: number,
     emoji: string,
   ) {
-    console.log('😐 [ChatService] Removing reaction:', {
+    console.log('😐 [ChatService] Removing reaction', {
       userId,
       chatId,
       messageId,
       emoji,
     });
 
-    // Verify the message exists
+    // Verify the message exists and user has access to the chat
     const message = await this.prisma.message.findFirst({
       where: {
         id: messageId,
@@ -855,7 +838,7 @@ export class ChatService {
     }
 
     // Delete the reaction
-    await this.prisma.messageReaction.deleteMany({
+    const result = await this.prisma.messageReaction.deleteMany({
       where: {
         messageId,
         userId,
@@ -863,42 +846,215 @@ export class ChatService {
       },
     });
 
-    // Get updated aggregated reaction counts
-    const reactions = await this.prisma.messageReaction.groupBy({
-      by: ['emoji'],
-      where: { messageId },
-      _count: {
-        emoji: true,
-      },
-    });
+    if (result.count === 0) {
+      throw new NotFoundException('Reaction not found');
+    }
 
-    // Get user IDs for each emoji
-    const reactionDetails = await Promise.all(
-      reactions.map(async (r) => {
-        const users = await this.prisma.messageReaction.findMany({
-          where: { messageId, emoji: r.emoji },
-          select: { userId: true },
-        });
-        return {
-          emoji: r.emoji,
-          count: r._count.emoji,
-          users: users.map((u) => u.userId),
-        };
-      }),
-    );
-
-    // Emit reaction removal via WebSocket
+    // Notify via WebSocket
     if (this.chatGateway) {
       this.chatGateway.server.to(`chat:${chatId}`).emit('reaction:removed', {
-        chatId,
         messageId,
-        emoji,
         userId,
-        reactions: reactionDetails, // Send updated reactions
+        emoji,
+        chatId,
       });
     }
 
-    console.log('✅ [ChatService] Reaction removed successfully');
-    return { messageId, emoji, userId, reactions: reactionDetails };
+    return { success: true };
+  }
+
+  // --- Group Chat Management Methods ---
+
+  async renameChat(userId: number, chatId: number, name: string) {
+    // Verify chat exists and is a group
+    const chat = await this.prisma.chat.findUnique({
+      where: { id: chatId },
+      include: { participants: true },
+    });
+
+    if (!chat) throw new NotFoundException('Chat not found');
+    if (!chat.isGroup) throw new BadRequestException('Not a group chat');
+
+    // Verify user is admin
+    const participant = chat.participants.find((p) => p.userId === userId);
+    if (!participant || !participant.isAdmin) {
+      throw new ForbiddenException('Only admins can rename groups');
+    }
+
+    const updatedChat = await this.prisma.chat.update({
+      where: { id: chatId },
+      data: { name },
+    });
+
+    // Notify participants
+    if (this.chatGateway) {
+      this.chatGateway.server.to(`chat:${chatId}`).emit('chat:updated', {
+        chatId,
+        type: 'rename',
+        name,
+      });
+    }
+
+    return updatedChat;
+  }
+
+  async updateChatAvatar(userId: number, chatId: number, avatarUrl: string) {
+    const chat = await this.prisma.chat.findUnique({
+      where: { id: chatId },
+      include: { participants: true },
+    });
+
+    if (!chat) throw new NotFoundException('Chat not found');
+    if (!chat.isGroup) throw new BadRequestException('Not a group chat');
+
+    const participant = chat.participants.find((p) => p.userId === userId);
+    if (!participant || !participant.isAdmin) {
+      throw new ForbiddenException('Only admins can update group avatar');
+    }
+
+    const updatedChat = await this.prisma.chat.update({
+      where: { id: chatId },
+      data: { groupAvatar: avatarUrl },
+    });
+
+    if (this.chatGateway) {
+      this.chatGateway.server.to(`chat:${chatId}`).emit('chat:updated', {
+        chatId,
+        type: 'avatar',
+        groupAvatar: avatarUrl,
+      });
+    }
+
+    return updatedChat;
+  }
+
+  async addParticipants(
+    userId: number,
+    chatId: number,
+    participantIds: number[],
+  ) {
+    const chat = await this.prisma.chat.findUnique({
+      where: { id: chatId },
+      include: { participants: true },
+    });
+
+    if (!chat) throw new NotFoundException('Chat not found');
+    if (!chat.isGroup) throw new BadRequestException('Not a group chat');
+
+    const participant = chat.participants.find((p) => p.userId === userId);
+    if (!participant || !participant.isAdmin) {
+      throw new ForbiddenException('Only admins can add participants');
+    }
+
+    // Filter out existing participants
+    const existingIds = chat.participants.map((p) => p.userId);
+    const newIds = participantIds.filter((id) => !existingIds.includes(id));
+
+    if (newIds.length === 0) return chat;
+
+    await this.prisma.chatParticipant.createMany({
+      data: newIds.map((id) => ({
+        chatId,
+        userId: id,
+        isAdmin: false,
+      })),
+    });
+
+    // Notify new participants and existing ones
+    if (this.chatGateway) {
+      this.chatGateway.server.to(`chat:${chatId}`).emit('participant:added', {
+        chatId,
+        userIds: newIds,
+      });
+
+      // Also notify the specific users so they can join the room
+      newIds.forEach((newId) => {
+        this.chatGateway.sendMessageToUser(newId, 'chat:added', { chatId });
+      });
+    }
+
+    return this.getChatById(userId, chatId);
+  }
+
+  async removeParticipant(
+    userId: number,
+    chatId: number,
+    participantIdToRemove: number,
+  ) {
+    const chat = await this.prisma.chat.findUnique({
+      where: { id: chatId },
+      include: { participants: true },
+    });
+
+    if (!chat) throw new NotFoundException('Chat not found');
+    if (!chat.isGroup) throw new BadRequestException('Not a group chat');
+
+    const requester = chat.participants.find((p) => p.userId === userId);
+    if (!requester || !requester.isAdmin) {
+      // Allow users to leave themselves
+      if (userId !== participantIdToRemove) {
+        throw new ForbiddenException('Only admins can remove participants');
+      }
+    }
+
+    await this.prisma.chatParticipant.deleteMany({
+      where: {
+        chatId,
+        userId: participantIdToRemove,
+      },
+    });
+
+    if (this.chatGateway) {
+      this.chatGateway.server.to(`chat:${chatId}`).emit('participant:removed', {
+        chatId,
+        userId: participantIdToRemove,
+      });
+
+      // Notify removed user
+      this.chatGateway.sendMessageToUser(
+        participantIdToRemove,
+        'chat:removed',
+        { chatId },
+      );
+    }
+
+    return { success: true };
+  }
+
+  async deleteChat(userId: number, chatId: number) {
+    const chat = await this.prisma.chat.findUnique({
+      where: { id: chatId },
+      include: { participants: true },
+    });
+
+    if (!chat) throw new NotFoundException('Chat not found');
+
+    // Only allow deletion if group admin or if it's a 1-on-1 chat (maybe just clear history?)
+    // For now, let's assume only group admins can delete groups
+    if (chat.isGroup) {
+      const participant = chat.participants.find((p) => p.userId === userId);
+      if (!participant || !participant.isAdmin) {
+        throw new ForbiddenException('Only admins can delete groups');
+      }
+    } else {
+      // For 1-on-1, maybe we don't allow "deleting" the chat entity, just clearing messages?
+      // Or we can delete it and it gets recreated. Let's allow delete for now.
+      // Check if user is participant
+      const isParticipant = chat.participants.some((p) => p.userId === userId);
+      if (!isParticipant) throw new ForbiddenException('Not a participant');
+    }
+
+    // Notify before deleting
+    if (this.chatGateway) {
+      this.chatGateway.server.to(`chat:${chatId}`).emit('chat:deleted', {
+        chatId,
+      });
+    }
+
+    await this.prisma.chat.delete({
+      where: { id: chatId },
+    });
+
+    return { success: true };
   }
 }

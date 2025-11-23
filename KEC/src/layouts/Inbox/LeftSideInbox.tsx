@@ -1,11 +1,12 @@
 import React, { useState, useMemo } from "react";
 import { IoSearch } from "react-icons/io5";
-import { MdCheck, MdDoneAll, MdFilterList } from "react-icons/md";
+import { MdCheck, MdDoneAll, MdFilterList, MdGroupAdd } from "react-icons/md";
 import { IoArrowBack } from "react-icons/io5";
 import { useGetUserQuery } from "../../state/api/authApi";
 import { useGetChatsQuery, Chat } from "../../state/api/chatApi";
 import { useChat } from "../../hooks/useChat";
 import { useNavigate, useLocation } from "react-router-dom";
+import CreateGroupModal from "./CreateGroupModal";
 
 interface LeftSideInboxProps {
   onCloseSidebar: () => void;
@@ -22,6 +23,7 @@ const LeftSideInbox: React.FC<LeftSideInboxProps> = ({ onCloseSidebar }) => {
 
   const [searchTerm, setSearchTerm] = useState("");
   const [sortFilter, setSortFilter] = useState<SortFilter>("all");
+  const [isCreateGroupModalOpen, setIsCreateGroupModalOpen] = useState(false);
 
   const previousRoute = location.state?.from || "/dashboard";
 
@@ -219,18 +221,27 @@ const LeftSideInbox: React.FC<LeftSideInboxProps> = ({ onCloseSidebar }) => {
           </button>
           <h1 className="text-lg font-semibold text-gray-800">Chats</h1>
         </div>
-        <div className="flex items-center gap-1">
-          <select
-            value={sortFilter}
-            onChange={(e) => setSortFilter(e.target.value as SortFilter)}
-            className="text-sm px-2 py-1 border-0 bg-transparent text-gray-600 focus:outline-none cursor-pointer font-medium"
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setIsCreateGroupModalOpen(true)}
+            className="p-1.5 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors"
+            title="Create Group"
           >
-            <option value="all">All Chats</option>
-            <option value="unread">Unread</option>
-            <option value="personal">Personal</option>
-            <option value="groups">Groups</option>
-          </select>
-          <MdFilterList className="text-gray-500" size={18} />
+            <MdGroupAdd size={22} />
+          </button>
+          <div className="flex items-center gap-1">
+            <select
+              value={sortFilter}
+              onChange={(e) => setSortFilter(e.target.value as SortFilter)}
+              className="text-sm px-2 py-1 border-0 bg-transparent text-gray-600 focus:outline-none cursor-pointer font-medium"
+            >
+              <option value="all">All Chats</option>
+              <option value="unread">Unread</option>
+              <option value="personal">Personal</option>
+              <option value="groups">Groups</option>
+            </select>
+            <MdFilterList className="text-gray-500" size={18} />
+          </div>
         </div>
       </div>
 
@@ -360,6 +371,11 @@ const LeftSideInbox: React.FC<LeftSideInboxProps> = ({ onCloseSidebar }) => {
           })
         )}
       </div>
+
+      <CreateGroupModal
+        isOpen={isCreateGroupModalOpen}
+        onClose={() => setIsCreateGroupModalOpen(false)}
+      />
     </div>
   );
 };

@@ -38,6 +38,7 @@ import {
   BsFileEarmarkZip,
 } from "react-icons/bs";
 import { useChat } from "../../hooks/useChat";
+import GroupInfoModal from "./GroupInfoModal";
 import {
   Message,
   useDeleteMessageMutation,
@@ -487,6 +488,7 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
   const unreadIndicatorRef = useRef<HTMLDivElement>(null);
   const [showUnreadIndicator, setShowUnreadIndicator] = useState(false);
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
+  const [isGroupInfoModalOpen, setIsGroupInfoModalOpen] = useState(false);
 
   // Handle unread message indicator visibility
   useEffect(() => {
@@ -1761,11 +1763,15 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
           <div
             className="relative cursor-pointer"
             onClick={() => {
-              const participantId = activeChat?.participants?.find(
-                (p) => p.user?.id !== currentUser?.id
-              )?.user?.id;
-              if (participantId) {
-                navigate(`/profile/${participantId}`);
+              if (activeChat?.isGroup) {
+                setIsGroupInfoModalOpen(true);
+              } else {
+                const participantId = activeChat?.participants?.find(
+                  (p) => p.user?.id !== currentUser?.id
+                )?.user?.id;
+                if (participantId) {
+                  navigate(`/profile/${participantId}`);
+                }
               }
             }}
           >
@@ -3067,6 +3073,11 @@ const Chat: React.FC<ChatProps> = ({ onToggleRightSidebar }) => {
       {lightboxImage && (
         <Lightbox src={lightboxImage} onClose={() => setLightboxImage(null)} />
       )}
+
+      <GroupInfoModal
+        isOpen={isGroupInfoModalOpen}
+        onClose={() => setIsGroupInfoModalOpen(false)}
+      />
     </div>
   );
 };

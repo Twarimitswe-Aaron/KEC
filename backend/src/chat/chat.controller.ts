@@ -12,7 +12,7 @@ import {
   Request,
   UploadedFile,
   UseInterceptors,
-  BadRequestException
+  BadRequestException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ChatService } from './chat.service';
@@ -37,17 +37,20 @@ export class ChatController {
     console.log('📨 [ChatController] Create chat request:', {
       userId: req.user.sub,
       participantIds: createChatDto.participantIds,
-      isGroup: createChatDto.isGroup
+      isGroup: createChatDto.isGroup,
     });
-    
+
     try {
-      const result = await this.chatService.createChat(req.user.sub, createChatDto);
-      
+      const result = await this.chatService.createChat(
+        req.user.sub,
+        createChatDto,
+      );
+
       console.log('✅ [ChatController] Chat created successfully:', {
         chatId: result.id,
-        participantsCount: result.participants?.length || 0
+        participantsCount: result.participants?.length || 0,
       });
-      
+
       return result;
     } catch (error) {
       console.error('❌ [ChatController] Chat creation failed:', error);
@@ -64,7 +67,12 @@ export class ChatController {
   ) {
     const pageNum = page ? parseInt(page, 10) : 1;
     const limitNum = limit ? parseInt(limit, 10) : 20;
-    return this.chatService.getUserChats(req.user.sub, pageNum, limitNum, search);
+    return this.chatService.getUserChats(
+      req.user.sub,
+      pageNum,
+      limitNum,
+      search,
+    );
   }
 
   @Get(':id')
@@ -83,7 +91,13 @@ export class ChatController {
     const pageNum = page ? parseInt(page, 10) : 1;
     const limitNum = limit ? parseInt(limit, 10) : 50;
     const lastMsgId = lastMessageId ? parseInt(lastMessageId, 10) : undefined;
-    return this.chatService.getChatMessages(req.user.sub, id, pageNum, limitNum, lastMsgId);
+    return this.chatService.getChatMessages(
+      req.user.sub,
+      id,
+      pageNum,
+      limitNum,
+      lastMsgId,
+    );
   }
 
   @Post(':id/messages')
@@ -95,7 +109,7 @@ export class ChatController {
     console.log('🔧 [ChatController] Received sendMessage request:', {
       chatId: id,
       userId: req.user.sub,
-      messageData: sendMessageDto
+      messageData: sendMessageDto,
     });
     return this.chatService.sendMessage(req.user.sub, id, sendMessageDto);
   }
@@ -161,11 +175,12 @@ export class ChatController {
     @Query('exclude') exclude?: string,
     @Query('limit') limit?: string,
   ) {
-    const excludeIds = exclude ? exclude.split(',').map(id => parseInt(id, 10)) : undefined;
+    const excludeIds = exclude
+      ? exclude.split(',').map((id) => parseInt(id, 10))
+      : undefined;
     const limitNum = limit ? parseInt(limit, 10) : 50;
     return this.chatService.getUsers(search, excludeIds, limitNum);
   }
-
 
   @Patch(':chatId/messages/:messageId')
   async editMessage(
@@ -194,11 +209,64 @@ export class ChatController {
     @Param('messageId', ParseIntPipe) messageId: number,
     @Body() { emoji }: { emoji: string },
   ) {
-    return this.chatService.removeReaction(req.user.sub, chatId, messageId, emoji);
+    return this.chatService.removeReaction(
+      req.user.sub,
+      chatId,
+      messageId,
+      emoji,
+    );
   }
 
   @Post('status')
-  async updateUserStatus(@Request() req, @Body() { isOnline }: { isOnline: boolean }) {
+  async updateUserStatus(
+    @Request() req,
+    @Body() { isOnline }: { isOnline: boolean },
+  ) {
     return this.chatService.updateUserStatus(req.user.sub, isOnline);
+  }
+
+  @Patch(':id/name')
+  async renameChat(
+    @Request() req,
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: { name: string },
+  ) {
+    return this.chatService.renameChat(req.user.sub, id, body.name);
+  }
+
+  @Patch(':id/avatar')
+  async updateChatAvatar(
+    @Request() req,
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: { avatarUrl: string },
+  ) {
+    return this.chatService.updateChatAvatar(req.user.sub, id, body.avatarUrl);
+  }
+
+  @Post(':id/participants')
+  async addParticipants(
+    @Request() req,
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: { participantIds: number[] },
+  ) {
+    return this.chatService.addParticipants(
+      req.user.sub,
+      id,
+      body.participantIds,
+    );
+  }
+
+  @Delete(':id/participants/:userId')
+  async removeParticipant(
+    @Request() req,
+    @Param('id', ParseIntPipe) id: number,
+    @Param('userId', ParseIntPipe) userIdToRemove: number,
+  ) {
+    return this.chatService.removeParticipant(req.user.sub, id, userIdToRemove);
+  }
+
+  @Delete(':id')
+  async deleteChat(@Request() req, @Param('id', ParseIntPipe) id: number) {
+    return this.chatService.deleteChat(req.user.sub, id);
   }
 }

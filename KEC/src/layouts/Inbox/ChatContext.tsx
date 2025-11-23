@@ -12,6 +12,11 @@ import {
   useGetMessagesQuery,
   useSendMessageMutation,
   useMarkMessagesAsReadMutation,
+  useRenameChatMutation,
+  useUpdateChatAvatarMutation,
+  useAddParticipantsMutation,
+  useRemoveParticipantMutation,
+  useDeleteChatMutation,
   Chat,
   Message,
   chatApi,
@@ -51,6 +56,15 @@ export interface ChatContextType {
   markAllAsRead: () => void;
   scrollToUnread: () => void;
   isTabVisible: boolean;
+  // Group Management
+  renameChat: (chatId: number, name: string) => Promise<boolean>;
+  updateChatAvatar: (chatId: number, avatarUrl: string) => Promise<boolean>;
+  addParticipants: (
+    chatId: number,
+    participantIds: number[]
+  ) => Promise<boolean>;
+  removeParticipant: (chatId: number, userId: number) => Promise<boolean>;
+  deleteChat: (chatId: number) => Promise<boolean>;
 }
 
 export const ChatContext = createContext<ChatContextType | undefined>(
@@ -143,6 +157,11 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
   }, [messagesError, activeChat]);
   const [sendMessageMutation] = useSendMessageMutation();
   const [markMessagesAsReadMutation] = useMarkMessagesAsReadMutation();
+  const [renameChatMutation] = useRenameChatMutation();
+  const [updateChatAvatarMutation] = useUpdateChatAvatarMutation();
+  const [addParticipantsMutation] = useAddParticipantsMutation();
+  const [removeParticipantMutation] = useRemoveParticipantMutation();
+  const [deleteChatMutation] = useDeleteChatMutation();
 
   // WebSocket connection with proper event listener cleanup
   useEffect(() => {
@@ -614,6 +633,57 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
           websocketService.on("message:deleted", messageDeletedHandler);
           websocketService.on("reaction:added", reactionAddedHandler);
           websocketService.on("reaction:removed", reactionRemovedHandler);
+
+          // Group Chat Events
+          websocketService.on("chat:updated", (data: any) => {
+            console.log("🔄 [ChatContext] Chat updated:", data);
+            // RTK Query invalidation handles the data update, we just need to log or trigger side effects if needed
+            if (activeChat?.id === data.chatId) {
+              if (data.type === "rename") {
+                setActiveChat((prev) =>
+                  prev ? { ...prev, name: data.name } : null
+                );
+              } else if (data.type === "avatar") {
+                setActiveChat((prev) =>
+                  prev ? { ...prev, groupAvatar: data.groupAvatar } : null
+                );
+              }
+            }
+          });
+
+          websocketService.on("participant:added", (data: any) => {
+            console.log("👥 [ChatContext] Participants added:", data);
+            // RTK Query handles this via tag invalidation
+          });
+
+          websocketService.on("participant:removed", (data: any) => {
+            console.log("👋 [ChatContext] Participant removed:", data);
+            if (data.userId === currentUser.id) {
+              // If current user was removed, clear active chat if it's the one removed from
+              if (activeChat?.id === data.chatId) {
+                setActiveChat(null);
+              }
+            }
+          });
+
+          websocketService.on("chat:deleted", (data: any) => {
+            console.log("🗑️ [ChatContext] Chat deleted:", data);
+            if (activeChat?.id === data.chatId) {
+              setActiveChat(null);
+            }
+          });
+
+          websocketService.on("chat:added", (data: any) => {
+            console.log("✨ [ChatContext] Added to new chat:", data);
+            // RTK Query invalidation will fetch the new chat
+          });
+
+          websocketService.on("chat:removed", (data: any) => {
+            console.log("🚫 [ChatContext] Removed from chat:", data);
+            if (activeChat?.id === data.chatId) {
+              setActiveChat(null);
+            }
+          });
         })
         .catch((error) => {
           console.error("❌ [ChatContext] WebSocket connection failed:", error);
@@ -798,14 +868,80 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
   // Mark all unread messages as read (Instagram behavior)
   const markAllAsRead = useCallback(() => {
     if (unreadMessages.length > 0) {
-      const unreadIds = unreadMessages.map((msg: Message) => msg.id);
-      markAsRead(unreadIds);
-      setLastReadMessageId(
-        unreadMessages[unreadMessages.length - 1]?.id || null
-      );
+      const ids = unreadMessages.map((m) => m.id);
+      markAsRead(ids);
     }
   }, [unreadMessages, markAsRead]);
 
+  // --- Group Chat Management Methods ---
+
+  const renameChat = useCallback(
+    async (chatId: number, name: string) => {
+      try {
+        await renameChatMutation({ chatId, name }).unwrap();
+        return true;
+      } catch (error) {
+        console.error("Failed to rename chat:", error);
+        return false;
+      }
+    },
+    [renameChatMutation]
+  );
+
+  const updateChatAvatar = useCallback(
+    async (chatId: number, avatarUrl: string) => {
+      try {
+        await updateChatAvatarMutation({ chatId, avatarUrl }).unwrap();
+        return true;
+      } catch (error) {
+        console.error("Failed to update chat avatar:", error);
+        return false;
+      }
+    },
+    [updateChatAvatarMutation]
+  );
+
+  const addParticipants = useCallback(
+    async (chatId: number, participantIds: number[]) => {
+      try {
+        await addParticipantsMutation({ chatId, participantIds }).unwrap();
+        return true;
+      } catch (error) {
+        console.error("Failed to add participants:", error);
+        return false;
+      }
+    },
+    [addParticipantsMutation]
+  );
+
+  const removeParticipant = useCallback(
+    async (chatId: number, userId: number) => {
+      try {
+        await removeParticipantMutation({ chatId, userId }).unwrap();
+        return true;
+      } catch (error) {
+        console.error("Failed to remove participant:", error);
+        return false;
+      }
+    },
+    [removeParticipantMutation]
+  );
+
+  const deleteChat = useCallback(
+    async (chatId: number) => {
+      try {
+        await deleteChatMutation(chatId).unwrap();
+        if (activeChat?.id === chatId) {
+          setActiveChat(null);
+        }
+        return true;
+      } catch (error) {
+        console.error("Failed to delete chat:", error);
+        return false;
+      }
+    },
+    [deleteChatMutation, activeChat]
+  );
   // Scroll to unread messages function
   const scrollToUnread = useCallback(() => {
     if (unreadScrollRef.current) {
@@ -924,6 +1060,12 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
     markAllAsRead,
     scrollToUnread,
     isTabVisible,
+    // Group Management
+    renameChat,
+    updateChatAvatar,
+    addParticipants,
+    removeParticipant,
+    deleteChat,
   };
 
   return <ChatContext.Provider value={value}>{children}</ChatContext.Provider>;

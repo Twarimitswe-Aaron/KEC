@@ -416,6 +416,68 @@ export const chatApi = apiCore.apiSlice.injectEndpoints({
         body,
       }),
     }),
+
+    // --- Group Chat Management ---
+
+    renameChat: builder.mutation<Chat, { chatId: number; name: string }>({
+      query: ({ chatId, name }) => ({
+        url: `chat/${chatId}/name`,
+        method: "PATCH",
+        body: { name },
+      }),
+      invalidatesTags: (_result, _error, { chatId }) => [
+        { type: "Chat", id: chatId },
+      ],
+    }),
+
+    updateChatAvatar: builder.mutation<
+      Chat,
+      { chatId: number; avatarUrl: string }
+    >({
+      query: ({ chatId, avatarUrl }) => ({
+        url: `chat/${chatId}/avatar`,
+        method: "PATCH",
+        body: { avatarUrl },
+      }),
+      invalidatesTags: (_result, _error, { chatId }) => [
+        { type: "Chat", id: chatId },
+      ],
+    }),
+
+    addParticipants: builder.mutation<
+      Chat,
+      { chatId: number; participantIds: number[] }
+    >({
+      query: ({ chatId, participantIds }) => ({
+        url: `chat/${chatId}/participants`,
+        method: "POST",
+        body: { participantIds },
+      }),
+      invalidatesTags: (_result, _error, { chatId }) => [
+        { type: "Chat", id: chatId },
+      ],
+    }),
+
+    removeParticipant: builder.mutation<
+      void,
+      { chatId: number; userId: number }
+    >({
+      query: ({ chatId, userId }) => ({
+        url: `chat/${chatId}/participants/${userId}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: (_result, _error, { chatId }) => [
+        { type: "Chat", id: chatId },
+      ],
+    }),
+
+    deleteChat: builder.mutation<void, number>({
+      query: (chatId) => ({
+        url: `chat/${chatId}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["Chat"],
+    }),
   }),
 });
 
@@ -433,4 +495,9 @@ export const {
   useAddReactionMutation,
   useRemoveReactionMutation,
   useUpdateTypingStatusMutation,
+  useRenameChatMutation,
+  useUpdateChatAvatarMutation,
+  useAddParticipantsMutation,
+  useRemoveParticipantMutation,
+  useDeleteChatMutation,
 } = chatApi;
