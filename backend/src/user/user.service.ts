@@ -30,53 +30,51 @@ export class UserService {
     };
     const avatarUrl = getAvatarUrl(firstName, lastName);
 
-    // Create user with profile and role-specific record
-    const createData: any = {
-      firstName,
-      lastName,
-      email,
-      password: hashedPassword,
-      isEmailVerified: true,
-      role,
-      profile: {
-        create: {
-          avatar: avatarUrl,
+    return this.prisma.$transaction(async (tx) => {
+      // 1. Create the user
+      const user = await tx.user.create({
+        data: {
+          firstName,
+          lastName,
+          email,
+          password: hashedPassword,
+          isEmailVerified: true,
+          role,
+          profile: {
+            create: {
+              avatar: avatarUrl,
+            },
+          },
         },
-      },
-    };
+      });
 
-    // Add role-specific record
-    if (role === 'admin') {
-      createData.admin = {
-        create: {
-          title: 'Administrator',
-          isVisibleOnTeam: true,
-        },
-      };
-    } else if (role === 'teacher') {
-      createData.teacher = {
-        create: {
-          title: 'Instructor',
-          isVisibleOnTeam: false,
-        },
-      };
-    } else if (role === 'student') {
-      createData.student = {
-        create: {},
-      };
-    }
+      // 2. Automatically create related profile based on role
+      if (role === 'admin') {
+        await tx.admin.create({
+          data: {
+            userId: user.id,
+            title: 'Administrator',
+            isVisibleOnTeam: true,
+          },
+        });
+      } else if (role === 'teacher') {
+        await tx.teacher.create({
+          data: {
+            userId: user.id,
+            title: 'Instructor',
+            isVisibleOnTeam: false,
+          },
+        });
+      } else if (role === 'student') {
+        await tx.student.create({
+          data: {
+            userId: user.id,
+          },
+        });
+      }
 
-    await this.prisma.user.create({
-      data: createData,
-      include: {
-        profile: true,
-        admin: true,
-        teacher: true,
-        student: true,
-      },
+      return { message: 'User created successfully', user };
     });
-
-    return { message: 'User created successfully' };
   }
 
   async findAll(): Promise<

@@ -36,11 +36,6 @@ export class UserController {
     return this.userService.findAll();
   }
 
-  @Get('team-members')
-  async getTeamMembers() {
-    return this.userService.getTeamMembers();
-  }
-
   @Get(':id/details')
   async getUserDetails(@Param('id', ParseIntPipe) id: number) {
     return this.userService.getUserDetails(id);

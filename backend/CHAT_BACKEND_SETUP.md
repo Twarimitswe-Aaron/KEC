@@ -338,3 +338,13 @@ The backend now supports:
 **🚀 Start chatting in real-time!**
 
 https://chatgpt.com/c/691f80aa-be64-8327-9c87-87b2f9a72c02 for payment
+https://app.base44.com/apps/6922a6fa396edc025922605a/editor/preview/Gallery
+
+
+https://app.base44.com/apps/6922a6f6bd26ba8146ef034d/editor/preview/Home
+https://app.base44.com/apps/6922a6fa396edc025922605a/editor/preview/Gallery
+https://app.base44.com/apps/6922a71acf41669600f03fd1/editor/preview/Career
+https://app.base44.com/apps/6922a8a5c8314e70c654132c/editor/preview/MathSolver
+https://app.base44.com/apps/6922a8b5b07db183e99519e3/editor/preview/Homepage
+https://app.base44.com/apps/6922a8de21f635e835452ab3/editor/preview/Home
+https://app.base44.com/apps/6922a8f6b2d177a2de422936/editor/preview/Home
