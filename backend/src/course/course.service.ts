@@ -189,17 +189,13 @@ export class CourseService {
     const course = await this.prisma.course.delete({
       where: { id },
     });
-    return { message: 'Course confirmed successfully' };
+    return { message: 'Course deleted successfully' };
   }
 
   async findAllUploaded(userId?: number, userRole?: string) {
-    // Build where clause - filter by creator for both teachers and admins
+    // Return all confirmed courses (teachers see all courses)
+    // Frontend will handle read-only mode for non-creators
     const whereClause: any = { isConfirmed: true };
-
-    // Both teachers and admins only see courses they created
-    if (userId) {
-      whereClause.uploaderId = userId;
-    }
 
     const getAllUploaded = await this.prisma.course.findMany({
       where: whereClause,
