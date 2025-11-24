@@ -285,7 +285,7 @@ const Announcements = () => {
           </div>
         </div>
 
-        {(UserRole === "admin" || UserRole === "teacher") && (
+        {UserRole === "admin" && (
           <div className="mb-6 p-6 transition-all duration-300">
             <div className="flex items-start gap-4">
               <img
