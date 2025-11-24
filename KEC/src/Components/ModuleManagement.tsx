@@ -30,8 +30,7 @@ import QuizEditor from "./QuizEditor";
 import { QuizIdentifiers } from "../state/api/quizApi";
 import { Lessons, QuestionProp, QuizData } from "../state/api/courseApi";
 
-export interface QuizItem extends QuestionProp {
-}
+export interface QuizItem extends QuestionProp {}
 
 export type Question = {
   id: number;
@@ -46,6 +45,7 @@ export type Question = {
 export interface lessonManagementProps {
   lessons: Lessons[];
   courseId: number;
+  readOnly?: boolean;
 }
 
 export interface ConfirmDeleteModalProps {
@@ -117,6 +117,7 @@ const colorMap: Record<
 function LessonManagement({
   lessons: initialLessons,
   courseId,
+  readOnly = false,
 }: lessonManagementProps) {
   const { searchQuery } = useContext(SearchContext);
   const [showAddResource, setShowAddResource] = useState<number | null>(null);
@@ -152,7 +153,7 @@ function LessonManagement({
         .map((lesson) => {
           const lessonMatches =
             lesson.title.toLowerCase().includes(query) ||
-            (lesson.description || '').toLowerCase().includes(query);
+            (lesson.description || "").toLowerCase().includes(query);
 
           const resourceMatches = lesson.resources?.some((resource) =>
             resource.name.toLowerCase().includes(query)
@@ -236,7 +237,7 @@ function LessonManagement({
         url: videoLink,
       }).unwrap();
 
-        setResourceType(null);
+      setResourceType(null);
       setShowAddResource(null);
       toast.success(message);
     } catch (error: any) {
@@ -312,7 +313,6 @@ function LessonManagement({
         description: quizDescription,
       }).unwrap();
 
-   
       setResourceType(null);
       setShowAddResource(null);
       toast.success(message);
@@ -420,7 +420,6 @@ function LessonManagement({
             onClick={() => onSelect(type)}
             className="flex flex-col items-center justify-center p-4 bg-white rounded-lg border border-gray-200 hover:border-blue-400 hover:shadow-sm transition-all"
           >
-
             <div
               className={`w-12 h-12 rounded-full ${colors.bg} flex items-center justify-center mb-2`}
             >
@@ -473,7 +472,6 @@ function LessonManagement({
       </div>
     </div>
   );
-
 
   const QuizForm = ({
     lessonId,
@@ -637,14 +635,14 @@ function LessonManagement({
         <div className="flex gap-2 mt-4">
           <button
             type="button"
-            onClick={handleSubmit} 
+            onClick={handleSubmit}
             className="bg-[#034153] hover:bg-[#034153]/90 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
           >
             <FaCheck /> Add Video
           </button>
           <button
             type="button"
-            onClick={onCancel} 
+            onClick={onCancel}
             className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
           >
             <FaTimes /> Cancel
@@ -653,7 +651,6 @@ function LessonManagement({
       </div>
     );
   };
-
 
   const sortedLessons = [...lessons].sort(
     (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
@@ -677,7 +674,7 @@ function LessonManagement({
             );
           }
           e.target.value = "";
-          setResourceType(null); 
+          setResourceType(null);
         }}
       />
       {openQuiz && (
@@ -688,9 +685,10 @@ function LessonManagement({
                 courseId: openQuiz.courseId,
                 lessonId: openQuiz.lessonId,
                 quizId: openQuiz.quizId,
-                formId: openQuiz.formId
+                formId: openQuiz.formId,
               }}
               onClose={() => setOpenQuiz(null)}
+              readOnly={readOnly}
             />
           </div>
         </div>
@@ -770,31 +768,37 @@ function LessonManagement({
                             </span>
                           </button>
                         </li>
-                        <li>
-                          <button
-                            onClick={() => {
-                              setShowAddResource(
-                                showAddResource === lesson.id ? null : lesson.id
-                              );
-                              setResourceType(null);
-                              setMenuOpenId(null);
-                            }}
-                            className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-3"
-                          >
-                            <FaPlus /> <span>Add Resource</span>
-                          </button>
-                        </li>
-                        <li>
-                          <button
-                            onClick={() => {
-                              requestDeleteLesson(lesson.id);
-                              setMenuOpenId(null);
-                            }}
-                            className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-3 text-red-600"
-                          >
-                            <FaTrash /> <span>Delete Lesson</span>
-                          </button>
-                        </li>
+                        {!readOnly && (
+                          <li>
+                            <button
+                              onClick={() => {
+                                setShowAddResource(
+                                  showAddResource === lesson.id
+                                    ? null
+                                    : lesson.id
+                                );
+                                setResourceType(null);
+                                setMenuOpenId(null);
+                              }}
+                              className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-3"
+                            >
+                              <FaPlus /> <span>Add Resource</span>
+                            </button>
+                          </li>
+                        )}
+                        {!readOnly && (
+                          <li>
+                            <button
+                              onClick={() => {
+                                requestDeleteLesson(lesson.id);
+                                setMenuOpenId(null);
+                              }}
+                              className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-3 text-red-600"
+                            >
+                              <FaTrash /> <span>Delete Lesson</span>
+                            </button>
+                          </li>
+                        )}
                       </ul>
                     </div>
                   )}
@@ -841,7 +845,6 @@ function LessonManagement({
               </div>
             )}
 
-
             {lesson.resources?.length > 0 && (
               <div className="px-4 sm:px-6 pb-4 border-t border-gray-200">
                 <h3 className="font-medium text-gray-900 my-4 flex items-center gap-2">
@@ -870,7 +873,10 @@ function LessonManagement({
                             )}
                             {resource.type === "quiz" && (
                               <span className="bg-green-100 text-green-800 px-2 py-0.5 rounded-full font-medium">
-                                {resource.form?.quizzes?.length || 0} Quizz{(resource.form?.quizzes?.length || 0) > 1 ? "es" : ""}
+                                {resource.form?.quizzes?.length || 0} Quizz
+                                {(resource.form?.quizzes?.length || 0) > 1
+                                  ? "es"
+                                  : ""}
                               </span>
                             )}
                           </div>
@@ -912,7 +918,7 @@ function LessonManagement({
                                               setOpenQuiz({
                                                 courseId: courseId,
                                                 lessonId: lesson.id!,
-                                                quizId: quizItem.id, 
+                                                quizId: quizItem.id,
                                                 formId: resource.form!.id,
                                               });
                                               setOpenResourceMenu(null);
@@ -920,9 +926,7 @@ function LessonManagement({
                                             className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-3"
                                           >
                                             <FaEdit />
-                                            <span>
-                                              Edit Quiz
-                                            </span>
+                                            <span>Edit Quiz</span>
                                           </button>
                                         )
                                       )

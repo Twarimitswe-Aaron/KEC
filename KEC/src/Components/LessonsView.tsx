@@ -11,6 +11,8 @@ import {
 import { X, Edit3, Trash2, Image, BookOpen, Users } from "lucide-react";
 import { toast } from "react-toastify";
 import { SearchContext } from "../SearchContext";
+import { useUser } from "../hooks/useUser";
+import { UserRoleContext } from "../UserRoleContext";
 
 interface CourseData {
   id: number;
@@ -132,6 +134,13 @@ const LessonsView = () => {
     error,
     refetch: refetchCourse,
   } = useGetCourseDataQuery(Number(id));
+
+  const { userData } = useUser();
+  const userRole = useContext(UserRoleContext);
+
+  const isOwner = courseData?.uploader?.id === userData?.id;
+  const isReadOnly = !isOwner && userRole !== "admin";
+
   const [addLesson, { isLoading: isCreatingLesson }] =
     useCreateLessonMutation();
   const [updateCourse, { isLoading: isUpdatingCourse }] =
@@ -558,55 +567,52 @@ const LessonsView = () => {
           </div>
                  
           <div className="flex gap-2 items-start">
-                     
-            <button
-              className="bg-gradient-to-r from-[#034153] to-[#004e64] text-white px-5 py-2.5 rounded-xl cursor-pointer hover:shadow-lg transition-all transform hover:-translate-y-0.5 font-semibold whitespace-nowrap"
-              onClick={() => updateModals({ showAddModule: true })}
-            >
-              + Add Lesson
-            </button>
-                     
-            <div className="relative">
-                         
+                     {/* Add Lesson Button - Only show if not read-only */}
+            {!isReadOnly && (
               <button
-                className="text-gray-700 cursor-pointer hover:bg-gray-200 px-3 py-2 rounded-xl transition-colors text-xl font-bold"
-                onClick={() =>
-                  updateModals({ showCourseOptions: !modals.showCourseOptions })
-                }
+                className="bg-gradient-to-r from-[#034153] to-[#004e64] text-white px-5 py-2.5 rounded-xl cursor-pointer hover:shadow-lg transition-all transform hover:-translate-y-0.5 font-semibold whitespace-nowrap"
+                onClick={() => updateModals({ showAddModule: true })}
               >
-                ⋮
+                + Add Lesson
               </button>
-                         
-              {modals.showCourseOptions && (
-                <>
-                                 
-                  <div
-                    className="fixed inset-0 z-10"
-                    onClick={() => updateModals({ showCourseOptions: false })}
-                  />
-                                 
-                  <div className="absolute right-0 mt-2 w-48 bg-white border border-[#034153]/20 shadow-xl rounded-xl py-1 z-20 overflow-hidden">
-                                     
-                    <button
-                      className="w-full text-left cursor-pointer px-4 py-2.5 hover:bg-gray-50 transition-colors flex items-center gap-2 text-gray-700 font-medium"
-                      onClick={handleEditCourse}
-                    >
-                      <Edit3 size={16} /> Edit Course
-                    </button>
-                                     
-                    <button
-                      className="w-full text-left px-4 py-2.5 cursor-pointer hover:bg-red-50 text-red-600 transition-colors flex items-center gap-2 font-medium"
-                      onClick={handleDeleteCourse}
-                    >
-                      <Trash2 size={16} /> Delete Course
-                    </button>
-                                   
-                  </div>
-                               
-                </>
-              )}
-                       
-            </div>
+            )}
+                     {/* Course Options Menu - Only show if not read-only */}
+            {!isReadOnly && (
+              <div className="relative">
+                <button
+                  className="text-gray-700 cursor-pointer hover:bg-gray-200 px-3 py-2 rounded-xl transition-colors text-xl font-bold"
+                  onClick={() =>
+                    updateModals({
+                      showCourseOptions: !modals.showCourseOptions,
+                    })
+                  }
+                >
+                  ⋮
+                </button>
+                {modals.showCourseOptions && (
+                  <>
+                    <div
+                      className="fixed inset-0 z-10"
+                      onClick={() => updateModals({ showCourseOptions: false })}
+                    />
+                    <div className="absolute right-0 mt-2 w-48 bg-white border border-[#034153]/20 shadow-xl rounded-xl py-1 z-20 overflow-hidden">
+                      <button
+                        className="w-full text-left cursor-pointer px-4 py-2.5 hover:bg-gray-50 transition-colors flex items-center gap-2 text-gray-700 font-medium"
+                        onClick={handleEditCourse}
+                      >
+                        <Edit3 size={16} /> Edit Course
+                      </button>
+                      <button
+                        className="w-full text-left px-4 py-2.5 cursor-pointer hover:bg-red-50 text-red-600 transition-colors flex items-center gap-2 font-medium"
+                        onClick={handleDeleteCourse}
+                      >
+                        <Trash2 size={16} /> Delete Course
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
                    
           </div>
                
@@ -944,7 +950,12 @@ const LessonsView = () => {
           </div>
         </div>
       )}
-            <ModuleManagement courseId={Number(id)} lessons={lessons || []} /> 
+      <ModuleManagement
+        courseId={Number(id)}
+        lessons={lessons || []}
+        readOnly={isReadOnly}
+      />
+       
     </div>
   );
 };

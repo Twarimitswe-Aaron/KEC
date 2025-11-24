@@ -2,11 +2,13 @@ import React, { useContext, useEffect, useState } from "react";
 import { CiUndo, CiRedo } from "react-icons/ci";
 import { HiOutlineAdjustmentsHorizontal } from "react-icons/hi2";
 import DashboardCard from "../Components/Dashboard/DashboardCard";
-import { data } from "../services/mockData";
 import { UserRoleContext } from "../UserRoleContext";
+import { useCoursesQuery } from "../state/api/courseApi";
 import { toast } from "react-toastify";
 import { CloudUpload, X, Image } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useUser } from "../hooks/useUser";
+import { Filter, ArrowUpNarrowWide } from "lucide-react";
 
 export interface Course {
   id?: number;
@@ -300,8 +302,15 @@ const ImageUploadArea: React.FC<ImageUploadAreaProps> = ({
 const CourseManagement = () => {
   const navigate = useNavigate();
   const userRole = useContext(UserRoleContext);
-  const [courses, setCourses] = useState<Course[]>([]);
+  const { userData } = useUser();
+  const { data: courses = [], isLoading } = useCoursesQuery();
   const [showModal, setShowModal] = useState(false);
+
+  // Filter and Sort State
+  const [filterCategory, setFilterCategory] = useState("all");
+  const [filterOwnership, setFilterOwnership] = useState("all"); // 'all', 'my_courses', 'others'
+  const [sortBy, setSortBy] = useState("newest");
+
   const [newCourse, setNewCourse] = useState<NewCourseFormData>({
     id: Date.now(),
     image_url: "",
@@ -310,13 +319,6 @@ const CourseManagement = () => {
     price: "",
     category: "",
   });
-
-  useEffect(() => {
-    const fetchData = async () => {
-      setCourses(data);
-    };
-    fetchData();
-  }, []);
 
   const handleCourseCreation = (courseId: number) => {
     console.log("Starting course:", courseId);
@@ -351,63 +353,151 @@ const CourseManagement = () => {
       toast.error("Please fill all the fields");
       return;
     }
-
-    const courseToAdd: Course = {
-      id: newCourse.id || Date.now(),
-      image_url: image_url,
-      title: title,
-      description: description,
-      price: price,
-      open: true,
-      enrolled: false,
-      no_lessons: "1",
-
-      uploader: {
-        id: 1, // Default admin ID, update as needed
-        email: "admin@example.com", // Default admin email, update as needed
-        name: "Admin",
-        avatar_url: "https://via.placeholder.com/40",
-      },
-    };
+    // Logic to add course would go here (likely a mutation)
     navigate("/create-modules");
   };
 
+  // Get unique categories for filter dropdown
+  const categories = Array.from(
+    new Set(courses.map((c: any) => c.category || "Uncategorized"))
+  );
+
+  const filteredCourses = courses
+    .filter((course: any) => {
+      // Category Filter
+      if (filterCategory !== "all" && course.category !== filterCategory)
+        return false;
+
+      // Ownership Filter
+      if (filterOwnership === "my_courses") {
+        return course.uploader.id === userData?.id;
+      }
+      if (filterOwnership === "others") {
+        return course.uploader.id !== userData?.id;
+      }
+
+      return true;
+    })
+    .sort((a: any, b: any) => {
+      if (sortBy === "newest") {
+        return (b.id || 0) - (a.id || 0);
+      }
+      if (sortBy === "oldest") {
+        return (a.id || 0) - (b.id || 0);
+      }
+      if (sortBy === "price_high") {
+        return (
+          parseFloat(b.price.replace(/[^0-9.-]+/g, "")) -
+          parseFloat(a.price.replace(/[^0-9.-]+/g, ""))
+        );
+      }
+      if (sortBy === "price_low") {
+        return (
+          parseFloat(a.price.replace(/[^0-9.-]+/g, "")) -
+          parseFloat(b.price.replace(/[^0-9.-]+/g, ""))
+        );
+      }
+      return 0;
+    });
+
   return (
     <div className="h-screen flex flex-col  ">
-      <div className="flex flex-col">
-        {userRole === "teacher" && (
-          <div>
-            <div className="z-10  flex place-items-start justify-between p-3 rounded-lg bg-white shadow-lg">
-              <span className="md:text-2xl text-lg font-normal text-gray-800">
-                Courses
-              </span>
-              <div className="flex items-center gap-2">
-                <button className="w-8 h-8 flex items-center justify-center cursor-pointer rounded-full border border-gray-300 text-gray-600 hover:bg-gray-100">
-                  <CiUndo />
-                </button>
-                <button className="w-8 h-8 flex items-center justify-center cursor-pointer rounded-full border border-gray-300 text-gray-600 hover:bg-gray-100">
-                  <CiRedo />
-                </button>
-                <button className="w-8 h-8 flex items-center justify-center cursor-pointer rounded-full border border-gray-300 text-gray-600 hover:bg-gray-100">
-                  <HiOutlineAdjustmentsHorizontal />
-                </button>
+      {/* Filter Bar */}
+      <div className="">
+        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/50 p-4">
+          <div className="flex flex-wrap gap-4 items-center justify-between">
+            <div className="flex items-center gap-4 flex-wrap">
+              {/* Category Filter */}
+              <div className="flex items-center space-x-2">
+                <Filter className="h-4 w-4 text-gray-500" />
+                <span className="text-sm font-medium text-gray-700">
+                  Category:
+                </span>
+                <select
+                  value={filterCategory}
+                  onChange={(e) => setFilterCategory(e.target.value)}
+                  className="border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-[#004e64] bg-transparent"
+                >
+                  <option value="all">All Categories</option>
+                  {categories.map((cat: any) => (
+                    <option key={cat} value={cat}>
+                      {cat}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Ownership Filter (Only for Teachers/Admins) */}
+              {(userRole === "teacher" || userRole === "admin") && (
+                <div className="flex items-center space-x-2">
+                  <span className="text-sm font-medium text-gray-700">
+                    Show:
+                  </span>
+                  <select
+                    value={filterOwnership}
+                    onChange={(e) => setFilterOwnership(e.target.value)}
+                    className="border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-[#004e64] bg-transparent"
+                  >
+                    <option value="all">All Courses</option>
+                    <option value="my_courses">My Courses</option>
+                    <option value="others">Others' Courses</option>
+                  </select>
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center gap-4">
+              <div className="flex items-center space-x-2">
+                <span className="text-sm font-medium text-gray-700">
+                  Sort by:
+                </span>
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className="border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-[#004e64] bg-transparent"
+                >
+                  <option value="newest">Newest First</option>
+                  <option value="oldest">Oldest First</option>
+                  <option value="price_high">Price: High to Low</option>
+                  <option value="price_low">Price: Low to High</option>
+                </select>
+              </div>
+              <button
+                onClick={() =>
+                  setSortBy((prev) => (prev === "newest" ? "oldest" : "newest"))
+                }
+                className="p-1 hover:bg-gray-100 rounded transition-colors"
+              >
+                <ArrowUpNarrowWide className="h-4 w-4 text-gray-600" />
+              </button>
+
+              {/* Add Button */}
+              {(userRole === "teacher" || userRole === "admin") && (
                 <button
                   onClick={() => setShowModal(true)}
-                  className="flex items-center gap-1 px-4 py-2 bg-gradient-to-r from-[#1a3c34] cursor-pointer to-[#2e856e] text-white rounded-full hover:from-[#2e856e] hover:to-[#1a3c34]"
+                  className="flex items-center gap-1 px-4 py-1.5 bg-gradient-to-r from-[#1a3c34] cursor-pointer to-[#2e856e] text-white rounded-full hover:from-[#2e856e] hover:to-[#1a3c34] text-sm shadow-sm hover:shadow-md transition-all"
                 >
                   <span>Add</span>
                   <span>+</span>
                 </button>
-              </div>
+              )}
             </div>
           </div>
-        )}
+        </div>
       </div>
+
       <div className="scroll-hide scroll-y-auto overflow-y-auto h-full ">
-        <DashboardCard
-          courses={courses}
-          onCourseAction={handleCourseCreation}
-        />
+        {isLoading ? (
+          <div className="flex items-center justify-center h-full">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#004e64]"></div>
+          </div>
+        ) : (
+          <DashboardCard
+            courses={filteredCourses}
+            onCourseAction={handleCourseCreation}
+            currentUserId={userData?.id}
+          />
+        )}
       </div>
 
       {showModal && (

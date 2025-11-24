@@ -34,11 +34,13 @@ if (typeof document !== "undefined") {
 interface DashboardCardProps {
   courses: Course[];
   onCourseAction: (id: number) => void;
+  currentUserId?: number;
 }
 
 const DashboardCard: React.FC<DashboardCardProps> = ({
   courses,
   onCourseAction,
+  currentUserId,
 }) => {
   const navigate = useNavigate();
 
@@ -47,7 +49,9 @@ const DashboardCard: React.FC<DashboardCardProps> = ({
   const [enrollCourse, { isLoading: isEnrolling }] = useEnrollCourseMutation();
 
   const handleViewDetails = (course: Course) => {
-    navigate(`/course-creation/course/${course.id}`);
+    if (userRole === "admin" || userRole === "teacher") {
+      navigate(`/course-creation/course/${course.id}`);
+    }
   };
   const handleEnrollingCourse = async () => {
     if (!enrollingCourse?.id) return;

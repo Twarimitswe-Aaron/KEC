@@ -2,7 +2,21 @@
 import { useState, useEffect } from "react";
 import { toast } from "react-toastify";
 import QuestionList from "./QuizEditorComponents/QuestionList";
-import { FaCheckCircle, FaCheckSquare, FaEdit, FaQuestionCircle, FaTimes, FaCheck, FaPlus, FaRegCircle, FaRegSquare, FaArrowUp, FaArrowDown, FaTrashAlt, FaListUl } from "react-icons/fa";
+import {
+  FaCheckCircle,
+  FaCheckSquare,
+  FaEdit,
+  FaQuestionCircle,
+  FaTimes,
+  FaCheck,
+  FaPlus,
+  FaRegCircle,
+  FaRegSquare,
+  FaArrowUp,
+  FaArrowDown,
+  FaTrashAlt,
+  FaListUl,
+} from "react-icons/fa";
 import { QUESTION_TYPES, getQuestionType } from "./questionTypes";
 import {
   X,
@@ -22,11 +36,11 @@ import { FaTag } from "react-icons/fa6";
 interface Question extends QuestionProp {
   imageFile?: File;
 }
-interface QuizProps extends QuizIdentifiers  {
-}
+interface QuizProps extends QuizIdentifiers {}
 interface QuizEditorProps {
   resource: QuizProps;
   onClose: () => void;
+  readOnly?: boolean;
 }
 
 const INITIAL_NEW_QUESTION: Partial<Question> = {
@@ -41,24 +55,28 @@ const INITIAL_NEW_QUESTION: Partial<Question> = {
 
 const getQuestionIcon = (type: string) => {
   switch (type) {
-    case 'multiple':
+    case "multiple":
       return FaCheckSquare;
-    case 'single':
+    case "single":
       return FaRegCircle;
-    case 'truefalse':
+    case "truefalse":
       return FaCheckCircle;
-    case 'shortanswer':
+    case "shortanswer":
       return FaEdit;
-    case 'labeling':
+    case "labeling":
       return FaTag;
-    case 'matching':
+    case "matching":
       return FaListUl;
     default:
       return FaQuestionCircle;
   }
 };
 
-const QuizEditor = ({ onClose, resource }: QuizEditorProps) => {
+const QuizEditor = ({
+  onClose,
+  resource,
+  readOnly = false,
+}: QuizEditorProps) => {
   const {
     data: quizData,
     isLoading,
@@ -95,7 +113,7 @@ const QuizEditor = ({ onClose, resource }: QuizEditorProps) => {
           type: q.type,
           question: q.question,
           description: q.description,
-          options:q.options,
+          options: q.options,
           correctAnswers: q.correctAnswers,
           correctAnswer: q.correctAnswer,
           required: q.required,
@@ -107,7 +125,7 @@ const QuizEditor = ({ onClose, resource }: QuizEditorProps) => {
 
       setQuizSettings(
         (quizData.settings as QuizSettings) || {
-          title: quizData.name ,
+          title: quizData.name,
           description: quizData.description,
           showResults: quizData.settings?.showResults,
           allowRetakes: quizData.settings?.allowRetakes,
@@ -121,7 +139,7 @@ const QuizEditor = ({ onClose, resource }: QuizEditorProps) => {
 
   const updateQuestion = (questionId: number, updates: Partial<Question>) => {
     setQuestions((prev) => {
-      const newQuestions = prev.map((q) => 
+      const newQuestions = prev.map((q) =>
         q.id === questionId ? { ...q, ...updates } : q
       );
       return newQuestions;
@@ -176,10 +194,9 @@ const QuizEditor = ({ onClose, resource }: QuizEditorProps) => {
           if (q.type === "multiple" || q.type === "truefalse") {
             return {
               ...q,
-              correctAnswers:
-                q.correctAnswers?.includes(optionIndex) 
-                  ? q.correctAnswers.filter(i => i !== optionIndex) 
-                  : [...(q.correctAnswers || []), optionIndex],
+              correctAnswers: q.correctAnswers?.includes(optionIndex)
+                ? q.correctAnswers.filter((i) => i !== optionIndex)
+                : [...(q.correctAnswers || []), optionIndex],
             };
           } else if (q.type === "checkbox") {
             const currentAnswers = q.correctAnswers || [];
@@ -208,8 +225,14 @@ const QuizEditor = ({ onClose, resource }: QuizEditorProps) => {
     }
 
     // Check for at least one correct answer for question types that require it
-    if (newQuestion.type === 'multiple' || newQuestion.type === 'checkbox' || newQuestion.type === 'truefalse') {
-      const hasCorrectAnswer = Array.isArray(newQuestion.correctAnswers) && newQuestion.correctAnswers.length > 0;
+    if (
+      newQuestion.type === "multiple" ||
+      newQuestion.type === "checkbox" ||
+      newQuestion.type === "truefalse"
+    ) {
+      const hasCorrectAnswer =
+        Array.isArray(newQuestion.correctAnswers) &&
+        newQuestion.correctAnswers.length > 0;
       if (!hasCorrectAnswer) {
         toast.error("Please select at least one correct answer");
         return;
@@ -217,13 +240,20 @@ const QuizEditor = ({ onClose, resource }: QuizEditorProps) => {
     }
 
     // For labeling questions, ensure there's at least one label-answer pair
-    if (newQuestion.type === 'labeling' && (!newQuestion.correctAnswers || newQuestion.correctAnswers.length === 0)) {
+    if (
+      newQuestion.type === "labeling" &&
+      (!newQuestion.correctAnswers || newQuestion.correctAnswers.length === 0)
+    ) {
       toast.error("Please add at least one label-answer pair");
       return;
     }
 
     // For other question types with options, ensure there's at least one option
-    if (newQuestion.type !== 'labeling' && (!newQuestion.options || newQuestion.options.filter((opt: string) => opt.trim()).length === 0)) {
+    if (
+      newQuestion.type !== "labeling" &&
+      (!newQuestion.options ||
+        newQuestion.options.filter((opt: string) => opt.trim()).length === 0)
+    ) {
       toast.error("Please add at least one answer option");
       return;
     }
@@ -232,26 +262,31 @@ const QuizEditor = ({ onClose, resource }: QuizEditorProps) => {
       id: -Math.abs(Date.now()),
       type: newQuestion.type!,
       question: newQuestion.question.trim(),
-      required: newQuestion.required !== undefined ? newQuestion.required : true,
+      required:
+        newQuestion.required !== undefined ? newQuestion.required : true,
       points: newQuestion.points || 1,
       quizId: resource.quizId!,
       order: questions.length,
     };
 
     // Handle different question types
-    if (newQuestion.type === 'labeling') {
+    if (newQuestion.type === "labeling") {
       // Store labels as options for consistent API format
-      question.options = (newQuestion.correctAnswers || []).map(la => 
-        typeof la === 'object' && la && 'label' in la ? (la as any).label : String(la)
+      question.options = (newQuestion.correctAnswers || []).map((la) =>
+        typeof la === "object" && la && "label" in la
+          ? (la as any).label
+          : String(la)
       );
-      
+
       // Store correctAnswers directly (already contains label-answer pairs)
       question.correctAnswers = [...(newQuestion.correctAnswers || [])];
-      
+
       // Handle image
       question.imageFile = newQuestion.imageFile;
     } else {
-      question.options = newQuestion.options?.filter((opt: string) => opt.trim());
+      question.options = newQuestion.options?.filter((opt: string) =>
+        opt.trim()
+      );
       question.correctAnswers = newQuestion.correctAnswers || [];
     }
 
@@ -294,7 +329,8 @@ const QuizEditor = ({ onClose, resource }: QuizEditorProps) => {
       if (prev.type === "multiple" || prev.type === "truefalse") {
         return {
           ...prev,
-          correctAnswers: prev.correctAnswers?.[0] === optionIndex ? [] : [optionIndex],
+          correctAnswers:
+            prev.correctAnswers?.[0] === optionIndex ? [] : [optionIndex],
         };
       } else if (prev.type === "checkbox") {
         const current = prev.correctAnswers || [];
@@ -325,11 +361,11 @@ const QuizEditor = ({ onClose, resource }: QuizEditorProps) => {
       const updated = [...prev];
       // Swap the questions
       [updated[index], updated[newIndex]] = [updated[newIndex], updated[index]];
-      
+
       // Update the order property for all questions
       return updated.map((q, i) => ({
         ...q,
-        order: i
+        order: i,
       }));
     });
     setHasChanges(true);
@@ -348,7 +384,9 @@ const QuizEditor = ({ onClose, resource }: QuizEditorProps) => {
     const newLabelAnswers = [...question.correctAnswers];
     const currentItem = newLabelAnswers[index];
     newLabelAnswers[index] = {
-      ...(typeof currentItem === 'object' && currentItem ? currentItem as any : {}),
+      ...(typeof currentItem === "object" && currentItem
+        ? (currentItem as any)
+        : {}),
       [field]: field === "label" ? value.toUpperCase() : value,
     } as any;
     updateQuestion(questionId, { correctAnswers: newLabelAnswers });
@@ -361,13 +399,17 @@ const QuizEditor = ({ onClose, resource }: QuizEditorProps) => {
     const currentLabels = question.correctAnswers || [];
     const newLabel = String.fromCharCode(65 + currentLabels.length);
     updateQuestion(questionId, {
-      correctAnswers: [...currentLabels, { label: newLabel, answer: "" }] as any,
+      correctAnswers: [
+        ...currentLabels,
+        { label: newLabel, answer: "" },
+      ] as any,
     });
   };
 
   const removeLabelKey = (questionId: number, index: number) => {
     const question = questions.find((q) => q.id === questionId);
-    if (!question?.correctAnswers || question.correctAnswers.length <= 1) return;
+    if (!question?.correctAnswers || question.correctAnswers.length <= 1)
+      return;
 
     updateQuestion(questionId, {
       correctAnswers: question.correctAnswers.filter((_, i) => i !== index),
@@ -380,48 +422,51 @@ const QuizEditor = ({ onClose, resource }: QuizEditorProps) => {
 
     try {
       const quizTitle = quizSettings.title || quizData.name;
-      
 
-      const updatedQuestions = await Promise.all(questions.map(async (q, index) => {
-        // Process options to ensure they're strings and remove empty ones
-        const options = (q.options || [])
-          .map(opt => (typeof opt === 'string' ? opt.trim() : String(opt)))
-          .filter(opt => opt);
-        
-        // Process correctAnswers based on question type
-        let correctAnswers = [...(q.correctAnswers || [])];
-        
-        // For multiple/checkbox questions, ensure correctAnswers are numbers (indices)
-        if (q.type === 'multiple' || q.type === 'checkbox') {
-          correctAnswers = correctAnswers
-            .map(ca => (typeof ca === 'string' ? parseInt(ca, 10) : ca))
-            .filter(ca => !isNaN(ca as number) && (ca as number) < options.length);
-        }
-        
-        const questionData: any = {
-          id: q.id,
-          type: q.type,
-          question: q.question.trim(),
-          description: q.description?.trim() || '',
-          required: q.required !== undefined ? q.required : true,
-          points: q.points || 1,
-          order: q.order !== undefined ? q.order : index,
-          options,
-          correctAnswers, // For labeling questions, this contains the label answers
-        };
+      const updatedQuestions = await Promise.all(
+        questions.map(async (q, index) => {
+          // Process options to ensure they're strings and remove empty ones
+          const options = (q.options || [])
+            .map((opt) => (typeof opt === "string" ? opt.trim() : String(opt)))
+            .filter((opt) => opt);
 
-        // Include existing imageUrl if no new image file
-        if (q.imageUrl && !q.imageFile) {
-          questionData.imageUrl = q.imageUrl;
-        }
+          // Process correctAnswers based on question type
+          let correctAnswers = [...(q.correctAnswers || [])];
 
-        // Include imageFile for FormData processing if it exists
-        if (q.imageFile) {
-          questionData.imageFile = q.imageFile;
-        }
+          // For multiple/checkbox questions, ensure correctAnswers are numbers (indices)
+          if (q.type === "multiple" || q.type === "checkbox") {
+            correctAnswers = correctAnswers
+              .map((ca) => (typeof ca === "string" ? parseInt(ca, 10) : ca))
+              .filter(
+                (ca) => !isNaN(ca as number) && (ca as number) < options.length
+              );
+          }
 
-        return questionData;
-      }));
+          const questionData: any = {
+            id: q.id,
+            type: q.type,
+            question: q.question.trim(),
+            description: q.description?.trim() || "",
+            required: q.required !== undefined ? q.required : true,
+            points: q.points || 1,
+            order: q.order !== undefined ? q.order : index,
+            options,
+            correctAnswers, // For labeling questions, this contains the label answers
+          };
+
+          // Include existing imageUrl if no new image file
+          if (q.imageUrl && !q.imageFile) {
+            questionData.imageUrl = q.imageUrl;
+          }
+
+          // Include imageFile for FormData processing if it exists
+          if (q.imageFile) {
+            questionData.imageFile = q.imageFile;
+          }
+
+          return questionData;
+        })
+      );
 
       const updateData = {
         courseId: resource.courseId,
@@ -429,12 +474,12 @@ const QuizEditor = ({ onClose, resource }: QuizEditorProps) => {
         quizId: resource.quizId,
         formId: resource.formId,
         name: quizTitle.trim(),
-        description: quizSettings.description?.trim() || '',
-        questions: updatedQuestions.map(question => ({
+        description: quizSettings.description?.trim() || "",
+        questions: updatedQuestions.map((question) => ({
           ...question,
-          quizId: resource.quizId
+          quizId: resource.quizId,
         })),
-        settings: quizSettings
+        settings: quizSettings,
       };
 
       // Call the updateQuiz mutation
@@ -443,11 +488,13 @@ const QuizEditor = ({ onClose, resource }: QuizEditorProps) => {
         data: updateData,
       }).unwrap();
 
-      toast.success(message || 'Quiz updated successfully');
+      toast.success(message || "Quiz updated successfully");
       setHasChanges(false);
       await refetch();
     } catch (error: any) {
-      toast.error(error?.data?.message || error?.message || "Failed to save quiz");
+      toast.error(
+        error?.data?.message || error?.message || "Failed to save quiz"
+      );
     } finally {
       setIsSaving(false);
     }
@@ -468,12 +515,14 @@ const QuizEditor = ({ onClose, resource }: QuizEditorProps) => {
   };
 
   useEffect(() => {
-     if (newQuestion.type === "labeling") {
+    if (newQuestion.type === "labeling") {
       setNewQuestion((prev) => ({
         ...prev,
         options: undefined,
         correctAnswer: undefined,
-        correctAnswers: prev.correctAnswers?.length ? prev.correctAnswers : [{ label: "A", answer: "" }] as any,
+        correctAnswers: prev.correctAnswers?.length
+          ? prev.correctAnswers
+          : ([{ label: "A", answer: "" }] as any),
       }));
     } else if (newQuestion.type === "truefalse") {
       setNewQuestion((prev) => ({
@@ -497,12 +546,14 @@ const QuizEditor = ({ onClose, resource }: QuizEditorProps) => {
 
   return (
     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex">
-      <Sidebar
-        showSidebar={showSidebar}
-        onCloseSidebar={() => setShowSidebar(false)}
-        quizSettings={quizSettings}
-        onSettingsChange={updateSettings}
-      />
+      {!readOnly && (
+        <Sidebar
+          showSidebar={showSidebar}
+          onCloseSidebar={() => setShowSidebar(false)}
+          quizSettings={quizSettings}
+          onSettingsChange={updateSettings}
+        />
+      )}
 
       <div className="flex-1 bg-gray-50 flex flex-col overflow-hidden">
         <Header
@@ -514,6 +565,7 @@ const QuizEditor = ({ onClose, resource }: QuizEditorProps) => {
           isSaving={isUpdating}
           onManualSave={saveQuiz}
           onClose={onClose}
+          readOnly={readOnly}
         />
 
         <QuestionList
@@ -539,12 +591,12 @@ const QuizEditor = ({ onClose, resource }: QuizEditorProps) => {
           courseId={resource.courseId}
           lessonId={resource.lessonId}
           quizId={resource.quizId!}
+          readOnly={readOnly}
         />
+      </div>
     </div>
-  </div>
-);
+  );
 };
-
 
 const LoadingOverlay = ({ message }: { message: string }) => (
   <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center">
@@ -747,6 +799,7 @@ interface HeaderProps {
   isSaving: boolean;
   onManualSave: () => Promise<void>;
   onClose: () => void;
+  readOnly?: boolean;
 }
 
 const Header = ({
@@ -758,16 +811,19 @@ const Header = ({
   isSaving,
   onManualSave,
   onClose,
+  readOnly,
 }: HeaderProps) => (
   <div className="p-4 sm:p-5 bg-white border-b border-gray-200 shadow-sm flex items-center justify-between flex-wrap gap-3 sticky top-0 z-40">
     <div className="flex items-center gap-3">
-      <button
-        onClick={onToggleSidebar}
-        className="p-2  text-[#034153] hover:bg-gray-100 lg:hidden border border-gray-200 rounded-lg hover:border-gray-300 hover:shadow-sm transition-all"
-        title="Open Settings"
-      >
-        <Menu size={20} />
-      </button>
+      {!readOnly && (
+        <button
+          onClick={onToggleSidebar}
+          className="p-2  text-[#034153] hover:bg-gray-100 lg:hidden border border-gray-200 rounded-lg hover:border-gray-300 hover:shadow-sm transition-all"
+          title="Open Settings"
+        >
+          <Menu size={20} />
+        </button>
+      )}
       <h1 className="text-xl sm:text-2xl font-bold text-gray-900 truncate">
         {quizData?.name ? `Editing: ${quizData.name}` : "New Quiz"}
       </h1>
@@ -782,18 +838,20 @@ const Header = ({
       </span>
     </div>
     <div className="flex items-center gap-3">
-      <button
-        onClick={onManualSave}
-        disabled={isSaveDisabled}
-        className={`px-4 py-2 cursor-pointer rounded-lg font-semibold transition-colors flex items-center gap-2 border border-gray-200  hover:border-gray-300 hover:shadow-sm ${
-          isSaveDisabled
-            ? "bg-gray-300 text-gray-600 cursor-not-allowed"
-            : "bg-[#034153] text-white "
-        }`}
-      >
-        <FaCheck size={16} />
-        {isSaving ? "Saving..." : "Save Quiz"}
-      </button>
+      {!readOnly && (
+        <button
+          onClick={onManualSave}
+          disabled={isSaveDisabled}
+          className={`px-4 py-2 cursor-pointer rounded-lg font-semibold transition-colors flex items-center gap-2 border border-gray-200  hover:border-gray-300 hover:shadow-sm ${
+            isSaveDisabled
+              ? "bg-gray-300 text-gray-600 cursor-not-allowed"
+              : "bg-[#034153] text-white "
+          }`}
+        >
+          <FaCheck size={16} />
+          {isSaving ? "Saving..." : "Save Quiz"}
+        </button>
+      )}
       <button
         onClick={onClose}
         className="p-2  text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition-colors border border-gray-200 rounded-lg hover:border-gray-300 hover:shadow-sm"
@@ -804,15 +862,5 @@ const Header = ({
     </div>
   </div>
 );
-
-
-
-
-
-
-
-
-
-
 
 export default QuizEditor;

@@ -348,3 +348,14 @@ https://app.base44.com/apps/6922a8a5c8314e70c654132c/editor/preview/MathSolver
 https://app.base44.com/apps/6922a8b5b07db183e99519e3/editor/preview/Homepage
 https://app.base44.com/apps/6922a8de21f635e835452ab3/editor/preview/Home
 https://app.base44.com/apps/6922a8f6b2d177a2de422936/editor/preview/Home
+https://app.base44.com/apps/69240f1f5b617d0eefb7bacb/editor/preview/Home
+https://app.base44.com/apps/692420e322bce4f7d46ff6bf/editor/preview/Home
+https://lightswitch-landing-page.lovable.app/
+https://wanderlust-connect-tribe.lovable.app/login
+https://naija-connect-platform.lovable.app/
+https://www.learnwitheri.com/
+https://sarasota.tech/
+https://candidatematch.replit.app/
+https://colabjetpack.com/
+https://salesgpt.mx/
+https://v0.app/templates/zdiN8dHwaaT

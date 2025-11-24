@@ -22,7 +22,6 @@ import { diskStorage } from 'multer';
 import { ConfigService } from '@nestjs/config';
 import { ConfirmCourseDto } from './dto/confirm-course.dto';
 
-
 @UseGuards(AuthGuard, RolesGuard)
 @Roles('admin', 'teacher')
 @Controller('course')
@@ -32,11 +31,9 @@ export class CourseController {
     private readonly configService: ConfigService,
   ) {}
 
-  @Roles('admin')
   @Get('course/:id')
   getCourseByIdByAdmin(@Param('id') id: string) {
-
-    const newId=Number(id);
+    const newId = Number(id);
     return this.courseService.getCourseById(newId);
   }
 
@@ -83,7 +80,6 @@ export class CourseController {
     return this.courseService.findAllUploaded();
   }
 
- 
   @Get('/get-course-enrollments')
   getCourseEnrollments() {
     return this.courseService.getCoursesWithStudents();
@@ -95,9 +91,8 @@ export class CourseController {
     return this.courseService.findAllUnconfirmed();
   }
 
-
   @Put('/update-course')
-   @UseInterceptors(
+  @UseInterceptors(
     FileInterceptor('course_avatar', {
       storage: diskStorage({
         destination: './uploads/course_url',

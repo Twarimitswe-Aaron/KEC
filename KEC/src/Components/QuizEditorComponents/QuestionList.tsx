@@ -88,6 +88,7 @@ interface QuestionListProps {
   courseId: number;
   lessonId: number;
   quizId: number;
+  readOnly?: boolean;
 }
 
 const QuestionList = ({
@@ -109,7 +110,9 @@ const QuestionList = ({
   onNewQuestionUpdateOption,
   onNewQuestionRemoveOption,
   onNewQuestionToggleCorrectAnswer,
+
   isNewOptionCorrect,
+  readOnly = false,
 }: QuestionListProps) => {
   const [editingStates, setEditingStates] = useState<{ [key: number]: any }>(
     {}
@@ -144,7 +147,7 @@ const QuestionList = ({
       ...prev,
       [questionId]: updatedQuestion,
     }));
-    
+
     // Also update the main question state immediately for better UX
     updateQuestion(questionId, updates);
   };
@@ -158,7 +161,11 @@ const QuestionList = ({
     }
   };
 
-  const handleEditModeUpdateOption = (questionId: number, optionIndex: number, value: string) => {
+  const handleEditModeUpdateOption = (
+    questionId: number,
+    optionIndex: number,
+    value: string
+  ) => {
     const currentEditState = editingStates[questionId];
     if (currentEditState && currentEditState.options) {
       const updatedOptions = [...currentEditState.options];
@@ -167,35 +174,60 @@ const QuestionList = ({
     }
   };
 
-  const handleEditModeRemoveOption = (questionId: number, optionIndex: number) => {
+  const handleEditModeRemoveOption = (
+    questionId: number,
+    optionIndex: number
+  ) => {
     const currentEditState = editingStates[questionId];
-    if (currentEditState && currentEditState.options && currentEditState.options.length > 1) {
-      const updatedOptions = currentEditState.options.filter((_: any, i: any) => i !== optionIndex);
-      const updatedCorrectAnswers = currentEditState.correctAnswers?.filter((ca: any) => 
-        typeof ca === 'number' ? ca !== optionIndex && ca < updatedOptions.length : true
-      ).map((ca: any) => typeof ca === 'number' && ca > optionIndex ? ca - 1 : ca) || [];
-      
-      handleQuestionUpdate(questionId, { 
+    if (
+      currentEditState &&
+      currentEditState.options &&
+      currentEditState.options.length > 1
+    ) {
+      const updatedOptions = currentEditState.options.filter(
+        (_: any, i: any) => i !== optionIndex
+      );
+      const updatedCorrectAnswers =
+        currentEditState.correctAnswers
+          ?.filter((ca: any) =>
+            typeof ca === "number"
+              ? ca !== optionIndex && ca < updatedOptions.length
+              : true
+          )
+          .map((ca: any) =>
+            typeof ca === "number" && ca > optionIndex ? ca - 1 : ca
+          ) || [];
+
+      handleQuestionUpdate(questionId, {
         options: updatedOptions,
-        correctAnswers: updatedCorrectAnswers
+        correctAnswers: updatedCorrectAnswers,
       });
     }
   };
 
-  const handleEditModeToggleCorrectAnswer = (questionId: number, optionIndex: number) => {
+  const handleEditModeToggleCorrectAnswer = (
+    questionId: number,
+    optionIndex: number
+  ) => {
     const currentEditState = editingStates[questionId];
     if (currentEditState) {
       const currentAnswers = currentEditState.correctAnswers || [];
       let updatedAnswers;
-      
-      if (currentEditState.type === 'multiple' || currentEditState.type === 'truefalse' || currentEditState.type === 'single') {
-        updatedAnswers = currentAnswers.includes(optionIndex) ? [] : [optionIndex];
+
+      if (
+        currentEditState.type === "multiple" ||
+        currentEditState.type === "truefalse" ||
+        currentEditState.type === "single"
+      ) {
+        updatedAnswers = currentAnswers.includes(optionIndex)
+          ? []
+          : [optionIndex];
       } else {
         updatedAnswers = currentAnswers.includes(optionIndex)
           ? currentAnswers.filter((ca: any) => ca !== optionIndex)
           : [...currentAnswers, optionIndex];
       }
-      
+
       handleQuestionUpdate(questionId, { correctAnswers: updatedAnswers });
     }
   };
@@ -214,13 +246,17 @@ const QuestionList = ({
                 <div className="flex justify-between items-center mb-6">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center">
-                      <span className="text-white font-semibold text-sm">{index + 1}</span>
+                      <span className="text-white font-semibold text-sm">
+                        {index + 1}
+                      </span>
                     </div>
                     <div>
                       <h3 className="text-lg font-semibold text-blue-800">
                         Editing Question {index + 1}
                       </h3>
-                      <p className="text-sm text-blue-600">Make your changes and click Save to update the question</p>
+                      <p className="text-sm text-blue-600">
+                        Make your changes and click Save to update the question
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -240,7 +276,9 @@ const QuestionList = ({
                   onAddLabelKey={() => {}}
                   onRemoveLabelKey={() => {}}
                   isOptionCorrect={(questionId, optionIndex) => {
-                    return question.correctAnswers?.includes(optionIndex) || false;
+                    return (
+                      question.correctAnswers?.includes(optionIndex) || false
+                    );
                   }}
                 />
               </div>
@@ -254,24 +292,28 @@ const QuestionList = ({
                 onMove={moveQuestion}
                 isOptionCorrect={isOptionCorrect}
                 getQuestionIcon={getQuestionIcon}
+                readOnly={readOnly}
               />
             )}
           </div>
         ))}
       </div>
 
-      <hr className="my-8 border-t border-gray-200" />
-
-      <NewQuestionForm
-        newQuestion={newQuestion}
-        onNewQuestionChange={onNewQuestionChange}
-        onAddQuestion={onAddQuestion}
-        onNewQuestionAddOption={onNewQuestionAddOption}
-        onNewQuestionUpdateOption={onNewQuestionUpdateOption}
-        onNewQuestionRemoveOption={onNewQuestionRemoveOption}
-        onNewQuestionToggleCorrectAnswer={onNewQuestionToggleCorrectAnswer}
-        isNewOptionCorrect={isNewOptionCorrect}
-      />
+      {!readOnly && (
+        <>
+          <hr className="my-8 border-t border-gray-200" />
+          <NewQuestionForm
+            newQuestion={newQuestion}
+            onNewQuestionChange={onNewQuestionChange}
+            onAddQuestion={onAddQuestion}
+            onNewQuestionAddOption={onNewQuestionAddOption}
+            onNewQuestionUpdateOption={onNewQuestionUpdateOption}
+            onNewQuestionRemoveOption={onNewQuestionRemoveOption}
+            onNewQuestionToggleCorrectAnswer={onNewQuestionToggleCorrectAnswer}
+            isNewOptionCorrect={isNewOptionCorrect}
+          />
+        </>
+      )}
     </div>
   );
 };
@@ -284,7 +326,9 @@ const QuestionCard = ({
   onDelete,
   onMove,
   isOptionCorrect,
+
   getQuestionIcon,
+  readOnly,
 }: any) => {
   const Icon = getQuestionIcon(question.type);
 
@@ -313,7 +357,10 @@ const QuestionCard = ({
       <div className="p-4">
         <div className="flex items-start justify-between">
           <div className="flex items-start gap-3">
-            {React.createElement(Icon, { className: "h-5 w-5 text-[#034153] mt-0.5 flex-shrink-0 inline mr-1" })}
+            {React.createElement(Icon, {
+              className:
+                "h-5 w-5 text-[#034153] mt-0.5 flex-shrink-0 inline mr-1",
+            })}
             <div className="flex-1">
               <h3 className="font-medium text-gray-900">
                 {question.question || `Question ${index + 1}`}
@@ -336,44 +383,51 @@ const QuestionCard = ({
             </div>
           </div>
           <div className="flex items-center gap-1">
-            <button
-              onClick={handleMoveUp}
-              disabled={index === 0}
-              className={`p-1.5 rounded-md ${
-                index === 0
-                  ? "text-gray-200 cursor-not-allowed"
-                  : "text-gray-500 hover:bg-gray-100 hover:text-[#034153]"
-              }`}
-              title="Move up"
-            >
-              <FaArrowUp size={14} />
-            </button>
-            <button
-              onClick={handleMoveDown}
-              disabled={index === questions.length - 1}
-              className={`p-1.5 rounded-md ${
-                index === questions.length - 1
-                  ? "text-gray-200 cursor-not-allowed"
-                  : "text-gray-500 hover:bg-gray-100 hover:text-[#034153]"
-              }`}
-              title="Move down"
-            >
-              <FaArrowDown size={14} />
-            </button>
-            <button
-              onClick={handleEdit}
-              className="p-1.5 text-gray-500 hover:bg-blue-50 hover:text-blue-600 rounded-md transition-colors"
-              title="Edit question"
-            >
-              <FaEdit size={14} />
-            </button>
-            <button
-              onClick={handleDelete}
-              className="p-1.5 text-gray-500 hover:bg-red-50 hover:text-red-600 rounded-md transition-colors group"
-              title="Delete question"
-            >
-              <FaTrashAlt size={14} className="group-hover:scale-110 transition-transform" />
-            </button>
+            {!readOnly && (
+              <>
+                <button
+                  onClick={handleMoveUp}
+                  disabled={index === 0}
+                  className={`p-1.5 rounded-md ${
+                    index === 0
+                      ? "text-gray-200 cursor-not-allowed"
+                      : "text-gray-500 hover:bg-gray-100 hover:text-[#034153]"
+                  }`}
+                  title="Move up"
+                >
+                  <FaArrowUp size={14} />
+                </button>
+                <button
+                  onClick={handleMoveDown}
+                  disabled={index === questions.length - 1}
+                  className={`p-1.5 rounded-md ${
+                    index === questions.length - 1
+                      ? "text-gray-200 cursor-not-allowed"
+                      : "text-gray-500 hover:bg-gray-100 hover:text-[#034153]"
+                  }`}
+                  title="Move down"
+                >
+                  <FaArrowDown size={14} />
+                </button>
+                <button
+                  onClick={handleEdit}
+                  className="p-1.5 text-gray-500 hover:bg-blue-50 hover:text-blue-600 rounded-md transition-colors"
+                  title="Edit question"
+                >
+                  <FaEdit size={14} />
+                </button>
+                <button
+                  onClick={handleDelete}
+                  className="p-1.5 text-gray-500 hover:bg-red-50 hover:text-red-600 rounded-md transition-colors group"
+                  title="Delete question"
+                >
+                  <FaTrashAlt
+                    size={14}
+                    className="group-hover:scale-110 transition-transform"
+                  />
+                </button>
+              </>
+            )}
           </div>
         </div>
 
@@ -397,7 +451,12 @@ const QuestionViewMode = ({ question, isOptionCorrect }: any) => (
         <h4 className="text-sm font-medium text-gray-700 mb-2">Answer Key:</h4>
         {(question.imageUrl || question.imageFile) && (
           <img
-            src={question.imageUrl || (question.imageFile ? URL.createObjectURL(question.imageFile) : '')}
+            src={
+              question.imageUrl ||
+              (question.imageFile
+                ? URL.createObjectURL(question.imageFile)
+                : "")
+            }
             alt="Labeled Diagram"
             className="max-w-full h-auto max-h-32 object-contain mb-3 border border-gray-200 rounded-lg"
           />
@@ -474,15 +533,14 @@ const NewQuestionForm = ({
 }: NewQuestionFormProps) => {
   const [errors, setErrors] = useState<{ text?: string; options?: string }>({});
 
-
-  if (newQuestion.type === 'labeling') {
+  if (newQuestion.type === "labeling") {
     return (
       <div>
-        <NewLabelingQuestion 
-          newQuestion={newQuestion} 
-          onNewQuestionChange={onNewQuestionChange} 
+        <NewLabelingQuestion
+          newQuestion={newQuestion}
+          onNewQuestionChange={onNewQuestionChange}
         />
-        
+
         {/* Add button for labeling questions */}
         <div className="mt-6 flex justify-end">
           <button
@@ -492,17 +550,20 @@ const NewQuestionForm = ({
                 toast.error("Please enter question text");
                 return;
               }
-              
-              if (!newQuestion.correctAnswers || newQuestion.correctAnswers.length === 0) {
+
+              if (
+                !newQuestion.correctAnswers ||
+                newQuestion.correctAnswers.length === 0
+              ) {
                 toast.error("Please add at least one label-answer pair");
                 return;
               }
-              
+
               if (!newQuestion.imageFile && !newQuestion.imageUrl) {
                 toast.error("Please upload an image for the labeling question");
                 return;
               }
-              
+
               onAddQuestion();
             }}
             className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-[#034153] hover:bg-[#023141] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#034153] disabled:opacity-50 disabled:cursor-not-allowed"
@@ -510,7 +571,6 @@ const NewQuestionForm = ({
             Add Question
           </button>
         </div>
-        
       </div>
     );
   }
@@ -523,26 +583,31 @@ const NewQuestionForm = ({
       newErrors.text = "Please enter question name";
     }
 
-    const isOptionBased = newQuestion.type !== 'labeling';
+    const isOptionBased = newQuestion.type !== "labeling";
     if (isOptionBased) {
-        if (newQuestion.type === 'truefalse') {
-            // For true/false questions, just check if an answer is selected
-            const hasCorrectAnswer = newQuestion.correctAnswers && newQuestion.correctAnswers.length > 0;
-            if (!hasCorrectAnswer) {
-                newErrors.options = "Please select whether True or False is correct";
-            }
-        } else {
-            // For other option-based questions (multiple choice, checkbox)
-            const hasEnoughOptions = newQuestion.options && newQuestion.options.length >= 2;
-            if (!hasEnoughOptions) {
-                newErrors.options = "Please add at least two answer options";
-            } else {
-                const hasCorrectAnswer = newQuestion.options.some((_: any, index: number) => isNewOptionCorrect(index));
-                if (!hasCorrectAnswer) {
-                    newErrors.options = "Please select at least one correct answer option";
-                }
-            }
+      if (newQuestion.type === "truefalse") {
+        // For true/false questions, just check if an answer is selected
+        const hasCorrectAnswer =
+          newQuestion.correctAnswers && newQuestion.correctAnswers.length > 0;
+        if (!hasCorrectAnswer) {
+          newErrors.options = "Please select whether True or False is correct";
         }
+      } else {
+        // For other option-based questions (multiple choice, checkbox)
+        const hasEnoughOptions =
+          newQuestion.options && newQuestion.options.length >= 2;
+        if (!hasEnoughOptions) {
+          newErrors.options = "Please add at least two answer options";
+        } else {
+          const hasCorrectAnswer = newQuestion.options.some(
+            (_: any, index: number) => isNewOptionCorrect(index)
+          );
+          if (!hasCorrectAnswer) {
+            newErrors.options =
+              "Please select at least one correct answer option";
+          }
+        }
+      }
     }
 
     if (Object.keys(newErrors).length > 0) {
@@ -559,10 +624,12 @@ const NewQuestionForm = ({
       <h3 className="text-lg font-medium text-[#034153]">Add New Question</h3>
       <div className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700">Question Type</label>
+          <label className="block text-sm font-medium text-gray-700">
+            Question Type
+          </label>
           <select
             className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-[#034153] focus:border-[#034153] sm:text-sm rounded-md"
-            value={newQuestion.type || ''}
+            value={newQuestion.type || ""}
             onChange={(e) => {
               onNewQuestionChange({ ...newQuestion, type: e.target.value });
               setErrors({}); // Reset errors on type change
@@ -575,12 +642,14 @@ const NewQuestionForm = ({
               </option>
             ))}
           </select>
-          
+
           {/* Description of selected question type */}
           {newQuestion.type && (
             <div className="text-xs text-gray-500 mt-1 flex items-center gap-1">
               {(() => {
-                const questionType = QUESTION_TYPES.find(type => type.value === newQuestion.type);
+                const questionType = QUESTION_TYPES.find(
+                  (type) => type.value === newQuestion.type
+                );
                 const Icon = questionType?.icon;
                 return (
                   <>
@@ -596,15 +665,25 @@ const NewQuestionForm = ({
         {newQuestion.type && (
           <>
             <div>
-              <label className="block text-sm font-medium text-gray-700">Question Text</label>
+              <label className="block text-sm font-medium text-gray-700">
+                Question Text
+              </label>
               <input
                 type="text"
                 className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-[#034153] focus:border-[#034153] sm:text-sm"
-                value={newQuestion.text || newQuestion.question || ''}
-                onChange={(e) => onNewQuestionChange({ ...newQuestion, text: e.target.value, question: e.target.value })}
+                value={newQuestion.text || newQuestion.question || ""}
+                onChange={(e) =>
+                  onNewQuestionChange({
+                    ...newQuestion,
+                    text: e.target.value,
+                    question: e.target.value,
+                  })
+                }
                 placeholder="Enter question text"
               />
-              {errors.text && <p className="text-red-500 text-sm mt-1">{errors.text}</p>}
+              {errors.text && (
+                <p className="text-red-500 text-sm mt-1">{errors.text}</p>
+              )}
             </div>
 
             <NewQuestionOptions
@@ -612,69 +691,106 @@ const NewQuestionForm = ({
               onNewQuestionAddOption={onNewQuestionAddOption}
               onNewQuestionUpdateOption={onNewQuestionUpdateOption}
               onNewQuestionRemoveOption={onNewQuestionRemoveOption}
-              onNewQuestionToggleCorrectAnswer={onNewQuestionToggleCorrectAnswer}
+              onNewQuestionToggleCorrectAnswer={
+                onNewQuestionToggleCorrectAnswer
+              }
               isNewOptionCorrect={isNewOptionCorrect}
             />
-            {errors.options && <p className="text-red-500 text-sm mt-1">{errors.options}</p>}
-            
+            {errors.options && (
+              <p className="text-red-500 text-sm mt-1">{errors.options}</p>
+            )}
+
             {/* Only show warning when needed - don't show any validation initially */}
-            {newQuestion.type !== 'labeling' && 
-             newQuestion.type !== 'truefalse' && 
-             (newQuestion.text || newQuestion.question) && // Only show when question name is entered
-             newQuestion.options && 
-             (newQuestion.options.length < 2 ? (
+            {newQuestion.type !== "labeling" &&
+              newQuestion.type !== "truefalse" &&
+              (newQuestion.text || newQuestion.question) && // Only show when question name is entered
+              newQuestion.options &&
+              (newQuestion.options.length < 2 ? (
                 // Show minimum options warning when less than 2 options
                 <div className="bg-blue-50 border border-blue-200 rounded-md p-3 mt-2">
                   <p className="text-sm text-blue-700 flex items-center gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2h-1V9a1 1 0 00-1-1z" clipRule="evenodd" />
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-5 w-5"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2h-1V9a1 1 0 00-1-1z"
+                        clipRule="evenodd"
+                      />
                     </svg>
                     Please add at least two answer options
                   </p>
                 </div>
-              ) : (newQuestion.options.length >= 2 && (!newQuestion.correctAnswers || newQuestion.correctAnswers.length === 0)) && (
-                // Show correct answer warning when 2+ options but no correct answers
+              ) : (
+                newQuestion.options.length >= 2 &&
+                (!newQuestion.correctAnswers ||
+                  newQuestion.correctAnswers.length === 0) && (
+                  // Show correct answer warning when 2+ options but no correct answers
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3 mt-2">
+                    <p className="text-sm text-yellow-700 flex items-center gap-2">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-5 w-5"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                      Please select at least one correct answer before adding
+                      the question
+                    </p>
+                  </div>
+                )
+              ))}
+
+            {/* Special validation for true/false questions */}
+            {newQuestion.type === "truefalse" &&
+              (newQuestion.text || newQuestion.question) &&
+              (!newQuestion.correctAnswers ||
+                newQuestion.correctAnswers.length === 0) && (
                 <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3 mt-2">
                   <p className="text-sm text-yellow-700 flex items-center gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-5 w-5"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                        clipRule="evenodd"
+                      />
                     </svg>
-                    Please select at least one correct answer before adding the question
+                    Please select whether True or False is the correct answer
                   </p>
                 </div>
-              )
-            )}
-            
-            {/* Special validation for true/false questions */}
-            {newQuestion.type === 'truefalse' && 
-             (newQuestion.text || newQuestion.question) && 
-             (!newQuestion.correctAnswers || newQuestion.correctAnswers.length === 0) && (
-              <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3 mt-2">
-                <p className="text-sm text-yellow-700 flex items-center gap-2">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                  </svg>
-                  Please select whether True or False is the correct answer
-                </p>
-              </div>
-            )}
+              )}
 
             <div className="flex justify-end mt-4">
               <button
                 onClick={handleAddQuestion}
                 disabled={
-                  (!newQuestion.text && !newQuestion.question) || 
-                  (newQuestion.type !== 'labeling' && newQuestion.type !== 'truefalse' &&
-                   (!newQuestion.options || newQuestion.options.length < 2)) ||
-                  (newQuestion.type !== 'labeling' && 
-                   (!newQuestion.correctAnswers || newQuestion.correctAnswers.length === 0))
+                  (!newQuestion.text && !newQuestion.question) ||
+                  (newQuestion.type !== "labeling" &&
+                    newQuestion.type !== "truefalse" &&
+                    (!newQuestion.options || newQuestion.options.length < 2)) ||
+                  (newQuestion.type !== "labeling" &&
+                    (!newQuestion.correctAnswers ||
+                      newQuestion.correctAnswers.length === 0))
                 }
                 className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-[#034153] hover:bg-[#023141] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#034153] disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Add Question
               </button>
             </div>
-
           </>
         )}
       </div>
@@ -691,13 +807,18 @@ const NewQuestionOptions = ({
   isNewOptionCorrect,
 }: any) => {
   const hasMinOptions = newQuestion.options && newQuestion.options.length >= 2;
-  const hasCorrectAnswer = newQuestion.options && newQuestion.options.some((_: any, index: number) => isNewOptionCorrect(index));
-  
+  const hasCorrectAnswer =
+    newQuestion.options &&
+    newQuestion.options.some((_: any, index: number) =>
+      isNewOptionCorrect(index)
+    );
+
   // For true/false questions, show static options
   if (newQuestion.type === "truefalse") {
     const trueFalseOptions = ["True", "False"];
-    const hasCorrectTF = newQuestion.correctAnswers && newQuestion.correctAnswers.length > 0;
-    
+    const hasCorrectTF =
+      newQuestion.correctAnswers && newQuestion.correctAnswers.length > 0;
+
     return (
       <div className="space-y-2 border-l-4 border-blue-100 pl-4 py-2">
         <div className="flex justify-between items-center">
@@ -705,11 +826,14 @@ const NewQuestionOptions = ({
             Select the Correct Answer
           </label>
           <span className="text-xs text-gray-500">
-            {!hasCorrectTF && 
-              <span className="text-orange-500 font-medium">• Select True or False</span>}
+            {!hasCorrectTF && (
+              <span className="text-orange-500 font-medium">
+                • Select True or False
+              </span>
+            )}
           </span>
         </div>
-        
+
         <div className="space-y-2">
           {trueFalseOptions.map((option: string, index: number) => (
             <div key={index} className="flex gap-2 items-center">
@@ -745,79 +869,86 @@ const NewQuestionOptions = ({
       </div>
     );
   }
-  
+
   return (
-  <div className="space-y-2 border-l-4 border-gray-100 pl-4 py-2">
-    <div className="flex justify-between items-center">
-      <label className="block text-sm font-medium text-gray-700">
-        Options and Correct Answers
-      </label>
-      <span className="text-xs text-gray-500">
-        Min. 2 options required 
-        {/* Only show warning when we already have min options */}
-        {hasMinOptions && !hasCorrectAnswer && 
-          <span className="text-orange-500 font-medium">• Select a correct answer</span>}
-      </span>
-    </div>
-    
-    {newQuestion.options!.map((option: string, index: number) => (
-      <div key={index} className="flex gap-2 items-center">
-        <button
-          type="button"
-          onClick={() => onNewQuestionToggleCorrectAnswer(index)}
-          className={`p-1.5 transition-colors flex-shrink-0 border ${hasMinOptions && !hasCorrectAnswer ? 'border-orange-300 animate-pulse' : 'border-gray-200'} rounded-lg hover:border-gray-300 ${
-            isNewOptionCorrect(index)
-              ? "bg-green-100 text-green-600 hover:bg-green-200"
-              : "text-gray-400 hover:text-gray-600 hover:bg-gray-100"
-          }`}
-          title="Mark as correct"
-        >
-          {newQuestion.type === "multiple" ||
-          newQuestion.type === "truefalse" ? (
-            isNewOptionCorrect(index) ? (
-              <FaCheckCircle size={14} />
-            ) : (
-              <FaRegCircle size={14} />
-            )
-          ) : isNewOptionCorrect(index) ? (
-            <FaCheckSquare size={14} />
-          ) : (
-            <FaRegSquare size={14} />
+    <div className="space-y-2 border-l-4 border-gray-100 pl-4 py-2">
+      <div className="flex justify-between items-center">
+        <label className="block text-sm font-medium text-gray-700">
+          Options and Correct Answers
+        </label>
+        <span className="text-xs text-gray-500">
+          Min. 2 options required
+          {/* Only show warning when we already have min options */}
+          {hasMinOptions && !hasCorrectAnswer && (
+            <span className="text-orange-500 font-medium">
+              • Select a correct answer
+            </span>
           )}
-        </button>
+        </span>
+      </div>
 
-        <input
-          type="text"
-          value={option}
-          onChange={(e) => onNewQuestionUpdateOption(index, e.target.value)}
-          placeholder={`Option ${index + 1}`}
-          className={`w-full px-3 py-2 border rounded-lg hover:border-gray-300 hover:shadow-sm transition-all focus:ring-2 focus:ring-[#034153] text-sm ${
-            isNewOptionCorrect(index)
-              ? "bg-green-50 border-green-300"
-              : "border-gray-200"
-          }`}
-        />
-
-        {newQuestion.options!.length > 2 && (
+      {newQuestion.options!.map((option: string, index: number) => (
+        <div key={index} className="flex gap-2 items-center">
           <button
             type="button"
-            onClick={() => onNewQuestionRemoveOption(index)}
-            className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition-colors flex-shrink-0 border border-gray-200 rounded-lg hover:border-gray-300"
-            title="Remove option"
+            onClick={() => onNewQuestionToggleCorrectAnswer(index)}
+            className={`p-1.5 transition-colors flex-shrink-0 border ${
+              hasMinOptions && !hasCorrectAnswer
+                ? "border-orange-300 animate-pulse"
+                : "border-gray-200"
+            } rounded-lg hover:border-gray-300 ${
+              isNewOptionCorrect(index)
+                ? "bg-green-100 text-green-600 hover:bg-green-200"
+                : "text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+            }`}
+            title="Mark as correct"
           >
-            <FaTimes size={14} />
+            {newQuestion.type === "multiple" ||
+            newQuestion.type === "truefalse" ? (
+              isNewOptionCorrect(index) ? (
+                <FaCheckCircle size={14} />
+              ) : (
+                <FaRegCircle size={14} />
+              )
+            ) : isNewOptionCorrect(index) ? (
+              <FaCheckSquare size={14} />
+            ) : (
+              <FaRegSquare size={14} />
+            )}
           </button>
-        )}
-      </div>
-    ))}
 
-    <button
-      onClick={onNewQuestionAddOption}
-      className="text-[#034153] hover:text-[#004e64] flex items-center gap-1 text-sm font-medium mt-2 border border-gray-200 rounded-lg hover:border-gray-300 hover:shadow-sm transition-all px-3 py-1 bg-gray-50 hover:bg-gray-100"
-    >
-      <FaPlus size={12} /> Add Option
-    </button>
-  </div>
+          <input
+            type="text"
+            value={option}
+            onChange={(e) => onNewQuestionUpdateOption(index, e.target.value)}
+            placeholder={`Option ${index + 1}`}
+            className={`w-full px-3 py-2 border rounded-lg hover:border-gray-300 hover:shadow-sm transition-all focus:ring-2 focus:ring-[#034153] text-sm ${
+              isNewOptionCorrect(index)
+                ? "bg-green-50 border-green-300"
+                : "border-gray-200"
+            }`}
+          />
+
+          {newQuestion.options!.length > 2 && (
+            <button
+              type="button"
+              onClick={() => onNewQuestionRemoveOption(index)}
+              className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition-colors flex-shrink-0 border border-gray-200 rounded-lg hover:border-gray-300"
+              title="Remove option"
+            >
+              <FaTimes size={14} />
+            </button>
+          )}
+        </div>
+      ))}
+
+      <button
+        onClick={onNewQuestionAddOption}
+        className="text-[#034153] hover:text-[#004e64] flex items-center gap-1 text-sm font-medium mt-2 border border-gray-200 rounded-lg hover:border-gray-300 hover:shadow-sm transition-all px-3 py-1 bg-gray-50 hover:bg-gray-100"
+      >
+        <FaPlus size={12} /> Add Option
+      </button>
+    </div>
   );
 };
 
@@ -835,7 +966,7 @@ const NewLabelingQuestion = ({ newQuestion, onNewQuestionChange }: any) => {
     value?: string
   ) => {
     const updatedLabels = [...labelAnswers];
-    
+
     if (!updatedLabels[index]) {
       updatedLabels[index] = { label: generateNextLabel(index), answer: "" };
     }
@@ -843,11 +974,11 @@ const NewLabelingQuestion = ({ newQuestion, onNewQuestionChange }: any) => {
     // Handle both function signatures:
     // 1. handleLabelChange(index, field, value)
     // 2. handleLabelChange(index, value) - for backward compatibility
-    const field = value !== undefined ? (fieldOrValue as string) : 'label';
-    let fieldValue = value !== undefined ? value : fieldOrValue as string;
-    
+    const field = value !== undefined ? (fieldOrValue as string) : "label";
+    let fieldValue = value !== undefined ? value : (fieldOrValue as string);
+
     // For label field, ensure it's just one character
-    if (field === 'label') {
+    if (field === "label") {
       // Take only the first character and uppercase it
       fieldValue = fieldValue.charAt(0).toUpperCase();
       // If empty, generate a label
@@ -863,8 +994,8 @@ const NewLabelingQuestion = ({ newQuestion, onNewQuestionChange }: any) => {
 
     onNewQuestionChange({
       ...newQuestion,
-      options: updatedLabels.map(la => la.label),
-      correctAnswers: updatedLabels
+      options: updatedLabels.map((la) => la.label),
+      correctAnswers: updatedLabels,
     });
   };
 
@@ -873,44 +1004,44 @@ const NewLabelingQuestion = ({ newQuestion, onNewQuestionChange }: any) => {
     if (file) {
       // Store file object AND create blob URL for preview (like course creation)
       const previewUrl = URL.createObjectURL(file);
-      
-      onNewQuestionChange({ 
-        ...newQuestion, 
-        imageFile: file,                    // File object for backend
-        imageUrl: previewUrl,               // Blob URL for preview only
-        correctAnswers: [...labelAnswers]
+
+      onNewQuestionChange({
+        ...newQuestion,
+        imageFile: file, // File object for backend
+        imageUrl: previewUrl, // Blob URL for preview only
+        correctAnswers: [...labelAnswers],
       });
     }
   };
 
   const handleRemoveImage = () => {
-    onNewQuestionChange({ 
-      ...newQuestion, 
+    onNewQuestionChange({
+      ...newQuestion,
       imageFile: null,
-      imageUrl: null  // Remove both file and preview URL
+      imageUrl: null, // Remove both file and preview URL
     });
   };
 
   const handleAddLabelKey = () => {
     const newIndex = labelAnswers.length;
     const newLabel = generateNextLabel(newIndex);
-    const newLabelAnswers = [...labelAnswers, { label: newLabel, answer: '' }];
-    
-    onNewQuestionChange({ 
-      ...newQuestion, 
-      options: newLabelAnswers.map(la => la.label),
-      correctAnswers: newLabelAnswers
+    const newLabelAnswers = [...labelAnswers, { label: newLabel, answer: "" }];
+
+    onNewQuestionChange({
+      ...newQuestion,
+      options: newLabelAnswers.map((la) => la.label),
+      correctAnswers: newLabelAnswers,
     });
   };
 
   const handleRemoveLabelKey = (index: number) => {
     const newLabelAnswers = [...labelAnswers];
     newLabelAnswers.splice(index, 1);
-    
-    onNewQuestionChange({ 
-      ...newQuestion, 
-      options: newLabelAnswers.map(la => la.label),
-      correctAnswers: newLabelAnswers
+
+    onNewQuestionChange({
+      ...newQuestion,
+      options: newLabelAnswers.map((la) => la.label),
+      correctAnswers: newLabelAnswers,
     });
   };
 
@@ -920,7 +1051,7 @@ const NewLabelingQuestion = ({ newQuestion, onNewQuestionChange }: any) => {
     <div className="relative rounded-lg border border-gray-200 shadow-sm p-6 space-y-6">
       {/* Subtle header accent */}
       <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-gray-200 to-[#034153]/40 rounded-t-lg"></div>
-      
+
       {/* Header */}
       <div>
         <h4 className="text-lg font-medium text-gray-800">Labeling Question</h4>
@@ -931,23 +1062,35 @@ const NewLabelingQuestion = ({ newQuestion, onNewQuestionChange }: any) => {
 
       {/* Question Text Field */}
       <div>
-        <label className="block text-sm font-medium text-gray-700">Question Text</label>
+        <label className="block text-sm font-medium text-gray-700">
+          Question Text
+        </label>
         <input
           type="text"
           className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-[#034153] focus:border-[#034153] sm:text-sm"
-          value={newQuestion.text || newQuestion.question || ''}
-          onChange={(e) => onNewQuestionChange({ ...newQuestion, text: e.target.value, question: e.target.value })}
+          value={newQuestion.text || newQuestion.question || ""}
+          onChange={(e) =>
+            onNewQuestionChange({
+              ...newQuestion,
+              text: e.target.value,
+              question: e.target.value,
+            })
+          }
           placeholder="Enter question text"
         />
       </div>
 
       {/* Image Upload Section */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Upload Image</label>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Upload Image
+        </label>
         <div className="flex flex-col sm:flex-row gap-4 items-start">
           <label className="flex items-center justify-center px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#034153] cursor-pointer">
             <FaUpload className="mr-2 text-[#034153]" />
-            {(newQuestion.imageFile || newQuestion.imageUrl) ? 'Change Image' : 'Upload Image'}
+            {newQuestion.imageFile || newQuestion.imageUrl
+              ? "Change Image"
+              : "Upload Image"}
             <input
               type="file"
               accept="image/*"
@@ -968,22 +1111,36 @@ const NewLabelingQuestion = ({ newQuestion, onNewQuestionChange }: any) => {
       </div>
 
       {/* Image Preview and Labels - Responsive Layout */}
-      {(newQuestion.imageFile || newQuestion.imageUrl) ? (
+      {newQuestion.imageFile || newQuestion.imageUrl ? (
         <div className="flex flex-col sm:flex-row gap-6">
           {/* Image Preview - Full width on mobile, left side on desktop */}
           <div className="w-full sm:w-1/2 order-1">
             <div className="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200">
               <div className="bg-gray-50 px-4 py-2 border-b border-gray-200">
                 <h5 className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4V5h12v10z" clipRule="evenodd" />
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-4 w-4 text-gray-500"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4V5h12v10z"
+                      clipRule="evenodd"
+                    />
                   </svg>
                   Image Preview
                 </h5>
               </div>
               <div className="p-4">
                 <img
-                  src={newQuestion.imageUrl || (newQuestion.imageFile ? URL.createObjectURL(newQuestion.imageFile) : '')}
+                  src={
+                    newQuestion.imageUrl ||
+                    (newQuestion.imageFile
+                      ? URL.createObjectURL(newQuestion.imageFile)
+                      : "")
+                  }
                   alt="Question content"
                   className="w-full h-auto max-h-80 object-contain rounded"
                 />
@@ -1009,13 +1166,15 @@ const NewLabelingQuestion = ({ newQuestion, onNewQuestionChange }: any) => {
                   <FaPlus size={10} /> Add Label
                 </button>
               </div>
-              
+
               <div className="px-5 pt-4 pb-6 space-y-4">
                 {labelAnswers.length === 0 ? (
                   <div className="text-center py-6 text-gray-500">
                     <FaTags className="mx-auto mb-2 text-gray-300" size={24} />
                     <p>No labels added yet.</p>
-                    <p className="text-sm text-gray-400 mt-1">Click 'Add Label' to get started</p>
+                    <p className="text-sm text-gray-400 mt-1">
+                      Click 'Add Label' to get started
+                    </p>
                   </div>
                 ) : (
                   <div className="space-y-3">
@@ -1023,29 +1182,48 @@ const NewLabelingQuestion = ({ newQuestion, onNewQuestionChange }: any) => {
                       <div key={index} className="flex gap-3 items-center py-1">
                         <div className="flex-1 grid grid-cols-2 gap-3">
                           <div>
-                            <div 
+                            <div
                               className="flex items-center justify-center w-12 h-12 min-w-12 bg-[#034153]/10 border-2 border-[#034153]/30 rounded-md shadow-sm"
                               contentEditable="true"
                               suppressContentEditableWarning={true}
-                              onBlur={(e) => handleLabelChange(index, e.currentTarget.textContent || '')}
+                              onBlur={(e) =>
+                                handleLabelChange(
+                                  index,
+                                  e.currentTarget.textContent || ""
+                                )
+                              }
                               onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
+                                if (e.key === "Enter") {
                                   e.preventDefault();
                                   e.currentTarget.blur();
                                 }
-                                if (e.currentTarget.textContent?.length === 1 && e.key !== 'Backspace' && e.key !== 'Delete' && e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') {
+                                if (
+                                  e.currentTarget.textContent?.length === 1 &&
+                                  e.key !== "Backspace" &&
+                                  e.key !== "Delete" &&
+                                  e.key !== "ArrowLeft" &&
+                                  e.key !== "ArrowRight"
+                                ) {
                                   e.preventDefault();
                                 }
                               }}
                             >
-                              <span className="text-2xl font-bold text-[#034153]">{item.label || generateNextLabel(index)}</span>
+                              <span className="text-2xl font-bold text-[#034153]">
+                                {item.label || generateNextLabel(index)}
+                              </span>
                             </div>
                           </div>
                           <div>
                             <input
                               type="text"
                               value={item.answer}
-                              onChange={(e) => handleLabelChange(index, 'answer', e.target.value)}
+                              onChange={(e) =>
+                                handleLabelChange(
+                                  index,
+                                  "answer",
+                                  e.target.value
+                                )
+                              }
                               placeholder="Correct answer"
                               className="w-full h-12 px-3 border-2 border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#034153] focus:border-[#034153]"
                             />
@@ -1076,8 +1254,12 @@ const NewLabelingQuestion = ({ newQuestion, onNewQuestionChange }: any) => {
           <div className="space-y-2">
             {labelAnswers.map((item: any, index: number) => (
               <div key={index} className="flex items-center gap-2">
-                <span className="text-sm font-medium text-gray-600">{item.label || 'Untitled Label'}:</span>
-                <span className="text-sm text-gray-500">{item.answer || 'No answer'}</span>
+                <span className="text-sm font-medium text-gray-600">
+                  {item.label || "Untitled Label"}:
+                </span>
+                <span className="text-sm text-gray-500">
+                  {item.answer || "No answer"}
+                </span>
               </div>
             ))}
           </div>
