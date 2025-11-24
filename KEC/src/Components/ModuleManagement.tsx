@@ -904,71 +904,80 @@ function LessonManagement({
                       </div>
 
                       <div className="flex items-center gap-2 flex-shrink-0">
-                        {!readOnly && (
-                          <div
-                            className="relative"
-                            ref={(el) => {
-                              resourceMenuRefs.current[resource.id] = el;
-                            }}
+                        <div
+                          className="relative"
+                          ref={(el) => {
+                            resourceMenuRefs.current[resource.id] = el;
+                          }}
+                        >
+                          <button
+                            onClick={() =>
+                              setOpenResourceMenu(
+                                openResourceMenu === resource.id
+                                  ? null
+                                  : resource.id
+                              )
+                            }
+                            className="text-gray-600 hover:text-gray-800 p-2 rounded-lg hover:bg-gray-100 transition-colors"
                           >
-                            <button
-                              onClick={() =>
-                                setOpenResourceMenu(
-                                  openResourceMenu === resource.id
-                                    ? null
-                                    : resource.id
-                                )
-                              }
-                              className="text-gray-600 hover:text-gray-800 p-2 rounded-lg hover:bg-gray-100 transition-colors"
-                            >
-                              <FaEllipsisV className="text-gray-600" />
-                            </button>
+                            <FaEllipsisV className="text-gray-600" />
+                          </button>
 
-                            {openResourceMenu === resource.id && (
-                              <div className="absolute right-0 top-full mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-20">
-                                <ul className="py-1 text-sm">
-                                  <li>
-                                    {resource.type === "quiz" ? (
-                                      resource.form &&
-                                      resource.form?.quizzes?.length > 0 ? (
-                                        resource.form.quizzes.map(
-                                          (quizItem: QuizData) => (
-                                            <button
-                                              key={quizItem.id}
-                                              onClick={() => {
-                                                setOpenQuiz({
-                                                  courseId: courseId,
-                                                  lessonId: lesson.id!,
-                                                  quizId: quizItem.id,
-                                                  formId: resource.form!.id,
-                                                });
-                                                setOpenResourceMenu(null);
-                                              }}
-                                              className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-3"
-                                            >
-                                              <FaEdit />
-                                              <span>Edit Quiz</span>
-                                            </button>
-                                          )
+                          {openResourceMenu === resource.id && (
+                            <div className="absolute right-0 top-full mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-20">
+                              <ul className="py-1 text-sm">
+                                <li>
+                                  {resource.type === "quiz" ? (
+                                    resource.form &&
+                                    resource.form?.quizzes?.length > 0 ? (
+                                      resource.form.quizzes.map(
+                                        (quizItem: QuizData) => (
+                                          <button
+                                            key={quizItem.id}
+                                            onClick={() => {
+                                              setOpenQuiz({
+                                                courseId: courseId,
+                                                lessonId: lesson.id!,
+                                                quizId: quizItem.id,
+                                                formId: resource.form!.id,
+                                              });
+                                              setOpenResourceMenu(null);
+                                            }}
+                                            className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-3"
+                                          >
+                                            {readOnly ? (
+                                              <>
+                                                <FaQuestionCircle />
+                                                <span>View Quiz</span>
+                                              </>
+                                            ) : (
+                                              <>
+                                                <FaEdit />
+                                                <span>Edit Quiz</span>
+                                              </>
+                                            )}
+                                          </button>
                                         )
-                                      ) : (
-                                        <p className="px-4 py-2 text-gray-400">
-                                          No quiz found
-                                        </p>
                                       )
                                     ) : (
-                                      <a
-                                        href={resource.url || "#"}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-3"
-                                      >
-                                        <FaExternalLinkAlt />{" "}
-                                        <span>View Resource</span>
-                                      </a>
-                                    )}
-                                  </li>
+                                      <p className="px-4 py-2 text-gray-400">
+                                        No quiz found
+                                      </p>
+                                    )
+                                  ) : (
+                                    <a
+                                      href={resource.url || "#"}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-3"
+                                    >
+                                      <FaExternalLinkAlt />{" "}
+                                      <span>View Resource</span>
+                                    </a>
+                                  )}
+                                </li>
 
+                                {!readOnly && (
                                   <li>
                                     <button
                                       onClick={() => {
@@ -983,11 +992,11 @@ function LessonManagement({
                                       <FaTrash /> <span>Delete Resource</span>
                                     </button>
                                   </li>
-                                </ul>
-                              </div>
-                            )}
-                          </div>
-                        )}
+                                )}
+                              </ul>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                   ))}
