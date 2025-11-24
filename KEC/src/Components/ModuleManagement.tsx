@@ -172,14 +172,22 @@ function LessonManagement({
 
           return null;
         })
-
         .filter((lesson): lesson is Lessons => lesson !== null);
 
-      setLessons(filteredLessons);
+      // Filter out locked lessons if in read-only mode
+      const visibleLessons = readOnly
+        ? filteredLessons.filter((lesson) => lesson.isUnlocked)
+        : filteredLessons;
+
+      setLessons(visibleLessons);
     } else {
-      setLessons(initialLessons);
+      // Filter out locked lessons if in read-only mode
+      const visibleLessons = readOnly
+        ? initialLessons.filter((lesson) => lesson.isUnlocked)
+        : initialLessons;
+      setLessons(visibleLessons);
     }
-  }, [initialLessons, searchQuery]);
+  }, [initialLessons, searchQuery, readOnly]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -221,6 +229,7 @@ function LessonManagement({
     videoName: string,
     videoLink: string
   ) => {
+    if (readOnly) return;
     try {
       new URL(videoLink);
     } catch {
@@ -250,6 +259,7 @@ function LessonManagement({
     file: File,
     type: "pdf" | "word"
   ) => {
+    if (readOnly) return;
     try {
       const { message } = await addResource({
         lessonId: lessonId,
@@ -272,6 +282,7 @@ function LessonManagement({
   };
 
   const confirmDeleteResource = async () => {
+    if (readOnly) return;
     if (!resourceToDelete) return;
 
     const { lessonId, resourceId } = resourceToDelete;
@@ -304,6 +315,7 @@ function LessonManagement({
     quizName: string,
     quizDescription: string
   ) => {
+    if (readOnly) return;
     try {
       const { message } = await addResource({
         lessonId: lessonId,
@@ -331,6 +343,7 @@ function LessonManagement({
   };
 
   const togglelessonUnlock = async (lessonId: number) => {
+    if (readOnly) return;
     try {
       const lesson = lessons.find((m) => m.id === lessonId);
       if (!lesson) return;
@@ -361,6 +374,7 @@ function LessonManagement({
   };
 
   const confirmDeleteLesson = async () => {
+    if (readOnly) return;
     if (!lessonToDelete) return;
 
     try {
@@ -735,74 +749,80 @@ function LessonManagement({
                 >
                   {lesson.isUnlocked ? "Unlocked" : "Locked"}
                 </span>
-                <div
-                  className="relative"
-                  ref={(el) => {
-                    menuWrapperRefs.current[lesson.id] = el;
-                  }}
-                >
-                  <button
-                    onClick={() =>
-                      setMenuOpenId(menuOpenId === lesson.id ? null : lesson.id)
-                    }
-                    className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                {!readOnly && (
+                  <div
+                    className="relative"
+                    ref={(el) => {
+                      menuWrapperRefs.current[lesson.id] = el;
+                    }}
                   >
-                    <FaEllipsisV className="text-gray-600" />
-                  </button>
-                  {menuOpenId === lesson.id && (
-                    <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-20">
-                      <ul className="py-1 text-sm">
-                        <li>
-                          <button
-                            onClick={() => {
-                              togglelessonUnlock(lesson.id);
-                              setMenuOpenId(null);
-                            }}
-                            className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-3"
-                          >
-                            {lesson.isUnlocked ? <FaLock /> : <FaUnlock />}
-                            <span>
-                              {lesson.isUnlocked
-                                ? "Lock Lesson"
-                                : "Unlock Lesson"}
-                            </span>
-                          </button>
-                        </li>
-                        {!readOnly && (
-                          <li>
-                            <button
-                              onClick={() => {
-                                setShowAddResource(
-                                  showAddResource === lesson.id
-                                    ? null
-                                    : lesson.id
-                                );
-                                setResourceType(null);
-                                setMenuOpenId(null);
-                              }}
-                              className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-3"
-                            >
-                              <FaPlus /> <span>Add Resource</span>
-                            </button>
-                          </li>
-                        )}
-                        {!readOnly && (
-                          <li>
-                            <button
-                              onClick={() => {
-                                requestDeleteLesson(lesson.id);
-                                setMenuOpenId(null);
-                              }}
-                              className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-3 text-red-600"
-                            >
-                              <FaTrash /> <span>Delete Lesson</span>
-                            </button>
-                          </li>
-                        )}
-                      </ul>
-                    </div>
-                  )}
-                </div>
+                    <button
+                      onClick={() =>
+                        setMenuOpenId(
+                          menuOpenId === lesson.id ? null : lesson.id
+                        )
+                      }
+                      className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                    >
+                      <FaEllipsisV className="text-gray-600" />
+                    </button>
+                    {menuOpenId === lesson.id && (
+                      <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-20">
+                        <ul className="py-1 text-sm">
+                          {!readOnly && (
+                            <li>
+                              <button
+                                onClick={() => {
+                                  togglelessonUnlock(lesson.id);
+                                  setMenuOpenId(null);
+                                }}
+                                className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-3"
+                              >
+                                {lesson.isUnlocked ? <FaLock /> : <FaUnlock />}
+                                <span>
+                                  {lesson.isUnlocked
+                                    ? "Lock Lesson"
+                                    : "Unlock Lesson"}
+                                </span>
+                              </button>
+                            </li>
+                          )}
+                          {!readOnly && (
+                            <li>
+                              <button
+                                onClick={() => {
+                                  setShowAddResource(
+                                    showAddResource === lesson.id
+                                      ? null
+                                      : lesson.id
+                                  );
+                                  setResourceType(null);
+                                  setMenuOpenId(null);
+                                }}
+                                className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-3"
+                              >
+                                <FaPlus /> <span>Add Resource</span>
+                              </button>
+                            </li>
+                          )}
+                          {!readOnly && (
+                            <li>
+                              <button
+                                onClick={() => {
+                                  requestDeleteLesson(lesson.id);
+                                  setMenuOpenId(null);
+                                }}
+                                className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-3 text-red-600"
+                              >
+                                <FaTrash /> <span>Delete Lesson</span>
+                              </button>
+                            </li>
+                          )}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -884,88 +904,90 @@ function LessonManagement({
                       </div>
 
                       <div className="flex items-center gap-2 flex-shrink-0">
-                        <div
-                          className="relative"
-                          ref={(el) => {
-                            resourceMenuRefs.current[resource.id] = el;
-                          }}
-                        >
-                          <button
-                            onClick={() =>
-                              setOpenResourceMenu(
-                                openResourceMenu === resource.id
-                                  ? null
-                                  : resource.id
-                              )
-                            }
-                            className="text-gray-600 hover:text-gray-800 p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                        {!readOnly && (
+                          <div
+                            className="relative"
+                            ref={(el) => {
+                              resourceMenuRefs.current[resource.id] = el;
+                            }}
                           >
-                            <FaEllipsisV className="text-gray-600" />
-                          </button>
+                            <button
+                              onClick={() =>
+                                setOpenResourceMenu(
+                                  openResourceMenu === resource.id
+                                    ? null
+                                    : resource.id
+                                )
+                              }
+                              className="text-gray-600 hover:text-gray-800 p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                            >
+                              <FaEllipsisV className="text-gray-600" />
+                            </button>
 
-                          {openResourceMenu === resource.id && (
-                            <div className="absolute right-0 top-full mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-20">
-                              <ul className="py-1 text-sm">
-                                <li>
-                                  {resource.type === "quiz" ? (
-                                    resource.form &&
-                                    resource.form?.quizzes?.length > 0 ? (
-                                      resource.form.quizzes.map(
-                                        (quizItem: QuizData) => (
-                                          <button
-                                            key={quizItem.id}
-                                            onClick={() => {
-                                              setOpenQuiz({
-                                                courseId: courseId,
-                                                lessonId: lesson.id!,
-                                                quizId: quizItem.id,
-                                                formId: resource.form!.id,
-                                              });
-                                              setOpenResourceMenu(null);
-                                            }}
-                                            className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-3"
-                                          >
-                                            <FaEdit />
-                                            <span>Edit Quiz</span>
-                                          </button>
+                            {openResourceMenu === resource.id && (
+                              <div className="absolute right-0 top-full mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-20">
+                                <ul className="py-1 text-sm">
+                                  <li>
+                                    {resource.type === "quiz" ? (
+                                      resource.form &&
+                                      resource.form?.quizzes?.length > 0 ? (
+                                        resource.form.quizzes.map(
+                                          (quizItem: QuizData) => (
+                                            <button
+                                              key={quizItem.id}
+                                              onClick={() => {
+                                                setOpenQuiz({
+                                                  courseId: courseId,
+                                                  lessonId: lesson.id!,
+                                                  quizId: quizItem.id,
+                                                  formId: resource.form!.id,
+                                                });
+                                                setOpenResourceMenu(null);
+                                              }}
+                                              className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-3"
+                                            >
+                                              <FaEdit />
+                                              <span>Edit Quiz</span>
+                                            </button>
+                                          )
                                         )
+                                      ) : (
+                                        <p className="px-4 py-2 text-gray-400">
+                                          No quiz found
+                                        </p>
                                       )
                                     ) : (
-                                      <p className="px-4 py-2 text-gray-400">
-                                        No quiz found
-                                      </p>
-                                    )
-                                  ) : (
-                                    <a
-                                      href={resource.url || "#"}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-3"
-                                    >
-                                      <FaExternalLinkAlt />{" "}
-                                      <span>View Resource</span>
-                                    </a>
-                                  )}
-                                </li>
+                                      <a
+                                        href={resource.url || "#"}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-3"
+                                      >
+                                        <FaExternalLinkAlt />{" "}
+                                        <span>View Resource</span>
+                                      </a>
+                                    )}
+                                  </li>
 
-                                <li>
-                                  <button
-                                    onClick={() => {
-                                      requestDeleteResource(
-                                        lesson.id,
-                                        resource.id
-                                      );
-                                      setOpenResourceMenu(null);
-                                    }}
-                                    className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-3 text-red-600"
-                                  >
-                                    <FaTrash /> <span>Delete Resource</span>
-                                  </button>
-                                </li>
-                              </ul>
-                            </div>
-                          )}
-                        </div>
+                                  <li>
+                                    <button
+                                      onClick={() => {
+                                        requestDeleteResource(
+                                          lesson.id,
+                                          resource.id
+                                        );
+                                        setOpenResourceMenu(null);
+                                      }}
+                                      className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-3 text-red-600"
+                                    >
+                                      <FaTrash /> <span>Delete Resource</span>
+                                    </button>
+                                  </li>
+                                </ul>
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </div>
                   ))}
