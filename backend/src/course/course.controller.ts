@@ -18,6 +18,7 @@ import { UpdateCourseDto } from './dto/update-course.dto';
 import { AuthGuard } from 'src/auth/auth.guard';
 import { RolesGuard } from 'src/auth/roles.guard';
 import { Roles } from 'src/auth/decorators/roles.decorator';
+import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
 import { diskStorage } from 'multer';
 import { ConfigService } from '@nestjs/config';
 import { ConfirmCourseDto } from './dto/confirm-course.dto';
@@ -32,9 +33,9 @@ export class CourseController {
   ) {}
 
   @Get('course/:id')
-  getCourseByIdByAdmin(@Param('id') id: string) {
+  getCourseByIdByAdmin(@Param('id') id: string, @CurrentUser() user: any) {
     const newId = Number(id);
-    return this.courseService.getCourseById(newId);
+    return this.courseService.getCourseById(newId, user?.sub, user?.role);
   }
 
   @Post('/create-course')

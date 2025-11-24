@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { CreateCourseDto } from './dto/create-course.dto';
 import { UpdateCourseDto } from './dto/update-course.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
@@ -27,21 +31,20 @@ export class CourseService {
     return newCourse;
   }
 
- async getCourseById(id: number) {
-
-
-  const course = await this.prisma.course.findUnique({
-    where: { id },
-    include: {
-      lesson: {
-        include: {
-          resources: {
-            include: {
-              form: {
-                include: {
-                  quizzes: {
-                    include: {
-                      questions: true, // include quiz questions
+  async getCourseById(id: number, userId?: number, userRole?: string) {
+    const course = await this.prisma.course.findUnique({
+      where: { id },
+      include: {
+        lesson: {
+          include: {
+            resources: {
+              include: {
+                form: {
+                  include: {
+                    quizzes: {
+                      include: {
+                        questions: true, // include quiz questions
+                      },
                     },
                   },
                 },
@@ -49,96 +52,104 @@ export class CourseService {
             },
           },
         },
+        uploader: {
+          include: { profile: true },
+        },
       },
-      uploader: {
-        include: { profile: true },
-      },
-    },
-  });
-
-  if (!course) {
-    return { message: 'Course not found' };
-  }
-
-  // Helper function for date formatting
-  const formatDate = (date: Date) =>
-    new Date(date).toLocaleString('en-US', {
-      weekday: 'short',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
     });
 
-  return {
-    id: course.id,
-    title: course.title,
-    description: course.description,
-    category: course.category || null,
-    price: course.coursePrice,
-    image_url: course.image_url,
-    no_lessons: course.lesson?.length || 0,
-    open: course.open,
-    isConfirmed: course.isConfirmed,
-    maximum: course.maximum,
-    createdAt: formatDate(course.createdAt),
-    updatedAt: formatDate(course.updatedAt),
+    if (!course) {
+      return { message: 'Course not found' };
+    }
 
-    lesson: course.lesson.map((l) => ({
-      id: l.id,
-      title: l.title,
-      description: l.description,
-      isUnlocked: l.isUnlocked,
-      createdAt: formatDate(l.createdAt),
+    // Determine if user can see all lessons (locked + unlocked)
+    const isOwner = course.uploaderId === userId;
+    const isAdmin = userRole === 'admin';
+    const canSeeAll = isOwner || isAdmin;
 
-      resources: l.resources.map((r) => {
-        const resourceData: any = {
-          id: r.id,
-          name: r.name,
-          lessonId: r.lessonId,
-          type: r.type,
-          size: r.size,
-          createdAt: formatDate(r.uploadedAt),
-          url: r.url,
-        };
-        if (r.form) {
-          resourceData.form = {
-            id: r.form.id,
-            createdAt: formatDate(r.form.createdAt),
+    // Helper function for date formatting
+    const formatDate = (date: Date) =>
+      new Date(date).toLocaleString('en-US', {
+        weekday: 'short',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
 
-            quizzes: r.form.quizzes?.map((q) => ({
-              id: q.id,
-              name: q.name,
-              description: q.description,
-              createdAt: formatDate(q.createdAt),
-              updatedAt: formatDate(q.updatedAt),
+    // Filter lessons based on authorization
+    const visibleLessons = canSeeAll
+      ? course.lesson
+      : course.lesson.filter((l) => l.isUnlocked);
 
-              // include quiz questions
-              questions: q.questions?.map((qq) => ({
-                id: qq.id,
-                type: qq.type,
-                question: qq.question,
-                required: qq.required,
-                points: qq.points,
-              })),
-            })),
+    return {
+      id: course.id,
+      title: course.title,
+      description: course.description,
+      category: course.category || null,
+      price: course.coursePrice,
+      image_url: course.image_url,
+      no_lessons: visibleLessons.length,
+      open: course.open,
+      isConfirmed: course.isConfirmed,
+      maximum: course.maximum,
+      createdAt: formatDate(course.createdAt),
+      updatedAt: formatDate(course.updatedAt),
+
+      lesson: visibleLessons.map((l) => ({
+        id: l.id,
+        title: l.title,
+        description: l.description,
+        isUnlocked: l.isUnlocked,
+        createdAt: formatDate(l.createdAt),
+
+        resources: l.resources.map((r) => {
+          const resourceData: any = {
+            id: r.id,
+            name: r.name,
+            lessonId: r.lessonId,
+            type: r.type,
+            size: r.size,
+            createdAt: formatDate(r.uploadedAt),
+            url: r.url,
           };
-        }
+          if (r.form) {
+            resourceData.form = {
+              id: r.form.id,
+              createdAt: formatDate(r.form.createdAt),
 
-        return resourceData;
-      }),
-    })),
+              quizzes: r.form.quizzes?.map((q) => ({
+                id: q.id,
+                name: q.name,
+                description: q.description,
+                createdAt: formatDate(q.createdAt),
+                updatedAt: formatDate(q.updatedAt),
 
-    uploader: {
-      id: course.uploaderId,
-      name: `${course.uploader?.firstName ?? ''} ${course.uploader?.lastName ?? ''}`.trim(),
-      email: course.uploader?.email,
-      avatar_url: course.uploader?.profile?.avatar || '',
-    },
-  };
-}
+                // include quiz questions
+                questions: q.questions?.map((qq) => ({
+                  id: qq.id,
+                  type: qq.type,
+                  question: qq.question,
+                  required: qq.required,
+                  points: qq.points,
+                })),
+              })),
+            };
+          }
 
+          return resourceData;
+        }),
+      })),
+
+      uploader: {
+        id: course.uploaderId,
+        name: `${course.uploader?.firstName ?? ''} ${course.uploader?.lastName ?? ''}`.trim(),
+        email: course.uploader?.email,
+        avatar_url: course.uploader?.profile?.avatar || '',
+      },
+    };
+  }
 
   async findAllUnconfirmed() {
     const getAllUploaded = await this.prisma.course.findMany({
@@ -206,7 +217,8 @@ export class CourseService {
   }
 
   async updateCourse(updateCourseDto: UpdateCourseDto) {
-    const { title, description, price, image_url, maximum, open, category } = updateCourseDto;
+    const { title, description, price, image_url, maximum, open, category } =
+      updateCourseDto;
     await this.prisma.course.update({
       where: { id: Number(updateCourseDto.id) },
       data: {
@@ -273,7 +285,12 @@ export class CourseService {
         onGoingStudents: {
           include: {
             user: {
-              select: { id: true, firstName: true, lastName: true, email: true },
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                email: true,
+              },
             },
           },
         },
@@ -328,20 +345,28 @@ export class CourseService {
         assignmentCount += quizzes.length;
         totalAssignments += quizzes.length;
         quizzes.forEach((q) => {
-          const totalPts = ((q.settings as any)?.totalPoints) || 100;
+          const totalPts = (q.settings as any)?.totalPoints || 100;
           (q.attempts || []).forEach((a) => {
             let userId: number | null = null;
-            let mark: number | null = typeof (a as any).score === 'number' ? (a as any).score : null;
+            let mark: number | null =
+              typeof (a as any).score === 'number' ? (a as any).score : null;
             let maxPoints: number =
-              typeof (a as any).totalPoints === 'number' && (a as any).totalPoints > 0
+              typeof (a as any).totalPoints === 'number' &&
+              (a as any).totalPoints > 0
                 ? (a as any).totalPoints
                 : totalPts;
 
             try {
-              const details = (a as any).detailedResults ? JSON.parse((a as any).detailedResults) : {};
+              const details = (a as any).detailedResults
+                ? JSON.parse((a as any).detailedResults)
+                : {};
               if (typeof details.userId === 'number') userId = details.userId;
-              if (mark === null && typeof details.mark === 'number') mark = details.mark;
-              if ((!maxPoints || maxPoints <= 0) && typeof details.maxPoints === 'number')
+              if (mark === null && typeof details.mark === 'number')
+                mark = details.mark;
+              if (
+                (!maxPoints || maxPoints <= 0) &&
+                typeof details.maxPoints === 'number'
+              )
                 maxPoints = details.maxPoints;
             } catch {}
 
@@ -352,7 +377,11 @@ export class CourseService {
               submissions += 1;
 
               if (!studentsById[userId]) {
-                const found = enrolled.find((e) => e.id === userId) || { id: userId, name: '', email: '' };
+                const found = enrolled.find((e) => e.id === userId) || {
+                  id: userId,
+                  name: '',
+                  email: '',
+                };
                 studentsById[userId] = {
                   name: found.name,
                   email: found.email,
@@ -399,34 +428,38 @@ export class CourseService {
       s.totalAssignments = totalAssignments;
     });
 
-    const topPerformingStudents = Object.entries(studentsById).map(([id, s]) => {
-      const overallAverage = s.countPerc > 0 ? s.sumPerc / s.countPerc : 0;
-      const letterGrade =
-        overallAverage >= 85
-          ? 'A'
-          : overallAverage >= 70
-          ? 'B'
-          : overallAverage >= 60
-          ? 'C'
-          : overallAverage >= 50
-          ? 'D'
-          : 'F';
-      return {
-        studentId: Number(id),
-        name: s.name,
-        email: s.email,
-        overallAverage,
-        letterGrade,
-        assignmentsCompleted: s.assignmentsCompleted,
-        totalAssignments: s.totalAssignments,
-        lessonsProgress: [],
-      };
-    });
+    const topPerformingStudents = Object.entries(studentsById).map(
+      ([id, s]) => {
+        const overallAverage = s.countPerc > 0 ? s.sumPerc / s.countPerc : 0;
+        const letterGrade =
+          overallAverage >= 85
+            ? 'A'
+            : overallAverage >= 70
+              ? 'B'
+              : overallAverage >= 60
+                ? 'C'
+                : overallAverage >= 50
+                  ? 'D'
+                  : 'F';
+        return {
+          studentId: Number(id),
+          name: s.name,
+          email: s.email,
+          overallAverage,
+          letterGrade,
+          assignmentsCompleted: s.assignmentsCompleted,
+          totalAssignments: s.totalAssignments,
+          lessonsProgress: [],
+        };
+      },
+    );
 
     const courseAverage =
       topPerformingStudents.length > 0
-        ? topPerformingStudents.reduce((acc, st) => acc + st.overallAverage, 0) /
-          topPerformingStudents.length
+        ? topPerformingStudents.reduce(
+            (acc, st) => acc + st.overallAverage,
+            0,
+          ) / topPerformingStudents.length
         : 0;
 
     const totalStudentsCount = enrolled.length || topPerformingStudents.length;
@@ -438,19 +471,21 @@ export class CourseService {
       totalStudentsCount > 0 && totalAssignments > 0
         ? (totalSubmissions / (totalStudentsCount * totalAssignments)) * 100
         : 0;
-    const studentsAtRiskCount = topPerformingStudents.filter((s) => s.overallAverage < 65).length;
+    const studentsAtRiskCount = topPerformingStudents.filter(
+      (s) => s.overallAverage < 65,
+    ).length;
 
     const gradeDistribution = topPerformingStudents.reduce(
       (acc: any, s) => {
         const g = s.letterGrade.startsWith('A')
           ? 'A'
           : s.letterGrade.startsWith('B')
-          ? 'B'
-          : s.letterGrade.startsWith('C')
-          ? 'C'
-          : s.letterGrade.startsWith('D')
-          ? 'D'
-          : 'F';
+            ? 'B'
+            : s.letterGrade.startsWith('C')
+              ? 'C'
+              : s.letterGrade.startsWith('D')
+                ? 'D'
+                : 'F';
         acc[g] = (acc[g] || 0) + 1;
         return acc;
       },
@@ -517,7 +552,8 @@ export class CourseService {
   async getCourseForStudent(id: number) {
     // Reuse admin course view but only return unlocked lessons
     const full = await this.getCourseById(id);
-    if ((full as any).message === 'Course not found') throw new NotFoundException('Course not found');
+    if ((full as any).message === 'Course not found')
+      throw new NotFoundException('Course not found');
 
     return {
       ...full,
@@ -530,7 +566,8 @@ export class CourseService {
     if (!student) {
       const user = await this.prisma.user.findUnique({ where: { id: userId } });
       if (!user) throw new NotFoundException('User not found');
-      if (user.role !== 'student') throw new BadRequestException('Only students allowed');
+      if (user.role !== 'student')
+        throw new BadRequestException('Only students allowed');
       student = await this.prisma.student.create({ data: { userId } });
     }
 
@@ -549,7 +586,8 @@ export class CourseService {
     if (!student) {
       const user = await this.prisma.user.findUnique({ where: { id: userId } });
       if (!user) throw new NotFoundException('User not found');
-      if (user.role !== 'student') throw new BadRequestException('Only students can enroll');
+      if (user.role !== 'student')
+        throw new BadRequestException('Only students can enroll');
       student = await this.prisma.student.create({ data: { userId } });
     }
 
