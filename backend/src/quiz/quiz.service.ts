@@ -329,9 +329,18 @@ export class QuizService {
     return { updatedQuiz };
   }
 
-  async getCoursesWithLessonsAndQuizzes() {
+  async getCoursesWithLessonsAndQuizzes(userId?: number, userRole?: string) {
+    // Build where clause based on role
+    const whereClause: any = { isConfirmed: true };
+
+    // Teachers can only see their own courses
+    if (userRole === 'teacher' && userId) {
+      whereClause.uploaderId = userId;
+    }
+    // Admins can see all courses (no additional filter needed)
+
     const courses = await this.prisma.course.findMany({
-      where: { isConfirmed: true },
+      where: whereClause,
       include: {
         uploader: {
           select: {

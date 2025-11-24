@@ -35,7 +35,7 @@ export class CourseController {
   @Get('course/:id')
   getCourseByIdByAdmin(@Param('id') id: string, @CurrentUser() user: any) {
     const newId = Number(id);
-    return this.courseService.getCourseById(newId, user?.sub, user?.role);
+    return this.courseService.getCourseById(newId, user?.id, user?.role);
   }
 
   @Post('/create-course')
@@ -77,8 +77,8 @@ export class CourseController {
   }
 
   @Get('/get-uploaded-courses')
-  findAllUploaded() {
-    return this.courseService.findAllUploaded();
+  findAllUploaded(@CurrentUser() user: any) {
+    return this.courseService.findAllUploaded(user?.id, user?.role);
   }
 
   @Get('/get-course-enrollments')

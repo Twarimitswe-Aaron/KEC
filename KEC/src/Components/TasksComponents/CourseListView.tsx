@@ -407,16 +407,17 @@ const CourseListView: React.FC<CourseListViewProps> = ({
           <div className="text-center py-12">
             <BookOpen className="h-12 w-12 text-gray-400 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">
-              {searchQuery ? "No Matching Results" : "No Courses Available"}
+              {searchQuery ? "No Matching Results" : "No Courses Found"}
             </h3>
             <p className="text-gray-600 mb-4">
               {searchQuery
                 ? `No courses, lessons, or quizzes match "${searchQuery}"`
-                : "No courses are currently available in the system"}
+                : "You haven't created any courses yet"}
             </p>
             {!searchQuery && (
               <p className="text-sm text-gray-500">
-                Courses will appear here once they are added to the system
+                Start by creating your first course to manage assignments and
+                track student progress
               </p>
             )}
           </div>

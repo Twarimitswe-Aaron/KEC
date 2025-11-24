@@ -32,6 +32,9 @@ import type { Express } from 'express';
 import type { Multer } from 'multer';
 import { QuizService } from './quiz.service';
 import { AuthGuard } from 'src/auth/auth.guard';
+import { RolesGuard } from 'src/auth/roles.guard';
+import { Roles } from 'src/auth/decorators/roles.decorator';
+import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
 import {
   CreateQuizDto,
   CreateManualQuizDto,
@@ -214,9 +217,14 @@ export class QuizController {
     return this.quizService.updateQuiz({ id, data: updateQuizDto });
   }
 
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles('admin', 'teacher')
   @Get('courses-with-data')
-  async getCoursesWithLessonsAndQuizzes() {
-    return this.quizService.getCoursesWithLessonsAndQuizzes();
+  async getCoursesWithLessonsAndQuizzes(@CurrentUser() user: any) {
+    return this.quizService.getCoursesWithLessonsAndQuizzes(
+      user?.id,
+      user?.role,
+    );
   }
 
   // Create manual quiz (for assignments, practical tests, etc.)
@@ -277,7 +285,7 @@ export class QuizController {
     @Body() body: { responses: { questionId: number; answer: any }[] },
     @Req() req: Request,
   ) {
-    const userId = (req as any)?.user?.sub;
+    const userId = (req as any)?.user?.id;
     return this.quizService.createAttempt(quizId, body.responses, userId);
   }
 
@@ -288,7 +296,7 @@ export class QuizController {
     @Param('quizId', ParseIntPipe) quizId: number,
     @Req() req: Request,
   ) {
-    const userId = (req as any)?.user?.sub;
+    const userId = (req as any)?.user?.id;
     return this.quizService.getMyAttempt(quizId, userId);
   }
 }

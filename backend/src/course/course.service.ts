@@ -192,9 +192,17 @@ export class CourseService {
     return { message: 'Course confirmed successfully' };
   }
 
-  async findAllUploaded() {
+  async findAllUploaded(userId?: number, userRole?: string) {
+    // Build where clause - filter by creator for both teachers and admins
+    const whereClause: any = { isConfirmed: true };
+
+    // Both teachers and admins only see courses they created
+    if (userId) {
+      whereClause.uploaderId = userId;
+    }
+
     const getAllUploaded = await this.prisma.course.findMany({
-      where: { isConfirmed: true },
+      where: whereClause,
       include: { uploader: { include: { profile: true } } },
     });
 

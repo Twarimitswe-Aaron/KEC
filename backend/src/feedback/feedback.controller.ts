@@ -27,7 +27,7 @@ export class FeedbackController {
     @Body() createFeedbackDto: CreateFeedbackDto,
     @CurrentUser() user: any,
   ) {
-    return this.feedbackService.create(createFeedbackDto, user?.sub);
+    return this.feedbackService.create(createFeedbackDto, user?.id);
   }
 
   @Roles('admin')

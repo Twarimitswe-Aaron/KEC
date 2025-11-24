@@ -17,52 +17,6 @@ import CourseListView from "./TasksComponents/CourseListView";
 import PerformanceAnalytics from "./TasksComponents/PerformanceAnalytics";
 import QuizDetailsView from "./TasksComponents/QuizDetailsView";
 
-// Mock data for fallback
-const initialMockData = [
-  {
-    id: 2,
-    name: "Mechanical Engineering 202",
-    code: "ME202",
-    semester: "Fall 2024",
-    credits: 4,
-    instructor: "Prof. Johnson",
-    lessons: [
-      {
-        id: 3,
-        title: "Machine Design Fundamentals",
-        description: "Basic principles of machine design",
-        quizzes: [
-          {
-            id: 301,
-            title: "Machine Design Project",
-            type: "project",
-            dueDate: "2024-11-15",
-            maxPoints: 200,
-            weight: 0.4,
-            students: [
-              {
-                id: 5,
-                name: "David Chen",
-                email: "david@university.edu",
-                mark: 172,
-                submissionDate: "2024-11-15",
-              },
-              {
-                id: 6,
-                name: "Eve Martinez",
-                email: "eve@university.edu",
-                mark: 160,
-                submissionDate: "2024-11-13",
-              },
-            ],
-          },
-        ],
-      },
-    ],
-    enrolledStudents: [],
-  },
-];
-
 const Tasks = () => {
   // RTK Query hooks
   const {
@@ -150,13 +104,11 @@ const Tasks = () => {
     if (coursesData && coursesData.length > 0) {
       return transformApiDataToMockFormat(coursesData);
     }
-    return initialMockData;
+    return []; // Return empty array instead of mock data
   }, [coursesData]);
 
   const loading = coursesLoading;
-  const error = coursesError
-    ? "Failed to load courses. Using demo data."
-    : null;
+  const error = coursesError ? "Failed to load courses." : null;
 
   // Utility functions
   const getGradeColor = (percentage: number) => {
