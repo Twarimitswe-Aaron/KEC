@@ -195,7 +195,7 @@ const Feedback = () => {
           </div>
         </div>
 
-        {(UserRole === "student" || UserRole === "teacher") && (
+        {UserRole === "student" && (
           <div className="mb-6 p-6 transition-all duration-300">
             <div className="flex items-start gap-4">
               <img
@@ -229,7 +229,7 @@ const Feedback = () => {
           </div>
         )}
 
-        {(UserRole === "admin" || UserRole === "teacher") && (
+        {UserRole === "admin" && (
           <>
             {isLoading || isFetching ? (
               <>

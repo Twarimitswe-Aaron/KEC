@@ -12,38 +12,29 @@ import { FeedbackService } from './feedback.service';
 import { CreateFeedbackDto } from './dto/create-feedback.dto';
 import { UpdateFeedbackDto } from './dto/update-feedback.dto';
 import { AuthGuard } from 'src/auth/auth.guard';
+import { RolesGuard } from 'src/auth/roles.guard';
+import { Roles } from 'src/auth/decorators/roles.decorator';
+import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
 
+@UseGuards(AuthGuard, RolesGuard)
 @Controller('feedback')
 export class FeedbackController {
   constructor(private readonly feedbackService: FeedbackService) {}
 
-  @UseGuards(AuthGuard)
+  @Roles('student')
   @Post('/add')
-  create(@Body() createFeedbackDto: CreateFeedbackDto) {
-    return this.feedbackService.create(createFeedbackDto);
+  create(
+    @Body() createFeedbackDto: CreateFeedbackDto,
+    @CurrentUser() user: any,
+  ) {
+    return this.feedbackService.create(createFeedbackDto, user?.sub);
   }
 
+  @Roles('admin')
   @Get()
   findAll() {
     return this.feedbackService.findAll();
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.feedbackService.findOne(+id);
-  }
-
-  @Patch(':id')
-  update(
-    @Param('id') id: string,
-    @Body() updateFeedbackDto: UpdateFeedbackDto,
-  ) {
-    return this.feedbackService.update(+id, updateFeedbackDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    const numericId = parseInt(id, 10);
-    return this.feedbackService.remove(numericId);
-  }
+  // Removed: findOne, update, delete endpoints - not needed for this feedback system
 }

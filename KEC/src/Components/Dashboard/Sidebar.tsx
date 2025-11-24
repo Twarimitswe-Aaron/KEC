@@ -18,7 +18,7 @@ type SidebarItem = {
   label: string;
   path: string;
   icon: React.ReactNode;
-  onClick?: () => void; 
+  onClick?: () => void;
 };
 
 type RoleBasedSidebar = {
@@ -38,8 +38,16 @@ const Dashboard: RoleBasedSidebar = {
     { label: "Course", path: "/course-management", icon: <BsGraphUp /> },
     { label: "Payment", path: "/payment-management", icon: <MdPayment /> },
     { label: "Feedback", path: "/feedback", icon: <LuMessageSquareMore /> },
-    { label: "Announcements", path: "/announcements", icon: <MdOutlineAnnouncement /> },
-    { label: "Certificates", path: "/certificate-creation", icon: <FiSettings /> },
+    {
+      label: "Announcements",
+      path: "/announcements",
+      icon: <MdOutlineAnnouncement />,
+    },
+    {
+      label: "Certificates",
+      path: "/certificate-creation",
+      icon: <FiSettings />,
+    },
     { label: "Tasks", path: "/tasks", icon: <GrTasks /> },
     { label: "Logout", path: "/logout", icon: <CgLogOut /> },
   ],
@@ -48,16 +56,27 @@ const Dashboard: RoleBasedSidebar = {
     { label: "Inbox", path: "/inbox", icon: <RiMessage3Line /> },
     { label: "Course Creation", path: "/course-creation", icon: <BsGraphUp /> },
     { label: "My Account", path: "/my-account", icon: <FaRegUser /> },
-    { label: "Feedback", path: "/feedback", icon: <LuMessageSquareMore /> },
-    { label: "Certificates", path: "/certificate-creation", icon: <FiSettings /> },
-    { label: "Announcements", path: "/announcements", icon: <MdOutlineAnnouncement /> },
+    {
+      label: "Certificates",
+      path: "/certificate-creation",
+      icon: <FiSettings />,
+    },
+    {
+      label: "Announcements",
+      path: "/announcements",
+      icon: <MdOutlineAnnouncement />,
+    },
     { label: "Tasks", path: "/tasks", icon: <GrTasks /> },
     { label: "Logout", path: "/logout", icon: <CgLogOut /> },
   ],
   student: [
     { label: "Dashboard", path: "/dashboard", icon: <FiHome /> },
     { label: "Inbox", path: "/inbox", icon: <RiMessage3Line /> },
-    { label: "Announcements", path: "/announcements", icon: <MdOutlineAnnouncement /> },
+    {
+      label: "Announcements",
+      path: "/announcements",
+      icon: <MdOutlineAnnouncement />,
+    },
     { label: "My Account", path: "/my-account", icon: <FaRegUser /> },
     { label: "Feedback", path: "/feedback", icon: <LuMessageSquareMore /> },
     { label: "Logout", path: "/logout", icon: <CgLogOut /> },
@@ -88,8 +107,7 @@ const Sidebar = ({ isMobileOpen, onClose }: SidebarProps) => {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  const sidebarWidth = collapsed ?  "w-20":"w-64";
-
+  const sidebarWidth = collapsed ? "w-20" : "w-64";
 
   // Handle logout click
   const handleLogout = async () => {
@@ -105,7 +123,9 @@ const Sidebar = ({ isMobileOpen, onClose }: SidebarProps) => {
   return (
     <div
       className={`h-screen sticky  top-0 flex flex-col transition-all duration-300 shadow-lg bg-[#F5FAFF] p-5
-      ${sidebarWidth} rounded-r-xl z-30 ${isMobileOpen ? "top-0 left-0 z-50" : ""}`}
+      ${sidebarWidth} rounded-r-xl z-30 ${
+        isMobileOpen ? "top-0 left-0 z-50" : ""
+      }`}
     >
       {/* Mobile Close Button */}
       {isMobileOpen && (
@@ -122,7 +142,11 @@ const Sidebar = ({ isMobileOpen, onClose }: SidebarProps) => {
 
       {/* Logo & Collapse Toggle */}
       <div className="flex justify-between items-center">
-        {!collapsed && <Link to="/"><img src="/images/Logo.svg" alt="logo" className="w-20 h-20" /></Link>}
+        {!collapsed && (
+          <Link to="/">
+            <img src="/images/Logo.svg" alt="logo" className="w-20 h-20" />
+          </Link>
+        )}
         <button
           onClick={() => setCollapsed(!collapsed)}
           className="text-[#034153]  left-side block"
@@ -139,7 +163,7 @@ const Sidebar = ({ isMobileOpen, onClose }: SidebarProps) => {
           return (
             <NavLink
               key={item.path}
-              to={isLogout ? "/logout" : item.path} 
+              to={isLogout ? "/logout" : item.path}
               className={({ isActive }) =>
                 `flex items-center p-3 rounded-md cursor-pointer transition-all gap-3
                 ${
@@ -160,8 +184,9 @@ const Sidebar = ({ isMobileOpen, onClose }: SidebarProps) => {
               }}
             >
               {item.icon}
-              {(!collapsed) && <span className="whitespace-nowrap ">{item.label}</span>}
-              
+              {!collapsed && (
+                <span className="whitespace-nowrap ">{item.label}</span>
+              )}
             </NavLink>
           );
         })}
