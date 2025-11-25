@@ -43,8 +43,11 @@ model User {
   lastAnnouncementView DateTime          @default(now())
 
   // Payment relationships
-  payments    Payment[]
-  enrollments Enrollment[]
+  payments              Payment[]
+  enrollments           Enrollment[]
+  certificates          Certificates[]
+  certificateTemplate   CertificateTemplate? @relation(fields: [certificateTemplateId], references: [id])
+  certificateTemplateId Int?
 }
 
 model Admin {
@@ -105,6 +108,11 @@ model Course {
   // Payment relationships
   payments    Payment[]
   enrollments Enrollment[]
+
+  // Certificate relationships
+  certificateTemplateId Int?
+  certificateTemplate   CertificateTemplate? @relation(fields: [certificateTemplateId], references: [id])
+  certificates          Certificates[]
 }
 
 model Assignment {
@@ -296,13 +304,44 @@ model Workshop {
 }
 
 model Certificates {
-  id        Int      @id @default(autoincrement())
-  course    String
-  approved  Boolean
+  id        Int               @id @default(autoincrement())
+  status    CertificateStatus @default(PENDING)
+  issueDate DateTime?
+
   studentId Int
-  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  student   Student @relation(fields: [studentId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  courseId Int
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  templateId Int?
+  template   CertificateTemplate? @relation(fields: [templateId], references: [id])
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  user      User?    @relation(fields: [userId], references: [id])
+  userId    Int?
+
+  rejectionReason   String?
+  certificateNumber String?
+}
+
+model CertificateTemplate {
+  id        Int      @id @default(autoincrement())
+  name      String
+  content   String   @db.Text // HTML or JSON content for the certificate design
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  certificates Certificates[]
+  courses      Course[]
+  users        User[]
+}
+
+enum CertificateStatus {
+  PENDING
+  APPROVED
+  REJECTED
 }
 
 model ResetToken {

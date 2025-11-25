@@ -24,6 +24,7 @@ import { CourseModule } from './course/course.module';
 import { ModuleModule } from './module/module.module';
 import { QuizModule } from './quiz/quiz.module';
 import { ChatModule } from './chat/chat.module';
+import { CertificateModule } from './certificate/certificate.module';
 
 @Module({
   imports: [
@@ -45,6 +46,7 @@ import { ChatModule } from './chat/chat.module';
     ModuleModule,
     QuizModule,
     ChatModule,
+    CertificateModule,
   ],
   controllers: [AppController, CsrfController],
   providers: [
@@ -55,7 +57,6 @@ import { ChatModule } from './chat/chat.module';
       provide: APP_FILTER,
       useClass: CsrfExceptionFilter,
     },
-  
   ],
 })
 export class AppModule {}
