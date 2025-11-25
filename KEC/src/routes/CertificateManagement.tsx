@@ -189,21 +189,70 @@ const CertificateManagement = () => {
 
             {activeTab === "requests" && (
               <div className="space-y-6">
-                <div className="flex flex-col md:flex-row gap-4 bg-white/60 backdrop-blur-xl p-2 rounded-2xl border border-white/40 shadow-sm">
-                  <div className="relative flex-1">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                    <input
-                      type="text"
-                      placeholder="Search requests..."
-                      className="w-full pl-12 pr-4 py-3 bg-white/50 border border-transparent focus:border-blue-300/50 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-500/10 transition-all placeholder:text-gray-400"
-                    />
+                {/* Filtration Section */}
+                <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/50 mb-6">
+                  <div className="p-4">
+                    <div className="flex flex-wrap gap-4 items-center justify-between">
+                      {/* Left Section - Filter */}
+                      <div className="flex items-center space-x-4">
+                        <div className="flex items-center space-x-2">
+                          <Filter
+                            className="h-4 w-4 text-gray-500"
+                            aria-hidden="true"
+                          />
+                          <span className="text-sm font-medium text-gray-700">
+                            Filter:
+                          </span>
+                          <select className="border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="all">All Types</option>
+                            <option value="pending">Pending</option>
+                            <option value="approved">Approved</option>
+                            <option value="rejected">Rejected</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      {/* Right Section - Sort and Count */}
+                      <div className="flex items-center space-x-4">
+                        <div className="flex items-center space-x-2">
+                          <span className="text-sm font-medium text-gray-700">
+                            Sort by:
+                          </span>
+                          <select className="border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="newest">Newest First</option>
+                            <option value="oldest">Oldest First</option>
+                          </select>
+                        </div>
+                        <button className="p-1 hover:bg-gray-100 rounded">
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="24"
+                            height="24"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            className="h-4 w-4"
+                            aria-hidden="true"
+                          >
+                            <path d="m3 8 4-4 4 4"></path>
+                            <path d="M7 4v16"></path>
+                            <path d="M11 12h4"></path>
+                            <path d="M11 16h7"></path>
+                            <path d="M11 20h10"></path>
+                          </svg>
+                        </button>
+                        <div className="text-sm text-gray-500">
+                          4 certificates found
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                  <button className="flex items-center gap-2 px-6 py-3 bg-white/50 hover:bg-white text-gray-700 rounded-xl transition-all font-medium border border-transparent hover:border-gray-200">
-                    <Filter className="w-4 h-4" />
-                    <span>Filter</span>
-                  </button>
                 </div>
 
+                {/* Certificate Cards Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {[1, 2, 3, 4].map((i) => (
                     <CertificateCard key={i} status="PENDING" />
