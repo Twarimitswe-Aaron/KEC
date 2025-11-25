@@ -1,10 +1,14 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CertificateStatus } from '@prisma/client';
+import { EmailService } from '../email/email.service';
 
 @Injectable()
 export class CertificateService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private emailService: EmailService,
+  ) {}
 
   async findAll(params: {
     courseId?: number;
@@ -33,11 +37,17 @@ export class CertificateService {
     });
   }
 
-  async generateForCourse(courseId: number) {
+  async generateForCourse(courseId: number, studentIds?: number[]) {
     const course = await this.prisma.course.findUnique({
       where: { id: courseId },
       include: {
-        completedStudents: true,
+        enrollments: {
+          include: {
+            user: {
+              include: { student: true },
+            },
+          },
+        },
       },
     });
 
@@ -45,14 +55,28 @@ export class CertificateService {
       throw new NotFoundException('Course not found');
     }
 
+    // Check if course is ended
+    if (course.status !== 'ENDED') {
+      throw new Error('Course must be ended to generate certificates');
+    }
+
+    // Filter enrollments by studentIds if provided
+    const targetEnrollments = studentIds
+      ? course.enrollments.filter(
+          (e) => e.user.student?.id && studentIds.includes(e.user.student.id),
+        )
+      : course.enrollments;
+
     const generatedCertificates: any[] = [];
 
-    for (const student of course.completedStudents) {
+    for (const enrollment of targetEnrollments) {
+      if (!enrollment.user.student) continue;
+
       // Check if certificate already exists
       const existing = await this.prisma.certificates.findFirst({
         where: {
           courseId,
-          studentId: student.id,
+          studentId: enrollment.user.student.id,
         },
       });
 
@@ -60,9 +84,14 @@ export class CertificateService {
         const cert = await this.prisma.certificates.create({
           data: {
             courseId,
-            studentId: student.id,
+            studentId: enrollment.user.student.id,
             status: CertificateStatus.PENDING,
             templateId: course.certificateTemplateId,
+          },
+          include: {
+            student: {
+              include: { user: true },
+            },
           },
         });
         generatedCertificates.push(cert);
@@ -81,7 +110,7 @@ export class CertificateService {
     rejectionReason?: string,
     certificateNumber?: string,
   ) {
-    return this.prisma.certificates.update({
+    const certificate = await this.prisma.certificates.update({
       where: { id },
       data: {
         status,
@@ -91,7 +120,31 @@ export class CertificateService {
         certificateNumber:
           status === CertificateStatus.APPROVED ? certificateNumber : null,
       },
+      include: {
+        student: {
+          include: { user: true },
+        },
+        course: true,
+      },
     });
+
+    // Send email if certificate is approved
+    if (status === CertificateStatus.APPROVED && certificate.student?.user) {
+      try {
+        await this.emailService.sendCertificateEmail(
+          certificate.student.user.email,
+          `${certificate.student.user.firstName} ${certificate.student.user.lastName}`,
+          certificate.course.title,
+          certificateNumber || `CERT-${certificate.id}`,
+          // You can add certificate URL here if you have one
+        );
+      } catch (error) {
+        console.error('Failed to send certificate email:', error);
+        // Don't fail the entire operation if email fails
+      }
+    }
+
+    return certificate;
   }
 
   async getTemplates() {

@@ -56,8 +56,23 @@ export const certificateApi = apiSlice.injectEndpoints({
       }),
       invalidatesTags: ["Certificates"],
     }),
+
+    generateCertificates: build.mutation<
+      { message: string; certificates: Certificate[] },
+      { courseId: number; studentIds?: number[] }
+    >({
+      query: (body) => ({
+        url: "certificates/generate",
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: ["Certificates"],
+    }),
   }),
 });
 
-export const { useGetCertificatesQuery, useUpdateCertificateStatusMutation } =
-  certificateApi;
+export const {
+  useGetCertificatesQuery,
+  useUpdateCertificateStatusMutation,
+  useGenerateCertificatesMutation,
+} = certificateApi;

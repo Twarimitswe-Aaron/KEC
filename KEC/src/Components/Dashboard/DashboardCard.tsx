@@ -4,6 +4,8 @@ import CourseCard, { Course } from "./CourseCard";
 import { UserRoleContext } from "../../UserRoleContext";
 import { useNavigate } from "react-router-dom";
 import { useEnrollCourseMutation } from "../../state/api/courseApi";
+import CourseActionsMenu from "../CourseActionsMenu";
+import { CourseStatus } from "../../state/api/courseApi";
 
 // Add fade-in-up animation
 const styles = `
@@ -77,6 +79,33 @@ const DashboardCard: React.FC<DashboardCardProps> = ({
             style={{ animationDelay: `${index * 50}ms` }}
           >
             <div className="relative">
+              {/* Course Actions Menu - Top Right */}
+              {(userRole === "admin" || userRole === "teacher") &&
+                course.id && (
+                  <div className="absolute top-2 right-2 z-10">
+                    <CourseActionsMenu
+                      courseId={course.id}
+                      courseName={course.title}
+                      courseStatus={course.status as CourseStatus}
+                    />
+                  </div>
+                )}
+
+              {/* Status Badge - Top Left */}
+              {course.status && (
+                <div className="absolute top-2 left-2 z-10">
+                  <span
+                    className={`px-3 py-1 text-xs font-semibold rounded-full ${
+                      course.status === "ACTIVE"
+                        ? "bg-green-500/20 text-green-700 border border-green-500/30"
+                        : "bg-gray-500/20 text-gray-700 border border-gray-500/30"
+                    }`}
+                  >
+                    {course.status}
+                  </span>
+                </div>
+              )}
+
               <img
                 src={course.image_url}
                 alt={course.title}

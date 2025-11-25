@@ -6,9 +6,22 @@ import {
   useGetCourseDataQuery,
   useUpdateCourseMutation,
   useDeleteCourseMutation,
+  useStartCourseMutation,
+  useStopCourseMutation,
   CourseToUpdate,
+  CourseStatus,
 } from "../state/api/courseApi";
-import { X, Edit3, Trash2, Image, BookOpen, Users } from "lucide-react";
+import {
+  X,
+  Edit3,
+  Trash2,
+  Image,
+  BookOpen,
+  Users,
+  Play,
+  Square,
+  RotateCw,
+} from "lucide-react";
 import { toast } from "react-toastify";
 import { SearchContext } from "../SearchContext";
 import { useUser } from "../hooks/useUser";
@@ -22,6 +35,7 @@ interface CourseData {
   price: string;
   maximum: number;
   open: boolean;
+  status?: CourseStatus;
   lesson: Lesson[];
 }
 
@@ -216,6 +230,31 @@ const LessonsView = () => {
   useEffect(() => {
     courseData && resetCourseForm();
   }, [courseData]);
+
+  const [startCourse, { isLoading: isStarting }] = useStartCourseMutation();
+  const [stopCourse, { isLoading: isStopping }] = useStopCourseMutation();
+
+  const handleStartCourse = async () => {
+    try {
+      await startCourse(Number(id)).unwrap();
+      toast.success("Course started successfully!");
+      updateModals({ showCourseOptions: false });
+      refetchCourse();
+    } catch (error: any) {
+      toast.error(error?.data?.message || "Failed to start course");
+    }
+  };
+
+  const handleStopCourse = async () => {
+    try {
+      await stopCourse(Number(id)).unwrap();
+      toast.success("Course stopped successfully!");
+      updateModals({ showCourseOptions: false });
+      refetchCourse();
+    } catch (error: any) {
+      toast.error(error?.data?.message || "Failed to stop course");
+    }
+  };
 
   const handleAddModule = async () => {
     const { title, description } = forms.lesson;
@@ -602,6 +641,36 @@ const LessonsView = () => {
                       >
                         <Edit3 size={16} /> Edit Course
                       </button>
+
+                      {courseData?.status === CourseStatus.ENDED ? (
+                        <button
+                          className="w-full text-left cursor-pointer px-4 py-2.5 hover:bg-gray-50 transition-colors flex items-center gap-2 text-gray-700 font-medium"
+                          onClick={handleStartCourse}
+                          disabled={isStarting}
+                        >
+                          {isStarting ? (
+                            <RotateCw className="animate-spin" size={16} />
+                          ) : (
+                            <Play size={16} />
+                          )}
+                          Restart Course
+                        </button>
+                      ) : (
+                        <button
+                          className="w-full text-left cursor-pointer px-4 py-2.5 hover:bg-gray-50 transition-colors flex items-center gap-2 text-gray-700 font-medium"
+                          onClick={handleStopCourse}
+                          disabled={isStopping}
+                        >
+                          {isStopping ? (
+                            <RotateCw className="animate-spin" size={16} />
+                          ) : (
+                            <Square size={16} />
+                          )}
+                          Stop Course
+                        </button>
+                      )}
+
+                      <div className="h-px bg-gray-100 my-1" />
                       <button
                         className="w-full text-left px-4 py-2.5 cursor-pointer hover:bg-red-50 text-red-600 transition-colors flex items-center gap-2 font-medium"
                         onClick={handleDeleteCourse}

@@ -607,6 +607,7 @@ export class CourseService {
       return { message: 'Already enrolled' };
     }
 
+    // Track session when enrolling
     await this.prisma.course.update({
       where: { id: courseId },
       data: {
@@ -616,6 +617,125 @@ export class CourseService {
       },
     });
 
+    // Create enrollment record with sessionId
+    await this.prisma.enrollment.create({
+      data: {
+        userId,
+        courseId,
+        sessionId: course.sessionId,
+      },
+    });
+
     return { message: 'Enrolled successfully' };
+  }
+
+  // ========== Course Lifecycle Management ==========
+
+  async startCourse(courseId: number) {
+    // Generate new sessionId when starting/restarting course
+    const sessionId = `session_${Date.now()}_${courseId}`;
+
+    const course = await this.prisma.course.update({
+      where: { id: courseId },
+      data: {
+        status: 'ACTIVE',
+        startDate: new Date(),
+        sessionId,
+        endDate: null, // Clear previous end date
+      },
+    });
+
+    return {
+      message: 'Course started successfully',
+      course: {
+        id: course.id,
+        status: course.status,
+        startDate: course.startDate,
+        sessionId: course.sessionId,
+      },
+    };
+  }
+
+  async stopCourse(courseId: number) {
+    const course = await this.prisma.course.update({
+      where: { id: courseId },
+      data: {
+        status: 'ENDED',
+        endDate: new Date(),
+      },
+    });
+
+    return {
+      message: 'Course stopped successfully',
+      course: {
+        id: course.id,
+        status: course.status,
+        endDate: course.endDate,
+      },
+    };
+  }
+
+  async uploadCourseTemplate(
+    courseId: number,
+    templateUrl: string,
+    templateType: string,
+  ) {
+    const course = await this.prisma.course.update({
+      where: { id: courseId },
+      data: {
+        templateUrl,
+        templateType,
+      },
+    });
+
+    return {
+      message: 'Template uploaded successfully',
+      templateUrl: course.templateUrl,
+      templateType: course.templateType,
+    };
+  }
+
+  async getCourseTemplate(courseId: number) {
+    const course = await this.prisma.course.findUnique({
+      where: { id: courseId },
+      select: {
+        templateUrl: true,
+        templateType: true,
+      },
+    });
+
+    if (!course) {
+      throw new NotFoundException('Course not found');
+    }
+
+    return {
+      templateUrl: course.templateUrl,
+      templateType: course.templateType,
+    };
+  }
+
+  async canStudentAccessCourse(userId: number, courseId: number) {
+    const course = await this.prisma.course.findUnique({
+      where: { id: courseId },
+      include: {
+        enrollments: {
+          where: { userId },
+        },
+      },
+    });
+
+    if (!course || !course.enrollments.length) {
+      return false;
+    }
+
+    const enrollment = course.enrollments[0];
+
+    // Student can access if enrolled in current session
+    // or if no sessionId is set (backward compatibility)
+    return (
+      !course.sessionId ||
+      !enrollment.sessionId ||
+      enrollment.sessionId === course.sessionId
+    );
   }
 }

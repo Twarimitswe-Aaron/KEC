@@ -1,5 +1,10 @@
 import { apiSlice } from "./apiSlice";
 
+export enum CourseStatus {
+  ACTIVE = "ACTIVE",
+  ENDED = "ENDED",
+}
+
 export interface CreateCourseDto {
   title: string;
   description: string;
@@ -81,6 +86,14 @@ export interface CourseData {
   updatedAt: string;
   lesson: Lessons[];
   uploader: UploaderInfo;
+
+  // Lifecycle fields
+  status?: CourseStatus;
+  startDate?: string;
+  endDate?: string;
+  sessionId?: string;
+  templateUrl?: string;
+  templateType?: string;
 }
 
 export interface CourseToUpdate {
@@ -243,6 +256,57 @@ export const courseApi = apiSlice.injectEndpoints({
       }),
       invalidatesTags: [{ type: "Course", id: "STUDENT_LIST" }],
     }),
+
+    // ========== Course Lifecycle Endpoints ==========
+
+    startCourse: builder.mutation<CourseData, number>({
+      query: (id) => ({
+        url: `/course/${id}/start`,
+        method: "POST",
+      }),
+      invalidatesTags: (result, error, id) => [
+        { type: "Course", id },
+        { type: "Course", id: "LIST" },
+      ],
+    }),
+
+    stopCourse: builder.mutation<CourseData, number>({
+      query: (id) => ({
+        url: `/course/${id}/stop`,
+        method: "POST",
+      }),
+      invalidatesTags: (result, error, id) => [
+        { type: "Course", id },
+        { type: "Course", id: "LIST" },
+      ],
+    }),
+
+    uploadCourseTemplate: builder.mutation<
+      { message: string; templateUrl: string; templateType: string },
+      { id: number; file: File }
+    >({
+      query: ({ id, file }) => {
+        const formData = new FormData();
+        formData.append("template", file);
+        return {
+          url: `/course/${id}/template`,
+          method: "POST",
+          body: formData,
+        };
+      },
+      invalidatesTags: (result, error, { id }) => [{ type: "Course", id }],
+    }),
+
+    getCourseTemplate: builder.query<
+      { templateUrl: string; templateType: string },
+      number
+    >({
+      query: (id) => `/course/${id}/template`,
+    }),
+
+    checkCourseAccess: builder.query<{ canAccess: boolean }, number>({
+      query: (id) => `/course/${id}/access-check`,
+    }),
   }),
   overrideExisting: false,
 });
@@ -259,4 +323,10 @@ export const {
   useGetCourseEnrollmentStatusQuery,
   useEnrollCourseMutation,
   useGetCourseEnrollmentsQuery,
+  // Course lifecycle hooks
+  useStartCourseMutation,
+  useStopCourseMutation,
+  useUploadCourseTemplateMutation,
+  useGetCourseTemplateQuery,
+  useCheckCourseAccessQuery,
 } = courseApi;

@@ -117,4 +117,63 @@ export class CourseController {
     }
     return this.courseService.updateCourse(updateCourseDto);
   }
+
+  // ========== Course Lifecycle Endpoints ==========
+
+  @Post(':id/start')
+  @Roles('admin')
+  startCourse(@Param('id') id: string) {
+    return this.courseService.startCourse(+id);
+  }
+
+  @Post(':id/stop')
+  @Roles('admin')
+  stopCourse(@Param('id') id: string) {
+    return this.courseService.stopCourse(+id);
+  }
+
+  @Post(':id/template')
+  @Roles('admin')
+  @UseInterceptors(
+    FileInterceptor('template', {
+      storage: diskStorage({
+        destination: './uploads/templates',
+        filename: (req, file, cb) => {
+          const uniqueSuffix =
+            Date.now() + '-' + Math.round(Math.random() * 1e9);
+          const ext = file.originalname.split('.').pop();
+          cb(null, `template-${uniqueSuffix}.${ext}`);
+        },
+      }),
+    }),
+  )
+  async uploadTemplate(
+    @Param('id') id: string,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    if (!file) {
+      throw new Error('No file uploaded');
+    }
+
+    const templateUrl = `${this.configService.get('BACKEND_URL')}/uploads/templates/${file.filename}`;
+    return this.courseService.uploadCourseTemplate(
+      +id,
+      templateUrl,
+      file.mimetype,
+    );
+  }
+
+  @Get(':id/template')
+  getCourseTemplate(@Param('id') id: string) {
+    return this.courseService.getCourseTemplate(+id);
+  }
+
+  @Get(':id/access-check')
+  async checkAccess(@Param('id') id: string, @CurrentUser() user: any) {
+    const canAccess = await this.courseService.canStudentAccessCourse(
+      user.id,
+      +id,
+    );
+    return { canAccess };
+  }
 }

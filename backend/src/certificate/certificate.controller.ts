@@ -29,8 +29,13 @@ export class CertificateController {
   }
 
   @Post('generate')
-  generateCertificates(@Body() body: { courseId: number }) {
-    return this.certificateService.generateForCourse(body.courseId);
+  generateCertificates(
+    @Body() body: { courseId: number; studentIds?: number[] },
+  ) {
+    return this.certificateService.generateForCourse(
+      body.courseId,
+      body.studentIds,
+    );
   }
 
   @Patch(':id/status')

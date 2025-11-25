@@ -44,6 +44,23 @@ export interface WebSocketEvents {
   "chat:joined": (data: { chatId: number }) => void;
   "reaction:added": (data: ReactionUpdate) => void;
   "reaction:removed": (data: ReactionUpdate) => void;
+
+  // Group chat management events
+  "chat:updated": (data: {
+    chatId: number;
+    type: string;
+    name?: string;
+    groupAvatar?: string;
+  }) => void;
+  "participant:added": (data: {
+    chatId: number;
+    participantIds: number[];
+  }) => void;
+  "participant:removed": (data: { chatId: number; userId: number }) => void;
+  "chat:deleted": (data: { chatId: number }) => void;
+  "chat:added": (data: { chatId: number }) => void;
+  "chat:removed": (data: { chatId: number }) => void;
+
   connect: () => void;
   disconnect: () => void;
   error: (error: any) => void;
