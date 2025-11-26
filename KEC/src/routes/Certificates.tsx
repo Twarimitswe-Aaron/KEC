@@ -10,12 +10,18 @@ import {
   FaChevronDown,
   FaChevronRight,
   FaUsers,
+  FaEllipsisV,
+  FaUpload,
 } from "react-icons/fa";
 import { toast } from "react-toastify";
 import {
   useGetEndedCoursesWithStudentsQuery,
   useUpdateCertificateStatusMutation,
 } from "../state/api/certificateApi";
+import {
+  CertificateTemplate1,
+  CertificateTemplate2,
+} from "../Components/Certificate/CertificateTemplates";
 
 // Types
 interface Certificate {
@@ -45,7 +51,7 @@ const Certificates: React.FC = () => {
   // API hooks
   const { data: endedCourses = [], isLoading: isLoadingCourses } =
     useGetEndedCoursesWithStudentsQuery();
-    console.log(endedCourses)
+  console.log(endedCourses);
   const [updateStatus] = useUpdateCertificateStatusMutation();
 
   // State
@@ -59,6 +65,14 @@ const Certificates: React.FC = () => {
   const [expandedCourses, setExpandedCourses] = useState<Set<number>>(
     new Set()
   );
+  const [openMenuCourseId, setOpenMenuCourseId] = useState<number | null>(null);
+  const [showUploadModal, setShowUploadModal] = useState(false);
+  const [showViewTemplateModal, setShowViewTemplateModal] = useState(false);
+  const [selectedCourse, setSelectedCourse] = useState<any>(null);
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [selectedTemplate, setSelectedTemplate] = useState<
+    "template1" | "template2"
+  >("template1");
 
   // Toggle course expansion
   const toggleCourseExpansion = (courseId: number) => {
@@ -339,6 +353,53 @@ const Certificates: React.FC = () => {
                         )}
                       </div>
 
+                      {/* Template Menu */}
+                      <div className="relative">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setOpenMenuCourseId(
+                              openMenuCourseId === course.id ? null : course.id
+                            );
+                          }}
+                          className="p-2 hover:bg-gray-200 rounded-lg transition-colors"
+                        >
+                          <FaEllipsisV className="text-gray-600" />
+                        </button>
+
+                        {/* Dropdown Menu */}
+                        {openMenuCourseId === course.id && (
+                          <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-xl border border-gray-200 z-10">
+                            <div className="py-1">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedCourse(course);
+                                  setShowViewTemplateModal(true);
+                                  setOpenMenuCourseId(null);
+                                }}
+                                className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                              >
+                                <FaEye className="text-blue-600" />
+                                View Template
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedCourse(course);
+                                  setShowUploadModal(true);
+                                  setOpenMenuCourseId(null);
+                                }}
+                                className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                              >
+                                <FaUpload className="text-green-600" />
+                                Upload Template
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
                       {/* Expand/Collapse Icon */}
                       <div className="text-gray-600 transition-transform duration-300">
                         {expandedCourses.has(course.id) ? (
@@ -561,6 +622,160 @@ const Certificates: React.FC = () => {
                 className="flex-1 px-6 py-3 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-xl hover:from-red-600 hover:to-red-700 transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
               >
                 Reject
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Upload Template Modal */}
+      {showUploadModal && selectedCourse && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50">
+          <div className="bg-white/95 backdrop-blur-md rounded-2xl w-full max-w-md p-8 shadow-2xl border border-white/50">
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <FaUpload className="text-3xl text-blue-600" />
+              </div>
+              <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                Upload Template
+              </h3>
+              <p className="text-gray-600 mb-4">
+                Upload a certificate template for {selectedCourse.title}.
+                Supported formats: PNG, JPG.
+              </p>
+
+              <div
+                className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-blue-500 transition-colors cursor-pointer bg-gray-50"
+                onClick={() =>
+                  document.getElementById("template-upload")?.click()
+                }
+              >
+                <input
+                  type="file"
+                  id="template-upload"
+                  className="hidden"
+                  accept="image/*"
+                  onChange={(e) => {
+                    if (e.target.files?.[0]) {
+                      setUploadedFile(e.target.files[0]);
+                    }
+                  }}
+                />
+                {uploadedFile ? (
+                  <div className="text-sm text-gray-600">
+                    <p className="font-medium text-blue-600">
+                      {uploadedFile.name}
+                    </p>
+                    <p className="text-xs mt-1">Click to change</p>
+                  </div>
+                ) : (
+                  <div className="text-gray-500">
+                    <FaUpload className="mx-auto text-2xl mb-2 text-gray-400" />
+                    <p className="text-sm">Click to upload or drag and drop</p>
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="flex gap-4">
+              <button
+                onClick={() => {
+                  setShowUploadModal(false);
+                  setUploadedFile(null);
+                }}
+                className="flex-1 px-6 py-3 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 transition-colors font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  // Handle upload logic here
+                  toast.success("Template uploaded successfully");
+                  setShowUploadModal(false);
+                  setUploadedFile(null);
+                }}
+                disabled={!uploadedFile}
+                className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl hover:from-blue-600 hover:to-blue-700 transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+              >
+                Upload
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* View Template Modal */}
+      {showViewTemplateModal && selectedCourse && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50">
+          <div className="bg-white/95 backdrop-blur-md rounded-2xl w-full max-w-4xl p-6 shadow-2xl border border-white/50 max-h-[90vh] flex flex-col">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-bold text-gray-900">
+                Certificate Template: {selectedCourse.title}
+              </h3>
+              <button
+                onClick={() => setShowViewTemplateModal(false)}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <FaTimes className="text-gray-500" />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-auto bg-gray-100 rounded-xl p-4 flex flex-col items-center min-h-[400px]">
+              {/* Template Selector */}
+              <div className="flex gap-4 mb-6 sticky top-0 z-10 py-2 bg-gray-100/80 backdrop-blur w-full justify-center">
+                <button
+                  onClick={() => setSelectedTemplate("template1")}
+                  className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                    selectedTemplate === "template1"
+                      ? "bg-blue-600 text-white shadow-md"
+                      : "bg-white text-gray-600 hover:bg-gray-50 border border-gray-200"
+                  }`}
+                >
+                  Classic Template
+                </button>
+                <button
+                  onClick={() => setSelectedTemplate("template2")}
+                  className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                    selectedTemplate === "template2"
+                      ? "bg-blue-600 text-white shadow-md"
+                      : "bg-white text-gray-600 hover:bg-gray-50 border border-gray-200"
+                  }`}
+                >
+                  Modern Template
+                </button>
+              </div>
+
+              {/* Template Preview */}
+              <div className="w-full max-w-3xl bg-white shadow-2xl overflow-hidden transform scale-90 origin-top">
+                {selectedTemplate === "template1" ? (
+                  <CertificateTemplate1
+                    studentName="John Doe"
+                    courseName={selectedCourse.title}
+                    courseDescription={
+                      selectedCourse.description ||
+                      "For successfully completing the comprehensive course curriculum and demonstrating proficiency in the subject matter."
+                    }
+                    issueDate={new Date().toLocaleDateString()}
+                  />
+                ) : (
+                  <CertificateTemplate2
+                    studentName="John Doe"
+                    courseName={selectedCourse.title}
+                    courseDescription={
+                      selectedCourse.description ||
+                      "For successfully completing the comprehensive course curriculum and demonstrating proficiency in the subject matter."
+                    }
+                    issueDate={new Date().toLocaleDateString()}
+                  />
+                )}
+              </div>
+            </div>
+
+            <div className="mt-6 flex justify-end">
+              <button
+                onClick={() => setShowViewTemplateModal(false)}
+                className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium"
+              >
+                Close
               </button>
             </div>
           </div>

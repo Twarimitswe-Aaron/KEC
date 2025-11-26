@@ -14,6 +14,7 @@ import {
   useMarkMessagesAsReadMutation,
   useRenameChatMutation,
   useUpdateChatAvatarMutation,
+  useUploadChatFileMutation,
   useAddParticipantsMutation,
   useRemoveParticipantMutation,
   useDeleteChatMutation,
@@ -58,7 +59,7 @@ export interface ChatContextType {
   isTabVisible: boolean;
   // Group Management
   renameChat: (chatId: number, name: string) => Promise<boolean>;
-  updateChatAvatar: (chatId: number, avatarUrl: string) => Promise<boolean>;
+  updateChatAvatar: (chatId: number, avatar: string | File) => Promise<boolean>;
   addParticipants: (
     chatId: number,
     participantIds: number[]
@@ -159,6 +160,7 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
   const [markMessagesAsReadMutation] = useMarkMessagesAsReadMutation();
   const [renameChatMutation] = useRenameChatMutation();
   const [updateChatAvatarMutation] = useUpdateChatAvatarMutation();
+  const [uploadChatFileMutation] = useUploadChatFileMutation();
   const [addParticipantsMutation] = useAddParticipantsMutation();
   const [removeParticipantMutation] = useRemoveParticipantMutation();
   const [deleteChatMutation] = useDeleteChatMutation();
@@ -889,8 +891,20 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
   );
 
   const updateChatAvatar = useCallback(
-    async (chatId: number, avatarUrl: string) => {
+    async (chatId: number, avatar: string | File) => {
       try {
+        let avatarUrl = "";
+
+        if (avatar instanceof File) {
+          const result = await uploadChatFileMutation({
+            file: avatar,
+            chatId,
+          }).unwrap();
+          avatarUrl = result.fileUrl;
+        } else {
+          avatarUrl = avatar;
+        }
+
         await updateChatAvatarMutation({ chatId, avatarUrl }).unwrap();
         return true;
       } catch (error) {
@@ -898,7 +912,7 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
         return false;
       }
     },
-    [updateChatAvatarMutation]
+    [updateChatAvatarMutation, uploadChatFileMutation]
   );
 
   const addParticipants = useCallback(
