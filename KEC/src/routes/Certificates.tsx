@@ -745,7 +745,8 @@ const Certificates: React.FC = () => {
               </div>
 
               {/* Template Preview */}
-              <div className="w-full max-w-3xl bg-white shadow-2xl overflow-hidden transform scale-90 origin-top">
+              {/* Template Preview */}
+              <div className="w-full max-w-3xl bg-white shadow-2xl">
                 {selectedTemplate === "template1" ? (
                   <CertificateTemplate1
                     studentName="John Doe"

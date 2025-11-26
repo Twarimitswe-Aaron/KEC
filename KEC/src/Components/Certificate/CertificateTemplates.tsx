@@ -18,7 +18,7 @@ export const CertificateTemplate1: React.FC<TemplateProps> = ({
 }) => {
   return (
     <div
-      className="w-full h-full bg-white p-8 text-center relative overflow-hidden shadow-lg"
+      className="w-full h-full bg-white p-8 text-center relative shadow-lg"
       style={{ minHeight: "600px", fontFamily: "'Times New Roman', serif" }}
     >
       {/* Border */}
@@ -99,7 +99,7 @@ export const CertificateTemplate2: React.FC<TemplateProps> = ({
 }) => {
   return (
     <div
-      className="w-full h-full bg-slate-50 p-0 relative overflow-hidden shadow-lg flex"
+      className="w-full h-full bg-slate-50 p-0 relative shadow-lg flex"
       style={{ minHeight: "600px", fontFamily: "'Inter', sans-serif" }}
     >
       {/* Sidebar */}
