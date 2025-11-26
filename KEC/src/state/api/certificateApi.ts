@@ -11,6 +11,7 @@ export interface Certificate {
   updatedAt: string;
   rejectionReason?: string;
   certificateNumber?: string;
+  description?: string | null;
   student: {
     id: number;
     userId: number;
@@ -47,6 +48,7 @@ export const certificateApi = apiSlice.injectEndpoints({
         status: string;
         rejectionReason?: string;
         certificateNumber?: string;
+        description?: string;
       }
     >({
       query: ({ id, ...body }) => ({

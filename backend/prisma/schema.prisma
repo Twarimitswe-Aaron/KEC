@@ -339,6 +339,7 @@ model Certificates {
 
   rejectionReason   String?
   certificateNumber String?
+  description       String? // Custom text for the certificate
 
   @@unique([studentId, courseId])
 }

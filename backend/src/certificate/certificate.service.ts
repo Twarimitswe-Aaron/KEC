@@ -109,6 +109,7 @@ export class CertificateService {
     status: CertificateStatus,
     rejectionReason?: string,
     certificateNumber?: string,
+    description?: string,
   ) {
     const certificate = await this.prisma.certificates.update({
       where: { id },
@@ -119,6 +120,7 @@ export class CertificateService {
           status === CertificateStatus.REJECTED ? rejectionReason : null,
         certificateNumber:
           status === CertificateStatus.APPROVED ? certificateNumber : null,
+        description: status === CertificateStatus.APPROVED ? description : null,
       },
       include: {
         student: {

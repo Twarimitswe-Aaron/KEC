@@ -7,6 +7,7 @@ interface TemplateProps {
   courseDescription: string;
   issueDate: string;
   instructorName?: string;
+  certificateNumber?: string;
 }
 
 export const CertificateTemplate1: React.FC<TemplateProps> = ({
@@ -15,6 +16,7 @@ export const CertificateTemplate1: React.FC<TemplateProps> = ({
   courseDescription,
   issueDate,
   instructorName = "Instructor Name",
+  certificateNumber,
 }) => {
   return (
     <div
@@ -67,13 +69,18 @@ export const CertificateTemplate1: React.FC<TemplateProps> = ({
             <p className="text-sm text-gray-500 mt-1">Date Issued</p>
           </div>
 
-          <div className="w-24 h-24 opacity-20">
+          <div className="w-24 h-24 opacity-20 flex flex-col items-center justify-center">
             {/* Seal Placeholder */}
-            <div className="w-full h-full rounded-full border-4 border-yellow-600 flex items-center justify-center">
+            <div className="w-full h-full rounded-full border-4 border-yellow-600 flex items-center justify-center mb-1">
               <span className="text-xs font-bold text-yellow-800 transform -rotate-12">
                 OFFICIAL SEAL
               </span>
             </div>
+            {certificateNumber && (
+              <span className="text-[10px] text-gray-500 font-mono">
+                #{certificateNumber}
+              </span>
+            )}
           </div>
 
           <div className="text-center">
@@ -96,6 +103,7 @@ export const CertificateTemplate2: React.FC<TemplateProps> = ({
   courseDescription,
   issueDate,
   instructorName = "Instructor Name",
+  certificateNumber,
 }) => {
   return (
     <div
@@ -158,14 +166,14 @@ export const CertificateTemplate2: React.FC<TemplateProps> = ({
               </p>
               <p className="font-bold text-gray-900">{issueDate}</p>
             </div>
-            <div className="bg-blue-50 px-6 py-3 rounded-lg border border-blue-100">
-              <p className="text-xs text-blue-500 uppercase tracking-wider mb-1">
-                Certificate ID
-              </p>
-              <p className="font-bold text-blue-900">
-                CID-{Math.floor(Math.random() * 100000)}
-              </p>
-            </div>
+            {certificateNumber && (
+              <div className="bg-blue-50 px-6 py-3 rounded-lg border border-blue-100">
+                <p className="text-xs text-blue-500 uppercase tracking-wider mb-1">
+                  Certificate ID
+                </p>
+                <p className="font-bold text-blue-900">#{certificateNumber}</p>
+              </div>
+            )}
           </div>
         </div>
       </div>

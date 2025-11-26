@@ -43,6 +43,7 @@ interface Certificate {
   certificateNumber: string | null;
   rejectionReason: string | null;
   issueDate: string | null;
+  description: string | null;
 }
 
 type TabType = "all" | "pending" | "approved" | "rejected";
@@ -64,12 +65,15 @@ const Certificates: React.FC = () => {
     null
   );
   const [rejectionReason, setRejectionReason] = useState("");
+  const [certificateDescription, setCertificateDescription] = useState("");
   const [expandedCourses, setExpandedCourses] = useState<Set<number>>(
     new Set()
   );
   const [openMenuCourseId, setOpenMenuCourseId] = useState<number | null>(null);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [showViewTemplateModal, setShowViewTemplateModal] = useState(false);
+  const [showViewCertificateModal, setShowViewCertificateModal] =
+    useState(false);
   const [selectedCourse, setSelectedCourse] = useState<any>(null);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [selectedTemplate, setSelectedTemplate] = useState<
@@ -104,10 +108,12 @@ const Certificates: React.FC = () => {
         id: requestId,
         status: "APPROVED",
         certificateNumber,
+        description: certificateDescription,
       }).unwrap();
       toast.success("Certificate approved successfully");
       setShowApprovalModal(false);
       setSelectedRequest(null);
+      setCertificateDescription("");
     } catch (error) {
       toast.error("Failed to approve certificate");
       console.error(error);
@@ -512,7 +518,13 @@ const Certificates: React.FC = () => {
                               )}
                               {request.status === "APPROVED" && (
                                 <div className="flex gap-2">
-                                  <button className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors border border-blue-200">
+                                  <button
+                                    onClick={() => {
+                                      setSelectedRequest(request);
+                                      setShowViewCertificateModal(true);
+                                    }}
+                                    className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors border border-blue-200"
+                                  >
                                     <FaEye className="text-lg" />
                                   </button>
                                   <button className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors border border-green-200">
@@ -556,32 +568,93 @@ const Certificates: React.FC = () => {
       {/* Approval Modal */}
       {showApprovalModal && selectedRequest && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50">
-          <div className="bg-white/95 backdrop-blur-md rounded-2xl w-full max-w-md p-8 shadow-2xl border border-white/50">
-            <div className="text-center mb-6">
-              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <FaCheck className="text-3xl text-green-600" />
-              </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-2">
+          <div className="bg-white/95 backdrop-blur-md rounded-2xl w-full max-w-6xl p-6 shadow-2xl border border-white/50 max-h-[90vh] flex flex-col">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-2xl font-bold text-gray-900">
                 Approve Certificate
               </h3>
-              <p className="text-gray-600">
-                Are you sure you want to approve this certificate request? This
-                will generate a certificate for the student.
-              </p>
-            </div>
-            <div className="flex gap-4">
               <button
                 onClick={() => setShowApprovalModal(false)}
-                className="flex-1 px-6 py-3 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 transition-colors font-medium"
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
               >
-                Cancel
+                <FaTimes className="text-gray-500" />
               </button>
-              <button
-                onClick={() => approveCertificate(selectedRequest.id)}
-                className="flex-1 px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl hover:from-green-600 hover:to-green-700 transition-all font-medium shadow-lg"
-              >
-                Approve
-              </button>
+            </div>
+
+            <div className="flex-1 overflow-auto grid grid-cols-1 lg:grid-cols-2 gap-8 p-2">
+              {/* Preview Section */}
+              <div className="flex flex-col gap-4">
+                <h4 className="font-semibold text-gray-700">Preview</h4>
+                <div className="bg-gray-100 rounded-xl p-4 flex items-center justify-center border border-gray-200 shadow-inner min-h-[400px]">
+                  <div className="w-full transform scale-90 origin-top">
+                    <CertificateTemplate1
+                      studentName={`${selectedRequest.student.user.firstName} ${selectedRequest.student.user.lastName}`}
+                      courseName={
+                        endedCourses.find(
+                          (c: any) => c.id === selectedRequest.courseId
+                        )?.title || "Course Name"
+                      }
+                      courseDescription={
+                        certificateDescription ||
+                        "For successfully completing the comprehensive course curriculum and demonstrating proficiency in the subject matter."
+                      }
+                      issueDate={new Date().toLocaleDateString()}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Section */}
+              <div className="flex flex-col gap-6">
+                <div className="bg-blue-50 p-4 rounded-xl border border-blue-100">
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 bg-blue-100 rounded-full">
+                      <FaCheck className="text-blue-600" />
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-blue-900">
+                        Confirm Approval
+                      </h4>
+                      <p className="text-sm text-blue-700 mt-1">
+                        You are about to approve the certificate for{" "}
+                        <span className="font-bold">
+                          {selectedRequest.student.user.firstName}{" "}
+                          {selectedRequest.student.user.lastName}
+                        </span>
+                        . This will generate a permanent certificate record and
+                        notify the student.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Certificate Description / Commendation
+                  </label>
+                  <textarea
+                    value={certificateDescription}
+                    onChange={(e) => setCertificateDescription(e.target.value)}
+                    className="w-full p-4 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none h-32"
+                    placeholder="Enter a custom description or commendation for this student (optional). If left blank, the default course description will be used."
+                  />
+                </div>
+
+                <div className="mt-auto flex gap-4">
+                  <button
+                    onClick={() => setShowApprovalModal(false)}
+                    className="flex-1 px-6 py-3 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 transition-colors font-medium"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => approveCertificate(selectedRequest.id)}
+                    className="flex-1 px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl hover:from-green-600 hover:to-green-700 transition-all font-medium shadow-lg flex items-center justify-center gap-2"
+                  >
+                    <FaCheck /> Confirm & Approve
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -788,6 +861,61 @@ const Certificates: React.FC = () => {
                 className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium"
               >
                 Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* View Approved Certificate Modal */}
+      {showViewCertificateModal && selectedRequest && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50">
+          <div className="bg-white/95 backdrop-blur-md rounded-2xl w-full max-w-5xl p-6 shadow-2xl border border-white/50 max-h-[90vh] flex flex-col">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-bold text-gray-900">
+                Certificate of Completion
+              </h3>
+              <button
+                onClick={() => setShowViewCertificateModal(false)}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <FaTimes className="text-gray-500" />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-auto bg-gray-100 rounded-xl p-4 flex items-center justify-center min-h-[400px]">
+              <div className="w-full max-w-3xl bg-white shadow-2xl transform scale-95">
+                <CertificateTemplate1
+                  studentName={`${selectedRequest.student.user.firstName} ${selectedRequest.student.user.lastName}`}
+                  courseName={
+                    endedCourses.find(
+                      (c: any) => c.id === selectedRequest.courseId
+                    )?.title || "Course Name"
+                  }
+                  courseDescription={
+                    selectedRequest.description ||
+                    "For successfully completing the comprehensive course curriculum and demonstrating proficiency in the subject matter."
+                  }
+                  issueDate={
+                    selectedRequest.issueDate
+                      ? new Date(selectedRequest.issueDate).toLocaleDateString()
+                      : new Date().toLocaleDateString()
+                  }
+                  certificateNumber={
+                    selectedRequest.certificateNumber || undefined
+                  }
+                />
+              </div>
+            </div>
+
+            <div className="mt-6 flex justify-end gap-4">
+              <button
+                onClick={() => setShowViewCertificateModal(false)}
+                className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium"
+              >
+                Close
+              </button>
+              <button className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center gap-2">
+                <FaDownload /> Download PDF
               </button>
             </div>
           </div>

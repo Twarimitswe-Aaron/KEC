@@ -53,6 +53,7 @@ export class CertificateController {
       status: CertificateStatus;
       rejectionReason?: string;
       certificateNumber?: string;
+      description?: string;
     },
   ) {
     return this.certificateService.updateStatus(
@@ -60,6 +61,7 @@ export class CertificateController {
       body.status,
       body.rejectionReason,
       body.certificateNumber,
+      body.description,
     );
   }
 
