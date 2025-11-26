@@ -563,11 +563,12 @@ export class CourseService {
     );
 
     return courses.map((course) => {
-      const certificateStatus = certificateMap.get(course.id);
-      const isCompleted = !!course.completedStudents.find(
+      const isEnrolled = course.onGoingStudents.some((s) => s.id === studentId);
+      const isCompleted = course.completedStudents.some(
         (s) => s.id === studentId,
       );
-      const isFailed = !!course.failedStudents.find((s) => s.id === studentId);
+      const isFailed = course.failedStudents.some((s) => s.id === studentId);
+      const certificateStatus = certificateMap.get(course.id);
 
       return {
         id: course.id,
@@ -576,20 +577,17 @@ export class CourseService {
         category: course.category || null,
         price: course.coursePrice,
         image_url: course.image_url,
-        no_lessons: String(course.lesson?.length || 0),
-        open: !!course.open,
-        enrolled: !!course.onGoingStudents.find((s) => s.id === studentId),
+        no_lessons: course.lesson.length.toString(),
+        open: course.open,
+        status: course.status,
+        enrolled: isEnrolled,
         completed: isCompleted,
         failed: isFailed,
-        status: course.status,
-        certificateStatus, // PENDING, APPROVED, REJECTED, or undefined
-        certificateIssued:
-          certificateStatus === 'APPROVED' || certificateStatus === 'REJECTED',
-        createdAt: course.createdAt.toISOString(),
+        certificateStatus,
         uploader: {
-          id: course.uploader?.id || 0,
-          name: `${course.uploader?.firstName ?? ''} ${course.uploader?.lastName ?? ''}`.trim(),
-          email: course.uploader?.email || '',
+          id: course.uploader?.id,
+          name: `${course.uploader?.firstName} ${course.uploader?.lastName}`,
+          email: course.uploader?.email,
           avatar_url: course.uploader?.profile?.avatar || '',
         },
       };
@@ -688,57 +686,6 @@ export class CourseService {
   }
 
   // ========== Course Lifecycle Management ==========
-
-  async startCourse(courseId: number) {
-    // Check if course already has a session ID to preserve it (resume behavior)
-    const existingCourse = await this.prisma.course.findUnique({
-      where: { id: courseId },
-      select: { sessionId: true },
-    });
-
-    // Generate new sessionId only if one doesn't exist
-    const sessionId =
-      existingCourse?.sessionId || `session_${Date.now()}_${courseId}`;
-
-    const course = await this.prisma.course.update({
-      where: { id: courseId },
-      data: {
-        status: 'ACTIVE',
-        startDate: new Date(),
-        sessionId,
-        endDate: null, // Clear previous end date
-      },
-    });
-
-    return {
-      message: 'Course started successfully',
-      course: {
-        id: course.id,
-        status: course.status,
-        startDate: course.startDate,
-        sessionId: course.sessionId,
-      },
-    };
-  }
-
-  async stopCourse(courseId: number) {
-    const course = await this.prisma.course.update({
-      where: { id: courseId },
-      data: {
-        status: 'ENDED',
-        endDate: new Date(),
-      },
-    });
-
-    return {
-      message: 'Course stopped successfully',
-      course: {
-        id: course.id,
-        status: course.status,
-        endDate: course.endDate,
-      },
-    };
-  }
 
   async uploadCourseTemplate(
     courseId: number,
@@ -908,14 +855,18 @@ export class CourseService {
       where: { id: courseId },
       include: {
         onGoingStudents: true,
-        enrollments: {
-          where: { sessionId: course.sessionId }, // Only get enrollments for current session
-          include: { user: { include: { student: true } } },
-        },
       },
     });
 
     if (!course) throw new NotFoundException('Course not found');
+
+    const enrollments = await this.prisma.enrollment.findMany({
+      where: {
+        courseId: courseId,
+        sessionId: course.sessionId,
+      },
+      include: { user: { include: { student: true } } },
+    });
 
     // Move students to completedStudents
     await this.prisma.course.update({
@@ -933,18 +884,18 @@ export class CourseService {
     });
 
     // Create certificate records for all enrolled students
-    const certificatePromises = course.enrollments
+    const certificatePromises = enrollments
       .filter((enrollment) => enrollment.user?.student?.id) // Ensure student record exists
       .map((enrollment) =>
         this.prisma.certificates.upsert({
           where: {
             studentId_courseId: {
-              studentId: enrollment.user.student.id,
+              studentId: enrollment.user!.student!.id,
               courseId,
             },
           },
           create: {
-            studentId: enrollment.user.student.id,
+            studentId: enrollment.user!.student!.id,
             courseId,
             userId: enrollment.userId,
             status: 'PENDING',
@@ -957,7 +908,7 @@ export class CourseService {
 
     return {
       message: 'Course stopped, students moved to completed',
-      studentsAffected: course.enrollments.length,
+      studentsAffected: enrollments.length,
     };
   }
 }

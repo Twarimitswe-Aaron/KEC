@@ -339,6 +339,8 @@ model Certificates {
 
   rejectionReason   String?
   certificateNumber String?
+
+  @@unique([studentId, courseId])
 }
 
 model CertificateTemplate {
