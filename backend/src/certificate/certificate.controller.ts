@@ -8,6 +8,7 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
+import { Roles } from 'src/auth/decorators/roles.decorator';
 import { CertificateService } from './certificate.service';
 import { CertificateStatus } from '@prisma/client';
 
@@ -38,6 +39,7 @@ export class CertificateController {
     );
   }
 
+  @Roles('admin')
   @Patch(':id/status')
   updateStatus(
     @Param('id') id: string,

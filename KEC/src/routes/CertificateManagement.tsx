@@ -14,16 +14,34 @@ import {
 } from "lucide-react";
 import StudentStatusList from "../Components/Certificate/StudentStatusList";
 import CertificateCard from "../Components/Certificate/CertificateCard";
+import CertificateCourseCard from "../Components/Certificate/CertificateCourseCard";
+import CertificateGenerationModal from "../Components/Certificate/CertificateGenerationModal";
+import { useCoursesQuery, CourseStatus } from "../state/api/courseApi";
 
 const CertificateManagement = () => {
   const [activeTab, setActiveTab] = useState("overview");
 
   const tabs = [
     { id: "overview", label: "Overview", icon: Award },
+    { id: "courses", label: "Courses", icon: FileText },
     { id: "requests", label: "Requests", icon: Clock },
     { id: "templates", label: "Templates", icon: FileText },
     { id: "students", label: "Students", icon: Users },
   ];
+
+  const { data: coursesData } = useCoursesQuery();
+  const [selectedCourseForGeneration, setSelectedCourseForGeneration] =
+    useState<{
+      id: number;
+      name: string;
+    } | null>(null);
+
+  const stoppedCourses = coursesData?.filter(
+    (course) => course.status === CourseStatus.ENDED
+  );
+
+  console.log("Debug: CertificateManagement coursesData:", coursesData);
+  console.log("Debug: CertificateManagement stoppedCourses:", stoppedCourses);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-purple-50/30 p-6 md:p-8 space-y-8 relative overflow-hidden">
@@ -187,6 +205,47 @@ const CertificateManagement = () => {
               </div>
             )}
 
+            {activeTab === "courses" && (
+              <div className="space-y-6">
+                <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/50 p-6">
+                  <h2 className="text-xl font-bold text-gray-900 mb-2">
+                    Pending Certification Courses
+                  </h2>
+                  <p className="text-gray-500">
+                    Manage templates and generate certificates for courses that
+                    have ended.
+                  </p>
+                </div>
+
+                {stoppedCourses && stoppedCourses.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {stoppedCourses.map((course) => (
+                      <CertificateCourseCard
+                        key={course.id}
+                        course={course}
+                        onGenerate={(id, name) =>
+                          setSelectedCourseForGeneration({ id, name })
+                        }
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-12 bg-white/40 backdrop-blur-sm rounded-3xl border border-white/40">
+                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <FileText className="w-8 h-8 text-gray-400" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      No Stopped Courses
+                    </h3>
+                    <p className="text-gray-500 mt-2">
+                      Stop a course in Course Management to generate
+                      certificates.
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+
             {activeTab === "requests" && (
               <div className="space-y-6">
                 {/* Filtration Section */}
@@ -278,6 +337,14 @@ const CertificateManagement = () => {
           </motion.div>
         </AnimatePresence>
       </div>
+      {/* Certificate Generation Modal */}
+      {selectedCourseForGeneration && (
+        <CertificateGenerationModal
+          courseId={selectedCourseForGeneration.id}
+          courseName={selectedCourseForGeneration.name}
+          onClose={() => setSelectedCourseForGeneration(null)}
+        />
+      )}
     </div>
   );
 };

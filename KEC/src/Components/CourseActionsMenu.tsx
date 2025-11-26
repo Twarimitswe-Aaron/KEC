@@ -121,7 +121,7 @@ const CourseActionsMenu: React.FC<CourseActionsMenuProps> = ({
                     className="w-full flex items-center gap-3 px-3 py-2 text-white hover:bg-white/10 rounded-lg transition-colors disabled:opacity-50"
                   >
                     <Play className="w-4 h-4" />
-                    <span>{isStarting ? "Starting..." : "Restart Course"}</span>
+                    <span>{isStarting ? "Starting..." : "Start Course"}</span>
                   </button>
                 ) : (
                   <button

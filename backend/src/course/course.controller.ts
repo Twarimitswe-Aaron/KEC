@@ -160,6 +160,7 @@ export class CourseController {
       +id,
       templateUrl,
       file.mimetype,
+      file.path,
     );
   }
 

@@ -96,6 +96,7 @@ export class CourseService {
       maximum: course.maximum,
       createdAt: formatDate(course.createdAt),
       updatedAt: formatDate(course.updatedAt),
+      status: course.status,
 
       lesson: visibleLessons.map((l) => ({
         id: l.id,
@@ -165,7 +166,9 @@ export class CourseService {
       price: course.coursePrice,
       image_url: course.image_url,
       no_lessons: '0',
+
       open: course.open,
+      status: course.status,
 
       uploader: {
         id: course.uploader?.id,
@@ -202,6 +205,15 @@ export class CourseService {
       include: { uploader: { include: { profile: true } } },
     });
 
+    console.log(
+      'Debug: findAllUploaded courses:',
+      getAllUploaded.map((c) => ({
+        id: c.id,
+        title: c.title,
+        status: c.status,
+      })),
+    );
+
     return getAllUploaded.map((course) => ({
       id: course.id,
       title: course.title,
@@ -211,6 +223,8 @@ export class CourseService {
       image_url: course.image_url,
       no_lessons: '0',
       open: course.open,
+      status: course.status,
+      templateUrl: course.templateUrl, // Also adding template info for certificate management
       uploader: {
         id: course.uploader?.id,
         name: `${course.uploader?.firstName} ${course.uploader?.lastName}`,
@@ -242,7 +256,7 @@ export class CourseService {
     const courses = await this.prisma.course.findMany({
       where: { isConfirmed: true },
       include: {
-        onGoingStudents: {
+        enrollments: {
           include: {
             user: { include: { profile: true } },
           },
@@ -255,14 +269,15 @@ export class CourseService {
       id: course.id,
       title: course.title,
       image_url: course.image_url,
-      students: (course.onGoingStudents || []).map((s) => ({
-        id: s.user?.id || 0,
-        name: `${s.user?.firstName ?? ''} ${s.user?.lastName ?? ''}`.trim(),
-        email: s.user?.email || '',
-        phone: s.user?.profile?.phone || '',
+      status: course.status, // Include status to filter for ended courses
+      students: (course.enrollments || []).map((enrollment) => ({
+        id: enrollment.user?.id || 0,
+        name: `${enrollment.user?.firstName ?? ''} ${enrollment.user?.lastName ?? ''}`.trim(),
+        email: enrollment.user?.email || '',
+        phone: enrollment.user?.profile?.phone || '',
         paid: false,
         course: course.title,
-        location: s.user?.profile?.resident || '',
+        location: enrollment.user?.profile?.resident || '',
       })),
     }));
   }
@@ -632,8 +647,15 @@ export class CourseService {
   // ========== Course Lifecycle Management ==========
 
   async startCourse(courseId: number) {
-    // Generate new sessionId when starting/restarting course
-    const sessionId = `session_${Date.now()}_${courseId}`;
+    // Check if course already has a session ID to preserve it (resume behavior)
+    const existingCourse = await this.prisma.course.findUnique({
+      where: { id: courseId },
+      select: { sessionId: true },
+    });
+
+    // Generate new sessionId only if one doesn't exist
+    const sessionId =
+      existingCourse?.sessionId || `session_${Date.now()}_${courseId}`;
 
     const course = await this.prisma.course.update({
       where: { id: courseId },
@@ -679,12 +701,47 @@ export class CourseService {
     courseId: number,
     templateUrl: string,
     templateType: string,
+    filePath?: string,
   ) {
+    let templateContent = '';
+
+    // If it's an HTML file, read the content
+    if (
+      filePath &&
+      (templateType === 'text/html' ||
+        templateType === 'application/xhtml+xml' ||
+        templateUrl.endsWith('.html'))
+    ) {
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        const fs = require('fs');
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        const util = require('util');
+        const readFile = util.promisify(fs.readFile);
+        templateContent = await readFile(filePath, 'utf8');
+      } catch (error) {
+        console.error('Error reading template file:', error);
+      }
+    }
+
+    // Create or update CertificateTemplate if we have content
+    let templateId: number | null = null;
+    if (templateContent) {
+      const template = await this.prisma.certificateTemplate.create({
+        data: {
+          name: `Template for Course ${courseId}`,
+          content: templateContent,
+        },
+      });
+      templateId = template.id;
+    }
+
     const course = await this.prisma.course.update({
       where: { id: courseId },
       data: {
         templateUrl,
         templateType,
+        certificateTemplateId: templateId, // Link the created template
       },
     });
 
@@ -692,6 +749,7 @@ export class CourseService {
       message: 'Template uploaded successfully',
       templateUrl: course.templateUrl,
       templateType: course.templateType,
+      templateId: course.certificateTemplateId,
     };
   }
 

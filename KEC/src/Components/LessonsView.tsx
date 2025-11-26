@@ -203,9 +203,7 @@ const LessonsView = () => {
     return filtered;
   }, [baseLessons, searchQuery]);
 
-  //tomorrow i weill start from here ineed you to help me to be working with this next
-
-  const lessons = courseData?.lesson;
+  const lessons = filteredLessons;
   const updateModals = (updates: any) =>
     setModals((prev) => ({ ...prev, ...updates }));
   const updateForm = (form: FormKey, updates: any) =>
@@ -653,7 +651,7 @@ const LessonsView = () => {
                           ) : (
                             <Play size={16} />
                           )}
-                          Restart Course
+                          Start Course
                         </button>
                       ) : (
                         <button

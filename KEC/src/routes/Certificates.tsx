@@ -19,12 +19,25 @@ import {
   useUpdateCertificateStatusMutation,
   Certificate,
 } from "../state/api/certificateApi";
+import {
+  useGetCourseEnrollmentsQuery,
+  CourseStatus,
+} from "../state/api/courseApi";
 import { toast } from "react-toastify";
 
 type TabType = "pending" | "approved" | "rejected" | "all";
 
 const Certificates = () => {
-  const { data: certificates = [], isLoading } = useGetCertificatesQuery();
+  // Fetch ended courses with their enrolled students
+  const { data: allCourses = [], isLoading: isLoadingCourses } =
+    useGetCourseEnrollmentsQuery();
+  const endedCourses = allCourses.filter(
+    (course: any) => course.status === CourseStatus.ENDED
+  );
+
+  console.log("All courses:", allCourses);
+  console.log("Ended courses:", endedCourses);
+
   const [updateStatus] = useUpdateCertificateStatusMutation();
 
   const [selectedTab, setSelectedTab] = useState<TabType>("all");
@@ -95,52 +108,53 @@ const Certificates = () => {
     }
   };
 
-  // Group certificates by course
+  // Group students by course (from ended courses)
   const getCoursesWithRequests = () => {
-    const grouped = new Map<
-      number,
-      {
-        course: Certificate["course"];
-        requests: Certificate[];
-        counts: {
-          pending: number;
-          approved: number;
-          rejected: number;
-          total: number;
-        };
-      }
-    >();
-
-    certificates.forEach((cert) => {
-      // Filter by tab
-      if (selectedTab !== "all" && cert.status.toLowerCase() !== selectedTab)
-        return;
-
-      if (!grouped.has(cert.courseId)) {
-        grouped.set(cert.courseId, {
-          course: cert.course,
-          requests: [],
-          counts: { pending: 0, approved: 0, rejected: 0, total: 0 },
-        });
-      }
-
-      const group = grouped.get(cert.courseId)!;
-      group.requests.push(cert);
-      group.counts.total++;
-      if (cert.status === "PENDING") group.counts.pending++;
-      else if (cert.status === "APPROVED") group.counts.approved++;
-      else if (cert.status === "REJECTED") group.counts.rejected++;
-    });
-
-    return Array.from(grouped.values());
+    return endedCourses.map((course: any) => ({
+      course: {
+        id: course.id,
+        title: course.title,
+        description: "Course completed",
+        passingGrade: 70,
+      },
+      requests: course.students.map((student: any) => ({
+        id: student.id,
+        status: "PENDING", // Default status for students in ended courses
+        student: {
+          user: {
+            firstName: student.name.split(" ")[0] || "",
+            lastName: student.name.split(" ").slice(1).join(" ") || "",
+            email: student.email,
+            profile: {
+              avatar: null,
+            },
+          },
+        },
+        courseId: course.id,
+        createdAt: new Date().toISOString(),
+        certificateNumber: null,
+        rejectionReason: null,
+        issueDate: null,
+      })),
+      counts: {
+        total: course.students.length,
+        pending: course.students.length,
+        approved: 0,
+        rejected: 0,
+      },
+    }));
   };
 
-  // Tab counts (global)
+  // Tab counts
+  const totalStudents = endedCourses.reduce(
+    (sum: number, course: any) => sum + course.students.length,
+    0
+  );
   const tabCounts = {
-    all: certificates.length,
-    pending: certificates.filter((r) => r.status === "PENDING").length,
-    approved: certificates.filter((r) => r.status === "APPROVED").length,
-    rejected: certificates.filter((r) => r.status === "REJECTED").length,
+    all: totalStudents,
+    pending: totalStudents,
+    approved: 0,
+    rejected: 0,
   };
 
   const coursesData = getCoursesWithRequests();
@@ -149,11 +163,7 @@ const Certificates = () => {
   const [sortDirection, setSortDirection] = useState("asc");
 
   const FilterControls: React.FC = () => {
-    const currentCount =
-      selectedTab === "all"
-        ? certificates.length
-        : certificates.filter((c) => c.status.toLowerCase() === selectedTab)
-            .length;
+    const currentCount = totalStudents;
 
     return (
       <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/50 mb-6">
@@ -249,7 +259,7 @@ const Certificates = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  if (isLoading) {
+  if (isLoadingCourses) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
