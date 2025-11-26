@@ -87,6 +87,25 @@ export const certificateApi = apiSlice.injectEndpoints({
       query: () => "certificates/pending-courses",
       providesTags: ["Certificates"],
     }),
+
+    uploadCertificateTemplate: build.mutation<
+      any,
+      { file: File; courseId?: number; name?: string }
+    >({
+      query: ({ file, courseId, name }) => {
+        const formData = new FormData();
+        formData.append("file", file);
+        if (courseId) formData.append("courseId", courseId.toString());
+        if (name) formData.append("name", name);
+
+        return {
+          url: "certificates/upload",
+          method: "POST",
+          body: formData,
+        };
+      },
+      invalidatesTags: ["Certificates"],
+    }),
   }),
 });
 
@@ -95,4 +114,5 @@ export const {
   useUpdateCertificateStatusMutation,
   useGenerateCertificatesMutation,
   useGetEndedCoursesWithStudentsQuery,
+  useUploadCertificateTemplateMutation,
 } = certificateApi;

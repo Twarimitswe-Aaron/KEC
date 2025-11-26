@@ -10,6 +10,9 @@ import {
   useStopCourseMutation,
   CourseToUpdate,
   CourseStatus,
+  Lessons,
+  CourseData,
+  Resources,
 } from "../state/api/courseApi";
 import {
   X,
@@ -27,50 +30,8 @@ import { SearchContext } from "../SearchContext";
 import { useUser } from "../hooks/useUser";
 import { UserRoleContext } from "../UserRoleContext";
 
-interface CourseData {
-  id: number;
-  title: string;
-  description: string;
-  image_url: string;
-  price: string;
-  maximum: number;
-  open: boolean;
-  status?: CourseStatus;
-  lesson: Lesson[];
-}
-
-interface Lesson {
-  id: number;
-  title: string;
-  content: string; // Used for searching the lesson description/body
-  resources: Resource[];
-}
-
-interface Resource {
-  id: number;
-  type?: "multiple" | "checkbox" | "truefalse" | "labeling";
-  title: string;
-  description?: string;
-  url: string;
-}
-
-interface Lesson {
-  id: number;
-  title: string;
-  content: string;
-  resources: Resource[];
-}
-
-interface CourseData {
-  id: number;
-  title: string;
-  description: string;
-  image_url: string;
-  price: string;
-  maximum: number;
-  open: boolean;
-  lesson: Lesson[];
-}
+// Using CourseData and Lessons types from courseApi
+// No local type definitions needed
 
 // Type guard to check if data matches CourseData structure
 function isCourseData(data: any): data is CourseData {
@@ -83,7 +44,7 @@ function isCourseData(data: any): data is CourseData {
         lesson &&
         typeof lesson.id === "number" &&
         typeof lesson.title === "string" &&
-        typeof lesson.content === "string" &&
+        typeof lesson.description === "string" &&
         Array.isArray(lesson.resources)
     )
   );
@@ -99,21 +60,33 @@ const transformToCourseData = (data: any): CourseData => {
       price: "0",
       maximum: 0,
       open: false,
+      isConfirmed: false,
+      no_lessons: "0",
+      createdAt: "",
+      updatedAt: "",
       lesson: [],
+      uploader: { id: 0, email: "", name: "", avatar_url: "" },
     };
 
   return {
     ...data,
     lesson: Array.isArray(data.lesson)
       ? data.lesson.map((l: any) => ({
-          ...l,
+          id: l.id || 0,
+          title: l.title || "",
+          description: l.description || l.content || "",
+          isUnlocked: l.isUnlocked ?? true,
+          createdAt: l.createdAt || new Date().toISOString(),
+          courseId: l.courseId,
           resources: Array.isArray(l.resources)
             ? l.resources.map((r: any) => ({
                 id: r.id || 0,
-                type: r.type,
-                title: r.title || "",
-                description: r.description,
+                name: r.name || r.title || "",
+                type: r.type || "",
+                size: r.size,
+                uploadedAt: r.uploadedAt || new Date().toISOString(),
                 url: r.url || "",
+                form: r.form,
               }))
             : [],
         }))
@@ -185,18 +158,20 @@ const LessonsView = () => {
 
     const filtered = baseLessons.filter((lesson) => {
       const title = lesson.title?.toLowerCase() || "";
-      const content = lesson.content?.toLowerCase() || "";
+      const description = lesson.description?.toLowerCase() || "";
 
       const titleMatch = title.includes(lowerCaseQuery);
-      const contentMatch = content.includes(lowerCaseQuery);
+      const descriptionMatch = description.includes(lowerCaseQuery);
 
       const resourceMatch = Array.isArray(lesson.resources)
-        ? lesson.resources.some((resource) =>
-            resource.url?.toLowerCase().includes(lowerCaseQuery)
+        ? lesson.resources.some(
+            (resource) =>
+              resource.url?.toLowerCase().includes(lowerCaseQuery) ||
+              resource.name?.toLowerCase().includes(lowerCaseQuery)
           )
         : false;
 
-      const isMatch = titleMatch || contentMatch || resourceMatch;
+      const isMatch = titleMatch || descriptionMatch || resourceMatch;
       return isMatch;
     });
 
@@ -234,6 +209,26 @@ const LessonsView = () => {
 
   const handleStartCourse = async () => {
     try {
+      // Check for pending certificates first
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/course/${id}/pending-certificates`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }
+      );
+      const data = await response.json();
+
+      if (data.count > 0) {
+        const confirmed = window.confirm(
+          `Warning: ${data.count} students are waiting for certificates. ` +
+            `Please process all certificates before starting a new session.\n\n` +
+            `Do you want to proceed anyway? (Not recommended)`
+        );
+        if (!confirmed) return;
+      }
+
       await startCourse(Number(id)).unwrap();
       toast.success("Course started successfully!");
       updateModals({ showCourseOptions: false });

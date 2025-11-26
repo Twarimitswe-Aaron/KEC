@@ -132,6 +132,13 @@ export class CourseController {
     return this.courseService.stopCourse(+id);
   }
 
+  @Get(':id/pending-certificates')
+  @Roles('admin', 'teacher')
+  async getPendingCertificates(@Param('id') id: string) {
+    const count = await this.courseService.getPendingCertificatesCount(+id);
+    return { count };
+  }
+
   @Post(':id/template')
   @Roles('admin')
   @UseInterceptors(

@@ -201,4 +201,41 @@ export class CertificateService {
       })),
     }));
   }
+  async uploadTemplate(
+    file: Express.Multer.File,
+    courseId?: number,
+    name?: string,
+  ) {
+    const isHtml = file.mimetype === 'text/html';
+    let content = '';
+
+    if (isHtml) {
+      content = file.buffer.toString('utf-8');
+    } else {
+      // It's an image, use the URL
+      content = `/uploads/certificates/${file.filename}`;
+    }
+
+    // Create the template
+    const template = await this.prisma.certificateTemplate.create({
+      data: {
+        name: name || file.originalname,
+        content: content,
+      },
+    });
+
+    // If courseId is provided, link it
+    if (courseId) {
+      await this.prisma.course.update({
+        where: { id: courseId },
+        data: {
+          certificateTemplateId: template.id,
+          templateUrl: !isHtml ? content : null, // Store URL directly if it's an image
+          templateType: isHtml ? 'HTML' : 'IMAGE',
+        },
+      });
+    }
+
+    return template;
+  }
 }

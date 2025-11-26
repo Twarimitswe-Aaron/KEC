@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from "react";
-import DashboardCard from './DashboardCard'
-import type { Course } from './CourseCard'
+import DashboardCard from "./DashboardCard";
+import type { Course } from "./CourseCard";
 import { useGetStudentCoursesQuery } from "../../state/api/courseApi";
 
 interface CourseComponentProps {
@@ -8,16 +8,21 @@ interface CourseComponentProps {
   selectedCategory?: string;
 }
 
-const CourseComponent: React.FC<CourseComponentProps> = ({ selectedCourseId, selectedCategory: selectedCategoryProp }) => {
+const CourseComponent: React.FC<CourseComponentProps> = ({
+  selectedCourseId,
+  selectedCategory: selectedCategoryProp,
+}) => {
   const { data: studentCourses = [], isLoading } = useGetStudentCoursesQuery();
   const [sortBy, setSortBy] = useState<string>("");
-  const [timeRange, setTimeRange] = useState<string>('all');
-  const [localSelectedCategory, setLocalSelectedCategory] = useState<string>('all');
+  const [timeRange, setTimeRange] = useState<string>("all");
+  const [localSelectedCategory, setLocalSelectedCategory] =
+    useState<string>("all");
 
+  console.log(studentCourses);
   const categories = useMemo(() => {
     const set = new Set<string>();
     (studentCourses || []).forEach((c: any) => {
-      const cat = (c && c.category) ? String(c.category) : '';
+      const cat = c && c.category ? String(c.category) : "";
       if (cat) set.add(cat);
     });
     return Array.from(set).sort((a, b) => a.localeCompare(b));
@@ -37,6 +42,9 @@ const CourseComponent: React.FC<CourseComponentProps> = ({ selectedCourseId, sel
       // @ts-ignore add enrolled to match runtime shape
       enrolled: c.enrolled,
       completed: c.completed,
+      status: c.status,
+      certificateIssued: c.certificateIssued,
+      certificateStatus: c.certificateStatus,
       uploader: {
         id: c.uploader?.id || 0,
         email: c.uploader?.email || "",
@@ -59,22 +67,30 @@ const CourseComponent: React.FC<CourseComponentProps> = ({ selectedCourseId, sel
 
     let filtered = mapped;
     // Selected course filter (from header). 'all' shows everything.
-    if (selectedCourseId && selectedCourseId !== 'all') {
-      filtered = filtered.filter(c => String(c.id) === String(selectedCourseId));
+    if (selectedCourseId && selectedCourseId !== "all") {
+      filtered = filtered.filter(
+        (c) => String(c.id) === String(selectedCourseId)
+      );
     }
     // Category filter
-    if (selectedCategory && selectedCategory !== 'all') {
-      filtered = filtered.filter(c => (c.category || '').toString() === selectedCategory);
+    if (selectedCategory && selectedCategory !== "all") {
+      filtered = filtered.filter(
+        (c) => (c.category || "").toString() === selectedCategory
+      );
     }
-    if (timeRange === '12') filtered = filtered.filter(c => withinMonths(c.createdAt, 12));
-    else if (timeRange === '6') filtered = filtered.filter(c => withinMonths(c.createdAt, 6));
-    else if (timeRange === '3') filtered = filtered.filter(c => withinMonths(c.createdAt, 3));
-    else if (timeRange === '1') filtered = filtered.filter(c => withinMonths(c.createdAt, 1));
-    else if (timeRange === 'older') {
+    if (timeRange === "12")
+      filtered = filtered.filter((c) => withinMonths(c.createdAt, 12));
+    else if (timeRange === "6")
+      filtered = filtered.filter((c) => withinMonths(c.createdAt, 6));
+    else if (timeRange === "3")
+      filtered = filtered.filter((c) => withinMonths(c.createdAt, 3));
+    else if (timeRange === "1")
+      filtered = filtered.filter((c) => withinMonths(c.createdAt, 1));
+    else if (timeRange === "older") {
       const now = new Date();
       const cutoff = new Date(now);
       cutoff.setMonth(now.getMonth() - 12);
-      filtered = filtered.filter(c => {
+      filtered = filtered.filter((c) => {
         const d = c.createdAt ? new Date(c.createdAt) : new Date(NaN);
         return !isNaN(d.getTime()) && d < cutoff;
       });
@@ -82,49 +98,60 @@ const CourseComponent: React.FC<CourseComponentProps> = ({ selectedCourseId, sel
 
     // Sorting
     const getNum = (v: any) => {
-      const n = typeof v === 'number' ? v : parseFloat(String(v).replace(/[^0-9.]/g, ''));
+      const n =
+        typeof v === "number"
+          ? v
+          : parseFloat(String(v).replace(/[^0-9.]/g, ""));
       return isNaN(n) ? 0 : n;
     };
     const getLessons = (v: any) => {
-      const n = typeof v === 'number' ? v : parseInt(String(v), 10);
+      const n = typeof v === "number" ? v : parseInt(String(v), 10);
       return isNaN(n) ? 0 : n;
     };
-    const getInstructorName = (c: Course) => (c.uploader?.name || c.uploader?.email || '').toString();
-    const getCategory = (c: Course) => (c.category || '').toString();
+    const getInstructorName = (c: Course) =>
+      (c.uploader?.name || c.uploader?.email || "").toString();
+    const getCategory = (c: Course) => (c.category || "").toString();
 
     const comparators: Record<string, (a: Course, b: Course) => number> = {
-      'name-asc': (a, b) => a.title.localeCompare(b.title),
-      'name-desc': (a, b) => b.title.localeCompare(a.title),
-      'newest': (a: any, b: any) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime(),
-      'oldest': (a: any, b: any) => new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime(),
-      'price-asc': (a, b) => getNum(a.price) - getNum(b.price),
-      'price-desc': (a, b) => getNum(b.price) - getNum(a.price),
-      'lessons-desc': (a, b) => getLessons(b.no_lessons) - getLessons(a.no_lessons),
-      'lessons-asc': (a, b) => getLessons(a.no_lessons) - getLessons(b.no_lessons),
-      'instructor-asc': (a, b) => getInstructorName(a).localeCompare(getInstructorName(b)),
-      'category-asc': (a, b) => getCategory(a).localeCompare(getCategory(b)),
-      'category-desc': (a, b) => getCategory(b).localeCompare(getCategory(a)),
-      'open-first': (a, b) => (a.open === b.open ? 0 : a.open ? -1 : 1),
-      'enrolled-first': (a: any, b: any) => {
+      "name-asc": (a, b) => a.title.localeCompare(b.title),
+      "name-desc": (a, b) => b.title.localeCompare(a.title),
+      newest: (a: any, b: any) =>
+        new Date(b.createdAt || 0).getTime() -
+        new Date(a.createdAt || 0).getTime(),
+      oldest: (a: any, b: any) =>
+        new Date(a.createdAt || 0).getTime() -
+        new Date(b.createdAt || 0).getTime(),
+      "price-asc": (a, b) => getNum(a.price) - getNum(b.price),
+      "price-desc": (a, b) => getNum(b.price) - getNum(a.price),
+      "lessons-desc": (a, b) =>
+        getLessons(b.no_lessons) - getLessons(a.no_lessons),
+      "lessons-asc": (a, b) =>
+        getLessons(a.no_lessons) - getLessons(b.no_lessons),
+      "instructor-asc": (a, b) =>
+        getInstructorName(a).localeCompare(getInstructorName(b)),
+      "category-asc": (a, b) => getCategory(a).localeCompare(getCategory(b)),
+      "category-desc": (a, b) => getCategory(b).localeCompare(getCategory(a)),
+      "open-first": (a, b) => (a.open === b.open ? 0 : a.open ? -1 : 1),
+      "enrolled-first": (a: any, b: any) => {
         const av = a.enrolled ? 1 : 0;
         const bv = b.enrolled ? 1 : 0;
         return av === bv ? 0 : bv - av; // enrolled first
       },
     };
 
-    const cmp = comparators[sortBy] || comparators['newest'];
+    const cmp = comparators[sortBy] || comparators["newest"];
     const sorted = [...filtered].sort(cmp);
     return sorted;
   }, [studentCourses, sortBy, timeRange, selectedCourseId, selectedCategory]);
 
-  const handleCourseAction = (courseId: number | String) => {
-    console.log('Starting course:', courseId);
-  };
+  const handleCourseAction = (courseId: number | String) => {};
 
   return (
     <div className="block mt-5">
       <div className="flex justify-between">
-        <h1 className="font-semiBold text-lg font-bold md:text-xl lg:text-2xl">Different Courses</h1>
+        <h1 className="font-semiBold text-lg font-bold md:text-xl lg:text-2xl">
+          Different Courses
+        </h1>
         <div className="flex gap-3 justify-center">
           <select
             value={sortBy}
@@ -166,7 +193,9 @@ const CourseComponent: React.FC<CourseComponentProps> = ({ selectedCourseId, sel
             >
               <option value="all">All Categories</option>
               {categories.map((cat) => (
-                <option key={cat} value={cat}>{cat}</option>
+                <option key={cat} value={cat}>
+                  {cat}
+                </option>
               ))}
             </select>
           )}
@@ -175,15 +204,38 @@ const CourseComponent: React.FC<CourseComponentProps> = ({ selectedCourseId, sel
 
       <div className="">
         {isLoading ? (
-          <div className="py-10 text-center text-gray-500">Loading courses...</div>
+          <div className="py-10 text-center text-gray-500">
+            Loading courses...
+          </div>
         ) : (
           <>
-            {/* Enrolled Courses */}
-            {courses.filter((c) => c.enrolled && !c.completed).length > 0 && (
+            {/* Active Enrolled Courses */}
+            {courses.filter(
+              (c) => c.enrolled && !c.completed && c.status === "ACTIVE"
+            ).length > 0 && (
               <div className="mt-6">
-                <h2 className="text-lg font-semibold mb-2">Enrolled Courses</h2>
+                <h2 className="text-lg font-semibold mb-2">Active Courses</h2>
                 <DashboardCard
-                  courses={courses.filter((c) => c.enrolled && !c.completed)}
+                  courses={courses.filter(
+                    (c) => c.enrolled && !c.completed && c.status === "ACTIVE"
+                  )}
+                  onCourseAction={handleCourseAction}
+                />
+              </div>
+            )}
+
+            {/* Ended Courses (Awaiting Certificate) */}
+            {courses.filter(
+              (c) => c.enrolled && !c.completed && c.status === "ENDED"
+            ).length > 0 && (
+              <div className="mt-6">
+                <h2 className="text-lg font-semibold mb-2">
+                  Ended Courses (Awaiting Certificate)
+                </h2>
+                <DashboardCard
+                  courses={courses.filter(
+                    (c) => c.enrolled && !c.completed && c.status === "ENDED"
+                  )}
                   onCourseAction={handleCourseAction}
                 />
               </div>
@@ -192,7 +244,9 @@ const CourseComponent: React.FC<CourseComponentProps> = ({ selectedCourseId, sel
             {/* Completed Courses */}
             {courses.filter((c) => c.completed).length > 0 && (
               <div className="mt-6">
-                <h2 className="text-lg font-semibold mb-2">Completed Courses</h2>
+                <h2 className="text-lg font-semibold mb-2">
+                  Completed Courses
+                </h2>
                 <DashboardCard
                   courses={courses.filter((c) => c.completed)}
                   onCourseAction={handleCourseAction}
@@ -203,7 +257,9 @@ const CourseComponent: React.FC<CourseComponentProps> = ({ selectedCourseId, sel
             {/* Available Courses */}
             {courses.filter((c) => !c.enrolled && !c.completed).length > 0 && (
               <div className="mt-6">
-                <h2 className="text-lg font-semibold mb-2">Available Courses</h2>
+                <h2 className="text-lg font-semibold mb-2">
+                  Available Courses
+                </h2>
                 <DashboardCard
                   courses={courses.filter((c) => !c.enrolled && !c.completed)}
                   onCourseAction={handleCourseAction}

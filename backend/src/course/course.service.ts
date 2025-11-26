@@ -259,6 +259,7 @@ export class CourseService {
         enrollments: {
           include: {
             user: { include: { profile: true } },
+            payment: true, // Include payment information
           },
         },
       },
@@ -275,9 +276,12 @@ export class CourseService {
         name: `${enrollment.user?.firstName ?? ''} ${enrollment.user?.lastName ?? ''}`.trim(),
         email: enrollment.user?.email || '',
         phone: enrollment.user?.profile?.phone || '',
-        paid: false,
+        paid: enrollment.payment?.status === 'SUCCESSFUL', // Check if payment was successful
         course: course.title,
-        location: enrollment.user?.profile?.resident || '',
+        location:
+          enrollment.payment?.location ||
+          enrollment.user?.profile?.resident ||
+          '', // Use payment location if available, fallback to profile resident
       })),
     }));
   }
@@ -543,29 +547,53 @@ export class CourseService {
         lesson: true,
         onGoingStudents: true,
         completedStudents: true,
+        failedStudents: true,
       },
       orderBy: { createdAt: 'desc' },
     });
 
-    return courses.map((course) => ({
-      id: course.id,
-      title: course.title,
-      description: course.description,
-      category: course.category || null,
-      price: course.coursePrice,
-      image_url: course.image_url,
-      no_lessons: String(course.lesson?.length || 0),
-      open: !!course.open,
-      enrolled: !!course.onGoingStudents.find((s) => s.id === studentId),
-      completed: !!course.completedStudents.find((s) => s.id === studentId),
-      createdAt: course.createdAt.toISOString(),
-      uploader: {
-        id: course.uploader?.id || 0,
-        name: `${course.uploader?.firstName ?? ''} ${course.uploader?.lastName ?? ''}`.trim(),
-        email: course.uploader?.email || '',
-        avatar_url: course.uploader?.profile?.avatar || '',
-      },
-    }));
+    // Get certificates for this user
+    const certificates = await this.prisma.certificates.findMany({
+      where: { userId },
+      select: { courseId: true, status: true },
+    });
+
+    const certificateMap = new Map(
+      certificates.map((c) => [c.courseId, c.status]),
+    );
+
+    return courses.map((course) => {
+      const certificateStatus = certificateMap.get(course.id);
+      const isCompleted = !!course.completedStudents.find(
+        (s) => s.id === studentId,
+      );
+      const isFailed = !!course.failedStudents.find((s) => s.id === studentId);
+
+      return {
+        id: course.id,
+        title: course.title,
+        description: course.description,
+        category: course.category || null,
+        price: course.coursePrice,
+        image_url: course.image_url,
+        no_lessons: String(course.lesson?.length || 0),
+        open: !!course.open,
+        enrolled: !!course.onGoingStudents.find((s) => s.id === studentId),
+        completed: isCompleted,
+        failed: isFailed,
+        status: course.status,
+        certificateStatus, // PENDING, APPROVED, REJECTED, or undefined
+        certificateIssued:
+          certificateStatus === 'APPROVED' || certificateStatus === 'REJECTED',
+        createdAt: course.createdAt.toISOString(),
+        uploader: {
+          id: course.uploader?.id || 0,
+          name: `${course.uploader?.firstName ?? ''} ${course.uploader?.lastName ?? ''}`.trim(),
+          email: course.uploader?.email || '',
+          avatar_url: course.uploader?.profile?.avatar || '',
+        },
+      };
+    });
   }
 
   async getCourseForStudent(id: number) {
@@ -608,6 +636,21 @@ export class CourseService {
       if (user.role !== 'student')
         throw new BadRequestException('Only students can enroll');
       student = await this.prisma.student.create({ data: { userId } });
+    }
+
+    // Check if student already completed this course
+    const existingCompletion = await this.prisma.certificates.findFirst({
+      where: {
+        userId,
+        courseId,
+        status: { in: ['APPROVED', 'REJECTED'] },
+      },
+    });
+
+    if (existingCompletion) {
+      throw new BadRequestException(
+        'You have already completed this course and cannot re-enroll.',
+      );
     }
 
     const course = await this.prisma.course.findUnique({
@@ -790,10 +833,131 @@ export class CourseService {
 
     // Student can access if enrolled in current session
     // or if no sessionId is set (backward compatibility)
-    return (
+    // or if course is ENDED but certificate is not yet issued
+
+    const sessionMatches =
       !course.sessionId ||
       !enrollment.sessionId ||
-      enrollment.sessionId === course.sessionId
-    );
+      enrollment.sessionId === course.sessionId;
+
+    if (!sessionMatches) return false;
+
+    // If course is ACTIVE, allow access
+    if (course.status === 'ACTIVE') return true;
+
+    // If course is ENDED, check certificate status
+    // Allow access only if certificate is NOT issued (i.e. PENDING or no certificate)
+    if (course.status === 'ENDED') {
+      const certificate = await this.prisma.certificates.findFirst({
+        where: {
+          userId,
+          courseId,
+        },
+      });
+
+      // Allow access if no certificate yet OR certificate is still PENDING
+      // If APPROVED or REJECTED, access is revoked
+      return !certificate || certificate.status === 'PENDING';
+    }
+
+    return false;
+  }
+
+  async getPendingCertificatesCount(courseId: number) {
+    return await this.prisma.certificates.count({
+      where: {
+        courseId,
+        status: 'PENDING',
+      },
+    });
+  }
+
+  async startCourse(courseId: number) {
+    // Check for pending certificates
+    const pendingCertificates =
+      await this.getPendingCertificatesCount(courseId);
+
+    if (pendingCertificates > 0) {
+      throw new BadRequestException(
+        `Cannot start course: ${pendingCertificates} students are waiting for certificates from the previous session.`,
+      );
+    }
+
+    // ALWAYS generate new sessionId (isolate sessions)
+    const sessionId = `session_${Date.now()}_${courseId}`;
+
+    const course = await this.prisma.course.update({
+      where: { id: courseId },
+      data: {
+        status: 'ACTIVE',
+        startDate: new Date(),
+        sessionId, // ← NEW session every time
+        endDate: null,
+      },
+    });
+
+    return {
+      message: 'Course started with new session',
+      course,
+      sessionId,
+    };
+  }
+
+  async stopCourse(courseId: number) {
+    const course = await this.prisma.course.findUnique({
+      where: { id: courseId },
+      include: {
+        onGoingStudents: true,
+        enrollments: {
+          where: { sessionId: course.sessionId }, // Only get enrollments for current session
+          include: { user: { include: { student: true } } },
+        },
+      },
+    });
+
+    if (!course) throw new NotFoundException('Course not found');
+
+    // Move students to completedStudents
+    await this.prisma.course.update({
+      where: { id: courseId },
+      data: {
+        status: 'ENDED',
+        endDate: new Date(),
+        completedStudents: {
+          connect: course.onGoingStudents.map((s) => ({ id: s.id })),
+        },
+        onGoingStudents: {
+          disconnect: course.onGoingStudents.map((s) => ({ id: s.id })),
+        },
+      },
+    });
+
+    // Create certificate records for all enrolled students
+    const certificatePromises = course.enrollments
+      .filter((enrollment) => enrollment.user?.student?.id) // Ensure student record exists
+      .map((enrollment) =>
+        this.prisma.certificates.upsert({
+          where: {
+            studentId_courseId: {
+              studentId: enrollment.user.student.id,
+              courseId,
+            },
+          },
+          create: {
+            studentId: enrollment.user.student.id,
+            courseId,
+            userId: enrollment.userId,
+            status: 'PENDING',
+          },
+          update: {}, // Don't overwrite existing certificates
+        }),
+      );
+
+    await Promise.all(certificatePromises);
+
+    return {
+      message: 'Course stopped, students moved to completed',
+      studentsAffected: course.enrollments.length,
+    };
   }
 }

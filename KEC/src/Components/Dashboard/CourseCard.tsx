@@ -18,6 +18,8 @@ export interface Course {
   completed?: boolean;
   createdAt?: string;
   status?: CourseStatus;
+  certificateIssued?: boolean;
+  certificateStatus?: "PENDING" | "APPROVED" | "REJECTED";
 
   uploader: {
     id: number;

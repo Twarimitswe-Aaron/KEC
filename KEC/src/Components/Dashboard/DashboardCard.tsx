@@ -150,30 +150,43 @@ const DashboardCard: React.FC<DashboardCardProps> = ({
                 <button
                   onClick={() => {
                     if (course.enrolled) {
-                      onCourseAction(course.id!); // continue course
-                      navigate(`/dashboard/course/${course.id}`);
-                    } else if (course.open) {
+                      // Can access if ACTIVE or ENDED (until certificate issued)
+                      if (
+                        course.status === "ACTIVE" ||
+                        (course.status === "ENDED" && !course.certificateIssued)
+                      ) {
+                        onCourseAction(course.id!); // continue course
+                        navigate(`/dashboard/course/${course.id}`);
+                      }
+                    } else if (course.open && course.status === "ACTIVE") {
                       setEnrollingCourse(course); // open enrollment modal
                     }
                   }}
                   disabled={
-                    course.completed || (!course.open && !course.enrolled)
+                    course.completed || // Has certificate
+                    (course.status === "ENDED" && course.certificateIssued) || // Certificate issued
+                    (!course.open && !course.enrolled)
                   }
                   className={`mt-4  w-full px-4 py-2 rounded text-white transition-colors ${
-                    course.completed
+                    course.completed ||
+                    (course.status === "ENDED" && course.certificateIssued)
                       ? "bg-gray-400 cursor-not-allowed"
                       : course.enrolled
                       ? "bg-[#034153] cursor-pointer"
-                      : course.open
+                      : course.open && course.status === "ACTIVE"
                       ? "bg-[#034154] cursor-pointer"
                       : "bg-gray-400  cursor-not-allowed"
                   }`}
                 >
                   {course.completed
                     ? "Completed"
+                    : course.certificateIssued
+                    ? "Certificate Issued"
+                    : course.status === "ENDED" && course.enrolled
+                    ? "Continue (Awaiting Certificate)"
                     : course.enrolled
                     ? "Continue Course"
-                    : course.open
+                    : course.open && course.status === "ACTIVE"
                     ? "Start Course"
                     : "Course Closed"}
                 </button>

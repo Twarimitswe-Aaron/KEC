@@ -17,6 +17,7 @@ import { toast } from "react-toastify";
 import {
   useGetEndedCoursesWithStudentsQuery,
   useUpdateCertificateStatusMutation,
+  useUploadCertificateTemplateMutation,
 } from "../state/api/certificateApi";
 import {
   CertificateTemplate1,
@@ -53,6 +54,7 @@ const Certificates: React.FC = () => {
     useGetEndedCoursesWithStudentsQuery();
   console.log(endedCourses);
   const [updateStatus] = useUpdateCertificateStatusMutation();
+  const [uploadTemplate] = useUploadCertificateTemplateMutation();
 
   // State
   const [selectedTab, setSelectedTab] = useState<TabType>("all");
@@ -687,11 +689,20 @@ const Certificates: React.FC = () => {
                 Cancel
               </button>
               <button
-                onClick={() => {
-                  // Handle upload logic here
-                  toast.success("Template uploaded successfully");
-                  setShowUploadModal(false);
-                  setUploadedFile(null);
+                onClick={async () => {
+                  if (!uploadedFile || !selectedCourse) return;
+                  try {
+                    await uploadTemplate({
+                      file: uploadedFile,
+                      courseId: selectedCourse.id,
+                    }).unwrap();
+                    toast.success("Template uploaded successfully");
+                    setShowUploadModal(false);
+                    setUploadedFile(null);
+                  } catch (error) {
+                    toast.error("Failed to upload template");
+                    console.error(error);
+                  }
                 }}
                 disabled={!uploadedFile}
                 className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl hover:from-blue-600 hover:to-blue-700 transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"

@@ -121,6 +121,7 @@ const CourseCardHeader: React.FC<CourseCardHeaderProps> = ({
 const StudentsRequest: React.FC = () => {
   const { searchQuery } = useContext(SearchContext);
   const { data: courses = [], isLoading } = useGetCourseEnrollmentsQuery();
+  console.log(courses)
 
   const [expandedCourses, setExpandedCourses] = useState<Set<number>>(
     new Set()
