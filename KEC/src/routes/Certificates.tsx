@@ -5,41 +5,50 @@ import {
   FaCheck,
   FaTimes,
   FaClock,
-  FaCalendar,
   FaFilter,
   FaCertificate,
-  FaCheckCircle,
-  FaTimesCircle,
   FaChevronDown,
   FaChevronRight,
   FaUsers,
 } from "react-icons/fa";
-import {
-  useGetCertificatesQuery,
-  useUpdateCertificateStatusMutation,
-  Certificate,
-} from "../state/api/certificateApi";
-import {
-  useGetCourseEnrollmentsQuery,
-  CourseStatus,
-} from "../state/api/courseApi";
 import { toast } from "react-toastify";
+import {
+  useGetEndedCoursesWithStudentsQuery,
+  useUpdateCertificateStatusMutation,
+} from "../state/api/certificateApi";
 
-type TabType = "pending" | "approved" | "rejected" | "all";
+// Types
+interface Certificate {
+  id: number;
+  status: string;
+  student: {
+    user: {
+      firstName: string;
+      lastName: string;
+      email: string;
+      profile?: {
+        avatar: string | null;
+      };
+    };
+  };
+  courseId: number;
+  createdAt: string;
+  certificateNumber: string | null;
+  rejectionReason: string | null;
+  issueDate: string | null;
+}
 
-const Certificates = () => {
-  // Fetch ended courses with their enrolled students
-  const { data: allCourses = [], isLoading: isLoadingCourses } =
-    useGetCourseEnrollmentsQuery();
-  const endedCourses = allCourses.filter(
-    (course: any) => course.status === CourseStatus.ENDED
-  );
+type TabType = "all" | "pending" | "approved" | "rejected";
 
-  console.log("All courses:", allCourses);
-  console.log("Ended courses:", endedCourses);
-
+// Component
+const Certificates: React.FC = () => {
+  // API hooks
+  const { data: endedCourses = [], isLoading: isLoadingCourses } =
+    useGetEndedCoursesWithStudentsQuery();
+    console.log(endedCourses)
   const [updateStatus] = useUpdateCertificateStatusMutation();
 
+  // State
   const [selectedTab, setSelectedTab] = useState<TabType>("all");
   const [showApprovalModal, setShowApprovalModal] = useState(false);
   const [showRejectionModal, setShowRejectionModal] = useState(false);
@@ -50,7 +59,6 @@ const Certificates = () => {
   const [expandedCourses, setExpandedCourses] = useState<Set<number>>(
     new Set()
   );
-  const [showDetails, setShowDetails] = useState<number | null>(null);
 
   // Toggle course expansion
   const toggleCourseExpansion = (courseId: number) => {
@@ -247,18 +255,6 @@ const Certificates = () => {
     );
   };
 
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as Element;
-      if (!target.closest(".details-dropdown")) {
-        setShowDetails(null);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
   if (isLoadingCourses) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -368,7 +364,7 @@ const Certificates = () => {
                         </p>
                       </div>
                     ) : (
-                      requests.map((request, index) => (
+                      requests.map((request: Certificate, index: number) => (
                         <div
                           key={index}
                           className="p-5 hover:bg-white/60 transition-colors"

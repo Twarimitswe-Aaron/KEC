@@ -156,4 +156,49 @@ export class CertificateService {
       data,
     });
   }
+
+  async getEndedCoursesWithStudents() {
+    const endedCourses = await this.prisma.course.findMany({
+      where: {
+        status: 'ENDED',
+        isConfirmed: true,
+      },
+      select: {
+        id: true,
+        title: true,
+        image_url: true,
+        enrollments: {
+          select: {
+            user: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                email: true,
+                profile: {
+                  select: {
+                    avatar: true,
+                    phone: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    return endedCourses.map((course) => ({
+      id: course.id,
+      title: course.title,
+      image_url: course.image_url,
+      students: course.enrollments.map((enrollment) => ({
+        id: enrollment.user.id,
+        name: `${enrollment.user.firstName} ${enrollment.user.lastName}`.trim(),
+        email: enrollment.user.email,
+        phone: enrollment.user.profile?.phone || '',
+        avatar: enrollment.user.profile?.avatar || null,
+      })),
+    }));
+  }
 }

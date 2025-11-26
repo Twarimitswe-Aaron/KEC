@@ -68,6 +68,25 @@ export const certificateApi = apiSlice.injectEndpoints({
       }),
       invalidatesTags: ["Certificates"],
     }),
+
+    getEndedCoursesWithStudents: build.query<
+      Array<{
+        id: number;
+        title: string;
+        image_url: string;
+        students: Array<{
+          id: number;
+          name: string;
+          email: string;
+          phone: string;
+          avatar: string | null;
+        }>;
+      }>,
+      void
+    >({
+      query: () => "certificates/pending-courses",
+      providesTags: ["Certificates"],
+    }),
   }),
 });
 
@@ -75,4 +94,5 @@ export const {
   useGetCertificatesQuery,
   useUpdateCertificateStatusMutation,
   useGenerateCertificatesMutation,
+  useGetEndedCoursesWithStudentsQuery,
 } = certificateApi;

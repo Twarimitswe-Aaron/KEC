@@ -67,4 +67,9 @@ export class CertificateController {
   createTemplate(@Body() body: { name: string; content: string }) {
     return this.certificateService.createTemplate(body);
   }
+
+  @Get('pending-courses')
+  getEndedCoursesWithStudents() {
+    return this.certificateService.getEndedCoursesWithStudents();
+  }
 }
