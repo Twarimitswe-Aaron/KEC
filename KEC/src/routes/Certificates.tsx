@@ -156,7 +156,7 @@ const Certificates: React.FC = () => {
             lastName: student.name.split(" ").slice(1).join(" ") || "",
             email: student.email,
             profile: {
-              avatar: null,
+              avatar: student.avatar,
             },
           },
         },
@@ -191,6 +191,9 @@ const Certificates: React.FC = () => {
 
   const [sortBy, setSortBy] = useState("newest");
   const [sortDirection, setSortDirection] = useState("asc");
+  const [openMenuRequestId, setOpenMenuRequestId] = useState<number | null>(
+    null
+  );
 
   const FilterControls: React.FC = () => {
     const currentCount = totalStudents;
@@ -306,11 +309,18 @@ const Certificates: React.FC = () => {
             coursesData.map(({ course, requests, counts }) => (
               <div
                 key={course.id}
-                className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-white/50 overflow-hidden hover:shadow-xl transition-all duration-300"
+                className={`bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-white/50 hover:shadow-xl transition-all duration-300 ${
+                  openMenuCourseId === course.id ||
+                  requests.some((r: any) => r.id === openMenuRequestId)
+                    ? "z-30 relative"
+                    : "z-0 relative"
+                }`}
               >
                 {/* Course Header */}
                 <div
-                  className="p-5 cursor-pointer hover:bg-white/50 transition-all"
+                  className={`p-5 cursor-pointer hover:bg-white/50 transition-all rounded-t-xl ${
+                    !expandedCourses.has(course.id) ? "rounded-b-xl" : ""
+                  }`}
                   onClick={() => toggleCourseExpansion(course.id)}
                 >
                   <div className="flex items-center justify-between">
@@ -422,7 +432,7 @@ const Certificates: React.FC = () => {
 
                 {/* Certificate Requests */}
                 {expandedCourses.has(course.id) && (
-                  <div className="bg-white/40 backdrop-blur-sm divide-y divide-gray-200/50">
+                  <div className="bg-white/40 backdrop-blur-sm divide-y divide-gray-200/50 rounded-b-xl">
                     {requests.length === 0 ? (
                       <div className="p-12 text-center">
                         <FaUsers className="mx-auto text-4xl text-gray-300 mb-3" />
@@ -495,26 +505,52 @@ const Certificates: React.FC = () => {
 
                             <div className="flex items-center gap-2">
                               {request.status === "PENDING" && (
-                                <>
+                                <div className="relative">
                                   <button
-                                    onClick={() => {
-                                      setSelectedRequest(request);
-                                      setShowApprovalModal(true);
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setOpenMenuRequestId(
+                                        openMenuRequestId === request.id
+                                          ? null
+                                          : request.id
+                                      );
                                     }}
-                                    className="px-4 py-2 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg hover:from-green-600 hover:to-green-700 transition-all shadow-md hover:shadow-lg font-medium text-sm flex items-center gap-2"
+                                    className="p-2 hover:bg-gray-100 rounded-full transition-colors"
                                   >
-                                    <FaCheck /> Approve
+                                    <FaEllipsisV className="text-gray-500" />
                                   </button>
-                                  <button
-                                    onClick={() => {
-                                      setSelectedRequest(request);
-                                      setShowRejectionModal(true);
-                                    }}
-                                    className="px-4 py-2 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg hover:from-red-600 hover:to-red-700 transition-all shadow-md hover:shadow-lg font-medium text-sm flex items-center gap-2"
-                                  >
-                                    <FaTimes /> Reject
-                                  </button>
-                                </>
+
+                                  {openMenuRequestId === request.id && (
+                                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 z-20 overflow-hidden">
+                                      <div className="py-1">
+                                        <button
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            setSelectedRequest(request);
+                                            setShowApprovalModal(true);
+                                            setOpenMenuRequestId(null);
+                                          }}
+                                          className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700 flex items-center gap-2 transition-colors"
+                                        >
+                                          <FaCheck className="text-green-500" />
+                                          Approve
+                                        </button>
+                                        <button
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            setSelectedRequest(request);
+                                            setShowRejectionModal(true);
+                                            setOpenMenuRequestId(null);
+                                          }}
+                                          className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-red-50 hover:text-red-700 flex items-center gap-2 transition-colors"
+                                        >
+                                          <FaTimes className="text-red-500" />
+                                          Reject
+                                        </button>
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
                               )}
                               {request.status === "APPROVED" && (
                                 <div className="flex gap-2">
