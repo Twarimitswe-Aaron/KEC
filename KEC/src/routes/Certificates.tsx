@@ -12,6 +12,7 @@ import {
   FaUsers,
   FaEllipsisV,
   FaUpload,
+  FaEdit,
 } from "react-icons/fa";
 import { toast } from "react-toastify";
 import {
@@ -23,6 +24,7 @@ import {
   CertificateTemplate1,
   CertificateTemplate2,
 } from "../Components/Certificate/CertificateTemplates";
+import { useUpdateCourseMutation } from "../state/api/courseApi";
 
 // Types
 interface Certificate {
@@ -144,7 +146,8 @@ const Certificates: React.FC = () => {
       course: {
         id: course.id,
         title: course.title,
-        description: "Course completed",
+        description: course.description || "Course completed",
+        certificateDescription: course.certificateDescription,
         passingGrade: 70,
       },
       requests: course.students.map((student: any) => ({
@@ -188,6 +191,10 @@ const Certificates: React.FC = () => {
   };
 
   const coursesData = getCoursesWithRequests();
+
+  const [showEditTemplateModal, setShowEditTemplateModal] = useState(false);
+  const [templateDescription, setTemplateDescription] = useState("");
+  const [updateCourse] = useUpdateCourseMutation();
 
   const [sortBy, setSortBy] = useState("newest");
   const [sortDirection, setSortDirection] = useState("asc");
@@ -412,6 +419,23 @@ const Certificates: React.FC = () => {
                               >
                                 <FaUpload className="text-green-600" />
                                 Upload Template
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedCourse(course);
+                                  setTemplateDescription(
+                                    course.certificateDescription ||
+                                      course.description ||
+                                      ""
+                                  );
+                                  setShowEditTemplateModal(true);
+                                  setOpenMenuCourseId(null);
+                                }}
+                                className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                              >
+                                <FaEdit className="text-yellow-600" />
+                                Edit Template Details
                               </button>
                             </div>
                           </div>
@@ -872,6 +896,7 @@ const Certificates: React.FC = () => {
                     studentName="John Doe"
                     courseName={selectedCourse.title}
                     courseDescription={
+                      selectedCourse.certificateDescription ||
                       selectedCourse.description ||
                       "For successfully completing the comprehensive course curriculum and demonstrating proficiency in the subject matter."
                     }
@@ -882,6 +907,7 @@ const Certificates: React.FC = () => {
                     studentName="John Doe"
                     courseName={selectedCourse.title}
                     courseDescription={
+                      selectedCourse.certificateDescription ||
                       selectedCourse.description ||
                       "For successfully completing the comprehensive course curriculum and demonstrating proficiency in the subject matter."
                     }
@@ -952,6 +978,86 @@ const Certificates: React.FC = () => {
               </button>
               <button className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center gap-2">
                 <FaDownload /> Download PDF
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Template Details Modal */}
+      {showEditTemplateModal && selectedCourse && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50">
+          <div className="bg-white/95 backdrop-blur-md rounded-2xl w-full max-w-2xl p-8 shadow-2xl border border-white/50">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-2xl font-bold text-gray-900">
+                Edit Certificate Template Details
+              </h3>
+              <button
+                onClick={() => setShowEditTemplateModal(false)}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <FaTimes className="text-gray-500" />
+              </button>
+            </div>
+
+            <div className="mb-4">
+              <p className="text-sm text-gray-600 mb-1">
+                Course:{" "}
+                <span className="font-semibold">{selectedCourse.title}</span>
+              </p>
+            </div>
+
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Certificate Description
+              </label>
+              <textarea
+                value={templateDescription}
+                onChange={(e) => setTemplateDescription(e.target.value)}
+                className="w-full p-4 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none bg-white"
+                rows={6}
+                placeholder="Enter the description that will appear on students' certificates..."
+              />
+              <p className="text-xs text-gray-500 mt-2">
+                This text will be displayed on the certificate. If left blank,
+                the course description will be used.
+              </p>
+            </div>
+
+            <div className="flex gap-4">
+              <button
+                onClick={() => {
+                  setShowEditTemplateModal(false);
+                  setTemplateDescription("");
+                }}
+                className="flex-1 px-6 py-3 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 transition-colors font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  try {
+                    await updateCourse({
+                      id: selectedCourse.id,
+                      title: selectedCourse.title,
+                      description: selectedCourse.description,
+                      coursePrice: "0",
+                      open: true,
+                      certificateDescription: templateDescription,
+                    }).unwrap();
+                    toast.success(
+                      "Certificate description updated successfully!"
+                    );
+                    setShowEditTemplateModal(false);
+                    setTemplateDescription("");
+                  } catch (error) {
+                    toast.error("Failed to update certificate description");
+                    console.error(error);
+                  }
+                }}
+                className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl hover:from-blue-600 hover:to-blue-700 transition-all font-medium shadow-lg"
+              >
+                Save Changes
               </button>
             </div>
           </div>

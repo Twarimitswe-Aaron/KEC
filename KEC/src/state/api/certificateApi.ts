@@ -75,6 +75,8 @@ export const certificateApi = apiSlice.injectEndpoints({
       Array<{
         id: number;
         title: string;
+        description: string;
+        certificateDescription?: string;
         image_url: string;
         students: Array<{
           id: number;

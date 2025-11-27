@@ -87,6 +87,7 @@ export class CourseService {
       id: course.id,
       title: course.title,
       description: course.description,
+      certificateDescription: course.certificateDescription,
       category: course.category || null,
       price: course.coursePrice,
       image_url: course.image_url,
@@ -152,33 +153,6 @@ export class CourseService {
     };
   }
 
-  async findAllUnconfirmed() {
-    const getAllUploaded = await this.prisma.course.findMany({
-      where: { isConfirmed: false },
-      include: { uploader: { include: { profile: true } } },
-    });
-
-    return getAllUploaded.map((course) => ({
-      id: course.id,
-      title: course.title,
-      description: course.description,
-      category: course.category || null,
-      price: course.coursePrice,
-      image_url: course.image_url,
-      no_lessons: '0',
-
-      open: course.open,
-      status: course.status,
-
-      uploader: {
-        id: course.uploader?.id,
-        name: `${course.uploader?.firstName} ${course.uploader?.lastName}`,
-        email: course.uploader?.email,
-        avatar_url: course.uploader?.profile?.avatar || '',
-      },
-    }));
-  }
-
   async confirmCourse(confirmCourseDto: ConfirmCourseDto) {
     const { id } = confirmCourseDto;
     const course = await this.prisma.course.update({
@@ -218,6 +192,7 @@ export class CourseService {
       id: course.id,
       title: course.title,
       description: course.description,
+      certificateDescription: course.certificateDescription,
       category: course.category || null,
       price: course.coursePrice,
       image_url: course.image_url,
@@ -234,9 +209,44 @@ export class CourseService {
     }));
   }
 
+  async findAllUnconfirmed() {
+    const unconfirmedCourses = await this.prisma.course.findMany({
+      where: { isConfirmed: false },
+      include: { uploader: { include: { profile: true } } },
+    });
+
+    return unconfirmedCourses.map((course) => ({
+      id: course.id,
+      title: course.title,
+      description: course.description,
+      certificateDescription: course.certificateDescription,
+      category: course.category || null,
+      price: course.coursePrice,
+      image_url: course.image_url,
+      no_lessons: '0',
+      open: course.open,
+      status: course.status,
+      templateUrl: course.templateUrl,
+      uploader: {
+        id: course.uploader?.id,
+        name: `${course.uploader?.firstName} ${course.uploader?.lastName}`,
+        email: course.uploader?.email,
+        avatar_url: course.uploader?.profile?.avatar || '',
+      },
+    }));
+  }
+
   async updateCourse(updateCourseDto: UpdateCourseDto) {
-    const { title, description, price, image_url, maximum, open, category } =
-      updateCourseDto;
+    const {
+      title,
+      description,
+      price,
+      image_url,
+      maximum,
+      open,
+      category,
+      certificateDescription,
+    } = updateCourseDto;
     await this.prisma.course.update({
       where: { id: Number(updateCourseDto.id) },
       data: {
@@ -247,6 +257,7 @@ export class CourseService {
         image_url,
         maximum: Number(maximum),
         open: Boolean(open),
+        certificateDescription,
       },
     });
     return { message: 'Course updated successfully' };

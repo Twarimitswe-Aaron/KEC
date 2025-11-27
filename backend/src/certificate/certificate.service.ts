@@ -168,6 +168,8 @@ export class CertificateService {
       select: {
         id: true,
         title: true,
+        description: true,
+        certificateDescription: true,
         image_url: true,
         enrollments: {
           select: {
@@ -193,6 +195,8 @@ export class CertificateService {
     return endedCourses.map((course) => ({
       id: course.id,
       title: course.title,
+      description: course.description,
+      certificateDescription: course.certificateDescription,
       image_url: course.image_url,
       students: course.enrollments.map((enrollment) => ({
         id: enrollment.user.id,

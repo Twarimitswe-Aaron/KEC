@@ -107,8 +107,9 @@ model Course {
   sessionId String? // Track course sessions for access control
 
   // Certificate template (per course)
-  templateUrl  String? // URL to uploaded template file
-  templateType String? @default("HTML")
+  templateUrl            String? // URL to uploaded template file
+  templateType           String? @default("HTML")
+  certificateDescription String? // Custom description for the certificate template
 
   lesson     Lesson[]
   assignment Assignment[]
