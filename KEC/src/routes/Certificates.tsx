@@ -103,19 +103,24 @@ const Certificates: React.FC = () => {
   };
 
   // Approve certificate request
-  const approveCertificate = async (requestId: number) => {
+  const approveCertificate = async (request: Certificate) => {
     try {
       const certificateNumber = generateCertificateNumber();
+      const courseData = endedCourses.find(
+        (c: any) => c.id === request.courseId
+      );
+
       await updateStatus({
-        id: requestId,
+        studentId: request.id,
+        courseId: request.courseId,
         status: "APPROVED",
         certificateNumber,
-        description: certificateDescription,
+        description:
+          courseData?.certificateDescription || courseData?.description || "",
       }).unwrap();
       toast.success("Certificate approved successfully");
       setShowApprovalModal(false);
       setSelectedRequest(null);
-      setCertificateDescription("");
     } catch (error) {
       toast.error("Failed to approve certificate");
       console.error(error);
@@ -123,12 +128,21 @@ const Certificates: React.FC = () => {
   };
 
   // Reject certificate request
-  const rejectCertificate = async (requestId: number, reason: string) => {
+  const rejectCertificate = async (request: Certificate) => {
     try {
-      await updateStatus({
-        id: requestId,
+      console.log("Rejecting certificate with request:", request);
+      console.log("Payload:", {
+        studentId: request.id,
+        courseId: request.courseId,
         status: "REJECTED",
-        rejectionReason: reason,
+        rejectionReason: rejectionReason,
+      });
+
+      await updateStatus({
+        studentId: request.id,
+        courseId: request.courseId,
+        status: "REJECTED",
+        rejectionReason: rejectionReason,
       }).unwrap();
       toast.success("Certificate rejected");
       setShowRejectionModal(false);
@@ -551,6 +565,16 @@ const Certificates: React.FC = () => {
                                           onClick={(e) => {
                                             e.stopPropagation();
                                             setSelectedRequest(request);
+                                            const courseData =
+                                              endedCourses.find(
+                                                (c: any) =>
+                                                  c.id === request.courseId
+                                              );
+                                            setCertificateDescription(
+                                              courseData?.certificateDescription ||
+                                                courseData?.description ||
+                                                ""
+                                            );
                                             setShowApprovalModal(true);
                                             setOpenMenuRequestId(null);
                                           }}
@@ -659,6 +683,11 @@ const Certificates: React.FC = () => {
                         "For successfully completing the comprehensive course curriculum and demonstrating proficiency in the subject matter."
                       }
                       issueDate={new Date().toLocaleDateString()}
+                      instructorName={
+                        endedCourses.find(
+                          (c: any) => c.id === selectedRequest.courseId
+                        )?.instructorName || "Instructor Name"
+                      }
                     />
                   </div>
                 </div>
@@ -688,18 +717,6 @@ const Certificates: React.FC = () => {
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Certificate Description / Commendation
-                  </label>
-                  <textarea
-                    value={certificateDescription}
-                    onChange={(e) => setCertificateDescription(e.target.value)}
-                    className="w-full p-4 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none h-32"
-                    placeholder="Enter a custom description or commendation for this student (optional). If left blank, the default course description will be used."
-                  />
-                </div>
-
                 <div className="mt-auto flex gap-4">
                   <button
                     onClick={() => setShowApprovalModal(false)}
@@ -708,7 +725,7 @@ const Certificates: React.FC = () => {
                     Cancel
                   </button>
                   <button
-                    onClick={() => approveCertificate(selectedRequest.id)}
+                    onClick={() => approveCertificate(selectedRequest)}
                     className="flex-1 px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl hover:from-green-600 hover:to-green-700 transition-all font-medium shadow-lg flex items-center justify-center gap-2"
                   >
                     <FaCheck /> Confirm & Approve
@@ -750,9 +767,7 @@ const Certificates: React.FC = () => {
                 Cancel
               </button>
               <button
-                onClick={() =>
-                  rejectCertificate(selectedRequest.id, rejectionReason)
-                }
+                onClick={() => rejectCertificate(selectedRequest)}
                 disabled={!rejectionReason.trim()}
                 className="flex-1 px-6 py-3 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-xl hover:from-red-600 hover:to-red-700 transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
               >
@@ -901,6 +916,7 @@ const Certificates: React.FC = () => {
                       "For successfully completing the comprehensive course curriculum and demonstrating proficiency in the subject matter."
                     }
                     issueDate={new Date().toLocaleDateString()}
+                    instructorName={selectedCourse.instructorName || "Instructor Name"}
                   />
                 ) : (
                   <CertificateTemplate2
@@ -912,6 +928,7 @@ const Certificates: React.FC = () => {
                       "For successfully completing the comprehensive course curriculum and demonstrating proficiency in the subject matter."
                     }
                     issueDate={new Date().toLocaleDateString()}
+                    instructorName={selectedCourse.instructorName || "Instructor Name"}
                   />
                 )}
               </div>
@@ -964,6 +981,11 @@ const Certificates: React.FC = () => {
                   }
                   certificateNumber={
                     selectedRequest.certificateNumber || undefined
+                  }
+                  instructorName={
+                    endedCourses.find(
+                      (c: any) => c.id === selectedRequest.courseId
+                    )?.instructorName || "Instructor Name"
                   }
                 />
               </div>

@@ -45,11 +45,12 @@ export class CertificateController {
   }
 
   @Roles('admin')
-  @Patch(':id/status')
+  @Patch('status')
   updateStatus(
-    @Param('id') id: string,
     @Body()
     body: {
+      studentId: number;
+      courseId: number;
       status: CertificateStatus;
       rejectionReason?: string;
       certificateNumber?: string;
@@ -57,7 +58,8 @@ export class CertificateController {
     },
   ) {
     return this.certificateService.updateStatus(
-      +id,
+      body.studentId,
+      body.courseId,
       body.status,
       body.rejectionReason,
       body.certificateNumber,

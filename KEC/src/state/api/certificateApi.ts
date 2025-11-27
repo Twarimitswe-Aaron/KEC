@@ -44,15 +44,16 @@ export const certificateApi = apiSlice.injectEndpoints({
     updateCertificateStatus: build.mutation<
       Certificate,
       {
-        id: number;
+        studentId: number;
+        courseId: number;
         status: string;
         rejectionReason?: string;
         certificateNumber?: string;
         description?: string;
       }
     >({
-      query: ({ id, ...body }) => ({
-        url: `certificates/${id}/status`,
+      query: (body) => ({
+        url: `certificates/status`,
         method: "PATCH",
         body,
       }),
@@ -78,6 +79,7 @@ export const certificateApi = apiSlice.injectEndpoints({
         description: string;
         certificateDescription?: string;
         image_url: string;
+        instructorName?: string;
         students: Array<{
           id: number;
           name: string;

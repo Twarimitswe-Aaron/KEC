@@ -105,15 +105,46 @@ export class CertificateService {
   }
 
   async updateStatus(
-    id: number,
+    studentId: number,
+    courseId: number,
     status: CertificateStatus,
     rejectionReason?: string,
     certificateNumber?: string,
     description?: string,
   ) {
-    const certificate = await this.prisma.certificates.update({
-      where: { id },
-      data: {
+    // First, get the student record to get the studentId for the certificates table
+    const user = await this.prisma.user.findUnique({
+      where: { id: studentId },
+      include: { student: true },
+    });
+
+    if (!user || !user.student) {
+      throw new Error('Student not found');
+    }
+
+    const actualStudentId = user.student.id;
+
+    // Use upsert to create certificate if it doesn't exist
+    const certificate = await this.prisma.certificates.upsert({
+      where: {
+        studentId_courseId: {
+          studentId: actualStudentId,
+          courseId,
+        },
+      },
+      create: {
+        studentId: actualStudentId,
+        courseId,
+        userId: studentId,
+        status,
+        issueDate: status === CertificateStatus.APPROVED ? new Date() : null,
+        rejectionReason:
+          status === CertificateStatus.REJECTED ? rejectionReason : null,
+        certificateNumber:
+          status === CertificateStatus.APPROVED ? certificateNumber : null,
+        description: status === CertificateStatus.APPROVED ? description : null,
+      },
+      update: {
         status,
         issueDate: status === CertificateStatus.APPROVED ? new Date() : null,
         rejectionReason:
@@ -171,6 +202,13 @@ export class CertificateService {
         description: true,
         certificateDescription: true,
         image_url: true,
+        uploader: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+          },
+        },
         enrollments: {
           select: {
             user: {
@@ -198,6 +236,9 @@ export class CertificateService {
       description: course.description,
       certificateDescription: course.certificateDescription,
       image_url: course.image_url,
+      instructorName: course.uploader
+        ? `${course.uploader.firstName} ${course.uploader.lastName}`.trim()
+        : 'Instructor',
       students: course.enrollments.map((enrollment) => ({
         id: enrollment.user.id,
         name: `${enrollment.user.firstName} ${enrollment.user.lastName}`.trim(),
