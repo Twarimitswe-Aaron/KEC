@@ -28,7 +28,16 @@ export class CertificateService {
             user: true,
           },
         },
-        course: true,
+        course: {
+          include: {
+            uploader: {
+              select: {
+                firstName: true,
+                lastName: true,
+              },
+            },
+          },
+        },
         template: true,
       },
       orderBy: {
@@ -160,6 +169,30 @@ export class CertificateService {
         course: true,
       },
     });
+
+    // Handle enrollment and student-course relations when certificate is approved
+    if (status === CertificateStatus.APPROVED) {
+      // Delete the enrollment to remove course access
+      await this.prisma.enrollment.deleteMany({
+        where: {
+          userId: studentId,
+          courseId: courseId,
+        },
+      });
+
+      // Update student-course relations
+      await this.prisma.course.update({
+        where: { id: courseId },
+        data: {
+          completedStudents: {
+            connect: { id: actualStudentId },
+          },
+          onGoingStudents: {
+            disconnect: { id: actualStudentId },
+          },
+        },
+      });
+    }
 
     // Send email if certificate is approved
     if (status === CertificateStatus.APPROVED && certificate.student?.user) {

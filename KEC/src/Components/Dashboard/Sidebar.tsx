@@ -2,7 +2,12 @@ import React, { useState, useEffect, useContext } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
 
 import { FiHome, FiSettings } from "react-icons/fi";
-import { FaChevronLeft, FaChevronRight, FaRegUser } from "react-icons/fa6";
+import {
+  FaChevronLeft,
+  FaChevronRight,
+  FaRegUser,
+  FaCertificate,
+} from "react-icons/fa6";
 import { FaTimes } from "react-icons/fa";
 import { RiMessage3Line } from "react-icons/ri";
 import { MdContacts, MdPayment, MdOutlineAnnouncement } from "react-icons/md";
@@ -78,6 +83,11 @@ const Dashboard: RoleBasedSidebar = {
       icon: <MdOutlineAnnouncement />,
     },
     { label: "My Account", path: "/my-account", icon: <FaRegUser /> },
+    {
+      label: "Certificates",
+      path: "/my-certificates",
+      icon: <FaCertificate />,
+    },
     { label: "Feedback", path: "/feedback", icon: <LuMessageSquareMore /> },
     { label: "Logout", path: "/logout", icon: <CgLogOut /> },
   ],

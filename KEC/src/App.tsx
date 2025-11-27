@@ -27,6 +27,7 @@ import Feedback from "./routes/Feedback";
 import Logout from "./routes/Logout";
 import PaymentManagement from "./routes/PaymentManagement";
 import Certificates from "./routes/Certificates";
+import MyCertificates from "./routes/MyCertificates";
 import CertificateManagement from "./routes/CertificateManagement";
 import StudentsRequest from "./Components/StudentsRequest";
 import UserLessonsView from "./Components/UserLessonsView.tsx";
@@ -92,6 +93,7 @@ function App() {
           <Route path="/feedback" element={<Feedback />} />
           <Route path="/payment-management" element={<PaymentManagement />} />
           <Route path="/certificate-creation" element={<Certificates />} />
+          <Route path="/my-certificates" element={<MyCertificates />} />
           <Route
             path="/certificate-management"
             element={<CertificateManagement />}

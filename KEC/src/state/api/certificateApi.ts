@@ -32,6 +32,10 @@ export interface Certificate {
     coursePrice: string;
     image_url: string;
     passingGrade?: number;
+    uploader?: {
+      firstName: string;
+      lastName: string;
+    };
   };
 }
 
