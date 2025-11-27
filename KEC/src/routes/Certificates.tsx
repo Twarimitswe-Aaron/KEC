@@ -1039,10 +1039,6 @@ const Certificates: React.FC = () => {
                   try {
                     await updateCourse({
                       id: selectedCourse.id,
-                      title: selectedCourse.title,
-                      description: selectedCourse.description,
-                      coursePrice: "0",
-                      open: true,
                       certificateDescription: templateDescription,
                     }).unwrap();
                     toast.success(

@@ -98,12 +98,12 @@ export interface CourseData {
 
 export interface CourseToUpdate {
   id: number;
-  title: string;
-  description: string;
-  coursePrice: string;
+  title?: string;
+  description?: string;
+  coursePrice?: string;
   category?: string;
   maximum?: number;
-  open: boolean;
+  open?: boolean;
   image?: File;
   certificateDescription?: string;
 }
@@ -215,6 +215,8 @@ export const courseApi = apiSlice.injectEndpoints({
             type: "Course" as const,
             id: id ? String(id) : "LIST",
           },
+          // Also invalidate Certificates tag to refresh certificate pages
+          "Certificates" as const,
         ];
       },
     }),

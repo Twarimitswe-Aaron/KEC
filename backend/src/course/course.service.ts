@@ -247,18 +247,23 @@ export class CourseService {
       category,
       certificateDescription,
     } = updateCourseDto;
+
+    // Build update data object with only defined fields
+    const updateData: any = {};
+
+    if (title !== undefined) updateData.title = title;
+    if (description !== undefined) updateData.description = description;
+    if (category !== undefined) updateData.category = category || null;
+    if (price !== undefined) updateData.coursePrice = price;
+    if (image_url !== undefined) updateData.image_url = image_url;
+    if (maximum !== undefined) updateData.maximum = Number(maximum);
+    if (open !== undefined) updateData.open = Boolean(open);
+    if (certificateDescription !== undefined)
+      updateData.certificateDescription = certificateDescription;
+
     await this.prisma.course.update({
       where: { id: Number(updateCourseDto.id) },
-      data: {
-        title,
-        description,
-        category: category ?? undefined,
-        coursePrice: price,
-        image_url,
-        maximum: Number(maximum),
-        open: Boolean(open),
-        certificateDescription,
-      },
+      data: updateData,
     });
     return { message: 'Course updated successfully' };
   }
