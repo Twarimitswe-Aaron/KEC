@@ -64,7 +64,6 @@ const MyCertificates: React.FC = () => {
   }, [activeMenuId]);
 
   // Debug logging
-  console.log("Certificates data:", certificates);
 
   // Filter certificates by status
   const approvedCertificates = certificates.filter(
@@ -86,7 +85,6 @@ const MyCertificates: React.FC = () => {
   }
 
   const handleDownload = async (cert: Certificate) => {
-    console.log("Starting download for:", cert.course.title);
     setIsDownloading(true);
     try {
       // We need to render the certificate in a hidden container to capture it
@@ -95,12 +93,10 @@ const MyCertificates: React.FC = () => {
 
       // Let's use the selectedCertificate state to render a hidden version if not already viewing
       if (!selectedCertificate || selectedCertificate.id !== cert.id) {
-        console.log("Setting selected certificate for download...");
         setSelectedCertificate(cert);
       }
 
       // Wait for state update and render
-      console.log("Waiting for render...");
       await new Promise((resolve) => setTimeout(resolve, 500)); // Increased timeout
 
       const element = certificateRef.current;
@@ -111,17 +107,14 @@ const MyCertificates: React.FC = () => {
         );
         return;
       }
-      console.log("Certificate element found:", element);
 
-      console.log("Starting html2canvas capture...");
       const canvas = await html2canvas(element, {
         scale: 2, // Higher scale for better quality
-        logging: true, // Enable html2canvas logging
+        logging: false,
         useCORS: true, // Important for images
         backgroundColor: "#ffffff",
         allowTaint: true,
       });
-      console.log("Canvas captured successfully");
 
       const imgData = canvas.toDataURL("image/png");
       const pdf = new jsPDF({
@@ -135,7 +128,6 @@ const MyCertificates: React.FC = () => {
 
       pdf.addImage(imgData, "PNG", 0, 0, imgWidth, imgHeight);
       pdf.save(`${cert.course.title.replace(/\s+/g, "_")}_Certificate.pdf`);
-      console.log("PDF saved");
     } catch (error) {
       console.error("Error generating PDF:", error);
       alert("Failed to generate PDF. Check console for details.");
@@ -403,9 +395,14 @@ const MyCertificates: React.FC = () => {
                   }
                   courseName={selectedCertificate.course.title}
                   courseDescription={
-                    selectedCertificate.description ||
-                    selectedCertificate.course.description ||
-                    "For successfully completing the comprehensive course curriculum and demonstrating proficiency in the subject matter."
+                    (
+                      selectedCertificate.description ||
+                      selectedCertificate.course.description ||
+                      "For successfully completing the comprehensive course curriculum and demonstrating proficiency in the subject matter."
+                    ).substring(0, 300) +
+                    (selectedCertificate.course.description.length > 300
+                      ? "..."
+                      : "")
                   }
                   issueDate={
                     selectedCertificate.issueDate
@@ -461,9 +458,14 @@ const MyCertificates: React.FC = () => {
               }
               courseName={selectedCertificate.course.title}
               courseDescription={
-                selectedCertificate.description ||
-                selectedCertificate.course.description ||
-                "For successfully completing the comprehensive course curriculum and demonstrating proficiency in the subject matter."
+                (
+                  selectedCertificate.description ||
+                  selectedCertificate.course.description ||
+                  "For successfully completing the comprehensive course curriculum and demonstrating proficiency in the subject matter."
+                ).substring(0, 300) +
+                (selectedCertificate.course.description.length > 300
+                  ? "..."
+                  : "")
               }
               issueDate={
                 selectedCertificate.issueDate

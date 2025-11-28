@@ -76,6 +76,7 @@ const Certificates: React.FC = () => {
   const [showViewTemplateModal, setShowViewTemplateModal] = useState(false);
   const [showViewCertificateModal, setShowViewCertificateModal] =
     useState(false);
+  const [showInfoModal, setShowInfoModal] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState<any>(null);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [selectedTemplate, setSelectedTemplate] = useState<
@@ -484,158 +485,190 @@ const Certificates: React.FC = () => {
                       requests.map((request: Certificate, index: number) => (
                         <div
                           key={index}
-                          className="p-5 hover:bg-white/60 transition-colors"
+                          className="p-6 cursor-pointer hover:bg-gray-100 transition-all duration-300 border-b border-gray-200/50"
                         >
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-4">
-                              <div className="relative">
-                                <img
-                                  src={
-                                    request.student.user.profile?.avatar ||
-                                    "https://via.placeholder.com/48"
-                                  }
-                                  alt={request.student.user.firstName}
-                                  className="w-14 h-14 rounded-full object-cover border-2 border-white shadow-md"
-                                />
-                                <div
-                                  className={`absolute -bottom-1 -right-1 rounded-full p-1.5 ${
-                                    request.status === "APPROVED"
-                                      ? "bg-green-500"
-                                      : request.status === "PENDING"
-                                      ? "bg-yellow-500"
-                                      : "bg-red-500"
-                                  } text-white shadow-md`}
-                                >
-                                  {request.status === "APPROVED" && (
-                                    <FaCheck className="text-xs" />
-                                  )}
-                                  {request.status === "PENDING" && (
-                                    <FaClock className="text-xs" />
-                                  )}
-                                  {request.status === "REJECTED" && (
-                                    <FaTimes className="text-xs" />
-                                  )}
+                          <div className="flex justify-between items-start">
+                            <div className="flex-1">
+                              <div className="flex items-center space-x-3">
+                                <div className="relative">
+                                  <img
+                                    src={
+                                      request.student.user.profile?.avatar ||
+                                      "https://via.placeholder.com/48"
+                                    }
+                                    alt={request.student.user.firstName}
+                                    className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-md"
+                                  />
+                                  <div
+                                    className={`absolute -bottom-1 -right-1 rounded-full p-1 ${
+                                      request.status === "APPROVED"
+                                        ? "bg-green-500"
+                                        : request.status === "PENDING"
+                                        ? "bg-yellow-500"
+                                        : "bg-red-500"
+                                    } text-white shadow-md`}
+                                  >
+                                    {request.status === "APPROVED" && (
+                                      <FaCheck className="text-[10px]" />
+                                    )}
+                                    {request.status === "PENDING" && (
+                                      <FaClock className="text-[10px]" />
+                                    )}
+                                    {request.status === "REJECTED" && (
+                                      <FaTimes className="text-[10px]" />
+                                    )}
+                                  </div>
                                 </div>
-                              </div>
-                              <div className="flex-1">
-                                <h3 className="font-bold text-lg text-gray-900">
+                                <h3 className="text-xl font-bold text-gray-900">
                                   {request.student.user.firstName}{" "}
                                   {request.student.user.lastName}
                                 </h3>
-                                <p className="text-gray-600 text-sm">
-                                  {request.student.user.email}
-                                </p>
-                                <div className="flex gap-2 mt-1">
-                                  {request.certificateNumber && (
-                                    <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-medium">
-                                      #{request.certificateNumber}
-                                    </span>
-                                  )}
-                                  <span className="text-xs text-gray-500">
-                                    Requested:{" "}
-                                    {new Date(
-                                      request.createdAt
-                                    ).toLocaleDateString()}
-                                  </span>
-                                </div>
                               </div>
                             </div>
+                            <div className="flex items-center space-x-2">
+                              <div className="relative">
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setOpenMenuRequestId(
+                                      openMenuRequestId === request.id
+                                        ? null
+                                        : request.id
+                                    );
+                                  }}
+                                  className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                                  aria-label="Request options"
+                                >
+                                  <FaEllipsisV
+                                    className="h-4 w-4"
+                                    aria-hidden="true"
+                                  />
+                                </button>
 
-                            <div className="flex items-center gap-2">
-                              {request.status === "PENDING" && (
-                                <div className="relative">
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setOpenMenuRequestId(
-                                        openMenuRequestId === request.id
-                                          ? null
-                                          : request.id
-                                      );
-                                    }}
-                                    className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-                                  >
-                                    <FaEllipsisV className="text-gray-500" />
-                                  </button>
-
-                                  {openMenuRequestId === request.id && (
-                                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 z-20 overflow-hidden">
-                                      <div className="py-1">
-                                        <button
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            setSelectedRequest(request);
-                                            const courseData =
-                                              endedCourses.find(
-                                                (c: any) =>
-                                                  c.id === request.courseId
+                                {openMenuRequestId === request.id && (
+                                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 z-20 overflow-hidden">
+                                    <div className="py-1">
+                                      {request.status === "PENDING" && (
+                                        <>
+                                          <button
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              setSelectedRequest(request);
+                                              const courseData =
+                                                endedCourses.find(
+                                                  (c: any) =>
+                                                    c.id === request.courseId
+                                                );
+                                              setCertificateDescription(
+                                                courseData?.certificateDescription ||
+                                                  courseData?.description ||
+                                                  ""
                                               );
-                                            setCertificateDescription(
-                                              courseData?.certificateDescription ||
-                                                courseData?.description ||
-                                                ""
-                                            );
-                                            setShowApprovalModal(true);
-                                            setOpenMenuRequestId(null);
-                                          }}
-                                          className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700 flex items-center gap-2 transition-colors"
-                                        >
-                                          <FaCheck className="text-green-500" />
-                                          Approve
-                                        </button>
+                                              setShowApprovalModal(true);
+                                              setOpenMenuRequestId(null);
+                                            }}
+                                            className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700 flex items-center gap-2 transition-colors"
+                                          >
+                                            <FaCheck className="text-green-500" />
+                                            Approve
+                                          </button>
+                                          <button
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              setSelectedRequest(request);
+                                              setShowRejectionModal(true);
+                                              setOpenMenuRequestId(null);
+                                            }}
+                                            className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-red-50 hover:text-red-700 flex items-center gap-2 transition-colors"
+                                          >
+                                            <FaTimes className="text-red-500" />
+                                            Reject
+                                          </button>
+                                          <div className="border-t border-gray-200"></div>
+                                          <button
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              setSelectedRequest(request);
+                                              setShowInfoModal(true);
+                                              setOpenMenuRequestId(null);
+                                            }}
+                                            className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 transition-colors"
+                                          >
+                                            <FaEye className="text-gray-500" />
+                                            View Info
+                                          </button>
+                                        </>
+                                      )}
+                                      {request.status === "APPROVED" && (
+                                        <>
+                                          <button
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              setSelectedRequest(request);
+                                              setShowViewCertificateModal(true);
+                                              setOpenMenuRequestId(null);
+                                            }}
+                                            className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 flex items-center gap-2 transition-colors"
+                                          >
+                                            <FaEye className="text-blue-500" />
+                                            View Certificate
+                                          </button>
+                                          <button
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              setOpenMenuRequestId(null);
+                                            }}
+                                            className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700 flex items-center gap-2 transition-colors"
+                                          >
+                                            <FaDownload className="text-green-500" />
+                                            Download PDF
+                                          </button>
+                                          <div className="border-t border-gray-200"></div>
+                                          <button
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              setSelectedRequest(request);
+                                              setShowInfoModal(true);
+                                              setOpenMenuRequestId(null);
+                                            }}
+                                            className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 transition-colors"
+                                          >
+                                            <FaEye className="text-gray-500" />
+                                            View Info
+                                          </button>
+                                        </>
+                                      )}
+                                      {request.status === "REJECTED" && (
                                         <button
                                           onClick={(e) => {
                                             e.stopPropagation();
                                             setSelectedRequest(request);
-                                            setShowRejectionModal(true);
+                                            setShowInfoModal(true);
                                             setOpenMenuRequestId(null);
                                           }}
-                                          className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-red-50 hover:text-red-700 flex items-center gap-2 transition-colors"
+                                          className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 transition-colors"
                                         >
-                                          <FaTimes className="text-red-500" />
-                                          Reject
+                                          <FaEye className="text-gray-500" />
+                                          View Info
                                         </button>
-                                      </div>
+                                      )}
                                     </div>
-                                  )}
-                                </div>
-                              )}
-                              {request.status === "APPROVED" && (
-                                <div className="flex gap-2">
-                                  <button
-                                    onClick={() => {
-                                      setSelectedRequest(request);
-                                      setShowViewCertificateModal(true);
-                                    }}
-                                    className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors border border-blue-200"
-                                  >
-                                    <FaEye className="text-lg" />
-                                  </button>
-                                  <button className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors border border-green-200">
-                                    <FaDownload className="text-lg" />
-                                  </button>
-                                </div>
-                              )}
+                                  </div>
+                                )}
+                              </div>
                             </div>
                           </div>
 
-                          {/* Additional Details */}
-                          {(request.rejectionReason || request.issueDate) && (
-                            <div className="mt-3 p-3 bg-gray-50/80 backdrop-blur-sm rounded-lg">
-                              {request.rejectionReason && (
-                                <p className="text-sm text-red-700">
-                                  <strong>Rejection reason:</strong>{" "}
-                                  {request.rejectionReason}
-                                </p>
-                              )}
-                              {request.issueDate && (
-                                <p className="text-sm text-green-700">
-                                  <strong>Approved on:</strong>{" "}
-                                  {new Date(
-                                    request.issueDate
-                                  ).toLocaleDateString()}
-                                </p>
-                              )}
+                          {/* Additional Details - Only show issue date if approved */}
+                          {request.issueDate && (
+                            <div className="mt-3 pt-3 border-t border-gray-200/50">
+                              <p className="text-sm text-green-700 flex items-center gap-2">
+                                <FaCheck className="text-xs" />
+                                <strong>Approved on:</strong>{" "}
+                                {new Date(
+                                  request.issueDate
+                                ).toLocaleDateString()}
+                              </p>
                             </div>
                           )}
                         </div>
@@ -916,7 +949,9 @@ const Certificates: React.FC = () => {
                       "For successfully completing the comprehensive course curriculum and demonstrating proficiency in the subject matter."
                     }
                     issueDate={new Date().toLocaleDateString()}
-                    instructorName={selectedCourse.instructorName || "Instructor Name"}
+                    instructorName={
+                      selectedCourse.instructorName || "Instructor Name"
+                    }
                   />
                 ) : (
                   <CertificateTemplate2
@@ -928,7 +963,9 @@ const Certificates: React.FC = () => {
                       "For successfully completing the comprehensive course curriculum and demonstrating proficiency in the subject matter."
                     }
                     issueDate={new Date().toLocaleDateString()}
-                    instructorName={selectedCourse.instructorName || "Instructor Name"}
+                    instructorName={
+                      selectedCourse.instructorName || "Instructor Name"
+                    }
                   />
                 )}
               </div>
@@ -1076,6 +1113,160 @@ const Certificates: React.FC = () => {
                 className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl hover:from-blue-600 hover:to-blue-700 transition-all font-medium shadow-lg"
               >
                 Save Changes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Info Modal */}
+      {showInfoModal && selectedRequest && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50">
+          <div className="bg-white/95 backdrop-blur-md rounded-2xl w-full max-w-md p-6 shadow-2xl border border-white/50 flex flex-col">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-2xl font-bold text-gray-900">
+                Request Details
+              </h3>
+              <button
+                onClick={() => setShowInfoModal(false)}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <FaTimes className="text-gray-500" />
+              </button>
+            </div>
+
+            <div className="space-y-6">
+              <div className="flex items-center gap-4">
+                <img
+                  src={
+                    selectedRequest.student.user.profile?.avatar ||
+                    "https://via.placeholder.com/48"
+                  }
+                  alt={selectedRequest.student.user.firstName}
+                  className="w-16 h-16 rounded-full object-cover border-2 border-white shadow-md"
+                />
+                <div>
+                  <h4 className="text-xl font-bold text-gray-900">
+                    {selectedRequest.student.user.firstName}{" "}
+                    {selectedRequest.student.user.lastName}
+                  </h4>
+                  <p className="text-gray-500 text-sm">Student</p>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div className="bg-gray-50 p-4 rounded-xl space-y-3">
+                  <div className="flex items-center gap-3 text-gray-700">
+                    <div className="w-8 flex justify-center">
+                      <FaUsers className="text-gray-400" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500 uppercase font-semibold">
+                        Email
+                      </p>
+                      <p className="font-medium">
+                        {selectedRequest.student.user.email}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3 text-gray-700">
+                    <div className="w-8 flex justify-center">
+                      <FaClock className="text-gray-400" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500 uppercase font-semibold">
+                        Requested On
+                      </p>
+                      <p className="font-medium">
+                        {new Date(selectedRequest.createdAt).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </div>
+
+                  {selectedRequest.certificateNumber && (
+                    <div className="flex items-center gap-3 text-gray-700">
+                      <div className="w-8 flex justify-center">
+                        <FaCertificate className="text-gray-400" />
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500 uppercase font-semibold">
+                          Certificate Number
+                        </p>
+                        <p className="font-medium font-mono text-blue-600">
+                          #{selectedRequest.certificateNumber}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex items-center gap-3 text-gray-700">
+                    <div className="w-8 flex justify-center">
+                      <div
+                        className={`w-3 h-3 rounded-full ${
+                          selectedRequest.status === "APPROVED"
+                            ? "bg-green-500"
+                            : selectedRequest.status === "PENDING"
+                            ? "bg-yellow-500"
+                            : "bg-red-500"
+                        }`}
+                      />
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500 uppercase font-semibold">
+                        Status
+                      </p>
+                      <p className="font-medium capitalize">
+                        {selectedRequest.status.toLowerCase()}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {selectedRequest.status === "APPROVED" &&
+                  selectedRequest.issueDate && (
+                    <div className="bg-green-50 p-4 rounded-xl border border-green-100">
+                      <div className="flex items-center gap-3 text-green-800">
+                        <FaCheck className="text-green-600" />
+                        <div>
+                          <p className="text-xs text-green-600 uppercase font-semibold">
+                            Approved On
+                          </p>
+                          <p className="font-medium">
+                            {new Date(
+                              selectedRequest.issueDate
+                            ).toLocaleDateString()}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                {selectedRequest.status === "REJECTED" &&
+                  selectedRequest.rejectionReason && (
+                    <div className="bg-red-50 p-4 rounded-xl border border-red-100">
+                      <div className="flex items-start gap-3 text-red-800">
+                        <FaTimes className="text-red-600 mt-1" />
+                        <div>
+                          <p className="text-xs text-red-600 uppercase font-semibold">
+                            Rejection Reason
+                          </p>
+                          <p className="font-medium">
+                            {selectedRequest.rejectionReason}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+              </div>
+            </div>
+
+            <div className="mt-8">
+              <button
+                onClick={() => setShowInfoModal(false)}
+                className="w-full px-6 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-colors font-medium"
+              >
+                Close
               </button>
             </div>
           </div>

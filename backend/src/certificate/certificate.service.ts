@@ -22,14 +22,30 @@ export class CertificateService {
         status,
         studentId,
       },
-      include: {
+      select: {
+        id: true,
+        status: true,
+        issueDate: true,
+        certificateNumber: true,
+        rejectionReason: true,
+        description: true,
+        createdAt: true,
         student: {
-          include: {
-            user: true,
+          select: {
+            user: {
+              select: {
+                firstName: true,
+                lastName: true,
+              },
+            },
           },
         },
         course: {
-          include: {
+          select: {
+            id: true,
+            title: true,
+            description: true,
+            image_url: true,
             uploader: {
               select: {
                 firstName: true,
@@ -242,22 +258,37 @@ export class CertificateService {
             lastName: true,
           },
         },
-        enrollments: {
+        certificates: {
           select: {
-            user: {
+            id: true,
+            status: true,
+            certificateNumber: true,
+            rejectionReason: true,
+            issueDate: true,
+            description: true,
+            createdAt: true,
+            student: {
               select: {
                 id: true,
-                firstName: true,
-                lastName: true,
-                email: true,
-                profile: {
+                user: {
                   select: {
-                    avatar: true,
-                    phone: true,
+                    id: true,
+                    firstName: true,
+                    lastName: true,
+                    email: true,
+                    profile: {
+                      select: {
+                        avatar: true,
+                        phone: true,
+                      },
+                    },
                   },
                 },
               },
             },
+          },
+          orderBy: {
+            createdAt: 'desc',
           },
         },
       },
@@ -272,13 +303,23 @@ export class CertificateService {
       instructorName: course.uploader
         ? `${course.uploader.firstName} ${course.uploader.lastName}`.trim()
         : 'Instructor',
-      students: course.enrollments.map((enrollment) => ({
-        id: enrollment.user.id,
-        name: `${enrollment.user.firstName} ${enrollment.user.lastName}`.trim(),
-        email: enrollment.user.email,
-        phone: enrollment.user.profile?.phone || '',
-        avatar: enrollment.user.profile?.avatar || null,
-      })),
+      students: course.certificates
+        .filter((cert) => cert.student && cert.student.user)
+        .map((cert) => ({
+          id: cert.student!.user!.id, // User ID for compatibility
+          studentId: cert.student!.id, // Actual Student ID
+          certificateId: cert.id,
+          status: cert.status,
+          certificateNumber: cert.certificateNumber,
+          rejectionReason: cert.rejectionReason,
+          issueDate: cert.issueDate,
+          description: cert.description,
+          createdAt: cert.createdAt,
+          name: `${cert.student!.user!.firstName} ${cert.student!.user!.lastName}`.trim(),
+          email: cert.student!.user!.email,
+          phone: cert.student!.user!.profile?.phone || '',
+          avatar: cert.student!.user!.profile?.avatar || null,
+        })),
     }));
   }
   async uploadTemplate(
