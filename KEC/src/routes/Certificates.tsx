@@ -185,7 +185,7 @@ const Certificates: React.FC = () => {
       },
       requests: course.students.map((student: any) => ({
         id: student.id,
-        status: "PENDING", // Default status for students in ended courses
+        status: student.status || "PENDING",
         student: {
           user: {
             firstName: student.name.split(" ")[0] || "",
@@ -197,16 +197,20 @@ const Certificates: React.FC = () => {
           },
         },
         courseId: course.id,
-        createdAt: new Date().toISOString(),
-        certificateNumber: null,
-        rejectionReason: null,
-        issueDate: null,
+        createdAt: student.createdAt || new Date().toISOString(),
+        certificateNumber: student.certificateNumber,
+        rejectionReason: student.rejectionReason,
+        issueDate: student.issueDate,
       })),
       counts: {
         total: course.students.length,
-        pending: course.students.length,
-        approved: 0,
-        rejected: 0,
+        pending: course.students.filter(
+          (s: any) => (s.status || "PENDING") === "PENDING"
+        ).length,
+        approved: course.students.filter((s: any) => s.status === "APPROVED")
+          .length,
+        rejected: course.students.filter((s: any) => s.status === "REJECTED")
+          .length,
       },
     }));
   };
@@ -362,39 +366,48 @@ const Certificates: React.FC = () => {
                         {course.description}
                       </p>
                       <div className="flex items-center gap-3 mt-2">
-                        <span className="text-xs bg-blue-100 text-blue-700 px-3 py-1 rounded-full font-medium">
-                          {course.passingGrade || 70}% passing grade
-                        </span>
+                        {/* Passing grade removed */}
                       </div>
                     </div>
 
                     <div className="flex items-center gap-6">
                       {/* Request Counts */}
                       <div className="flex gap-3 items-center">
-                        <div className="flex gap-1 items-center">
-                          <div className="bg-gray-800 w-2.5 h-2.5 rounded-full"></div>
-                          <span className="text-sm font-semibold text-gray-700">
+                        <div className="flex gap-1 items-center" title="Total">
+                          <div className="bg-gray-800 w-2 h-2 rounded-full"></div>
+                          <span className="text-xs font-semibold text-gray-700">
                             {counts.total}
                           </span>
                         </div>
-                        <div className="flex gap-1 items-center">
-                          <div className="bg-yellow-400 w-2.5 h-2.5 rounded-full"></div>
-                          <span className="text-sm font-semibold text-gray-700">
-                            {counts.pending}
-                          </span>
-                        </div>
+                        {counts.pending > 0 && (
+                          <div
+                            className="flex gap-1 items-center"
+                            title="Pending"
+                          >
+                            <div className="bg-yellow-400 w-2 h-2 rounded-full"></div>
+                            <span className="text-xs font-semibold text-gray-700">
+                              {counts.pending}
+                            </span>
+                          </div>
+                        )}
                         {counts.approved > 0 && (
-                          <div className="flex gap-1 items-center">
-                            <div className="bg-green-400 w-2.5 h-2.5 rounded-full"></div>
-                            <span className="text-sm font-semibold text-gray-700">
+                          <div
+                            className="flex gap-1 items-center"
+                            title="Approved"
+                          >
+                            <div className="bg-green-400 w-2 h-2 rounded-full"></div>
+                            <span className="text-xs font-semibold text-gray-700">
                               {counts.approved}
                             </span>
                           </div>
                         )}
                         {counts.rejected > 0 && (
-                          <div className="flex gap-1 items-center">
-                            <div className="bg-red-400 w-2.5 h-2.5 rounded-full"></div>
-                            <span className="text-sm font-semibold text-gray-700">
+                          <div
+                            className="flex gap-1 items-center"
+                            title="Rejected"
+                          >
+                            <div className="bg-red-400 w-2 h-2 rounded-full"></div>
+                            <span className="text-xs font-semibold text-gray-700">
                               {counts.rejected}
                             </span>
                           </div>
@@ -671,17 +684,6 @@ const Certificates: React.FC = () => {
                           </div>
 
                           {/* Additional Details - Only show issue date if approved */}
-                          {request.issueDate && (
-                            <div className="mt-3 pt-3 border-t border-gray-200/50">
-                              <p className="text-sm text-green-700 flex items-center gap-2">
-                                <FaCheck className="text-xs" />
-                                <strong>Approved on:</strong>{" "}
-                                {new Date(
-                                  request.issueDate
-                                ).toLocaleDateString()}
-                              </p>
-                            </div>
-                          )}
                         </div>
                       ))
                     )}

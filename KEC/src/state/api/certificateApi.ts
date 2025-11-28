@@ -90,6 +90,11 @@ export const certificateApi = apiSlice.injectEndpoints({
           email: string;
           phone: string;
           avatar: string | null;
+          status?: string;
+          issueDate?: string;
+          certificateNumber?: string;
+          rejectionReason?: string;
+          createdAt?: string;
         }>;
       }>,
       void
