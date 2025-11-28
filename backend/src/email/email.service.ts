@@ -9,12 +9,12 @@ export class EmailService {
   constructor(private configService: ConfigService) {
     // Configure email transporter
     this.transporter = nodemailer.createTransport({
-      host: this.configService.get('EMAIL_HOST') || 'smtp.gmail.com',
-      port: this.configService.get('EMAIL_PORT') || 587,
+      host: this.configService.get('SMTP_HOST') || 'smtp.gmail.com',
+      port: this.configService.get('SMTP_PORT') || 587,
       secure: false, // true for 465, false for other ports
       auth: {
-        user: this.configService.get('EMAIL_USER'),
-        pass: this.configService.get('EMAIL_PASSWORD'),
+        user: this.configService.get('SMTP_USER'),
+        pass: this.configService.get('SMTP_PASS'),
       },
     });
   }
@@ -27,7 +27,7 @@ export class EmailService {
     certificateUrl?: string,
   ) {
     const mailOptions = {
-      from: `"${this.configService.get('EMAIL_FROM_NAME') || 'KEC Platform'}" <${this.configService.get('EMAIL_USER')}>`,
+      from: `"${this.configService.get('EMAIL_FROM_NAME') || 'KEC Platform'}" <${this.configService.get('SMTP_USER')}>`,
       to: recipientEmail,
       subject: `🎓 Your Certificate for ${courseName}`,
       html: `
@@ -135,7 +135,10 @@ export class EmailService {
 
     try {
       const info = await this.transporter.sendMail(mailOptions);
-      console.log('Certificate email sent:', info.messageId);
+      console.log(
+        `Certificate email sent to ${recipientEmail}:`,
+        info.messageId,
+      );
       return { success: true, messageId: info.messageId };
     } catch (error) {
       console.error('Error sending certificate email:', error);

@@ -25,6 +25,7 @@ import {
   CertificateTemplate2,
 } from "../Components/Certificate/CertificateTemplates";
 import { useUpdateCourseMutation } from "../state/api/courseApi";
+import { FaBook } from "react-icons/fa6";
 
 // Types
 interface Certificate {
@@ -49,6 +50,10 @@ interface Certificate {
 }
 
 type TabType = "all" | "pending" | "approved" | "rejected";
+
+// Character limits to prevent certificate overflow
+const MAX_DESCRIPTION_LENGTH = 200;
+const MAX_INSTRUCTOR_NAME_LENGTH = 50;
 
 // Component
 const Certificates: React.FC = () => {
@@ -82,6 +87,18 @@ const Certificates: React.FC = () => {
   const [selectedTemplate, setSelectedTemplate] = useState<
     "template1" | "template2"
   >("template1");
+
+  // Template editing state
+  const [showEditTemplateModal, setShowEditTemplateModal] = useState(false);
+  const [templateDescription, setTemplateDescription] = useState("");
+  const [instructorName, setInstructorName] = useState("");
+  const [updateCourse] = useUpdateCourseMutation();
+
+  const [sortBy, setSortBy] = useState("newest");
+  const [sortDirection, setSortDirection] = useState("asc");
+  const [openMenuRequestId, setOpenMenuRequestId] = useState<number | null>(
+    null
+  );
 
   // Toggle course expansion
   const toggleCourseExpansion = (courseId: number) => {
@@ -163,6 +180,7 @@ const Certificates: React.FC = () => {
         title: course.title,
         description: course.description || "Course completed",
         certificateDescription: course.certificateDescription,
+        instructorName: course.instructorName,
         passingGrade: 70,
       },
       requests: course.students.map((student: any) => ({
@@ -206,16 +224,6 @@ const Certificates: React.FC = () => {
   };
 
   const coursesData = getCoursesWithRequests();
-
-  const [showEditTemplateModal, setShowEditTemplateModal] = useState(false);
-  const [templateDescription, setTemplateDescription] = useState("");
-  const [updateCourse] = useUpdateCourseMutation();
-
-  const [sortBy, setSortBy] = useState("newest");
-  const [sortDirection, setSortDirection] = useState("asc");
-  const [openMenuRequestId, setOpenMenuRequestId] = useState<number | null>(
-    null
-  );
 
   const FilterControls: React.FC = () => {
     const currentCount = totalStudents;
@@ -311,7 +319,7 @@ const Certificates: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen rounded-md bg-gradient-to-br from-blue-50 via-white to-indigo-50 p-6">
+    <div className="min-h-screen rounded-md p-6">
       <div className="max-w-6xl mx-auto">
         <FilterControls />
 
@@ -443,6 +451,9 @@ const Certificates: React.FC = () => {
                                     course.certificateDescription ||
                                       course.description ||
                                       ""
+                                  );
+                                  setInstructorName(
+                                    course.instructorName || ""
                                   );
                                   setShowEditTemplateModal(true);
                                   setOpenMenuCourseId(null);
@@ -937,7 +948,6 @@ const Certificates: React.FC = () => {
               </div>
 
               {/* Template Preview */}
-              {/* Template Preview */}
               <div className="w-full max-w-3xl bg-white shadow-2xl">
                 {selectedTemplate === "template1" ? (
                   <CertificateTemplate1
@@ -982,6 +992,7 @@ const Certificates: React.FC = () => {
           </div>
         </div>
       )}
+
       {/* View Approved Certificate Modal */}
       {showViewCertificateModal && selectedRequest && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50">
@@ -1034,85 +1045,6 @@ const Certificates: React.FC = () => {
                 className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium"
               >
                 Close
-              </button>
-              <button className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center gap-2">
-                <FaDownload /> Download PDF
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Edit Template Details Modal */}
-      {showEditTemplateModal && selectedCourse && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50">
-          <div className="bg-white/95 backdrop-blur-md rounded-2xl w-full max-w-2xl p-8 shadow-2xl border border-white/50">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-2xl font-bold text-gray-900">
-                Edit Certificate Template Details
-              </h3>
-              <button
-                onClick={() => setShowEditTemplateModal(false)}
-                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-              >
-                <FaTimes className="text-gray-500" />
-              </button>
-            </div>
-
-            <div className="mb-4">
-              <p className="text-sm text-gray-600 mb-1">
-                Course:{" "}
-                <span className="font-semibold">{selectedCourse.title}</span>
-              </p>
-            </div>
-
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Certificate Description
-              </label>
-              <textarea
-                value={templateDescription}
-                onChange={(e) => setTemplateDescription(e.target.value)}
-                className="w-full p-4 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none bg-white"
-                rows={6}
-                placeholder="Enter the description that will appear on students' certificates..."
-              />
-              <p className="text-xs text-gray-500 mt-2">
-                This text will be displayed on the certificate. If left blank,
-                the course description will be used.
-              </p>
-            </div>
-
-            <div className="flex gap-4">
-              <button
-                onClick={() => {
-                  setShowEditTemplateModal(false);
-                  setTemplateDescription("");
-                }}
-                className="flex-1 px-6 py-3 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 transition-colors font-medium"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={async () => {
-                  try {
-                    await updateCourse({
-                      id: selectedCourse.id,
-                      certificateDescription: templateDescription,
-                    }).unwrap();
-                    toast.success(
-                      "Certificate description updated successfully!"
-                    );
-                    setShowEditTemplateModal(false);
-                    setTemplateDescription("");
-                  } catch (error) {
-                    toast.error("Failed to update certificate description");
-                    console.error(error);
-                  }
-                }}
-                className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl hover:from-blue-600 hover:to-blue-700 transition-all font-medium shadow-lg"
-              >
-                Save Changes
               </button>
             </div>
           </div>
@@ -1179,7 +1111,9 @@ const Certificates: React.FC = () => {
                         Requested On
                       </p>
                       <p className="font-medium">
-                        {new Date(selectedRequest.createdAt).toLocaleDateString()}
+                        {new Date(
+                          selectedRequest.createdAt
+                        ).toLocaleDateString()}
                       </p>
                     </div>
                   </div>
@@ -1199,6 +1133,22 @@ const Certificates: React.FC = () => {
                       </div>
                     </div>
                   )}
+
+                  <div className="flex items-center gap-3 text-gray-700">
+                    <div className="w-8 flex justify-center">
+                      <FaBook className="text-gray-400" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500 uppercase font-semibold">
+                        Course
+                      </p>
+                      <p className="font-medium">
+                        {endedCourses.find(
+                          (c: any) => c.id === selectedRequest.courseId
+                        )?.title || "N/A"}
+                      </p>
+                    </div>
+                  </div>
 
                   <div className="flex items-center gap-3 text-gray-700">
                     <div className="w-8 flex justify-center">
