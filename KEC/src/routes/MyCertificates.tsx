@@ -32,6 +32,7 @@ interface Certificate {
     id: number;
     title: string;
     description: string;
+    certificateDescription?: string;
     image_url: string;
     uploader?: {
       firstName: string;
@@ -264,7 +265,7 @@ const MyCertificates: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 p-6">
+    <div className="min-h-screen bg-white p-6">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="mb-8">
@@ -279,37 +280,43 @@ const MyCertificates: React.FC = () => {
 
         {/* Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-          <div className="bg-green-50 border border-green-200 rounded-xl p-4">
+          <div className="bg-white/80 backdrop-blur-sm border border-gray-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-all">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-green-700 font-medium">Approved</p>
-                <p className="text-3xl font-bold text-green-800">
+                <p className="text-sm text-gray-500 font-medium">Approved</p>
+                <p className="text-3xl font-bold text-gray-800">
                   {approvedCertificates.length}
                 </p>
               </div>
-              <FaCheck className="text-3xl text-green-500" />
+              <div className="p-3 bg-green-50 rounded-full">
+                <FaCheck className="text-xl text-green-500" />
+              </div>
             </div>
           </div>
-          <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
+          <div className="bg-white/80 backdrop-blur-sm border border-gray-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-all">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-yellow-700 font-medium">Pending</p>
-                <p className="text-3xl font-bold text-yellow-800">
+                <p className="text-sm text-gray-500 font-medium">Pending</p>
+                <p className="text-3xl font-bold text-gray-800">
                   {pendingCertificates.length}
                 </p>
               </div>
-              <FaClock className="text-3xl text-yellow-500" />
+              <div className="p-3 bg-yellow-50 rounded-full">
+                <FaClock className="text-xl text-yellow-500" />
+              </div>
             </div>
           </div>
-          <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
+          <div className="bg-white/80 backdrop-blur-sm border border-gray-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-all">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-700 font-medium">Total</p>
+                <p className="text-sm text-gray-500 font-medium">Total</p>
                 <p className="text-3xl font-bold text-gray-800">
                   {certificates.length}
                 </p>
               </div>
-              <FaCertificate className="text-3xl text-gray-400" />
+              <div className="p-3 bg-gray-50 rounded-full">
+                <FaCertificate className="text-xl text-gray-400" />
+              </div>
             </div>
           </div>
         </div>
@@ -397,10 +404,16 @@ const MyCertificates: React.FC = () => {
                   courseDescription={
                     (
                       selectedCertificate.description ||
+                      selectedCertificate.course.certificateDescription ||
                       selectedCertificate.course.description ||
                       "For successfully completing the comprehensive course curriculum and demonstrating proficiency in the subject matter."
-                    ).substring(0, 300) +
-                    (selectedCertificate.course.description.length > 300
+                    ).substring(0, 400) +
+                    ((
+                      selectedCertificate.description ||
+                      selectedCertificate.course.certificateDescription ||
+                      selectedCertificate.course.description ||
+                      ""
+                    ).length > 400
                       ? "..."
                       : "")
                   }
@@ -460,10 +473,16 @@ const MyCertificates: React.FC = () => {
               courseDescription={
                 (
                   selectedCertificate.description ||
+                  selectedCertificate.course.certificateDescription ||
                   selectedCertificate.course.description ||
                   "For successfully completing the comprehensive course curriculum and demonstrating proficiency in the subject matter."
-                ).substring(0, 300) +
-                (selectedCertificate.course.description.length > 300
+                ).substring(0, 400) +
+                ((
+                  selectedCertificate.description ||
+                  selectedCertificate.course.certificateDescription ||
+                  selectedCertificate.course.description ||
+                  ""
+                ).length > 400
                   ? "..."
                   : "")
               }

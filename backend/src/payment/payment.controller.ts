@@ -1,34 +1,59 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  UseGuards,
+  Req,
+} from '@nestjs/common';
 import { PaymentService } from './payment.service';
-import { CreatePaymentDto } from './dto/create-payment.dto';
-import { UpdatePaymentDto } from './dto/update-payment.dto';
+import { InitiatePaymentDto } from './dto/initiate-payment.dto';
+import { AuthGuard } from '../auth/auth.guard';
 
 @Controller('payment')
 export class PaymentController {
   constructor(private readonly paymentService: PaymentService) {}
 
-  @Post()
-  create(@Body() createPaymentDto: CreatePaymentDto) {
-    return this.paymentService.create(createPaymentDto);
+  @Post('initiate')
+  @UseGuards(AuthGuard)
+  async initiatePayment(
+    @Body() initiatePaymentDto: InitiatePaymentDto,
+    @Req() req: any,
+  ) {
+    // 🔍 DEBUG: Log the entire req.user to see what's in the JWT
+    console.log('🔍 [Payment] req.user:', JSON.stringify(req.user, null, 2));
+    const userId = req.user.id;
+    console.log('🔍 [Payment] Extracted userId:', userId);
+    return this.paymentService.initiatePayment(initiatePaymentDto, userId);
   }
 
-  @Get()
-  findAll() {
-    return this.paymentService.findAll();
+  @Get('status/:referenceId')
+  @UseGuards(AuthGuard)
+  async checkPaymentStatus(@Param('referenceId') referenceId: string) {
+    return this.paymentService.checkPaymentStatus(referenceId);
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.paymentService.findOne(+id);
+  @Get('my-payments')
+  @UseGuards(AuthGuard)
+  async getUserPayments(@Req() req: any) {
+    const userId = req.user.id;
+    return this.paymentService.getUserPayments(userId);
   }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updatePaymentDto: UpdatePaymentDto) {
-    return this.paymentService.update(+id, updatePaymentDto);
+  @Get('course/:courseId/access')
+  @UseGuards(AuthGuard)
+  async checkCourseAccess(
+    @Param('courseId') courseId: string,
+    @Req() req: any,
+  ) {
+    const userId = req.user.id;
+    return this.paymentService.checkCourseAccess(+courseId, userId);
   }
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.paymentService.remove(+id);
+  @Post('webhook')
+  async handleWebhook(@Body() body: any) {
+    // MTN MoMo webhook callback
+    return this.paymentService.handleWebhook(body);
   }
 }

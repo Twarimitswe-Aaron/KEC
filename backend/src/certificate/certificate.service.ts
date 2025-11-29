@@ -45,6 +45,8 @@ export class CertificateService {
             id: true,
             title: true,
             description: true,
+            certificateDescription: true,
+            templateType: true,
             image_url: true,
             uploader: {
               select: {

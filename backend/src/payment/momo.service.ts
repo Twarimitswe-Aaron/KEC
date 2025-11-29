@@ -67,24 +67,55 @@ export class MomoService {
     const token = await this.getToken();
     const referenceId = uuidv4();
 
+    // ✅ FIX (A): Normalize MSISDN format - remove '+' and ensure proper format
+    // MTN Rwanda expects format: 250780000001 (NO plus sign, NO double country code)
+    let normalizedMsisdn = msisdn.trim().replace(/\s/g, ''); // Remove spaces
+    normalizedMsisdn = normalizedMsisdn.replace(/^\+/, ''); // Remove leading '+'
+
+    // If it starts with duplicate country code like '250250', fix it
+    if (normalizedMsisdn.startsWith('250250')) {
+      normalizedMsisdn = normalizedMsisdn.substring(3); // Remove first '250'
+    }
+
+    // Ensure it starts with country code
+    if (!normalizedMsisdn.startsWith('250')) {
+      normalizedMsisdn = '250' + normalizedMsisdn;
+    }
+
     const url = `${this.BASE_URL}/collection/v1_0/requesttopay`;
 
-    const headers = {
+    const headers: any = {
       'X-Reference-Id': referenceId,
       'X-Target-Environment': this.ENV,
       'Ocp-Apim-Subscription-Key': this.SUB_KEY,
       Authorization: `Bearer ${token}`,
       'Content-Type': 'application/json',
-      'X-Callback-Url': this.CALLBACK,
     };
+
+    // Only add callback URL if explicitly configured
+    // Otherwise, MTN MoMo will use the callback URL set during API user creation
+    if (this.CALLBACK) {
+      headers['X-Callback-Url'] = this.CALLBACK;
+    }
+
+    // ✅ FIX (C): Validate externalId to ensure it doesn't contain 'undefined'
+    const validExternalId = externalId || uuidv4();
+    if (validExternalId.includes('undefined')) {
+      console.error(
+        '❌ [MoMo] Invalid externalId contains undefined:',
+        validExternalId,
+      );
+      throw new Error('Invalid externalId: userId is undefined');
+    }
 
     const body = {
       amount: amount,
-      currency: 'RWF',
-      externalId: externalId || uuidv4(),
+      // ✅ FIX (B): MTN Rwanda Collection API expects RWF, not EUR
+      currency: process.env.MOMO_CURRENCY || 'RWF',
+      externalId: validExternalId,
       payer: {
         partyIdType: 'MSISDN',
-        partyId: msisdn,
+        partyId: normalizedMsisdn,
       },
       payerMessage: 'Course Enrollment Payment',
       payeeNote: 'Payment for course enrollment',
@@ -93,7 +124,10 @@ export class MomoService {
     console.log('💳 [MoMo] Initiating payment request:', {
       referenceId,
       amount,
-      msisdn,
+      originalMsisdn: msisdn,
+      normalizedMsisdn,
+      externalId: validExternalId,
+      currency: body.currency,
     });
 
     const resp = await axios.post(url, body, { headers });

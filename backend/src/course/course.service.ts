@@ -260,6 +260,8 @@ export class CourseService {
     if (open !== undefined) updateData.open = Boolean(open);
     if (certificateDescription !== undefined)
       updateData.certificateDescription = certificateDescription;
+    if (updateCourseDto.templateType !== undefined)
+      updateData.templateType = updateCourseDto.templateType;
 
     await this.prisma.course.update({
       where: { id: Number(updateCourseDto.id) },

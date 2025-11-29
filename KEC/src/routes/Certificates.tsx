@@ -52,7 +52,7 @@ interface Certificate {
 type TabType = "all" | "pending" | "approved" | "rejected";
 
 // Character limits to prevent certificate overflow
-const MAX_DESCRIPTION_LENGTH = 200;
+const MAX_DESCRIPTION_LENGTH = 400;
 const MAX_INSTRUCTOR_NAME_LENGTH = 50;
 
 // Component
@@ -926,7 +926,7 @@ const Certificates: React.FC = () => {
 
             <div className="flex-1 overflow-auto bg-gray-100 rounded-xl p-4 flex flex-col items-center min-h-[400px]">
               {/* Template Selector */}
-              <div className="flex gap-4 mb-6 sticky top-0 z-10 py-2 bg-gray-100/80 backdrop-blur w-full justify-center">
+              <div className="flex gap-4 mb-6 sticky top-0 z-50 py-2 bg-gray-100 w-full justify-center shadow-sm">
                 <button
                   onClick={() => setSelectedTemplate("template1")}
                   className={`px-4 py-2 rounded-lg font-medium transition-colors ${
@@ -956,9 +956,18 @@ const Certificates: React.FC = () => {
                     studentName="John Doe"
                     courseName={selectedCourse.title}
                     courseDescription={
-                      selectedCourse.certificateDescription ||
-                      selectedCourse.description ||
-                      "For successfully completing the comprehensive course curriculum and demonstrating proficiency in the subject matter."
+                      (
+                        selectedCourse.certificateDescription ||
+                        selectedCourse.description ||
+                        "For successfully completing the comprehensive course curriculum and demonstrating proficiency in the subject matter."
+                      ).substring(0, MAX_DESCRIPTION_LENGTH) +
+                      ((
+                        selectedCourse.certificateDescription ||
+                        selectedCourse.description ||
+                        ""
+                      ).length > MAX_DESCRIPTION_LENGTH
+                        ? "..."
+                        : "")
                     }
                     issueDate={new Date().toLocaleDateString()}
                     instructorName={
@@ -970,9 +979,18 @@ const Certificates: React.FC = () => {
                     studentName="John Doe"
                     courseName={selectedCourse.title}
                     courseDescription={
-                      selectedCourse.certificateDescription ||
-                      selectedCourse.description ||
-                      "For successfully completing the comprehensive course curriculum and demonstrating proficiency in the subject matter."
+                      (
+                        selectedCourse.certificateDescription ||
+                        selectedCourse.description ||
+                        "For successfully completing the comprehensive course curriculum and demonstrating proficiency in the subject matter."
+                      ).substring(0, MAX_DESCRIPTION_LENGTH) +
+                      ((
+                        selectedCourse.certificateDescription ||
+                        selectedCourse.description ||
+                        ""
+                      ).length > MAX_DESCRIPTION_LENGTH
+                        ? "..."
+                        : "")
                     }
                     issueDate={new Date().toLocaleDateString()}
                     instructorName={
@@ -983,12 +1001,31 @@ const Certificates: React.FC = () => {
               </div>
             </div>
 
-            <div className="mt-6 flex justify-end">
+            <div className="mt-6 flex justify-end gap-4">
               <button
                 onClick={() => setShowViewTemplateModal(false)}
                 className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium"
               >
                 Close
+              </button>
+              <button
+                onClick={async () => {
+                  if (!selectedCourse) return;
+                  try {
+                    await updateCourse({
+                      id: selectedCourse.id.toString(),
+                      templateType: selectedTemplate,
+                    }).unwrap();
+                    toast.success("Template preference saved");
+                    setShowViewTemplateModal(false);
+                  } catch (error) {
+                    toast.error("Failed to save template preference");
+                    console.error(error);
+                  }
+                }}
+                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium shadow-md"
+              >
+                Save Template
               </button>
             </div>
           </div>
@@ -1021,8 +1058,28 @@ const Certificates: React.FC = () => {
                     )?.title || "Course Name"
                   }
                   courseDescription={
-                    selectedRequest.description ||
-                    "For successfully completing the comprehensive course curriculum and demonstrating proficiency in the subject matter."
+                    (
+                      selectedRequest.description ||
+                      endedCourses.find(
+                        (c: any) => c.id === selectedRequest.courseId
+                      )?.certificateDescription ||
+                      endedCourses.find(
+                        (c: any) => c.id === selectedRequest.courseId
+                      )?.description ||
+                      "For successfully completing the comprehensive course curriculum and demonstrating proficiency in the subject matter."
+                    ).substring(0, MAX_DESCRIPTION_LENGTH) +
+                    ((
+                      selectedRequest.description ||
+                      endedCourses.find(
+                        (c: any) => c.id === selectedRequest.courseId
+                      )?.certificateDescription ||
+                      endedCourses.find(
+                        (c: any) => c.id === selectedRequest.courseId
+                      )?.description ||
+                      ""
+                    ).length > MAX_DESCRIPTION_LENGTH
+                      ? "..."
+                      : "")
                   }
                   issueDate={
                     selectedRequest.issueDate

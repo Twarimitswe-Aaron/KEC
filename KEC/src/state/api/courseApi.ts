@@ -107,6 +107,7 @@ export interface CourseToUpdate {
   image?: File;
   certificateDescription?: string;
   instructorName?: string;
+  templateType?: string;
 }
 
 // Student-facing course card

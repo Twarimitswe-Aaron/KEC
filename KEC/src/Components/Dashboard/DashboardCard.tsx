@@ -1,11 +1,17 @@
-import React, { useState, useContext } from "react";
-import { FaEye } from "react-icons/fa";
+import React, { useState, useContext, useEffect } from "react";
+import { FaEye, FaCheckCircle, FaTimesCircle, FaClock } from "react-icons/fa";
 import CourseCard, { Course } from "./CourseCard";
 import { UserRoleContext } from "../../UserRoleContext";
 import { useNavigate } from "react-router-dom";
 import { useEnrollCourseMutation } from "../../state/api/courseApi";
 import CourseActionsMenu from "../CourseActionsMenu";
 import { CourseStatus } from "../../state/api/courseApi";
+import {
+  useInitiatePaymentMutation,
+  useLazyCheckPaymentStatusQuery,
+  PaymentStatus,
+} from "../../state/api/paymentApi";
+import { toast } from "react-toastify";
 
 // Add fade-in-up animation
 const styles = `
@@ -39,6 +45,16 @@ interface DashboardCardProps {
   currentUserId?: number;
 }
 
+// Country codes for African countries
+const COUNTRY_CODES = [
+  { code: "+250", name: "Rwanda", flag: "🇷🇼" },
+  { code: "+256", name: "Uganda", flag: "🇺🇬" },
+  { code: "+254", name: "Kenya", flag: "🇰🇪" },
+  { code: "+255", name: "Tanzania", flag: "🇹🇿" },
+  { code: "+257", name: "Burundi", flag: "🇧🇮" },
+  { code: "+243", name: "DRC", flag: "🇨🇩" },
+];
+
 const DashboardCard: React.FC<DashboardCardProps> = ({
   courses,
   onCourseAction,
@@ -50,20 +66,109 @@ const DashboardCard: React.FC<DashboardCardProps> = ({
   const userRole = useContext(UserRoleContext);
   const [enrollCourse, { isLoading: isEnrolling }] = useEnrollCourseMutation();
 
+  // Payment-related state
+  const [countryCode, setCountryCode] = useState("+250");
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [location, setLocation] = useState("");
+  const [paymentStatus, setPaymentStatus] = useState<PaymentStatus | null>(
+    null
+  );
+  const [paymentReferenceId, setPaymentReferenceId] = useState<string | null>(
+    null
+  );
+
+  const [initiatePayment, { isLoading: isInitiatingPayment }] =
+    useInitiatePaymentMutation();
+  const [checkPaymentStatus] = useLazyCheckPaymentStatusQuery();
+
+  // Poll payment status
+  useEffect(() => {
+    if (!paymentReferenceId || paymentStatus === PaymentStatus.SUCCESSFUL)
+      return;
+
+    const pollInterval = setInterval(async () => {
+      try {
+        const result = await checkPaymentStatus(paymentReferenceId).unwrap();
+        setPaymentStatus(result.payment.status);
+
+        if (result.payment.status === PaymentStatus.SUCCESSFUL) {
+          clearInterval(pollInterval);
+          toast.success("Payment successful! Enrolling in course...");
+          // Auto-enroll after successful payment
+          handleEnrollingCourse();
+        } else if (result.payment.status === PaymentStatus.FAILED) {
+          clearInterval(pollInterval);
+          toast.error("Payment failed. Please try again.");
+        }
+      } catch (error) {
+        console.error("Error checking payment status:", error);
+      }
+    }, 3000); // Poll every 3 seconds
+
+    return () => clearInterval(pollInterval);
+  }, [paymentReferenceId, paymentStatus]);
+
   const handleViewDetails = (course: Course) => {
     if (userRole === "admin" || userRole === "teacher") {
       navigate(`/course-creation/course/${course.id}`);
     }
   };
+
   const handleEnrollingCourse = async () => {
     if (!enrollingCourse?.id) return;
     try {
       await enrollCourse(enrollingCourse.id).unwrap();
+      toast.success("Successfully enrolled in course!");
       setEnrollingCourse(null);
+      resetPaymentForm();
       navigate(`/dashboard/course/${enrollingCourse.id}`);
-    } catch (err) {
+    } catch (err: any) {
+      toast.error(err?.data?.message || "Failed to enroll in course");
       setEnrollingCourse(null);
+      resetPaymentForm();
     }
+  };
+
+  const handleCompletePayment = async () => {
+    if (!enrollingCourse?.id || !phoneNumber || !location) {
+      toast.error("Please fill in all required fields");
+      return;
+    }
+
+    // Remove any spaces and ensure phone number starts with country code
+    const fullPhoneNumber = `${countryCode}${phoneNumber.replace(/\s/g, "")}`;
+
+    try {
+      setPaymentStatus(PaymentStatus.PENDING);
+      const result = await initiatePayment({
+        courseId: enrollingCourse.id,
+        phoneNumber: fullPhoneNumber,
+        amount: parseFloat(enrollingCourse.price),
+        location: {
+          address: location,
+          city: location.split(",")[1]?.trim() || location,
+          province: location.split(",")[0]?.trim() || location,
+          country:
+            COUNTRY_CODES.find((c) => c.code === countryCode)?.name || "Rwanda",
+        },
+      }).unwrap();
+
+      setPaymentReferenceId(result.referenceId);
+      toast.info(
+        "Payment initiated! Please check your phone for MTN MoMo prompt."
+      );
+    } catch (error: any) {
+      toast.error(error?.data?.message || "Failed to initiate payment");
+      setPaymentStatus(null);
+    }
+  };
+
+  const resetPaymentForm = () => {
+    setCountryCode("+250");
+    setPhoneNumber("");
+    setLocation("");
+    setPaymentStatus(null);
+    setPaymentReferenceId(null);
   };
 
   const handleCloseDetails = () => {};
@@ -202,7 +307,10 @@ const DashboardCard: React.FC<DashboardCardProps> = ({
           <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full relative transform scale-100 animate-in slide-in-from-bottom-4 duration-500">
             {/* Close Button */}
             <button
-              onClick={() => setEnrollingCourse(null)}
+              onClick={() => {
+                setEnrollingCourse(null);
+                resetPaymentForm();
+              }}
               className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all duration-200"
             >
               <svg
@@ -244,7 +352,10 @@ const DashboardCard: React.FC<DashboardCardProps> = ({
             <form
               onSubmit={(e) => {
                 e.preventDefault();
-                handleEnrollingCourse();
+                // Only allow manual enrollment if payment is not required or already successful
+                if (paymentStatus === PaymentStatus.SUCCESSFUL) {
+                  handleEnrollingCourse();
+                }
               }}
               className="space-y-2"
             >
@@ -276,80 +387,171 @@ const DashboardCard: React.FC<DashboardCardProps> = ({
                   <input
                     type="text"
                     required
-                    placeholder="Enter your address"
+                    value={location}
+                    onChange={(e) => setLocation(e.target.value)}
+                    placeholder="e.g., Kigali, Rwanda"
                     className="w-full pl-10 pr-2 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#004e64] focus:border-transparent transition-all duration-200 bg-white"
                   />
                 </div>
               </div>
 
-              {/* Phone Input */}
+              {/* Phone Input with Country Code Selector */}
               <div className="space-y-2">
                 <label className="block text-gray-700 font-semibold text-sm tracking-wide">
                   Phone Number
                 </label>
-                <div className="relative">
-                  <svg
-                    className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
+                <div className="flex gap-2">
+                  {/* Country Code Selector */}
+                  <select
+                    value={countryCode}
+                    onChange={(e) => setCountryCode(e.target.value)}
+                    className="w-32 px-2 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#004e64] focus:border-transparent transition-all duration-200 bg-white text-sm"
                   >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
+                    {COUNTRY_CODES.map((country) => (
+                      <option key={country.code} value={country.code}>
+                        {country.flag} {country.code}
+                      </option>
+                    ))}
+                  </select>
+
+                  {/* Phone Number Input */}
+                  <div className="relative flex-1">
+                    <svg
+                      className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
+                      />
+                    </svg>
+                    <input
+                      type="tel"
+                      required
+                      value={phoneNumber}
+                      onChange={(e) =>
+                        setPhoneNumber(e.target.value.replace(/\D/g, ""))
+                      }
+                      placeholder="733 123 450"
+                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#004e64] focus:border-transparent transition-all duration-200 bg-white"
                     />
-                  </svg>
-                  <input
-                    type="tel"
-                    required
-                    placeholder="+250 xxx xxx xxx"
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#004e64] focus:border-transparent transition-all duration-200 bg-white"
-                  />
+                  </div>
                 </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  Enter number without country code (e.g., 733123450)
+                </p>
               </div>
 
               {/* Payment Section */}
-              <div className="bg-gradient-to-r from-amber-50 to-yellow-50 rounded-md p-5 border border-amber-200">
+              <div
+                className={`rounded-md p-5 border ${
+                  paymentStatus === PaymentStatus.SUCCESSFUL
+                    ? "bg-gradient-to-r from-green-50 to-emerald-50 border-green-200"
+                    : paymentStatus === PaymentStatus.FAILED
+                    ? "bg-gradient-to-r from-red-50 to-rose-50 border-red-200"
+                    : "bg-gradient-to-r from-amber-50 to-yellow-50 border-amber-200"
+                }`}
+              >
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 bg-amber-400 rounded-full animate-pulse"></div>
+                    {paymentStatus === PaymentStatus.SUCCESSFUL ? (
+                      <FaCheckCircle className="text-green-500" />
+                    ) : paymentStatus === PaymentStatus.FAILED ? (
+                      <FaTimesCircle className="text-red-500" />
+                    ) : paymentStatus === PaymentStatus.PENDING ? (
+                      <FaClock className="text-amber-500 animate-pulse" />
+                    ) : (
+                      <div className="w-3 h-3 bg-amber-400 rounded-full animate-pulse"></div>
+                    )}
                     <span className="text-gray-700 font-medium">
                       Payment Status
                     </span>
                   </div>
-                  <span className="text-amber-600 font-bold text-sm bg-amber-100 px-3 py-1 rounded-full">
-                    PENDING
+                  <span
+                    className={`font-bold text-sm px-3 py-1 rounded-full ${
+                      paymentStatus === PaymentStatus.SUCCESSFUL
+                        ? "text-green-600 bg-green-100"
+                        : paymentStatus === PaymentStatus.FAILED
+                        ? "text-red-600 bg-red-100"
+                        : paymentStatus === PaymentStatus.PENDING
+                        ? "text-amber-600 bg-amber-100"
+                        : "text-gray-600 bg-gray-100"
+                    }`}
+                  >
+                    {paymentStatus || "NOT STARTED"}
                   </span>
                 </div>
 
-                <button
-                  type="button"
-                  className="w-full bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-white font-semibold py-3 px-6 rounded-md shadow-lg hover:shadow-xl transform cursor-pointer hover:scale-101 transition-all duration-200 flex items-center justify-center gap-2"
-                >
-                  <svg
-                    className="w-5 h-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
+                {paymentStatus === PaymentStatus.PENDING && (
+                  <p className="text-sm text-amber-700 mb-3">
+                    Please check your phone for the MTN MoMo payment prompt and
+                    enter your PIN to complete the payment.
+                  </p>
+                )}
+
+                {paymentStatus === PaymentStatus.FAILED && (
+                  <p className="text-sm text-red-700 mb-3">
+                    Payment failed. Please check your phone number and try
+                    again.
+                  </p>
+                )}
+
+                {paymentStatus !== PaymentStatus.SUCCESSFUL && (
+                  <button
+                    type="button"
+                    onClick={handleCompletePayment}
+                    disabled={
+                      isInitiatingPayment ||
+                      paymentStatus === PaymentStatus.PENDING
+                    }
+                    className={`w-full ${
+                      paymentStatus === PaymentStatus.FAILED
+                        ? "bg-gradient-to-r from-red-500 to-rose-500 hover:from-red-600 hover:to-rose-600"
+                        : "bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600"
+                    } text-white font-semibold py-3 px-6 rounded-md shadow-lg hover:shadow-xl transform cursor-pointer hover:scale-101 transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed`}
                   >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
-                    />
-                  </svg>
-                  Complete Payment
-                </button>
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
+                      />
+                    </svg>
+                    {isInitiatingPayment
+                      ? "Processing..."
+                      : paymentStatus === PaymentStatus.PENDING
+                      ? "Waiting for Payment..."
+                      : paymentStatus === PaymentStatus.FAILED
+                      ? "Retry Payment"
+                      : "Complete Payment"}
+                  </button>
+                )}
+
+                {paymentStatus === PaymentStatus.SUCCESSFUL && (
+                  <div className="text-center text-green-700 font-medium">
+                    ✓ Payment completed! Click "Confirm Enrollment" below to
+                    access the course.
+                  </div>
+                )}
               </div>
 
-              {/* Submit Button */}
+              {/* Submit Button - Only enabled after successful payment */}
               <button
                 type="submit"
-                disabled={isEnrolling}
-                className="w-full bg-gradient-to-r from-[#004e64] to-[#025a73] hover:from-[#003a4c] hover:to-[#014d61] text-white font-bold py-4 px-6 rounded-md shadow-lg hover:shadow-xl transform hover:scale-101 cursor-pointer transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-60"
+                disabled={
+                  isEnrolling || paymentStatus !== PaymentStatus.SUCCESSFUL
+                }
+                className="w-full bg-gradient-to-r from-[#004e64] to-[#025a73] hover:from-[#003a4c] hover:to-[#014d61] text-white font-bold py-4 px-6 rounded-md shadow-lg hover:shadow-xl transform hover:scale-101 cursor-pointer transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 <svg
                   className="w-5 h-5"

@@ -169,8 +169,6 @@ export const CertificateTemplate2: React.FC<TemplateProps> = ({
     >
       {/* Sidebar */}
       <div className="w-1/3 bg-blue-900 text-white p-12 flex flex-col justify-between relative overflow-hidden">
-        <div className="absolute top-0 left-0 w-full h-full opacity-10 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]"></div>
-
         <div className="relative z-10">
           <div className="w-16 h-16 bg-blue-500 rounded-lg flex items-center justify-center mb-8 shadow-lg">
             <FaAward className="text-3xl text-white" />
@@ -234,6 +232,9 @@ export const CertificateTemplate2: React.FC<TemplateProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Global Pattern Overlay */}
+      <div className="absolute inset-0 w-full h-full opacity-10 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] pointer-events-none z-0"></div>
     </div>
   );
 };

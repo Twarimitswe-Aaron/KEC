@@ -7,7 +7,7 @@ export const resetCsrfToken = () => {
 
 const rawBaseQuery = fetchBaseQuery({
   baseUrl: import.meta.env.VITE_BACKEND_URL || "http://localhost:4000",
-  credentials: "include",
+  credentials: "include", // This sends cookies with every request
   prepareHeaders: async (headers) => {
     if (!cachedCsrfToken) {
       const res = await fetch(
@@ -58,6 +58,7 @@ export const apiSlice = createApi({
     "Chat",
     "Message",
     "Certificates",
+    "Payment",
   ],
   endpoints: () => ({}),
 });

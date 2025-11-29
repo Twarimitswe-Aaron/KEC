@@ -1,8 +1,13 @@
-import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from "@nestjs/common";
-import { ConfigService } from "@nestjs/config";
-import { JwtService } from "@nestjs/jwt";
-import { Request } from "express";
-import { PrismaService } from "src/prisma/prisma.service";
+import {
+  CanActivate,
+  ExecutionContext,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { JwtService } from '@nestjs/jwt';
+import { Request } from 'express';
+import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
@@ -15,34 +20,43 @@ export class AuthGuard implements CanActivate {
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<Request>();
 
-    let token = request.cookies?.["jwt_access"];
- 
+    let token = request.cookies?.['jwt_access'];
 
-    if (!token && request.headers["authorization"]) {
-      const authHeader = request.headers["authorization"];
-      if (authHeader.startsWith("Bearer ")) {
-        token = authHeader.split(" ")[1]; 
+    if (!token && request.headers['authorization']) {
+      const authHeader = request.headers['authorization'];
+      if (authHeader.startsWith('Bearer ')) {
+        token = authHeader.split(' ')[1];
       }
     }
-  
 
     if (!token) {
-      throw new UnauthorizedException("No token provided");
+      throw new UnauthorizedException('No token provided');
     }
 
     try {
       const payload = await this.jwtService.verifyAsync(token, {
-        secret: this.configService.get<string>("JWT_SECRET"),
+        secret: this.configService.get<string>('JWT_SECRET'),
       });
-      if(payload.isEmailVerified===false){
-        throw new UnauthorizedException("Please verify your email before logging in");
+      if (payload.isEmailVerified === false) {
+        throw new UnauthorizedException(
+          'Please verify your email before logging in',
+        );
       }
 
-     
-      request["user"] = payload;
+      // 🔍 DEBUG: Log the JWT payload
+      console.log(
+        '🔍 [AuthGuard] JWT payload:',
+        JSON.stringify(payload, null, 2),
+      );
+
+      request['user'] = payload;
+      console.log(
+        '🔍 [AuthGuard] req.user set to:',
+        JSON.stringify(request['user'], null, 2),
+      );
     } catch (err) {
-      console.error("JWT verification failed:", err.message);
-      throw new UnauthorizedException("Invalid or expired token");
+      console.error('JWT verification failed:', err.message);
+      throw new UnauthorizedException('Invalid or expired token');
     }
 
     return true;

@@ -25,51 +25,47 @@ export class AuthService {
   ): Promise<{ access_token: string; refresh_token: string }> {
     const user = await this.UsersService.findOne(email);
 
-  
     if (!user) {
-      
       throw new UnauthorizedException('Invalid credentials');
     }
-  
- 
+
     const correctPassword = await bcrypt.compare(password, user.password);
     if (!correctPassword) {
-
-
       throw new UnauthorizedException('Invalid credentials');
     }
-  
+
     if (!user.isEmailVerified) {
-      
-      throw new UnauthorizedException('Please activate your email before logging in');
+      throw new UnauthorizedException(
+        'Please activate your email before logging in',
+      );
     }
-  
+
     const payload = {
       sub: user.id,
+      id: user.id, // ✅ Add id field for controllers that use req.user.id
       email: user.email,
-     
+      isEmailVerified: user.isEmailVerified,
+      role: user.role,
       firstName: user.firstName,
       lastName: user.lastName,
     };
-  
+
     const access_token = await this.jwtService.signAsync(payload, {
       expiresIn: '7d',
     });
-  
+
     const refresh_token = await this.jwtService.signAsync(
       { sub: user.id },
       { expiresIn: '15m' },
     );
-  
+
     await this.prisma.user.update({
       where: { id: user.id },
       data: { refresh_token: refresh_token },
     });
-  
+
     return { access_token, refresh_token };
   }
-  
-  
 
   async refreshToken(refresh_token: string): Promise<{ access_token: string }> {
     try {
@@ -82,8 +78,10 @@ export class AuthService {
       }
       const payload = {
         sub: user.id,
+        id: user.id,
         email: user.email,
         role: user.role,
+        isEmailVerified: user.isEmailVerified,
         firstName: user.firstName,
         lastName: user.lastName,
       };
@@ -123,26 +121,25 @@ export class AuthService {
     });
   }
 
-  async hashPassword(password:string):Promise<string>{
-  
-    return await bcrypt.hash(password, 10)
+  async hashPassword(password: string): Promise<string> {
+    return await bcrypt.hash(password, 10);
   }
 
-  async sendResetCode(email:string, code:string){
-    const transporter=nodemailer.createTransport({
+  async sendResetCode(email: string, code: string) {
+    const transporter = nodemailer.createTransport({
       service: 'gmail',
-      auth:{
-        user:this.configService.get('SMTP_USER'),
-        pass:this.configService.get('SMTP_PASS')
-      }
-    })
+      auth: {
+        user: this.configService.get('SMTP_USER'),
+        pass: this.configService.get('SMTP_PASS'),
+      },
+    });
 
     await transporter.sendMail({
-      from:this.configService.get('SMTP_USER'),
-      to:email,
-      subject:'Password Reset Code',
-      text:`Your password reset code is ${code}.`
-    })
+      from: this.configService.get('SMTP_USER'),
+      to: email,
+      subject: 'Password Reset Code',
+      text: `Your password reset code is ${code}.`,
+    });
   }
 
   async findUserProfile(userId: number) {
@@ -159,7 +156,7 @@ export class AuthService {
             id: true,
             avatar: true,
             work: true,
-            resident:true,
+            resident: true,
             education: true,
             phone: true,
             dateOfBirth: true,
@@ -167,13 +164,12 @@ export class AuthService {
         },
       },
     });
-  
+
     if (!user) {
       throw new NotFoundException(`User with ID ${userId} not found`);
     }
-    console.log(user)
-  
-    return user; 
+    console.log(user);
+
+    return user;
   }
-  
 }

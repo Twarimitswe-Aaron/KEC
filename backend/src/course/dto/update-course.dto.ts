@@ -5,4 +5,5 @@ export class UpdateCourseDto extends PartialType(CreateCourseDto) {
   maximum?: string;
   open?: boolean;
   certificateDescription?: string;
+  templateType?: string;
 }

@@ -73,6 +73,7 @@ For production, change:
 
 - `MOMO_BASE_URL` to `https://proxy.momoapi.mtn.com`
 - `MOMO_ENVIRONMENT` to `mtncameroon` or your target environment
+- `MOMO_CURRENCY` to your local currency code (e.g., `RWF`, `XAF`, `GHS`, etc.)
 
 ## Step 3: Database Migration
 
@@ -86,11 +87,21 @@ npx prisma migrate dev --name add_payment_and_enrollment
 
 ### Test Phone Numbers (Sandbox)
 
-Use these MTN test numbers:
+Use these MTN MoMo Rwanda test numbers in the sandbox environment:
 
-- `46733123450` - Will approve payment
-- `46733123451` - Will reject payment
-- `46733123452` - Will timeout
+**Format: International (without +)**
+
+- `250780000001` - Will approve payment (SUCCESSFUL)
+- `250780000002` - Will reject payment (FAILED)
+- `250780000003` - Will timeout (EXPIRED)
+
+**Format: Local (for testing)**
+
+- `0780000001` - Will approve payment (SUCCESSFUL)
+- `0780000002` - Will reject payment (FAILED)
+- `0780000003` - Will timeout (EXPIRED)
+
+> **Note**: In production, use actual Rwandan phone numbers in the format `250XXXXXXXXX` (without the + symbol)
 
 ### Test Payment Request
 
@@ -98,7 +109,7 @@ Use these MTN test numbers:
 POST /payment/initiate
 {
   "courseId": 1,
-  "phoneNumber": "46733123450",
+  "phoneNumber": "250780000001",
   "amount": 5000,
   "location": {
     "address": "123 KN 5 Ave",
@@ -158,6 +169,19 @@ For production, you need a publicly accessible webhook URL:
 
 ### Common Issues
 
+**Issue: "Callback URL does not match" or "INVALID_CALLBACK_URL_HOST"**
+
+- ✅ **Solution**: Remove or comment out `MOMO_CALLBACK_URL` in your `.env` file
+- The callback URL in the API request must match the one set during API user creation
+- For sandbox testing, it's easiest to omit the callback URL entirely
+- MTN MoMo will use the callback URL configured when you created the API user
+
+**Issue: "Currency not supported" or "INVALID_CURRENCY"**
+
+- ✅ **Sandbox**: Must use `EUR` - set `MOMO_CURRENCY=EUR` in `.env`
+- ✅ **Production**: Can use local currency (e.g., `RWF`, `XAF`, etc.)
+- Check that `MOMO_CURRENCY` environment variable is set correctly
+
 **Issue: "Invalid subscription key"**
 
 - Check your `MOMO_SUB_KEY` is correct
@@ -178,6 +202,12 @@ For production, you need a publicly accessible webhook URL:
 
 - In sandbox, use correct test phone numbers
 - Check phone number has sufficient balance (production)
+
+**Issue: "USER-undefined in externalId"**
+
+- Ensure you're authenticated before making payment requests
+- Check that `AuthGuard` is properly configured
+- Verify JWT token is valid and contains user ID
 
 ## Security Notes
 

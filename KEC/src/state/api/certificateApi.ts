@@ -29,6 +29,7 @@ export interface Certificate {
     id: number;
     title: string;
     description: string;
+    certificateDescription?: string;
     coursePrice: string;
     image_url: string;
     passingGrade?: number;
@@ -82,6 +83,7 @@ export const certificateApi = apiSlice.injectEndpoints({
         title: string;
         description: string;
         certificateDescription?: string;
+        templateType?: string;
         image_url: string;
         instructorName?: string;
         students: Array<{

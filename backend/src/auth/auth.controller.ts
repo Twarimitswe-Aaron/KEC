@@ -96,19 +96,35 @@ export class AuthController {
     try {
       const token = req.cookies['jwt_access'];
       if (!token) {
+        console.error('Auth Error: No access token provided');
         throw new BadRequestException('No access token provided');
       }
-      const decoded = await this.jwtService.verifyAsync(token, {
-        secret: this.configService.get('JWT_SECRET'),
-      });
+
+      let decoded;
+      try {
+        decoded = await this.jwtService.verifyAsync(token, {
+          secret: this.configService.get('JWT_SECRET'),
+        });
+      } catch (jwtError) {
+        console.error('JWT Verification Error:', jwtError.message);
+        if (jwtError.name === 'TokenExpiredError') {
+          throw new BadRequestException('Token has expired');
+        } else if (jwtError.name === 'JsonWebTokenError') {
+          throw new BadRequestException('Invalid token signature');
+        }
+        throw new BadRequestException('Token verification failed');
+      }
 
       const user = await this.prisma.user.findUnique({
         where: { id: decoded.sub },
         include: { profile: true },
       });
+
       if (!user) {
+        console.error(`Auth Error: User not found for ID: ${decoded.sub}`);
         throw new BadRequestException('User not found');
       }
+
       return {
         id: user.id,
         firstName: user.firstName,
@@ -129,7 +145,13 @@ export class AuthController {
           : null,
       };
     } catch (error) {
-      throw new BadRequestException('Invalid token');
+      // Re-throw if it's already a BadRequestException
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+      // Log unexpected errors
+      console.error('Unexpected Auth Error:', error);
+      throw new BadRequestException('Authentication failed');
     }
   }
 
