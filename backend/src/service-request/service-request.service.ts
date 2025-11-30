@@ -34,4 +34,17 @@ export class ServiceRequestService {
       },
     });
   }
+
+  async updateStatus(id: number, status: string) {
+    return this.prisma.serviceRequest.update({
+      where: { id },
+      data: { status: status as any },
+    });
+  }
+
+  async delete(id: number) {
+    return this.prisma.serviceRequest.delete({
+      where: { id },
+    });
+  }
 }

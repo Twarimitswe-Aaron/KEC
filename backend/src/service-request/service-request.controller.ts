@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get } from '@nestjs/common';
+import { Controller, Post, Body, Get, Patch, Delete, Param } from '@nestjs/common';
 import { ServiceRequestService } from './service-request.service';
 
 @Controller('service-request')
@@ -32,5 +32,18 @@ export class ServiceRequestController {
   @Get()
   async findAll() {
     return this.serviceRequestService.findAll();
+  }
+
+  @Patch(':id/status')
+  async updateStatus(
+    @Param('id') id: string,
+    @Body() body: { status: string }
+  ) {
+    return this.serviceRequestService.updateStatus(+id, body.status);
+  }
+
+  @Delete(':id')
+  async delete(@Param('id') id: string) {
+    return this.serviceRequestService.delete(+id);
   }
 }

@@ -1,5 +1,9 @@
-import React from "react";
-import { useGetServiceRequestsQuery } from "../state/api/authApi";
+import React, { useState } from "react";
+import {
+  useGetServiceRequestsQuery,
+  useUpdateServiceRequestStatusMutation,
+  useDeleteServiceRequestMutation,
+} from "../state/api/authApi";
 import {
   Clock,
   MapPin,
@@ -8,10 +12,44 @@ import {
   Wrench,
   FileText,
   Calendar,
+  Trash2,
+  Check,
+  Play,
 } from "lucide-react";
+import { toast } from "react-toastify";
 
 export default function ServiceRequests() {
-  const { data: requests, isLoading } = useGetServiceRequestsQuery();
+  const { data: requests, isLoading, refetch } = useGetServiceRequestsQuery();
+  const [updateStatus] = useUpdateServiceRequestStatusMutation();
+  const [deleteRequest] = useDeleteServiceRequestMutation();
+  const [deletingId, setDeletingId] = useState<number | null>(null);
+
+  const handleUpdateStatus = async (id: number, status: string) => {
+    try {
+      await updateStatus({ id, status }).unwrap();
+      toast.success(`Request marked as ${status.toLowerCase()}`);
+      refetch();
+    } catch (error) {
+      toast.error("Failed to update request status");
+    }
+  };
+
+  const handleDelete = async (id: number) => {
+    if (!confirm("Are you sure you want to delete this service request?")) {
+      return;
+    }
+
+    setDeletingId(id);
+    try {
+      await deleteRequest(id).unwrap();
+      toast.success("Request deleted successfully");
+      refetch();
+    } catch (error) {
+      toast.error("Failed to delete request");
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -198,6 +236,38 @@ export default function ServiceRequests() {
                   </span>
                 </div>
               )}
+
+              {/* Action Buttons */}
+              <div className="mt-6 pt-4 border-t border-gray-200 flex flex-wrap gap-3">
+                {request.status === "PENDING" && (
+                  <button
+                    onClick={() =>
+                      handleUpdateStatus(request.id, "IN_PROGRESS")
+                    }
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium text-sm"
+                  >
+                    <Play size={16} />
+                    Approve & Start
+                  </button>
+                )}
+                {request.status === "IN_PROGRESS" && (
+                  <button
+                    onClick={() => handleUpdateStatus(request.id, "COMPLETED")}
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium text-sm"
+                  >
+                    <Check size={16} />
+                    Mark as Done
+                  </button>
+                )}
+                <button
+                  onClick={() => handleDelete(request.id)}
+                  disabled={deletingId === request.id}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Trash2 size={16} />
+                  {deletingId === request.id ? "Deleting..." : "Delete"}
+                </button>
+              </div>
             </div>
           ))}
         </div>

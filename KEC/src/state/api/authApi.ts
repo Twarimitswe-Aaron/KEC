@@ -203,6 +203,22 @@ export const authApi = apiCore.apiSlice.injectEndpoints({
         method: "GET",
       }),
     }),
+    updateServiceRequestStatus: builder.mutation<
+      any,
+      { id: number; status: string }
+    >({
+      query: ({ id, status }) => ({
+        url: `service-request/${id}/status`,
+        method: "PATCH",
+        body: { status },
+      }),
+    }),
+    deleteServiceRequest: builder.mutation<any, number>({
+      query: (id) => ({
+        url: `service-request/${id}`,
+        method: "DELETE",
+      }),
+    }),
   }),
 });
 
@@ -223,4 +239,6 @@ export const {
   useSubmitRatingMutation,
   useSubmitServiceRequestMutation,
   useGetServiceRequestsQuery,
+  useUpdateServiceRequestStatusMutation,
+  useDeleteServiceRequestMutation,
 } = authApi;
