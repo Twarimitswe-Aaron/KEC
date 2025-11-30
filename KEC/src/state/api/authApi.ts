@@ -156,6 +156,21 @@ export const authApi = apiCore.apiSlice.injectEndpoints({
     >({
       query: () => "auth/top-locations",
     }),
+    getRating: builder.query<{ score: number; feedback?: string }, void>({
+      query: () => "rating/me",
+      providesTags: ["User"],
+    }),
+    submitRating: builder.mutation<
+      { score: number; feedback?: string },
+      { score: number; feedback?: string }
+    >({
+      query: (body) => ({
+        url: "rating",
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: ["User"],
+    }),
   }),
 });
 
@@ -170,5 +185,8 @@ export const {
   useResetKnownPassMutation,
   useUpdateProfileMutation,
   useGetSpecificProfileQuery,
+
   useGetTopLocationsQuery,
+  useGetRatingQuery,
+  useSubmitRatingMutation,
 } = authApi;

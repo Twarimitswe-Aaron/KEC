@@ -25,6 +25,7 @@ import { ModuleModule } from './module/module.module';
 import { QuizModule } from './quiz/quiz.module';
 import { ChatModule } from './chat/chat.module';
 import { CertificateModule } from './certificate/certificate.module';
+import { RatingModule } from './rating/rating.module';
 
 @Module({
   imports: [
@@ -47,6 +48,7 @@ import { CertificateModule } from './certificate/certificate.module';
     QuizModule,
     ChatModule,
     CertificateModule,
+    RatingModule,
   ],
   controllers: [AppController, CsrfController],
   providers: [
