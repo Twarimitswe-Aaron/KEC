@@ -84,8 +84,42 @@ export class UserService {
       email: string;
       role: string;
       avatar: string;
+      isVisibleOnTeam?: boolean;
     }>
   > {
+    // First, ensure all admin and teacher users have their corresponding records
+    const allAdminsAndTeachers = await this.prisma.user.findMany({
+      where: {
+        OR: [{ role: 'admin' }, { role: 'teacher' }],
+      },
+      include: {
+        admin: true,
+        teacher: true,
+      },
+    });
+
+    // Create missing Admin/Teacher records
+    for (const user of allAdminsAndTeachers) {
+      if (user.role === 'admin' && !user.admin) {
+        await this.prisma.admin.create({
+          data: {
+            userId: user.id,
+            title: 'Administrator',
+            isVisibleOnTeam: true,
+          },
+        });
+      } else if (user.role === 'teacher' && !user.teacher) {
+        await this.prisma.teacher.create({
+          data: {
+            userId: user.id,
+            title: 'Instructor',
+            isVisibleOnTeam: false,
+          },
+        });
+      }
+    }
+
+    // Now fetch all users with their related data
     const users = await this.prisma.user.findMany({
       select: {
         id: true,
@@ -98,6 +132,16 @@ export class UserService {
         profile: {
           select: {
             avatar: true,
+          },
+        },
+        admin: {
+          select: {
+            isVisibleOnTeam: true,
+          },
+        },
+        teacher: {
+          select: {
+            isVisibleOnTeam: true,
           },
         },
       },
@@ -114,6 +158,12 @@ export class UserService {
       avatar:
         u.profile?.avatar ||
         `https://ui-avatars.com/api/?name=${encodeURIComponent(u.firstName.charAt(0))}&background=${backgroundColor}&color=fff&size=64&font-size=0.5&length=2&rounded=false&bold=true`,
+      isVisibleOnTeam:
+        u.role === 'admin'
+          ? u.admin?.isVisibleOnTeam
+          : u.role === 'teacher'
+            ? u.teacher?.isVisibleOnTeam
+            : undefined,
     }));
   }
 
@@ -126,7 +176,40 @@ export class UserService {
       role: string;
     }>
   > {
-    // Fetch all users with admin or teacher role who are visible on team page
+    // First, ensure all admin and teacher users have their corresponding records
+    // This handles legacy users who may not have been created with the related tables
+    const allAdminsAndTeachers = await this.prisma.user.findMany({
+      where: {
+        OR: [{ role: 'admin' }, { role: 'teacher' }],
+      },
+      include: {
+        admin: true,
+        teacher: true,
+      },
+    });
+
+    // Create missing Admin/Teacher records
+    for (const user of allAdminsAndTeachers) {
+      if (user.role === 'admin' && !user.admin) {
+        await this.prisma.admin.create({
+          data: {
+            userId: user.id,
+            title: 'Administrator',
+            isVisibleOnTeam: true,
+          },
+        });
+      } else if (user.role === 'teacher' && !user.teacher) {
+        await this.prisma.teacher.create({
+          data: {
+            userId: user.id,
+            title: 'Instructor',
+            isVisibleOnTeam: false,
+          },
+        });
+      }
+    }
+
+    // Now fetch all users with admin or teacher role who are visible on team page
     const users = await this.prisma.user.findMany({
       where: {
         OR: [
@@ -377,24 +460,36 @@ export class UserService {
       throw new NotFoundException('User not found');
     }
 
-    if (user.role === 'admin' && user.admin) {
-      // Toggle admin visibility
-      const updated = await this.prisma.admin.update({
+    if (user.role === 'admin') {
+      // Use upsert to create the admin record if it doesn't exist
+      const currentVisibility = user.admin?.isVisibleOnTeam ?? true;
+      const updated = await this.prisma.admin.upsert({
         where: { userId },
-        data: {
-          isVisibleOnTeam: !user.admin.isVisibleOnTeam,
+        update: {
+          isVisibleOnTeam: !currentVisibility,
+        },
+        create: {
+          userId,
+          title: 'Administrator',
+          isVisibleOnTeam: false, // Toggle from default true to false
         },
       });
       return {
         message: 'Visibility updated successfully',
         isVisibleOnTeam: updated.isVisibleOnTeam,
       };
-    } else if (user.role === 'teacher' && user.teacher) {
-      // Toggle teacher visibility
-      const updated = await this.prisma.teacher.update({
+    } else if (user.role === 'teacher') {
+      // Use upsert to create the teacher record if it doesn't exist
+      const currentVisibility = user.teacher?.isVisibleOnTeam ?? false;
+      const updated = await this.prisma.teacher.upsert({
         where: { userId },
-        data: {
-          isVisibleOnTeam: !user.teacher.isVisibleOnTeam,
+        update: {
+          isVisibleOnTeam: !currentVisibility,
+        },
+        create: {
+          userId,
+          title: 'Instructor',
+          isVisibleOnTeam: true, // Toggle from default false to true
         },
       });
       return {
@@ -403,7 +498,7 @@ export class UserService {
       };
     } else {
       throw new NotFoundException(
-        'User is not an admin or teacher, or admin/teacher record not found',
+        'User is not an admin or teacher. Only admins and teachers can be shown on the team page.',
       );
     }
   }

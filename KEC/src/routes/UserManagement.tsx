@@ -51,6 +51,7 @@ interface User {
   lessons: number;
   showMenu: boolean;
   createdAt: string;
+  isVisibleOnTeam?: boolean; // Only present for admin and teacher roles
 }
 
 interface NewUser {
@@ -1131,8 +1132,17 @@ const UserManagement = () => {
                       }}
                       className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
                     >
-                      <Eye size={14} className="text-gray-400" />
-                      Toggle Visibility
+                      {user?.isVisibleOnTeam ? (
+                        <>
+                          <EyeOff size={14} className="text-gray-400" />
+                          Hide
+                        </>
+                      ) : (
+                        <>
+                          <Eye size={14} className="text-gray-400" />
+                          Show
+                        </>
+                      )}
                     </button>
                   )
                 );

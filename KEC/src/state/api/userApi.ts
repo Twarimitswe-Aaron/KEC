@@ -15,6 +15,7 @@ export interface MinimalUser {
   role: string;
   email: string;
   avatar?: string;
+  isVisibleOnTeam?: boolean;
 }
 
 export const userApi = apiSlice.injectEndpoints({

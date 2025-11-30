@@ -27,6 +27,7 @@ import { ChatModule } from './chat/chat.module';
 import { CertificateModule } from './certificate/certificate.module';
 import { RatingModule } from './rating/rating.module';
 import { ServiceRequestModule } from './service-request/service-request.module';
+import { AnalyticsModule } from './analytics/analytics.module';
 
 @Module({
   imports: [
@@ -51,6 +52,7 @@ import { ServiceRequestModule } from './service-request/service-request.module';
     CertificateModule,
     RatingModule,
     ServiceRequestModule,
+    AnalyticsModule,
   ],
   controllers: [AppController, CsrfController],
   providers: [
