@@ -5,6 +5,8 @@ import { UserRoleContext, UserRole } from "../../UserRoleContext";
 import { Link } from "react-router-dom";
 import { useUser } from "../../hooks/useUser";
 import RightSidebarSkeleton from "./RightSidebarSkeleton";
+import { useGetTopLocationsQuery } from "../../state/api/authApi";
+
 
 const RightSidebar = () => {
   const { userData, isLoading, refetchUser } = useUser();
@@ -17,26 +19,66 @@ const RightSidebar = () => {
 
   const isStudent = (role: UserRole): role is "student" => role === "student";
 
-  const topLocations = [
-    {
-      name: "Kigali",
-      students: 120,
-      percent: "80%",
-      color: "bg-gradient-to-r from-white to-blue-400",
-    },
-    {
-      name: "Musanze",
-      students: 90,
-      percent: "60%",
-      color: "bg-gradient-to-r from-white to-green-400",
-    },
-    {
-      name: "Kibungo",
-      students: 45,
-      percent: "30%",
-      color: "bg-gradient-to-r from-white to-red-400",
-    },
-  ];
+  const TopLocationsList = () => {
+    const { data: topLocations, isLoading } = useGetTopLocationsQuery();
+
+    if (isLoading) {
+      return <div className="text-sm text-gray-500">Loading locations...</div>;
+    }
+
+    if (!topLocations || topLocations.length === 0) {
+      return (
+        <div className="text-sm text-gray-500">No location data available</div>
+      );
+    }
+
+    const colors = [
+      "bg-gradient-to-r from-white to-blue-400",
+      "bg-gradient-to-r from-white to-green-400",
+      "bg-gradient-to-r from-white to-red-400",
+      "bg-gradient-to-r from-white to-yellow-400",
+      "bg-gradient-to-r from-white to-purple-400",
+    ];
+
+    return (
+      <ul className="">
+        {topLocations.map((loc, index: number) => (
+          <li key={loc.name} className="rounded-md overflow-hidden">
+            <div className="flex items-center justify-between p-2 relative">
+              {index < 3 ? (
+                <div
+                  className={`flex items-center gap-2 rounded-md px-3 py-2 text-sm ${
+                    colors[index % colors.length]
+                  }`}
+                  style={{
+                    width: loc.percent,
+                    minWidth: "fit-content",
+                    maxWidth: "100%",
+                    overflow: "hidden",
+                  }}
+                >
+                  <div className="flex items-center justify-center w-5 h-5">
+                    <FaPeopleRoof className="text-sm" />
+                  </div>
+                  <span className="truncate">{loc.name}</span>
+                  <span className="text-xs ml-auto">{loc.students}</span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 px-3 text-sm">
+                  <div className="flex items-center justify-center w-5 h-5">
+                    <FaPeopleRoof className="text-sm" />
+                  </div>
+                  <span>{loc.name}</span>
+                  <span className="text-xs ml-auto">{loc.students}</span>
+                </div>
+              )}
+              <span className="text-xs text-gray-500 ml-2">{loc.percent}</span>
+            </div>
+          </li>
+        ))}
+      </ul>
+    );
+  };
 
   const workshops = [
     { name: "Nyamirabo", image: "/images/subHero.png" },
@@ -56,31 +98,29 @@ const RightSidebar = () => {
     >
       {/* Profile Section */}
       <div className="text-center flex justify-center items-center">
-  <h2 className="text-lg font-semibold  capitalize">{userRole}</h2>
-  <div className="mx-auto items-center flex ">
-    <Link to="/my-account">
-      <img
-        src={
-          userData?.profile?.avatar
-            ? userData.profile.avatar
-            : `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                userData?.firstName ?? ""
-              )}&background=022F40&color=ffffff&rounded=true&size=64`
-        }
-        alt="Profile"
-        className="xl:!w-16 xl:!h-16 w-11 h-11 rounded-full object-cover mb-1"
-      />
-    </Link>
-   
-  </div>
-  <div className="block">
-      <h3 className="font-medium" title={userData?.lastName}>
-        {truncateName(userData?.lastName ?? "", 6)}
-      </h3>
-      <p className="text-sm text-gray-500"></p>
-    </div>
-</div>
-
+        <h2 className="text-lg font-semibold  capitalize">{userRole}</h2>
+        <div className="mx-auto items-center flex ">
+          <Link to="/my-account">
+            <img
+              src={
+                userData?.profile?.avatar
+                  ? userData.profile.avatar
+                  : `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                      userData?.firstName ?? ""
+                    )}&background=022F40&color=ffffff&rounded=true&size=64`
+              }
+              alt="Profile"
+              className="xl:!w-16 xl:!h-16 w-11 h-11 rounded-full object-cover mb-1"
+            />
+          </Link>
+        </div>
+        <div className="block">
+          <h3 className="font-medium" title={userData?.lastName}>
+            {truncateName(userData?.lastName ?? "", 6)}
+          </h3>
+          <p className="text-sm text-gray-500"></p>
+        </div>
+      </div>
 
       {isStudent(userRole) && <Rating />}
 
@@ -89,42 +129,7 @@ const RightSidebar = () => {
           <h3 className="text-sm font-semibold text-gray-700 mb-2">
             Top Student Location
           </h3>
-          <ul className="">
-            {topLocations.map((loc, index) => (
-              <li key={loc.name} className="rounded-md overflow-hidden">
-                <div className="flex items-center justify-between p-2 relative">
-                  {index < 3 ? (
-                    <div
-                      className={`flex items-center gap-2 rounded-md px-3 py-2 text-sm ${loc.color}`}
-                      style={{
-                        width: loc.percent,
-                        minWidth: "fit-content",
-                        maxWidth: "100%",
-                        overflow: "hidden",
-                      }}
-                    >
-                      <div className="flex items-center justify-center w-5 h-5">
-                        <FaPeopleRoof className="text-sm" />
-                      </div>
-                      <span className="truncate">{loc.name}</span>
-                      <span className="text-xs ml-auto">{loc.students}</span>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2 px-3 text-sm">
-                      <div className="flex items-center justify-center w-5 h-5">
-                        <FaPeopleRoof className="text-sm" />
-                      </div>
-                      <span>{loc.name}</span>
-                      <span className="text-xs ml-auto">{loc.students}</span>
-                    </div>
-                  )}
-                  <span className="text-xs text-gray-500 ml-2">
-                    {loc.percent}
-                  </span>
-                </div>
-              </li>
-            ))}
-          </ul>
+          <TopLocationsList />
         </div>
       )}
 

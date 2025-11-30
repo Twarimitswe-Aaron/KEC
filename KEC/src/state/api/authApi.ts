@@ -150,6 +150,12 @@ export const authApi = apiCore.apiSlice.injectEndpoints({
         body: { email, password, confirmPassword },
       }),
     }),
+    getTopLocations: builder.query<
+      { name: string; students: number; percent: string }[],
+      void
+    >({
+      query: () => "auth/top-locations",
+    }),
   }),
 });
 
@@ -164,4 +170,5 @@ export const {
   useResetKnownPassMutation,
   useUpdateProfileMutation,
   useGetSpecificProfileQuery,
+  useGetTopLocationsQuery,
 } = authApi;

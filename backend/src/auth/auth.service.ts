@@ -160,6 +160,9 @@ export class AuthService {
             education: true,
             phone: true,
             dateOfBirth: true,
+            province: true,
+            district: true,
+            sector: true,
           },
         },
       },
@@ -171,5 +174,43 @@ export class AuthService {
     console.log(user);
 
     return user;
+  }
+  async getTopDistricts() {
+    const districts = await this.prisma.profile.groupBy({
+      by: ['district'],
+      _count: {
+        district: true,
+      },
+      where: {
+        district: {
+          not: null,
+        },
+      },
+      orderBy: {
+        _count: {
+          district: 'desc',
+        },
+      },
+      take: 5,
+    });
+
+    const totalProfiles = await this.prisma.profile.count({
+      where: {
+        district: {
+          not: null,
+        },
+      },
+    });
+
+    return districts
+      .filter((d) => d.district !== '') // Filter out empty strings if any
+      .map((d) => ({
+        name: d.district,
+        students: d._count.district,
+        percent:
+          totalProfiles > 0
+            ? Math.round((d._count.district / totalProfiles) * 100) + '%'
+            : '0%',
+      }));
   }
 }

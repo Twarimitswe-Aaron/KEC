@@ -402,4 +402,8 @@ export class AuthController {
 
     return { message: 'Logged out successfully' };
   }
+  @Get('top-locations')
+  async getTopLocations() {
+    return this.authService.getTopDistricts();
+  }
 }
