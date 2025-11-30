@@ -137,8 +137,10 @@ export class AuthController {
               avatar: user.profile.avatar,
               work: user.profile.work,
               education: user.profile.education,
-              resident: user.profile.resident,
               phone: user.profile.phone,
+              province: user.profile.province,
+              district: user.profile.district,
+              sector: user.profile.sector,
               dateOfBirth: user.profile.dateOfBirth,
               updatedAt: user.profile.updatedAt,
             }
@@ -213,8 +215,10 @@ export class AuthController {
               create: {
                 work: parsedProfile?.work ?? undefined,
                 education: parsedProfile?.education ?? undefined,
-                resident: parsedProfile?.resident ?? undefined,
                 phone: parsedProfile?.phone ?? undefined,
+                province: parsedProfile?.province ?? undefined,
+                district: parsedProfile?.district ?? undefined,
+                sector: parsedProfile?.sector ?? undefined,
                 dateOfBirth: parsedProfile?.dateOfBirth
                   ? new Date(parsedProfile.dateOfBirth)
                   : undefined,
@@ -223,8 +227,10 @@ export class AuthController {
               update: {
                 work: parsedProfile?.work ?? undefined,
                 education: parsedProfile?.education ?? undefined,
-                resident: parsedProfile?.resident ?? undefined,
                 phone: parsedProfile?.phone ?? undefined,
+                province: parsedProfile?.province ?? undefined,
+                district: parsedProfile?.district ?? undefined,
+                sector: parsedProfile?.sector ?? undefined,
                 dateOfBirth: parsedProfile?.dateOfBirth
                   ? new Date(parsedProfile.dateOfBirth)
                   : undefined,

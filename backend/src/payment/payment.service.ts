@@ -36,7 +36,9 @@ export class PaymentService {
           phoneNumber: dto.phoneNumber,
           amount: dto.amount,
           status: PaymentStatus.PENDING,
-          location: dto.location as any,
+          location: `${dto.location.sector}, ${dto.location.district}`,
+          province: dto.location.province,
+          city: dto.location.district,
         },
       });
 
@@ -44,17 +46,15 @@ export class PaymentService {
       await this.prisma.profile.upsert({
         where: { userId: userId },
         update: {
-          address: dto.location.address,
-          city: dto.location.city,
           province: dto.location.province,
-          locationUpdatedAt: new Date(),
+          district: dto.location.district,
+          sector: dto.location.sector,
         },
         create: {
           userId: userId,
-          address: dto.location.address,
-          city: dto.location.city,
           province: dto.location.province,
-          locationUpdatedAt: new Date(),
+          district: dto.location.district,
+          sector: dto.location.sector,
         },
       });
 

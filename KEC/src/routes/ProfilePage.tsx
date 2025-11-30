@@ -9,7 +9,7 @@ import {
 } from "react-icons/fa";
 import { useParams } from "react-router-dom";
 import { useGetSpecificProfileQuery } from "../state/api/authApi";
-
+import { formatLocation } from "../constants/rwanda-locations";
 
 const ProfileSkeleton: React.FC = () => {
   return (
@@ -62,7 +62,11 @@ const ProfilePage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const userId = id ? parseInt(id, 10) : undefined;
 
-  const { data: user, isLoading, isError } = useGetSpecificProfileQuery(userId!, {
+  const {
+    data: user,
+    isLoading,
+    isError,
+  } = useGetSpecificProfileQuery(userId!, {
     skip: !userId,
   });
 
@@ -82,48 +86,47 @@ const ProfilePage: React.FC = () => {
     <div className="min-h-screen">
       {/* Banner + Avatar */}
       <div className="relative overflow-hidden rounded-lg">
-  {/* Gradient Background */}
-  <div className="absolute inset-0  " />
-  
-  {/* Content */}
-  <div className="relative flex flex-col items-center gap-6 justify-center py-16 px-8">
-    <div className="relative group">
-      <div className="relative">
-        {user.profile?.avatar ? (
-          <img
-            src={user.profile.avatar}
-            alt={`${user.firstName} ${user.lastName}`}
-            className="w-36 h-36 rounded-full border-4 border-white shadow-xl object-cover"
-          />
-        ) : (
-          <div className="w-36 h-36 rounded-full bg-gray-200 flex items-center justify-center border-4 border-white shadow-xl text-3xl font-bold text-gray-600">
-            {(user.firstName ?? "").charAt(0)}
-            {(user.lastName ?? "").charAt(0)}
+        {/* Gradient Background */}
+        <div className="absolute inset-0  " />
+
+        {/* Content */}
+        <div className="relative flex flex-col items-center gap-6 justify-center py-16 px-8">
+          <div className="relative group">
+            <div className="relative">
+              {user.profile?.avatar ? (
+                <img
+                  src={user.profile.avatar}
+                  alt={`${user.firstName} ${user.lastName}`}
+                  className="w-36 h-36 rounded-full border-4 border-white shadow-xl object-cover"
+                />
+              ) : (
+                <div className="w-36 h-36 rounded-full bg-gray-200 flex items-center justify-center border-4 border-white shadow-xl text-3xl font-bold text-gray-600">
+                  {(user.firstName ?? "").charAt(0)}
+                  {(user.lastName ?? "").charAt(0)}
+                </div>
+              )}
+            </div>
           </div>
-        )}
-      </div>
-    </div>
 
-    {/* Name & Role */}
-    <div className="text-center space-y-3">
-      <h1 className="text-2xl md:text-3xl font-bold text-gray-800">
-        {user.firstName} {user.lastName}
-      </h1>
-      <div
-        className={`inline-flex border-[1px] border-slate-200 items-center px-4 py-2 rounded-full text-sm md:text-base font-medium ${
-          user.role === "admin"
-            ? "bg-yellow-100 text-yellow-800"
-            : user.role === "teacher"
-            ? "bg-blue-100 text-blue-800"
-            : "bg-green-100 text-green-800"
-        }`}
-      >
-        {user.role}
+          {/* Name & Role */}
+          <div className="text-center space-y-3">
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-800">
+              {user.firstName} {user.lastName}
+            </h1>
+            <div
+              className={`inline-flex border-[1px] border-slate-200 items-center px-4 py-2 rounded-full text-sm md:text-base font-medium ${
+                user.role === "admin"
+                  ? "bg-yellow-100 text-yellow-800"
+                  : user.role === "teacher"
+                  ? "bg-blue-100 text-blue-800"
+                  : "bg-green-100 text-green-800"
+              }`}
+            >
+              {user.role}
+            </div>
+          </div>
+        </div>
       </div>
-    </div>
-  </div>
-</div>
-
 
       {/* Profile Details */}
       <div className="max-w-5xl mx-auto px-6 mt-6">
@@ -163,7 +166,11 @@ const ProfilePage: React.FC = () => {
                 <div className="flex items-center gap-3 p-3 bg-orange-50 rounded-lg">
                   <FaMapMarkerAlt className="text-orange-600 text-base" />
                   <span className="text-gray-700 text-sm">
-                    {user.profile?.resident || "--"}
+                    {formatLocation(
+                      user.profile?.sector || "",
+                      user.profile?.district || "",
+                      user.profile?.province || ""
+                    ) || "--"}
                   </span>
                 </div>
               </div>

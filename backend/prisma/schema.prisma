@@ -281,12 +281,10 @@ model Profile {
   phone       String?
   dateOfBirth DateTime?
 
-  // Location fields
-  address           String?
-  city              String?
-  province          String?
-  country           String?
-  locationUpdatedAt DateTime?
+  // Rwanda location (ONLY these 3 fields)
+  province String?
+  district String?
+  sector   String?
 
   userId    Int      @unique
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)

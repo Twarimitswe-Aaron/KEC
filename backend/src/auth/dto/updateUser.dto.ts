@@ -4,9 +4,11 @@ export class UpdateUserDto {
   profile?: {
     work?: string;
     education?: string;
-    resident?: string;
     phone?: string;
     dateOfBirth?: string;
     avatar?: string;
+    province?: string;
+    district?: string;
+    sector?: string;
   };
 }
