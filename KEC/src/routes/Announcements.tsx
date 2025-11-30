@@ -150,7 +150,12 @@ const Announcements = () => {
       <div className="flex gap-4 items-start mb-6 group">
         <Link to={`/profile/${posterId}`} className="flex-shrink-0 mt-2">
           <img
-            src={avatar || ""}
+            src={
+              avatar ||
+              `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                name
+              )}&background=022F40&color=ffffff&rounded=true&size=48`
+            }
             alt={`${name} avatar`}
             className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-sm group-hover:scale-105 transition-transform"
           />
@@ -347,13 +352,22 @@ const Announcements = () => {
                     announcement.poster?.lastName ?? ""
                   }`.trim() || "Unknown";
 
+              // Generate fallback avatar if poster doesn't have one
+              const posterAvatar =
+                announcement.poster?.profile?.avatar ||
+                `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                  `${announcement.poster?.firstName ?? ""} ${
+                    announcement.poster?.lastName ?? ""
+                  }`
+                )}&background=022F40&color=ffffff&rounded=true&size=48`;
+
               return (
                 <AnnouncementCard
                   key={announcement.id}
                   id={announcement.id}
                   name={nameToShow}
                   message={announcement.content}
-                  avatar={announcement.poster?.profile?.avatar || null}
+                  avatar={posterAvatar}
                   posterId={announcement.poster?.id}
                   currentUserId={userData?.id ?? null}
                   date={announcement.createdAt}

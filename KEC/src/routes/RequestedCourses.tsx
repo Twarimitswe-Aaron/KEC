@@ -326,7 +326,12 @@ const RequestedCourses = () => {
                         className="flex items-center gap-2 hover:bg-gray-50 p-1.5 rounded-lg transition-colors"
                       >
                         <img
-                          src={course.uploader.avatar_url}
+                          src={
+                            course.uploader.avatar_url ||
+                            `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                              course.uploader.name
+                            )}&background=022F40&color=ffffff&rounded=true&size=28`
+                          }
                           alt={`${course.uploader.name} avatar`}
                           className="w-7 h-7 rounded-full border border-gray-200 object-cover"
                         />

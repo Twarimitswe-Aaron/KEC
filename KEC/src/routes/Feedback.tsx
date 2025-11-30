@@ -57,7 +57,12 @@ const FeedbackCard = ({
     <div className="flex gap-4 items-start mb-6 group">
       <Link to={`/profile/${id}`} className="flex-shrink-0 mt-2">
         <img
-          src={avatar}
+          src={
+            avatar ||
+            `https://ui-avatars.com/api/?name=${encodeURIComponent(
+              name
+            )}&background=022F40&color=ffffff&rounded=true&size=48`
+          }
           alt={`${name} avatar`}
           className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-sm group-hover:scale-105 transition-transform"
         />
@@ -199,7 +204,12 @@ const Feedback = () => {
           <div className="mb-6 p-6 transition-all duration-300">
             <div className="flex items-start gap-4">
               <img
-                src={userData?.profile?.avatar}
+                src={
+                  userData?.profile?.avatar ||
+                  `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                    `${userData?.firstName ?? ""} ${userData?.lastName ?? ""}`
+                  )}&background=022F40&color=ffffff&rounded=true&size=40`
+                }
                 alt={userData?.firstName}
                 className="w-10 h-10 rounded-full shadow-sm object-cover"
               />

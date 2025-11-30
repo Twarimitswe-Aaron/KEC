@@ -151,7 +151,12 @@ const DashboardCard: React.FC<DashboardCardProps> = ({
                     className="flex items-center gap-2"
                   >
                     <img
-                      src={course.uploader.avatar_url}
+                      src={
+                        course.uploader.avatar_url ||
+                        `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                          course.uploader.name
+                        )}&background=022F40&color=ffffff&rounded=true&size=40`
+                      }
                       alt={`${course.uploader.name} avatar`}
                       className="w-10 h-10 rounded-full border-none shadow-sm object-cover"
                     />

@@ -187,7 +187,12 @@ const CourseCard: React.FC<CourseCardProps> = ({
                 className="text-sm font-semibold flex items-center gap-1"
               >
                 <img
-                  src={course.uploader.avatar_url}
+                  src={
+                    course.uploader.avatar_url ||
+                    `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                      course.uploader.name
+                    )}&background=022F40&color=ffffff&rounded=true&size=24`
+                  }
                   alt={course.uploader.name}
                   className="w-6 h-6 object-cover rounded-full"
                 />
