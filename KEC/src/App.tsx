@@ -32,7 +32,9 @@ import CertificateManagement from "./routes/CertificateManagement";
 import StudentsRequest from "./Components/StudentsRequest";
 import UserLessonsView from "./Components/UserLessonsView.tsx";
 import TakeQuiz from "./Components/TakeQuiz";
+
 import Tasks from "./Components/Tasks.tsx";
+import ServiceRequest from "./Pages/ServiceRequest/ServiceRequest";
 
 function App() {
   return (
@@ -56,7 +58,9 @@ function App() {
         <Route path="/signup" element={<Signup />} />
         <Route path="/signup/verification" element={<Verification />} />
         <Route path="/forgotPass" element={<ForgotPass />} />
+        <Route path="/forgotPass" element={<ForgotPass />} />
         <Route path="/passReset" element={<PasswordReset />} />
+        <Route path="/service-request" element={<ServiceRequest />} />
 
         {/* Protected routes with DashboardLayout */}
         <Route element={<DashboardLayout />}>

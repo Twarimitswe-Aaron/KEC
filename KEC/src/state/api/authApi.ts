@@ -171,6 +171,32 @@ export const authApi = apiCore.apiSlice.injectEndpoints({
       }),
       invalidatesTags: ["User"],
     }),
+    submitServiceRequest: builder.mutation<
+      { message: string },
+      {
+        name: string;
+        phone: string;
+        email?: string;
+        province: string;
+        district: string;
+        sector: string;
+        location: string;
+        serviceType: string;
+        equipmentDescription?: string;
+        problemDescription?: string;
+        problemImage?: string;
+        installationDetails?: string;
+        preferredDate?: string;
+        preferredTime?: string;
+        urgencyLevel?: string;
+      }
+    >({
+      query: (body) => ({
+        url: "service-request",
+        method: "POST",
+        body,
+      }),
+    }),
   }),
 });
 
@@ -189,4 +215,5 @@ export const {
   useGetTopLocationsQuery,
   useGetRatingQuery,
   useSubmitRatingMutation,
+  useSubmitServiceRequestMutation,
 } = authApi;

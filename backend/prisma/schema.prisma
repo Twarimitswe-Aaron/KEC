@@ -552,3 +552,46 @@ model Enrollment {
   @@index([courseId])
   @@index([paymentId])
 }
+
+model ServiceRequest {
+  id    Int     @id @default(autoincrement())
+  name  String
+  phone String
+  email String?
+
+  // Location
+  province String
+  district String
+  sector   String
+  location String // Specific address details
+
+  // Service Type
+  serviceType ServiceType
+
+  // Details
+  equipmentDescription String?
+  problemDescription   String?
+  problemImage         String? // Base64 or URL
+  installationDetails  String?
+
+  // Scheduling
+  preferredDate String?
+  preferredTime String?
+  urgencyLevel  String  @default("Normal")
+
+  status    ServiceRequestStatus @default(PENDING)
+  createdAt DateTime             @default(now())
+  updatedAt DateTime             @updatedAt
+}
+
+enum ServiceType {
+  INSTALLATION
+  REPAIR
+}
+
+enum ServiceRequestStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}

@@ -12,8 +12,8 @@ import {
   getProvinces,
   getDistricts,
   getSectors,
-} from "../../../constants/rwanda-locations";
-import { useSubmitServiceRequestMutation } from "../../../state/api/authApi";
+} from "../../constants/rwanda-locations";
+import { useSubmitServiceRequestMutation } from "../../state/api/authApi";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 
@@ -304,7 +304,7 @@ export default function KECServiceForm() {
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent bg-white"
                     >
                       <option value="">Select Province</option>
-                      {provinces.map((p: string) => (
+                      {provinces.map((p) => (
                         <option key={p} value={p}>
                           {p}
                         </option>
@@ -320,7 +320,7 @@ export default function KECServiceForm() {
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent bg-white disabled:bg-gray-100"
                     >
                       <option value="">Select District</option>
-                      {districts.map((d: string) => (
+                      {districts.map((d) => (
                         <option key={d} value={d}>
                           {d}
                         </option>
@@ -333,7 +333,7 @@ export default function KECServiceForm() {
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent bg-white disabled:bg-gray-100"
                     >
                       <option value="">Select Sector</option>
-                      {sectors.map((s: string) => (
+                      {sectors.map((s) => (
                         <option key={s} value={s}>
                           {s}
                         </option>
