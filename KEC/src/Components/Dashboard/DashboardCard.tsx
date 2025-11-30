@@ -12,6 +12,11 @@ import {
   PaymentStatus,
 } from "../../state/api/paymentApi";
 import { toast } from "react-toastify";
+import {
+  getProvinces,
+  getDistricts,
+  getSectors,
+} from "../../constants/rwanda-locations";
 
 // Add fade-in-up animation
 const styles = `
@@ -70,6 +75,27 @@ const DashboardCard: React.FC<DashboardCardProps> = ({
   const [countryCode, setCountryCode] = useState("+250");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [location, setLocation] = useState("");
+
+  // Location selection state
+  const [selectedProvince, setSelectedProvince] = useState("");
+  const [selectedDistrict, setSelectedDistrict] = useState("");
+  const [selectedSector, setSelectedSector] = useState("");
+
+  const provinces = getProvinces();
+  const districts = selectedProvince ? getDistricts(selectedProvince) : [];
+  const sectors =
+    selectedProvince && selectedDistrict
+      ? getSectors(selectedProvince, selectedDistrict)
+      : [];
+
+  // Update location string when selections change
+  useEffect(() => {
+    if (selectedProvince && selectedDistrict && selectedSector) {
+      setLocation(
+        `${selectedProvince}, ${selectedDistrict}, ${selectedSector}`
+      );
+    }
+  }, [selectedProvince, selectedDistrict, selectedSector]);
   const [paymentStatus, setPaymentStatus] = useState<PaymentStatus | null>(
     null
   );
@@ -167,6 +193,9 @@ const DashboardCard: React.FC<DashboardCardProps> = ({
     setCountryCode("+250");
     setPhoneNumber("");
     setLocation("");
+    setSelectedProvince("");
+    setSelectedDistrict("");
+    setSelectedSector("");
     setPaymentStatus(null);
     setPaymentReferenceId(null);
   };
@@ -180,7 +209,7 @@ const DashboardCard: React.FC<DashboardCardProps> = ({
         {courses.map((course, index) => (
           <div
             key={course.id}
-            className="bg-white/80 backdrop-blur-sm rounded-xl shadow-xl hover:shadow-2xl transition-all duration-300 border border-white/50 overflow-hidden hover:scale-[1.02] hover:-translate-y-1 animate-fade-in-up"
+            className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 border border-white/50 overflow-hidden hover:scale-[1.02] hover:-translate-y-1 animate-fade-in-up"
             style={{ animationDelay: `${index * 50}ms` }}
           >
             <div className="relative">
@@ -303,8 +332,8 @@ const DashboardCard: React.FC<DashboardCardProps> = ({
 
       {/* Enrollment Modal */}
       {enrollingCourse && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-300">
-          <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full relative transform scale-100 animate-in slide-in-from-bottom-4 duration-500">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-300">
+          <div className="bg-white/80 backdrop-blur-sm border border-white/50 rounded-2xl shadow-xl p-6 max-w-lg w-full relative transform scale-100 animate-in slide-in-from-bottom-4 duration-500">
             {/* Close Button */}
             <button
               onClick={() => {
@@ -359,39 +388,68 @@ const DashboardCard: React.FC<DashboardCardProps> = ({
               }}
               className="space-y-2"
             >
-              {/* Location Input */}
+              {/* Location Selection */}
               <div className="space-y-2">
                 <label className="block text-gray-700 font-semibold text-sm tracking-wide">
                   Location
                 </label>
-                <div className="relative">
-                  <svg
-                    className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                    />
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                    />
-                  </svg>
-                  <input
-                    type="text"
-                    required
-                    value={location}
-                    onChange={(e) => setLocation(e.target.value)}
-                    placeholder="e.g., Kigali, Rwanda"
-                    className="w-full pl-10 pr-2 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#004e64] focus:border-transparent transition-all duration-200 bg-white"
-                  />
+                <div className="flex gap-2">
+                  {/* Province Select */}
+                  <div className="relative flex-1">
+                    <select
+                      value={selectedProvince}
+                      onChange={(e) => {
+                        setSelectedProvince(e.target.value);
+                        setSelectedDistrict("");
+                        setSelectedSector("");
+                      }}
+                      className="w-full px-2 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#004e64] focus:border-transparent transition-all duration-200 bg-white/50 text-xs"
+                    >
+                      <option value="">Province</option>
+                      {provinces.map((province) => (
+                        <option key={province} value={province}>
+                          {province}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* District Select */}
+                  <div className="relative flex-1">
+                    <select
+                      value={selectedDistrict}
+                      onChange={(e) => {
+                        setSelectedDistrict(e.target.value);
+                        setSelectedSector("");
+                      }}
+                      disabled={!selectedProvince}
+                      className="w-full px-2 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#004e64] focus:border-transparent transition-all duration-200 bg-white/50 text-xs disabled:bg-gray-100/50 disabled:text-gray-400"
+                    >
+                      <option value="">District</option>
+                      {districts.map((district) => (
+                        <option key={district} value={district}>
+                          {district}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Sector Select */}
+                  <div className="relative flex-1">
+                    <select
+                      value={selectedSector}
+                      onChange={(e) => setSelectedSector(e.target.value)}
+                      disabled={!selectedDistrict}
+                      className="w-full px-2 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#004e64] focus:border-transparent transition-all duration-200 bg-white/50 text-xs disabled:bg-gray-100/50 disabled:text-gray-400"
+                    >
+                      <option value="">Sector</option>
+                      {sectors.map((sector) => (
+                        <option key={sector} value={sector}>
+                          {sector}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
               </div>
 
@@ -512,10 +570,10 @@ const DashboardCard: React.FC<DashboardCardProps> = ({
                       paymentStatus === PaymentStatus.FAILED
                         ? "bg-gradient-to-r from-red-500 to-rose-500 hover:from-red-600 hover:to-rose-600"
                         : "bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600"
-                    } text-white font-semibold py-3 px-6 rounded-md shadow-lg hover:shadow-xl transform cursor-pointer hover:scale-101 transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed`}
+                    } text-white font-semibold py-2 px-4 rounded-md shadow-md hover:shadow-lg transform cursor-pointer hover:scale-105 transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed text-sm`}
                   >
                     <svg
-                      className="w-5 h-5"
+                      className="w-4 h-4"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -530,10 +588,10 @@ const DashboardCard: React.FC<DashboardCardProps> = ({
                     {isInitiatingPayment
                       ? "Processing..."
                       : paymentStatus === PaymentStatus.PENDING
-                      ? "Waiting for Payment..."
+                      ? "Waiting..."
                       : paymentStatus === PaymentStatus.FAILED
-                      ? "Retry Payment"
-                      : "Complete Payment"}
+                      ? "Retry"
+                      : "Pay Now"}
                   </button>
                 )}
 
@@ -546,28 +604,29 @@ const DashboardCard: React.FC<DashboardCardProps> = ({
               </div>
 
               {/* Submit Button - Only enabled after successful payment */}
-              <button
-                type="submit"
-                disabled={
-                  isEnrolling || paymentStatus !== PaymentStatus.SUCCESSFUL
-                }
-                className="w-full bg-gradient-to-r from-[#004e64] to-[#025a73] hover:from-[#003a4c] hover:to-[#014d61] text-white font-bold py-4 px-6 rounded-md shadow-lg hover:shadow-xl transform hover:scale-101 cursor-pointer transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
-              >
-                <svg
-                  className="w-5 h-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
+              {/* Submit Button - Hidden if payment is successful (auto-enrolls) */}
+              {paymentStatus !== PaymentStatus.SUCCESSFUL && (
+                <button
+                  type="submit"
+                  disabled={true} // Always disabled as we rely on payment flow
+                  className="w-full bg-gray-100 text-gray-400 font-bold py-3 px-6 rounded-md shadow-none cursor-not-allowed flex items-center justify-center gap-2 mt-4"
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-                {isEnrolling ? "Enrolling..." : "Confirm Enrollment"}
-              </button>
+                  <svg
+                    className="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                  {isEnrolling ? "Enrolling..." : "Complete Payment to Enroll"}
+                </button>
+              )}
             </form>
 
             {/* Security Notice */}
