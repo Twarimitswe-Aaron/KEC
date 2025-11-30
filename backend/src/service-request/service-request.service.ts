@@ -26,4 +26,12 @@ export class ServiceRequestService {
       data,
     });
   }
+
+  async findAll() {
+    return this.prisma.serviceRequest.findMany({
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+  }
 }

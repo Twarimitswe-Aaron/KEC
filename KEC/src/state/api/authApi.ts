@@ -197,6 +197,12 @@ export const authApi = apiCore.apiSlice.injectEndpoints({
         body,
       }),
     }),
+    getServiceRequests: builder.query<any[], void>({
+      query: () => ({
+        url: "service-request",
+        method: "GET",
+      }),
+    }),
   }),
 });
 
@@ -216,4 +222,5 @@ export const {
   useGetRatingQuery,
   useSubmitRatingMutation,
   useSubmitServiceRequestMutation,
+  useGetServiceRequestsQuery,
 } = authApi;

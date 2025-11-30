@@ -1,4 +1,4 @@
-import { Controller, Post, Body } from '@nestjs/common';
+import { Controller, Post, Body, Get } from '@nestjs/common';
 import { ServiceRequestService } from './service-request.service';
 
 @Controller('service-request')
@@ -27,5 +27,10 @@ export class ServiceRequestController {
     },
   ) {
     return this.serviceRequestService.create(body);
+  }
+
+  @Get()
+  async findAll() {
+    return this.serviceRequestService.findAll();
   }
 }

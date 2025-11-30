@@ -35,6 +35,7 @@ import TakeQuiz from "./Components/TakeQuiz";
 
 import Tasks from "./Components/Tasks.tsx";
 import ServiceRequest from "./Pages/ServiceRequest/ServiceRequest";
+import ServiceRequests from "./routes/ServiceRequests";
 
 function App() {
   return (
@@ -65,6 +66,7 @@ function App() {
         {/* Protected routes with DashboardLayout */}
         <Route element={<DashboardLayout />}>
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/service-requests" element={<ServiceRequests />} />
           <Route path="/dashboard/course/:id" element={<UserLessonsView />} />
           <Route
             path="/dashboard/course/:id/quiz/:quizId"
