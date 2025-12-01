@@ -55,9 +55,9 @@ const HeaderPage = () => {
         <div className="hidden lg:flex justify-between items-center gap-4 animate-fadeInUp">
           {/* Logo Section - Separate Glass Piece */}
           <div
-            className="flex items-center px-6 py-3 backdrop-blur-[20px] border border-[rgba(2,47,64,0.1)] rounded-[50px] transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-[rgba(255,255,255,0.8)] hover:border-[rgba(2,47,64,0.15)]"
+            className="flex items-center px-6 py-3 bg-[#e5e5e5] backdrop-blur-[20px] border border-[rgba(2,47,64,0.1)] rounded-[50px] transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-[rgba(255,255,255,0.8)] hover:border-[rgba(2,47,64,0.15)]"
             style={{
-              background: "rgba(255, 255, 255, 0.7)",
+           
               boxShadow:
                 "0px 0.6px 0.4px -0.8px rgba(2, 47, 64, 0.08), 0px 2.3px 1.6px -1.7px rgba(2, 47, 64, 0.08), 0px 10px 7px -2.5px rgba(2, 47, 64, 0.08), inset 0px 0.3px 0.9px -1.2px rgba(2, 47, 64, 0.17), inset 0px 1.1px 3.4px -2.3px rgba(2, 47, 64, 0.15), inset 0px 5px 15px -3.5px rgba(2, 47, 64, 0.08)",
             }}
@@ -87,9 +87,9 @@ const HeaderPage = () => {
 
           {/* Navigation Menu - Separate Glass Piece */}
           <div
-            className="relative flex items-center gap-2 backdrop-blur-[20px] border border-[rgba(2,47,64,0.1)] rounded-[50px] px-6 py-2 transition-all duration-300 ease-out hover:bg-[rgba(255,255,255,0.8)] hover:border-[rgba(2,47,64,0.15)]"
+            className="relative flex items-center gap-2 bg-[#e5e5e5] backdrop-blur-[20px] border border-[rgba(2,47,64,0.1)] rounded-[50px] px-6 py-2 transition-all duration-300 ease-out hover:bg-[rgba(255,255,255,0.8)] hover:border-[rgba(2,47,64,0.15)]"
             style={{
-              background: "rgba(255, 255, 255, 0.7)",
+            
               boxShadow:
                 "0px 0.6px 0.4px -0.8px rgba(2, 47, 64, 0.08), 0px 2.3px 1.6px -1.7px rgba(2, 47, 64, 0.08), 0px 10px 7px -2.5px rgba(2, 47, 64, 0.08), inset 0px 0.3px 0.9px -1.2px rgba(2, 47, 64, 0.17), inset 0px 1.1px 3.4px -2.3px rgba(2, 47, 64, 0.15), inset 0px 5px 15px -3.5px rgba(2, 47, 64, 0.08)",
             }}
@@ -127,9 +127,9 @@ const HeaderPage = () => {
 
           {/* Action Buttons - Separate Glass Piece */}
           <div
-            className="flex items-center gap-4 px-4 py-2 backdrop-blur-[20px] border border-[rgba(2,47,64,0.1)] rounded-[50px] transition-all duration-300 ease-out hover:bg-[rgba(255,255,255,0.8)] hover:border-[rgba(2,47,64,0.15)]"
+            className="flex items-center bg-[#e5e5e5] gap-4 px-4 py-2 backdrop-blur-[20px] border border-[rgba(2,47,64,0.1)] rounded-[50px] transition-all duration-300 ease-out hover:bg-[rgba(255,255,255,0.8)] hover:border-[rgba(2,47,64,0.15)]"
             style={{
-              background: "rgba(255, 255, 255, 0.7)",
+            
               boxShadow:
                 "0px 0.6px 0.4px -0.8px rgba(2, 47, 64, 0.08), 0px 2.3px 1.6px -1.7px rgba(2, 47, 64, 0.08), 0px 10px 7px -2.5px rgba(2, 47, 64, 0.08), inset 0px 0.3px 0.9px -1.2px rgba(2, 47, 64, 0.17), inset 0px 1.1px 3.4px -2.3px rgba(2, 47, 64, 0.15), inset 0px 5px 15px -3.5px rgba(2, 47, 64, 0.08)",
             }}

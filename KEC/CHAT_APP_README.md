@@ -185,7 +185,7 @@ Your backend needs these endpoints:
 ### **User Management**
 ✅ **Profile Integration** - Uses existing user profiles & avatars  
 ✅ **Participant Discovery** - Lists all app users for new chats  
-✅ **Permission System** - Respects your existing permissions  
+✅ **Permission System** - Respects your existing permissions
 
 ---
 
@@ -253,7 +253,7 @@ getFilteredChats()  // All, Unread, Groups, Contacts
 
 ### **Data Protection**
 ✅ **CSRF Protection** - Uses your existing CSRF tokens  
-✅ **Authentication** - All requests require valid session  
+✅ **Authentication** - All requests require valid session 
 ✅ **Input Sanitization** - XSS protection on messages  
 ✅ **File Validation** - Secure file upload handling  
 
