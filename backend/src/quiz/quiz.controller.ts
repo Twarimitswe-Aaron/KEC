@@ -299,4 +299,14 @@ export class QuizController {
     const userId = (req as any)?.user?.id;
     return this.quizService.getMyAttempt(quizId, userId);
   }
+  // Get all quiz attempts for a specific student
+  @UseGuards(AuthGuard)
+  @Get('student/:studentId')
+  async getStudentQuizAttempts(
+    @Param('studentId', ParseIntPipe) studentId: number,
+    @Query('courseId') courseId?: string,
+  ) {
+    const cId = courseId ? parseInt(courseId, 10) : undefined;
+    return this.quizService.getStudentQuizAttempts(studentId, cId);
+  }
 }

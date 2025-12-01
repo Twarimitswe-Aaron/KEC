@@ -1096,4 +1096,98 @@ export class QuizService {
       perQuestion: details.perQuestion || {},
     };
   }
+  // Get all quiz attempts for a specific student
+  async getStudentQuizAttempts(studentId: number, courseId?: number) {
+    try {
+      // 1. Fetch all quizzes that might belong to the student's courses
+      // If courseId is provided, filter by it.
+      const whereClause: any = {};
+
+      if (courseId) {
+        whereClause.form = {
+          resource: {
+            lesson: {
+              courseId: courseId,
+            },
+          },
+        };
+      }
+
+      const quizzes = await this.prisma.quiz.findMany({
+        where: whereClause,
+        include: {
+          attempts: true,
+          form: {
+            include: {
+              resource: {
+                include: {
+                  lesson: {
+                    include: {
+                      course: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      });
+
+      // 2. Filter attempts for this student
+      const studentAttempts: any[] = [];
+
+      for (const quiz of quizzes) {
+        // Filter attempts for this student
+        // We need to check detailedResults for userId
+        const myAttempts = quiz.attempts.filter((attempt) => {
+          try {
+            if (!attempt.detailedResults) return false;
+            const details = JSON.parse(attempt.detailedResults);
+            return details.userId === studentId;
+          } catch (e) {
+            return false;
+          }
+        });
+
+        // Map to a cleaner format
+        const mappedAttempts = myAttempts.map((attempt) => {
+          const details = attempt.detailedResults
+            ? JSON.parse(attempt.detailedResults)
+            : {};
+
+          return {
+            id: attempt.id,
+            quizId: quiz.id,
+            quizTitle: quiz.name,
+            quizType: (quiz.settings as any)?.type || 'online',
+            courseId: quiz.form?.resource?.lesson?.courseId,
+            courseTitle: quiz.form?.resource?.lesson?.course?.title,
+            lessonId: quiz.form?.resource?.lessonId,
+            lessonTitle: quiz.form?.resource?.lesson?.title,
+            score: attempt.score,
+            totalPoints: attempt.totalPoints,
+            percentage:
+              attempt.totalPoints > 0
+                ? (attempt.score / attempt.totalPoints) * 100
+                : 0,
+            submittedAt: attempt.submittedAt,
+            marksFileUrl: attempt.marksFileUrl,
+            isManual: (quiz.settings as any)?.isManual || false,
+            feedback: details.feedback || null,
+          };
+        });
+
+        studentAttempts.push(...mappedAttempts);
+      }
+
+      // 3. Also find quizzes the student hasn't taken yet (but are in their enrolled courses)
+      // This part is complex because we need to know all enrolled courses.
+      // For now, let's return the attempts. The UI can merge this with the course structure.
+
+      return studentAttempts;
+    } catch (error) {
+      this.logger.error('Error fetching student quiz attempts:', error);
+      throw new BadRequestException('Failed to fetch student quiz attempts');
+    }
+  }
 }

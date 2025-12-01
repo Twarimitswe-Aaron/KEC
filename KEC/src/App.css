@@ -5,6 +5,7 @@ html {
   scroll-behavior: smooth;
 }
 
+
 /* Add these custom toast styles */
 .Toastify__toast {
   background-color: rgba(255, 255, 255, 0.95) !important;

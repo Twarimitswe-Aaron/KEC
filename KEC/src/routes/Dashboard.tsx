@@ -97,7 +97,7 @@ const Dashboard = () => {
           <div className="mb-6">
             <a
               href="/service-requests"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition shadow-md"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-[#034153] text-white font-semibold rounded-lg hover:bg-[#022F40] transition shadow-md"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"

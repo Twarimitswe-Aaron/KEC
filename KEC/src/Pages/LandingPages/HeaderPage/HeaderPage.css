@@ -1,0 +1,146 @@
+/* Global Box Sizing Reset */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/* CSS Variables */
+:root {
+  --primary-color: #022f40;
+  --framer-root-font-size: 16px;
+}
+
+/* Rolling Text Animation - Character by Character */
+.rolling-text-inner {
+  --font-size: calc(var(--framer-root-font-size, 1rem) * 0.9);
+  --text: var(--primary-color);
+  --line-height-abs: 19.2px;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  vertical-align: top;
+  display: flex;
+  overflow: hidden;
+  width: max-content;
+  font-family: "Inter", "Inter Placeholder", sans-serif;
+  font-size: calc(var(--framer-root-font-size, 1rem) * 0.9);
+  text-transform: none;
+  user-select: none;
+  text-shadow: 0 var(--line-height-abs) 0 var(--text);
+}
+
+.rolling-text-inner span {
+  display: block;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  white-space: pre;
+  flex-shrink: 0;
+  font-family: inherit;
+  font-weight: inherit;
+  font-style: inherit;
+  font-size: inherit;
+  letter-spacing: inherit;
+  line-height: 1.2em;
+  color: var(--text);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Hover effect - rolls text upward */
+.menu-link:hover .rolling-text-inner span {
+  transform: translateY(-100%);
+}
+
+/* Active link uses white text */
+.menu-link-active .rolling-text-inner {
+  --text: white;
+  text-shadow: 0 var(--line-height-abs) 0 white;
+}
+
+.menu-link-active .rolling-text-inner span {
+  color: white;
+}
+
+/* Menu link pseudo-element for hover background */
+.menu-link::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(2, 47, 64, 0.05);
+  border-radius: 30px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.menu-link:hover::before {
+  opacity: 1;
+}
+
+.menu-link-active::before {
+  display: none;
+}
+
+.menu-link-active:hover {
+  background: #033d52;
+}
+
+/* Animations */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fadeInUp {
+  animation: fadeInUp 0.6s ease-out;
+}
+
+@keyframes menuFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-menuFadeIn {
+  animation: menuFadeIn 0.3s ease-out;
+}
+
+@keyframes menuLinkFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-menuLinkFadeIn {
+  animation: menuLinkFadeIn 0.5s ease-out forwards;
+}
+
+/* WhatsApp Pulse Animation */
+@keyframes whatsapp-pulse {
+  0%,
+  100% {
+    box-shadow: 0 4px 12px rgba(37, 211, 102, 0.3),
+      0 8px 24px rgba(37, 211, 102, 0.2), 0 0 0 0 rgba(37, 211, 102, 0.4);
+  }
+  50% {
+    box-shadow: 0 4px 12px rgba(37, 211, 102, 0.3),
+      0 8px 24px rgba(37, 211, 102, 0.2), 0 0 0 15px rgba(37, 211, 102, 0);
+  }
+}
+
+.floating-whatsapp:hover {
+  animation: none;
+}

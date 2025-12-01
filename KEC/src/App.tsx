@@ -36,6 +36,7 @@ import TakeQuiz from "./Components/TakeQuiz";
 import Tasks from "./Components/Tasks.tsx";
 import ServiceRequest from "./Pages/ServiceRequest/ServiceRequest";
 import ServiceRequests from "./routes/ServiceRequests";
+import StudentCourses from "./routes/StudentCourses";
 
 function App() {
   return (
@@ -106,6 +107,7 @@ function App() {
           />
           <Route path="/logout" element={<Logout />} />
           <Route path="/tasks" element={<Tasks />} />
+          <Route path="/courses" element={<StudentCourses />} />
         </Route>
         <Route path="/inbox" element={<Inbox />} />
       </Routes>
