@@ -14,7 +14,6 @@ import * as path from 'path';
 import * as express from 'express';
 import * as fs from 'fs';
 
-
 if (typeof globalThis.crypto === 'undefined') {
   globalThis.crypto = crypto as any;
 }
@@ -22,14 +21,22 @@ if (typeof globalThis.crypto === 'undefined') {
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     abortOnError: false,
-    logger: ['error', 'warn', 'log', 'debug']
+    logger: ['error', 'warn', 'log', 'debug'],
   });
   const uploadsRoot = path.join(process.cwd(), 'uploads');
   if (!fs.existsSync(uploadsRoot)) {
     fs.mkdirSync(uploadsRoot, { recursive: true });
   }
   // Ensure expected subdirectories exist to avoid runtime write errors
-  const uploadSubDirs = ['chat', 'course_url', 'pdf', 'word', 'avatars', 'quiz-images'];
+  const uploadSubDirs = [
+    'chat',
+    'course_url',
+    'pdf',
+    'word',
+    'avatars',
+    'quiz-images',
+    'workshops',
+  ];
   uploadSubDirs.forEach((dir) => {
     const full = path.join(uploadsRoot, dir);
     if (!fs.existsSync(full)) {
@@ -39,13 +46,14 @@ async function bootstrap() {
   app.use('/uploads', express.static(uploadsRoot));
 
   if (process.env.NODE_ENV === 'production') {
-    app.set('trust proxy', 1); 
+    app.set('trust proxy', 1);
   }
 
- 
   const defaultOrigins = ['http://localhost:5173', 'http://localhost:3000'];
   const envOrigin = process.env.FRONTEND_URL;
-  const allowedOrigins = envOrigin ? [envOrigin, ...defaultOrigins] : defaultOrigins;
+  const allowedOrigins = envOrigin
+    ? [envOrigin, ...defaultOrigins]
+    : defaultOrigins;
   app.enableCors({
     origin: allowedOrigins,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
@@ -53,12 +61,9 @@ async function bootstrap() {
     allowedHeaders: ['Content-Type', 'x-csrf-token', 'Authorization'],
   });
 
- 
   app.use(cookieParser());
 
-
   app.use(helmet());
-
 
   const redisClient = new Redis({
     host: process.env.REDIS_HOST || '127.0.0.1',
@@ -72,11 +77,10 @@ async function bootstrap() {
   redisClient.on('ready', () => console.log('Redis ready'));
 
   let sessionStore;
-  
 
   try {
     const pingResult = await redisClient.ping();
-   
+
     sessionStore = new RedisStore({
       client: redisClient,
       prefix: 'sess:',
@@ -89,18 +93,19 @@ async function bootstrap() {
     sessionStore = new session.MemoryStore();
   }
 
-
   app.use(
     session({
       store: sessionStore,
-      secret: process.env.SESSION_SECRET || crypto.randomBytes(32).toString('hex'),
+      secret:
+        process.env.SESSION_SECRET || crypto.randomBytes(32).toString('hex'),
       resave: false,
-      saveUninitialized: false, 
+      saveUninitialized: false,
       cookie: {
         secure: process.env.NODE_ENV === 'production',
         // In development, keep Lax so cookies are accepted on http://localhost (same-site).
         // In production behind HTTPS, set None so cross-site subrequests work.
-        sameSite: process.env.NODE_ENV === 'production' ? ('none' as any) : 'lax',
+        sameSite:
+          process.env.NODE_ENV === 'production' ? ('none' as any) : 'lax',
         httpOnly: true,
         maxAge: 24 * 60 * 60 * 1000,
       },
@@ -109,15 +114,12 @@ async function bootstrap() {
     }),
   );
 
-  
   app.use(doubleCsrfProtection());
 
   await startApp(app);
 }
 
-
 async function startApp(app: NestExpressApplication) {
-
   const options = new DocumentBuilder()
     .setTitle('Your API')
     .setDescription('API documentation')

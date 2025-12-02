@@ -28,6 +28,7 @@ import { CertificateModule } from './certificate/certificate.module';
 import { RatingModule } from './rating/rating.module';
 import { ServiceRequestModule } from './service-request/service-request.module';
 import { AnalyticsModule } from './analytics/analytics.module';
+import { WorkshopModule } from './workshop/workshop.module';
 
 @Module({
   imports: [
@@ -53,6 +54,7 @@ import { AnalyticsModule } from './analytics/analytics.module';
     RatingModule,
     ServiceRequestModule,
     AnalyticsModule,
+    WorkshopModule,
   ],
   controllers: [AppController, CsrfController],
   providers: [
