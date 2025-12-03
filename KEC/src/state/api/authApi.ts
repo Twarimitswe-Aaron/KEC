@@ -47,6 +47,14 @@ export interface SignUpRequest {
   email: string;
   password: string;
 }
+
+export interface Workshop {
+  id: number;
+  name: string;
+  location: string;
+  imageUrl?: string;
+  createdAt?: string;
+}
 export const authApi = apiCore.apiSlice.injectEndpoints({
   endpoints: (builder) => ({
     getUser: builder.query<UserState, void>({
@@ -219,6 +227,9 @@ export const authApi = apiCore.apiSlice.injectEndpoints({
         method: "DELETE",
       }),
     }),
+    getWorkshops: builder.query<Workshop[], void>({
+      query: () => "api/workshops",
+    }),
   }),
 });
 
@@ -241,4 +252,5 @@ export const {
   useGetServiceRequestsQuery,
   useUpdateServiceRequestStatusMutation,
   useDeleteServiceRequestMutation,
+  useGetWorkshopsQuery,
 } = authApi;

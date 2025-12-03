@@ -5,8 +5,10 @@ import { UserRoleContext, UserRole } from "../../UserRoleContext";
 import { Link } from "react-router-dom";
 import { useUser } from "../../hooks/useUser";
 import RightSidebarSkeleton from "./RightSidebarSkeleton";
-import { useGetTopLocationsQuery } from "../../state/api/authApi";
-
+import {
+  useGetTopLocationsQuery,
+  useGetWorkshopsQuery,
+} from "../../state/api/authApi";
 
 const RightSidebar = () => {
   const { userData, isLoading, refetchUser } = useUser();
@@ -80,12 +82,48 @@ const RightSidebar = () => {
     );
   };
 
-  const workshops = [
-    { name: "Nyamirabo", image: "/images/subHero.png" },
-    { name: "Gatenga", image: "/images/gatenga.png" },
-    { name: "IPRC Kicukiro", image: "/images/kicukiro.png" },
-    { name: "Gisozi TSS", image: "/images/gisozi.png" },
-  ];
+  const WorkshopsList = () => {
+    const { data: workshops, isLoading } = useGetWorkshopsQuery();
+
+    if (isLoading) {
+      return <div className="text-sm text-gray-500">Loading workshops...</div>;
+    }
+
+    if (!workshops || workshops.length === 0) {
+      return (
+        <div className="text-sm text-gray-500">No workshops available</div>
+      );
+    }
+
+    return (
+      <ul className="space-y-2">
+        {workshops.map((ws, i) => (
+          <li
+            key={ws.id}
+            className={`flex items-center gap-3 p-2 rounded-md ${
+              i % 2 === 0 ? "bg-yellow-50" : "bg-white"
+            } shadow-sm`}
+          >
+            {ws.imageUrl ? (
+              <img
+                src={ws.imageUrl}
+                alt={ws.name}
+                className="w-10 h-10 rounded-md cursor-pointer object-cover"
+              />
+            ) : (
+              <div className="w-10 h-10 rounded-md bg-gradient-to-br from-[#034153] to-[#022F40] flex items-center justify-center">
+                <span className="text-white text-xs font-bold">
+                  {ws.name.charAt(0)}
+                </span>
+              </div>
+            )}
+            <span className="text-sm font-medium text-gray-700">{ws.name}</span>
+          </li>
+        ))}
+      </ul>
+    );
+  };
+
   const truncateName = (name: string, maxLength: number) => {
     if (!name) return "";
     return name.length > maxLength ? name.slice(0, maxLength) + "..." : name;
@@ -138,25 +176,7 @@ const RightSidebar = () => {
         <h3 className="text-sm font-semibold text-gray-700 mb-2">
           Available workshops
         </h3>
-        <ul className="space-y-2">
-          {workshops.map((ws, i) => (
-            <li
-              key={i}
-              className={`flex items-center gap-3 p-2 rounded-md ${
-                i % 2 === 0 ? "bg-yellow-50" : "bg-white"
-              } shadow-sm`}
-            >
-              <img
-                src={ws.image}
-                alt={ws.name}
-                className="w-10 h-10 rounded-md cursor-pointer object-cover"
-              />
-              <span className="text-sm  font-medium text-gray-700">
-                {ws.name}
-              </span>
-            </li>
-          ))}
-        </ul>
+        <WorkshopsList />
       </div>
     </aside>
   );

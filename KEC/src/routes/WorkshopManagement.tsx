@@ -194,14 +194,14 @@ const WorkshopManagement: React.FC = () => {
         </div>
       </div>
 
-      {/* Workshop Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {/* Workshop List */}
+      <div className="space-y-4 max-w-5xl mx-auto">
         {isLoading && workshops.length === 0 ? (
-          <div className="col-span-full text-center py-12">
+          <div className="text-center py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#034153] mx-auto"></div>
           </div>
         ) : workshops.length === 0 ? (
-          <div className="col-span-full text-center py-12 bg-white rounded-lg shadow">
+          <div className="text-center py-12 bg-white/40 backdrop-blur-md rounded-lg shadow-sm border border-white/20">
             <Calendar className="w-16 h-16 text-gray-400 mx-auto mb-4" />
             <p className="text-gray-500 text-lg">
               No workshops yet. Create your first one!
@@ -211,48 +211,56 @@ const WorkshopManagement: React.FC = () => {
           workshops.map((workshop) => (
             <div
               key={workshop.id}
-              className="bg-white rounded-lg shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden"
+              className="flex items-center gap-4 p-4 rounded-xl bg-white/40 backdrop-blur-md shadow-lg hover:shadow-xl transition-all duration-300 border border-white/20 hover:bg-white/50 group"
             >
               {/* Workshop Image */}
-              <div className="h-48 bg-gradient-to-br from-[#034153] to-[#022F40] flex items-center justify-center overflow-hidden">
-                {workshop.imageUrl ? (
-                  <img
-                    src={workshop.imageUrl}
-                    alt={workshop.name}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <ImageIcon className="w-16 h-16 text-white/50" />
-                )}
+              <div className="flex-shrink-0">
+                <div className="w-16 h-16 rounded-lg overflow-hidden bg-gradient-to-br from-[#034153] to-[#022F40] shadow-md">
+                  {workshop.imageUrl ? (
+                    <img
+                      src={workshop.imageUrl}
+                      alt={workshop.name}
+                      className="w-full h-full object-cover cursor-pointer hover:scale-110 transition-transform duration-300"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <ImageIcon className="w-8 h-8 text-white/50" />
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Workshop Info */}
-              <div className="p-5">
-                <h3 className="text-xl font-bold text-gray-900 mb-3">
+              <div className="flex-1 min-w-0">
+                <h3 className="text-lg font-bold text-gray-900 mb-1 truncate">
                   {workshop.name}
                 </h3>
-                <div className="flex items-center gap-2 text-gray-600 mb-4">
-                  <MapPin className="w-4 h-4" />
-                  <span className="text-sm">{workshop.location}</span>
+                <div className="flex items-center gap-2 text-gray-600">
+                  <MapPin className="w-4 h-4 flex-shrink-0" />
+                  <span className="text-sm font-medium truncate">
+                    {workshop.location}
+                  </span>
                 </div>
+              </div>
 
-                {/* Action Buttons */}
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => handleEdit(workshop)}
-                    className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition"
-                  >
-                    <Edit2 className="w-4 h-4" />
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => handleDelete(workshop.id)}
-                    className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                    Delete
-                  </button>
-                </div>
+              {/* Action Buttons */}
+              <div className="flex gap-2 flex-shrink-0">
+                <button
+                  onClick={() => handleEdit(workshop)}
+                  className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-blue-600/90 backdrop-blur-sm text-white font-medium rounded-lg hover:bg-blue-700 transition shadow-md hover:shadow-lg"
+                  title="Edit Workshop"
+                >
+                  <Edit2 className="w-4 h-4" />
+                  <span className="hidden sm:inline">Edit</span>
+                </button>
+                <button
+                  onClick={() => handleDelete(workshop.id)}
+                  className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-red-600/90 backdrop-blur-sm text-white font-medium rounded-lg hover:bg-red-700 transition shadow-md hover:shadow-lg"
+                  title="Delete Workshop"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  <span className="hidden sm:inline">Delete</span>
+                </button>
               </div>
             </div>
           ))
