@@ -1,4 +1,3 @@
-# 🚀 WhatsApp-Like Chat Backend Setup
 
 ## Quick Setup Steps
 
