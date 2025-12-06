@@ -140,6 +140,7 @@ model Course {
   certificateTemplateId Int?
   certificateTemplate   CertificateTemplate? @relation(fields: [certificateTemplateId], references: [id])
   certificates          Certificates[]
+  attendanceSessions    AttendanceSession[]
 }
 
 model Assignment {
@@ -595,4 +596,40 @@ enum ServiceRequestStatus {
   IN_PROGRESS
   COMPLETED
   CANCELLED
+}
+
+// Attendance System Models
+enum AttendanceStatus {
+  ACTIVE
+  CLOSED
+}
+
+model AttendanceSession {
+  id          Int              @id @default(autoincrement())
+  courseId    Int
+  createdById Int // teacher who created the session
+  title       String           @default("Attendance")
+  status      AttendanceStatus @default(ACTIVE)
+  createdAt   DateTime         @default(now())
+  closedAt    DateTime?
+
+  course  Course             @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  records AttendanceRecord[]
+
+  @@index([courseId])
+  @@index([createdById])
+}
+
+model AttendanceRecord {
+  id        Int      @id @default(autoincrement())
+  sessionId Int
+  studentId Int
+  markedAt  DateTime @default(now())
+  present   Boolean  @default(true)
+
+  session AttendanceSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, studentId])
+  @@index([sessionId])
+  @@index([studentId])
 }

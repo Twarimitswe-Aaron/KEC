@@ -53,11 +53,6 @@ interface DashboardCardProps {
 // Country codes for African countries
 const COUNTRY_CODES = [
   { code: "+250", name: "Rwanda", flag: "🇷🇼" },
-  { code: "+256", name: "Uganda", flag: "🇺🇬" },
-  { code: "+254", name: "Kenya", flag: "🇰🇪" },
-  { code: "+255", name: "Tanzania", flag: "🇹🇿" },
-  { code: "+257", name: "Burundi", flag: "🇧🇮" },
-  { code: "+243", name: "DRC", flag: "🇨🇩" },
 ];
 
 const DashboardCard: React.FC<DashboardCardProps> = ({

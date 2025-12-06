@@ -29,6 +29,7 @@ import { RatingModule } from './rating/rating.module';
 import { ServiceRequestModule } from './service-request/service-request.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { WorkshopModule } from './workshop/workshop.module';
+import { AttendanceModule } from './attendance/attendance.module';
 
 @Module({
   imports: [
@@ -55,6 +56,7 @@ import { WorkshopModule } from './workshop/workshop.module';
     ServiceRequestModule,
     AnalyticsModule,
     WorkshopModule,
+    AttendanceModule,
   ],
   controllers: [AppController, CsrfController],
   providers: [

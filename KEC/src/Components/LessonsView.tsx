@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useContext, useMemo } from "react";
 import ModuleManagement from "../Components/ModuleManagement";
+import AttendanceManager from "../Components/AttendanceManager";
 import { useParams } from "react-router-dom";
 import { useCreateLessonMutation } from "../state/api/lessonApi";
 import {
