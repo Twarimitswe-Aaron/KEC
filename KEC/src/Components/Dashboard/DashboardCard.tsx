@@ -381,10 +381,8 @@ const DashboardCard: React.FC<DashboardCardProps> = ({
             <form
               onSubmit={(e) => {
                 e.preventDefault();
-                // Only allow manual enrollment if payment is not required or already successful
-                if (paymentStatus === PaymentStatus.SUCCESSFUL) {
-                  handleEnrollingCourse();
-                }
+                // Allow direct enrollment without payment requirement
+                handleEnrollingCourse();
               }}
               className="space-y-2"
             >
@@ -504,129 +502,31 @@ const DashboardCard: React.FC<DashboardCardProps> = ({
                 </p>
               </div>
 
-              {/* Payment Section */}
-              <div
-                className={`rounded-md p-5 border ${
-                  paymentStatus === PaymentStatus.SUCCESSFUL
-                    ? "bg-gradient-to-r from-green-50 to-emerald-50 border-green-200"
-                    : paymentStatus === PaymentStatus.FAILED
-                    ? "bg-gradient-to-r from-red-50 to-rose-50 border-red-200"
-                    : "bg-gradient-to-r from-amber-50 to-yellow-50 border-amber-200"
-                }`}
+              {/* Enroll Button - Payment section disabled for now */}
+              <button
+                type="submit"
+                disabled={isEnrolling || !phoneNumber || !location}
+                className="w-full bg-gradient-to-r from-[#004e64] to-[#025a73] hover:from-[#025a73] hover:to-[#034153] text-white font-bold py-3 px-6 rounded-md shadow-md hover:shadow-lg transform cursor-pointer hover:scale-105 transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none mt-4"
               >
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-2">
-                    {paymentStatus === PaymentStatus.SUCCESSFUL ? (
-                      <FaCheckCircle className="text-green-500" />
-                    ) : paymentStatus === PaymentStatus.FAILED ? (
-                      <FaTimesCircle className="text-red-500" />
-                    ) : paymentStatus === PaymentStatus.PENDING ? (
-                      <FaClock className="text-amber-500 animate-pulse" />
-                    ) : (
-                      <div className="w-3 h-3 bg-amber-400 rounded-full animate-pulse"></div>
-                    )}
-                    <span className="text-gray-700 font-medium">
-                      Payment Status
-                    </span>
-                  </div>
-                  <span
-                    className={`font-bold text-sm px-3 py-1 rounded-full ${
-                      paymentStatus === PaymentStatus.SUCCESSFUL
-                        ? "text-green-600 bg-green-100"
-                        : paymentStatus === PaymentStatus.FAILED
-                        ? "text-red-600 bg-red-100"
-                        : paymentStatus === PaymentStatus.PENDING
-                        ? "text-amber-600 bg-amber-100"
-                        : "text-gray-600 bg-gray-100"
-                    }`}
-                  >
-                    {paymentStatus || "NOT STARTED"}
-                  </span>
-                </div>
-
-                {paymentStatus === PaymentStatus.PENDING && (
-                  <p className="text-sm text-amber-700 mb-3">
-                    Please check your phone for the MTN MoMo payment prompt and
-                    enter your PIN to complete the payment.
-                  </p>
-                )}
-
-                {paymentStatus === PaymentStatus.FAILED && (
-                  <p className="text-sm text-red-700 mb-3">
-                    Payment failed. Please check your phone number and try
-                    again.
-                  </p>
-                )}
-
-                {paymentStatus !== PaymentStatus.SUCCESSFUL && (
-                  <button
-                    type="button"
-                    onClick={handleCompletePayment}
-                    disabled={
-                      isInitiatingPayment ||
-                      paymentStatus === PaymentStatus.PENDING
-                    }
-                    className={`w-full ${
-                      paymentStatus === PaymentStatus.FAILED
-                        ? "bg-gradient-to-r from-red-500 to-rose-500 hover:from-red-600 hover:to-rose-600"
-                        : "bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600"
-                    } text-white font-semibold py-2 px-4 rounded-md shadow-md hover:shadow-lg transform cursor-pointer hover:scale-105 transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed text-sm`}
-                  >
-                    <svg
-                      className="w-4 h-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
-                      />
-                    </svg>
-                    {isInitiatingPayment
-                      ? "Processing..."
-                      : paymentStatus === PaymentStatus.PENDING
-                      ? "Waiting..."
-                      : paymentStatus === PaymentStatus.FAILED
-                      ? "Retry"
-                      : "Pay Now"}
-                  </button>
-                )}
-
-                {paymentStatus === PaymentStatus.SUCCESSFUL && (
-                  <div className="text-center text-green-700 font-medium">
-                    ✓ Payment completed! Click "Confirm Enrollment" below to
-                    access the course.
-                  </div>
-                )}
-              </div>
-
-              {/* Submit Button - Only enabled after successful payment */}
-              {/* Submit Button - Hidden if payment is successful (auto-enrolls) */}
-              {paymentStatus !== PaymentStatus.SUCCESSFUL && (
-                <button
-                  type="submit"
-                  disabled={true} // Always disabled as we rely on payment flow
-                  className="w-full bg-gray-100 text-gray-400 font-bold py-3 px-6 rounded-md shadow-none cursor-not-allowed flex items-center justify-center gap-2 mt-4"
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
                 >
-                  <svg
-                    className="w-5 h-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
-                  </svg>
-                  {isEnrolling ? "Enrolling..." : "Complete Payment to Enroll"}
-                </button>
-              )}
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+                {isEnrolling ? "Enrolling..." : "Enroll Now"}
+              </button>
+
+              <p className="text-xs text-center text-gray-500 mt-2">
+                Payment integration coming soon - Free enrollment for now
+              </p>
             </form>
 
             {/* Security Notice */}
