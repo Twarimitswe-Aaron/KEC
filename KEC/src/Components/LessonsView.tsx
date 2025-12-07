@@ -4,6 +4,7 @@ import {
   useGetActiveSessionsQuery,
   useCreateSessionMutation,
   useCloseSessionMutation,
+  useLazyGetSessionRecordsQuery,
 } from "../state/api/attendanceApi";
 import { useParams } from "react-router-dom";
 import { useCreateLessonMutation } from "../state/api/lessonApi";
@@ -188,20 +189,13 @@ const LessonsView = () => {
     }
   };
 
+  const [getSessionRecords, { isLoading: isLoadingRecords }] =
+    useLazyGetSessionRecordsQuery();
+
   const handleViewAttendance = async () => {
     if (!activeSession) return;
     try {
-      const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/attendance/session/${
-          activeSession.id
-        }`,
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        }
-      );
-      const data = await response.json();
+      const data = await getSessionRecords(activeSession.id).unwrap();
       setAttendanceRecords(data);
       updateModals({ showAttendanceRecords: true });
     } catch (error: any) {
@@ -739,6 +733,14 @@ const LessonsView = () => {
                         <Edit3 size={16} /> Edit Course
                       </button>
 
+                      <button
+                        className="w-full text-left cursor-pointer px-4 py-2.5 hover:bg-gray-50 transition-colors flex items-center gap-2 text-gray-700 font-medium"
+                        onClick={handleViewAttendance}
+                        disabled={!activeSession}
+                      >
+                        <Users size={16} /> View Attendance
+                      </button>
+
                       {courseData?.status === CourseStatus.ENDED ? (
                         <button
                           className="w-full text-left cursor-pointer px-4 py-2.5 hover:bg-gray-50 transition-colors flex items-center gap-2 text-gray-700 font-medium"
@@ -1111,6 +1113,121 @@ const LessonsView = () => {
                 className="flex-1 bg-white border-2 border-gray-200 text-gray-700 px-4 py-3.5 cursor-pointer rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all font-bold disabled:opacity-50"
               >
                 Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Attendance Records Modal */}
+      {modals.showAttendanceRecords && attendanceRecords && (
+        <div className="fixed inset-0 scroll-hide bg-black/50 flex justify-center items-center z-50 px-4">
+          <div className="bg-white/80 backdrop-blur-sm scroll-hide w-full max-w-4xl p-0 rounded-2xl shadow-xl overflow-hidden max-h-[90vh] border border-white/50 mt-8 flex flex-col">
+            <ModalHeader
+              title="Attendance Records"
+              subtitle={`Session: ${attendanceRecords.session.title}`}
+              onClose={() => updateModals({ showAttendanceRecords: false })}
+            />
+
+            <div className="p-6 overflow-y-auto">
+              {/* Summary Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div className="bg-blue-50 p-4 rounded-xl border border-blue-100">
+                  <p className="text-sm text-blue-600 font-semibold mb-1">
+                    Total Students
+                  </p>
+                  <p className="text-2xl font-bold text-blue-900">
+                    {attendanceRecords.summary.totalStudents}
+                  </p>
+                </div>
+                <div className="bg-green-50 p-4 rounded-xl border border-green-100">
+                  <p className="text-sm text-green-600 font-semibold mb-1">
+                    Present
+                  </p>
+                  <p className="text-2xl font-bold text-green-900">
+                    {attendanceRecords.summary.present}
+                  </p>
+                </div>
+                <div className="bg-red-50 p-4 rounded-xl border border-red-100">
+                  <p className="text-sm text-red-600 font-semibold mb-1">
+                    Absent
+                  </p>
+                  <p className="text-2xl font-bold text-red-900">
+                    {attendanceRecords.summary.absent}
+                  </p>
+                </div>
+              </div>
+
+              {/* Student List */}
+              <div className="border rounded-xl overflow-hidden">
+                <table className="w-full text-left text-sm">
+                  <thead className="bg-gray-50 border-b">
+                    <tr>
+                      <th className="px-6 py-3 font-semibold text-gray-900">
+                        Student Name
+                      </th>
+                      <th className="px-6 py-3 font-semibold text-gray-900">
+                        Email
+                      </th>
+                      <th className="px-6 py-3 font-semibold text-gray-900">
+                        Status
+                      </th>
+                      <th className="px-6 py-3 font-semibold text-gray-900">
+                        Time
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {attendanceRecords.attendanceList.map(
+                      (record: any, index: number) => (
+                        <tr key={index} className="hover:bg-gray-50/50">
+                          <td className="px-6 py-3 font-medium text-gray-900">
+                            {record.studentName}
+                          </td>
+                          <td className="px-6 py-3 text-gray-600">
+                            {record.email}
+                          </td>
+                          <td className="px-6 py-3">
+                            <span
+                              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                record.present
+                                  ? "bg-green-100 text-green-800"
+                                  : "bg-red-100 text-red-800"
+                              }`}
+                            >
+                              {record.present ? "Present" : "Absent"}
+                            </span>
+                          </td>
+                          <td className="px-6 py-3 text-gray-500">
+                            {record.markedAt
+                              ? new Date(record.markedAt).toLocaleTimeString(
+                                  [],
+                                  {
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                  }
+                                )
+                              : "-"}
+                          </td>
+                        </tr>
+                      )
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div className="p-6 border-t bg-gray-50 rounded-b-2xl flex justify-between items-center">
+              <button
+                onClick={handleDownloadExcel}
+                className="text-[#034153] hover:text-[#022f40] font-semibold flex items-center gap-2 transition-colors cursor-pointer"
+              >
+                Download Excel Report
+              </button>
+              <button
+                onClick={() => updateModals({ showAttendanceRecords: false })}
+                className="bg-white border hover:bg-gray-50 text-gray-700 px-6 py-2.5 rounded-xl font-semibold transition-all shadow-sm cursor-pointer"
+              >
+                Close
               </button>
             </div>
           </div>

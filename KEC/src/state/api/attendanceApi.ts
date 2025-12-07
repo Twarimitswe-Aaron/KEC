@@ -112,6 +112,7 @@ export const {
   useGetCourseSessionsQuery,
   useCloseSessionMutation,
   useExportToExcelMutation,
+  useLazyGetSessionRecordsQuery,
 } = attendanceApi;
 
 // Alias for convenience
