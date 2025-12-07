@@ -90,29 +90,27 @@ const StudentAttendance: React.FC<StudentAttendanceProps> = ({
                   </p>
                 </div>
 
-                <button
-                  onClick={() => handleMarkAttendance(session.id)}
-                  disabled={isAttended || isMarking}
-                  className={`px-6 py-2.5 rounded-lg font-semibold transition-all flex items-center gap-2 whitespace-nowrap ${
-                    isAttended
-                      ? "bg-green-100 text-green-700 cursor-not-allowed"
-                      : "bg-gradient-to-r from-purple-600 to-purple-700 text-white hover:shadow-lg transform hover:-translate-y-0.5 cursor-pointer"
-                  }`}
-                >
-                  {isAttended ? (
-                    <>
-                      <CheckCircle size={18} />
-                      Attended
-                    </>
-                  ) : isMarking ? (
-                    "Marking..."
-                  ) : (
-                    <>
-                      <Users size={18} />
-                      Confirm Attendance
-                    </>
-                  )}
-                </button>
+                {isAttended ? (
+                  <div className="px-4 py-1.5 rounded-full text-sm font-medium bg-green-50 text-green-700 border border-green-200 flex items-center gap-1.5">
+                    <CheckCircle size={14} />
+                    Attended
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => handleMarkAttendance(session.id)}
+                    disabled={isMarking}
+                    className="px-6 py-2.5 rounded-lg font-semibold transition-all flex items-center gap-2 whitespace-nowrap bg-gradient-to-r from-purple-600 to-purple-700 text-white hover:shadow-lg transform hover:-translate-y-0.5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                  >
+                    {isMarking ? (
+                      "Marking..."
+                    ) : (
+                      <>
+                        <Users size={18} />
+                        Confirm Attendance
+                      </>
+                    )}
+                  </button>
+                )}
               </div>
             </div>
           );

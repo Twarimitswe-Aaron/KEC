@@ -60,7 +60,7 @@ export const attendanceApi = apiSlice.injectEndpoints({
         url: `/attendance/mark/${sessionId}`,
         method: "POST",
       }),
-      invalidatesTags: ["AttendanceRecords"],
+      invalidatesTags: ["AttendanceRecords", "AttendanceSessions"],
     }),
 
     // Get session records (teacher)

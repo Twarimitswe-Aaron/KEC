@@ -211,6 +211,9 @@ export class AttendanceService {
       orderBy: {
         createdAt: 'desc',
       },
+      include: {
+        records: true,
+      },
     });
 
     return sessions;
