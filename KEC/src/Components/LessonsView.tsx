@@ -1120,8 +1120,8 @@ const LessonsView = () => {
       )}
       {/* Attendance Records Modal */}
       {modals.showAttendanceRecords && (
-        <div className="fixed inset-0 scroll-hide bg-black/50 flex justify-center items-center z-50 px-4">
-          <div className="bg-white/80 backdrop-blur-sm scroll-hide w-full max-w-4xl p-0 rounded-2xl shadow-xl overflow-hidden max-h-[90vh] border border-white/50 mt-8 flex flex-col">
+        <div className="fixed inset-0 scroll-hide bg-black/50 flex justify-center items-center z-50">
+          <div className="bg-white/80 backdrop-blur-sm scroll-hide w-full h-full p-0 shadow-xl overflow-hidden flex flex-col">
             <ModalHeader
               title={showHistory ? "Attendance History" : "Attendance Records"}
               subtitle={

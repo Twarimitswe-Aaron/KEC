@@ -486,11 +486,15 @@ export const RWANDA_LOCATIONS = {
 
 // Type definitions
 export type Province = keyof typeof RWANDA_LOCATIONS;
-export type District<P extends Province> = keyof (typeof RWANDA_LOCATIONS)[P];
-export type Sector<
-  P extends Province,
-  D extends District<P>
-> = (typeof RWANDA_LOCATIONS)[P][D][number];
+export type District<P extends Province> = P extends any
+  ? keyof (typeof RWANDA_LOCATIONS)[P]
+  : never;
+
+export type Sector<P extends Province, D extends District<P>> = P extends any
+  ? D extends keyof (typeof RWANDA_LOCATIONS)[P]
+    ? (typeof RWANDA_LOCATIONS)[P][D][number]
+    : never
+  : never;
 
 /**
  * Get all provinces
