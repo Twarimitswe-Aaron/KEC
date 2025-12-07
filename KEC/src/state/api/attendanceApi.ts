@@ -1,6 +1,4 @@
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-
-const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
+import { apiSlice } from "./apiSlice";
 
 export enum AttendanceStatus {
   ACTIVE = "ACTIVE",
@@ -41,13 +39,7 @@ export interface AttendanceSessionDetail {
   };
 }
 
-export const attendanceApi = createApi({
-  reducerPath: "attendanceApi",
-  baseQuery: fetchBaseQuery({
-    baseUrl: `${BASE_URL}/attendance`,
-    credentials: "include",
-  }),
-  tagTypes: ["AttendanceSessions", "AttendanceRecords"],
+export const attendanceApi = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
     // Create attendance session (teacher)
     createAttendanceSession: builder.mutation<
@@ -55,7 +47,7 @@ export const attendanceApi = createApi({
       { courseId: number; title?: string }
     >({
       query: (data) => ({
-        url: "/session",
+        url: "/attendance/session",
         method: "POST",
         body: data,
       }),
@@ -65,7 +57,7 @@ export const attendanceApi = createApi({
     // Mark attendance (student)
     markAttendance: builder.mutation<{ message: string; record: any }, number>({
       query: (sessionId) => ({
-        url: `/mark/${sessionId}`,
+        url: `/attendance/mark/${sessionId}`,
         method: "POST",
       }),
       invalidatesTags: ["AttendanceRecords"],
@@ -73,19 +65,19 @@ export const attendanceApi = createApi({
 
     // Get session records (teacher)
     getSessionRecords: builder.query<AttendanceSessionDetail, number>({
-      query: (sessionId) => `/session/${sessionId}`,
+      query: (sessionId) => `/attendance/session/${sessionId}`,
       providesTags: ["AttendanceRecords"],
     }),
 
     // Get active sessions for a course
     getActiveSessions: builder.query<AttendanceSession[], number>({
-      query: (courseId) => `/course/${courseId}/active`,
+      query: (courseId) => `/attendance/course/${courseId}/active`,
       providesTags: ["AttendanceSessions"],
     }),
 
     // Get all sessions for a course (teacher)
     getCourseSessions: builder.query<AttendanceSession[], number>({
-      query: (courseId) => `/course/${courseId}/all`,
+      query: (courseId) => `/attendance/course/${courseId}/all`,
       providesTags: ["AttendanceSessions"],
     }),
 
@@ -95,7 +87,7 @@ export const attendanceApi = createApi({
       number
     >({
       query: (sessionId) => ({
-        url: `/session/${sessionId}/close`,
+        url: `/attendance/session/${sessionId}/close`,
         method: "PATCH",
       }),
       invalidatesTags: ["AttendanceSessions"],
@@ -104,7 +96,7 @@ export const attendanceApi = createApi({
     // Export to Excel (teacher) - returns blob
     exportToExcel: builder.mutation<Blob, number>({
       query: (sessionId) => ({
-        url: `/export/${sessionId}`,
+        url: `/attendance/export/${sessionId}`,
         method: "GET",
         responseHandler: (response) => response.blob(),
       }),
@@ -121,3 +113,6 @@ export const {
   useCloseSessionMutation,
   useExportToExcelMutation,
 } = attendanceApi;
+
+// Alias for convenience
+export const useCreateSessionMutation = useCreateAttendanceSessionMutation;

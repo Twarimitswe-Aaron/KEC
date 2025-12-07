@@ -2,6 +2,7 @@ import React, { useState, useMemo } from "react";
 import { useGetUserQuery } from "../../state/api/authApi";
 import { useGetStudentQuizAttemptsQuery } from "../../state/api/courseActivitiesApi";
 import { format } from "date-fns";
+import StudentAttendance from "./StudentAttendance";
 
 interface StudentCourseDetailProps {
   courseId?: string;
@@ -69,6 +70,14 @@ const StudentCourseDetail: React.FC<StudentCourseDetailProps> = ({
 
   return (
     <div className="w-full bg-gray-50 min-h-screen p-6">
+      {/* Student Attendance Section */}
+      {studentId && courseId && (
+        <StudentAttendance
+          courseId={parseInt(courseId)}
+          studentId={studentId}
+        />
+      )}
+
       {/* Filter Header */}
       <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/50 mb-6">
         <div className="p-4">

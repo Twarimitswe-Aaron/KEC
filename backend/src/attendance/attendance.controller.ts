@@ -33,7 +33,7 @@ export class AttendanceController {
   ) {
     return this.attendanceService.createSession(
       body.courseId,
-      req.user.userId,
+      req.user.id,
       body.title,
     );
   }
@@ -45,7 +45,7 @@ export class AttendanceController {
     @Request() req,
     @Param('sessionId', ParseIntPipe) sessionId: number,
   ) {
-    return this.attendanceService.markAttendance(sessionId, req.user.userId);
+    return this.attendanceService.markAttendance(sessionId, req.user.id);
   }
 
   @Get('session/:sessionId')
@@ -54,7 +54,7 @@ export class AttendanceController {
     @Request() req,
     @Param('sessionId', ParseIntPipe) sessionId: number,
   ) {
-    return this.attendanceService.getSessionRecords(sessionId, req.user.userId);
+    return this.attendanceService.getSessionRecords(sessionId, req.user.id);
   }
 
   @Get('course/:courseId/active')
@@ -74,7 +74,7 @@ export class AttendanceController {
     @Request() req,
     @Param('sessionId', ParseIntPipe) sessionId: number,
   ) {
-    return this.attendanceService.closeSession(sessionId, req.user.userId);
+    return this.attendanceService.closeSession(sessionId, req.user.id);
   }
 
   @Get('export/:sessionId')
@@ -85,7 +85,7 @@ export class AttendanceController {
   ) {
     const data = await this.attendanceService.getSessionRecords(
       sessionId,
-      req.user.userId,
+      req.user.id,
     );
 
     // Create Excel workbook

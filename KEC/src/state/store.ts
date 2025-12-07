@@ -3,21 +3,15 @@ import { configureStore } from "@reduxjs/toolkit";
 import { setupListeners } from "@reduxjs/toolkit/query";
 import { apiSlice } from "./api/apiSlice";
 import { csrfApi } from "./api/csrfApi";
-import { attendanceApi } from "./api/attendanceApi";
 
 export const store = configureStore({
   reducer: {
     // Register both APIs
     [apiSlice.reducerPath]: apiSlice.reducer,
     [csrfApi.reducerPath]: csrfApi.reducer,
-    [attendanceApi.reducerPath]: attendanceApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
-    getDefaultMiddleware().concat(
-      apiSlice.middleware,
-      csrfApi.middleware,
-      attendanceApi.middleware
-    ),
+    getDefaultMiddleware().concat(apiSlice.middleware, csrfApi.middleware),
 });
 
 setupListeners(store.dispatch);

@@ -6,12 +6,15 @@ import {
 } from "../state/api/courseApi";
 import { BookOpen } from "lucide-react";
 import { UserRoleContext } from "../UserRoleContext";
+import { useUser } from "../hooks/useUser";
+import StudentAttendance from "./Dashboard/StudentAttendance";
 
 const UserLessonsView = () => {
   const { id } = useParams();
   const courseId = Number(id);
   const navigate = useNavigate();
   const userRole = useContext(UserRoleContext);
+  const { userData } = useUser();
 
   // Use different queries based on role
   const isPrivileged = userRole === "admin" || userRole === "teacher";
@@ -56,6 +59,11 @@ const UserLessonsView = () => {
 
   return (
     <div className="">
+      {/* Student Attendance Section */}
+      {userData?.id && userRole === "student" && (
+        <StudentAttendance courseId={courseId} studentId={userData.id} />
+      )}
+
       <div>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="my-4">

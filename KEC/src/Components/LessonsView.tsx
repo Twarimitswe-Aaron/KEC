@@ -1,6 +1,10 @@
 import React, { useState, useEffect, useContext, useMemo } from "react";
 import ModuleManagement from "../Components/ModuleManagement";
-import AttendanceManager from "../Components/AttendanceManager";
+import {
+  useGetActiveSessionsQuery,
+  useCreateSessionMutation,
+  useCloseSessionMutation,
+} from "../state/api/attendanceApi";
 import { useParams } from "react-router-dom";
 import { useCreateLessonMutation } from "../state/api/lessonApi";
 import {
@@ -142,7 +146,80 @@ const LessonsView = () => {
     showEditForm: false,
     showDeleteConfirm: false,
     showAddResource: null,
+    showAttendanceRecords: false,
   });
+
+  // Attendance functionality
+  const { data: activeSessions = [], refetch: refetchSessions } =
+    useGetActiveSessionsQuery(Number(id));
+  const [createSession, { isLoading: isCreatingSession }] =
+    useCreateSessionMutation();
+  const [closeSession, { isLoading: isClosingSession }] =
+    useCloseSessionMutation();
+  const [attendanceRecords, setAttendanceRecords] = useState<any>(null);
+
+  const activeSession = activeSessions[0]; // Get the first active session for this course
+
+  const handleMakeAttendance = async () => {
+    try {
+      await createSession({
+        courseId: Number(id),
+        title: `Attendance - ${new Date().toLocaleDateString()}`,
+      }).unwrap();
+      toast.success(
+        "Attendance session started! Students can now mark attendance."
+      );
+      refetchSessions();
+    } catch (error: any) {
+      toast.error(
+        error?.data?.message || "Failed to create attendance session"
+      );
+    }
+  };
+
+  const handleCloseAttendance = async () => {
+    if (!activeSession) return;
+    try {
+      await closeSession(activeSession.id).unwrap();
+      toast.success("Attendance session closed successfully!");
+      refetchSessions();
+    } catch (error: any) {
+      toast.error(error?.data?.message || "Failed to close session");
+    }
+  };
+
+  const handleViewAttendance = async () => {
+    if (!activeSession) return;
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/attendance/session/${
+          activeSession.id
+        }`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }
+      );
+      const data = await response.json();
+      setAttendanceRecords(data);
+      updateModals({ showAttendanceRecords: true });
+    } catch (error: any) {
+      toast.error("Failed to load attendance records");
+    }
+  };
+
+  const handleDownloadExcel = () => {
+    if (!activeSession) return;
+    const url = `${import.meta.env.VITE_API_URL}/attendance/export/${
+      activeSession.id
+    }`;
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", `attendance-${activeSession.id}.xlsx`);
+    link.click();
+    toast.success("Downloading attendance report...");
+  };
   const [forms, setForms] = useState(INITIAL_FORM_STATE);
 
   const transformedCourseData = transformToCourseData(courseData);
@@ -607,6 +684,32 @@ const LessonsView = () => {
                 onClick={() => updateModals({ showAddModule: true })}
               >
                 + Add Lesson
+              </button>
+            )}
+            {!isReadOnly && (
+              <button
+                className={`${
+                  activeSession
+                    ? "bg-gradient-to-r from-red-600 to-red-700"
+                    : "bg-gradient-to-r from-purple-600 to-purple-700"
+                } text-white px-5 py-2.5 rounded-xl cursor-pointer hover:shadow-lg transition-all transform hover:-translate-y-0.5 font-semibold whitespace-nowrap flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none`}
+                onClick={
+                  activeSession ? handleCloseAttendance : handleMakeAttendance
+                }
+                disabled={isCreatingSession || isClosingSession}
+              >
+                {isCreatingSession || isClosingSession ? (
+                  <RotateCw className="animate-spin" size={18} />
+                ) : (
+                  <Users size={18} />
+                )}
+                {isCreatingSession
+                  ? "Starting..."
+                  : isClosingSession
+                  ? "Closing..."
+                  : activeSession
+                  ? "Close Attendance"
+                  : "Make Attendance"}
               </button>
             )}
                      {/* Course Options Menu - Only show if not read-only */}
