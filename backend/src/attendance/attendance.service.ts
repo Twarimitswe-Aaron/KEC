@@ -159,6 +159,10 @@ export class AttendanceService {
       where: { id: userId },
     });
 
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
     // Only teachers/admins can view all records
     if (user.role !== 'admin' && user.role !== 'teacher') {
       throw new ForbiddenException(
@@ -226,6 +230,10 @@ export class AttendanceService {
     const user = await this.prisma.user.findUnique({
       where: { id: teacherId },
     });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
 
     if (user.role !== 'admin' && user.role !== 'teacher') {
       throw new ForbiddenException('Only teachers/admins can close sessions');

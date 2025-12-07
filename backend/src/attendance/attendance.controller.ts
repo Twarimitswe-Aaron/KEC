@@ -13,18 +13,19 @@ import {
   StreamableFile,
 } from '@nestjs/common';
 import { AttendanceService } from './attendance.service';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { Roles } from '../auth/roles.decorator';
-import { Role } from '@prisma/client';
+import { AuthGuard } from '../auth/auth.guard';
+import { RolesGuard } from '../auth/roles.guard';
+
 import * as ExcelJS from 'exceljs';
+import { Roles } from 'src/auth/decorators/roles.decorator';
 
 @Controller('attendance')
-@UseGuards(JwtAuthGuard)
+@UseGuards(AuthGuard, RolesGuard)
 export class AttendanceController {
   constructor(private readonly attendanceService: AttendanceService) {}
 
   @Post('session')
-  @Roles(Role.admin, Role.teacher)
+  @Roles('admin', 'teacher')
   @HttpCode(HttpStatus.CREATED)
   async createSession(
     @Request() req,
@@ -38,7 +39,7 @@ export class AttendanceController {
   }
 
   @Post('mark/:sessionId')
-  @Roles(Role.student, Role.admin, Role.teacher)
+  @Roles('student', 'admin', 'teacher')
   @HttpCode(HttpStatus.OK)
   async markAttendance(
     @Request() req,
@@ -48,7 +49,7 @@ export class AttendanceController {
   }
 
   @Get('session/:sessionId')
-  @Roles(Role.admin, Role.teacher)
+  @Roles('admin', 'teacher')
   async getSessionRecords(
     @Request() req,
     @Param('sessionId', ParseIntPipe) sessionId: number,
@@ -62,13 +63,13 @@ export class AttendanceController {
   }
 
   @Get('course/:courseId/all')
-  @Roles(Role.admin, Role.teacher)
+  @Roles('admin', 'teacher')
   async getCourseSessions(@Param('courseId', ParseIntPipe) courseId: number) {
     return this.attendanceService.getCourseSessions(courseId);
   }
 
   @Patch('session/:sessionId/close')
-  @Roles(Role.admin, Role.teacher)
+  @Roles('admin', 'teacher')
   async closeSession(
     @Request() req,
     @Param('sessionId', ParseIntPipe) sessionId: number,
@@ -77,7 +78,7 @@ export class AttendanceController {
   }
 
   @Get('export/:sessionId')
-  @Roles(Role.admin, Role.teacher)
+  @Roles('admin', 'teacher')
   async exportToExcel(
     @Request() req,
     @Param('sessionId', ParseIntPipe) sessionId: number,
@@ -143,6 +144,7 @@ export class AttendanceController {
 
     // Auto-fit columns
     worksheet.columns.forEach((column) => {
+      if (!column || !column.eachCell) return; // Skip undefined columns or columns without eachCell
       let maxLength = 0;
       column.eachCell({ includeEmpty: true }, (cell) => {
         const cellValue = cell.value ? cell.value.toString() : '';
@@ -154,7 +156,7 @@ export class AttendanceController {
     // Generate buffer
     const buffer = await workbook.xlsx.writeBuffer();
 
-    return new StreamableFile(buffer, {
+    return new StreamableFile(new Uint8Array(buffer), {
       type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       disposition: `attachment; filename="attendance-${sessionId}-${Date.now()}.xlsx"`,
     });
