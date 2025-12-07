@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import DashboardCard from "./DashboardCard";
 import type { Course } from "./CourseCard";
 import { useGetStudentCoursesQuery } from "../../state/api/courseApi";
@@ -12,6 +13,7 @@ const CourseComponent: React.FC<CourseComponentProps> = ({
   selectedCourseId,
   selectedCategory: selectedCategoryProp,
 }) => {
+  const navigate = useNavigate();
   const { data: studentCourses = [], isLoading } = useGetStudentCoursesQuery();
   const [sortBy, setSortBy] = useState<string>("");
   const [timeRange, setTimeRange] = useState<string>("all");
@@ -144,7 +146,10 @@ const CourseComponent: React.FC<CourseComponentProps> = ({
     return sorted;
   }, [studentCourses, sortBy, timeRange, selectedCourseId, selectedCategory]);
 
-  const handleCourseAction = (courseId: number | String) => {};
+  const handleCourseAction = (courseId: number | String) => {
+    // Navigate to the course detail page when clicking Start/Continue Course
+    navigate(`/dashboard/course/${courseId}`);
+  };
 
   return (
     <div className="block mt-5">

@@ -1,4 +1,5 @@
 import React, { useState, useContext, useEffect } from "react";
+import ReactDOM from "react-dom";
 import { FaEye, FaCheckCircle, FaTimesCircle, FaClock } from "react-icons/fa";
 import CourseCard, { Course } from "./CourseCard";
 import { UserRoleContext } from "../../UserRoleContext";
@@ -51,9 +52,7 @@ interface DashboardCardProps {
 }
 
 // Country codes for African countries
-const COUNTRY_CODES = [
-  { code: "+250", name: "Rwanda", flag: "🇷🇼" },
-];
+const COUNTRY_CODES = [{ code: "+250", name: "Rwanda", flag: "🇷🇼" }];
 
 const DashboardCard: React.FC<DashboardCardProps> = ({
   courses,
@@ -91,6 +90,12 @@ const DashboardCard: React.FC<DashboardCardProps> = ({
       );
     }
   }, [selectedProvince, selectedDistrict, selectedSector]);
+
+  // Debug: Log when enrollingCourse state changes
+  useEffect(() => {
+    console.log("enrollingCourse state changed:", enrollingCourse);
+  }, [enrollingCourse]);
+
   const [paymentStatus, setPaymentStatus] = useState<PaymentStatus | null>(
     null
   );
@@ -288,6 +293,10 @@ const DashboardCard: React.FC<DashboardCardProps> = ({
                         navigate(`/dashboard/course/${course.id}`);
                       }
                     } else if (course.open && course.status === "ACTIVE") {
+                      console.log(
+                        "Opening enrollment modal for course:",
+                        course.title
+                      );
                       setEnrollingCourse(course); // open enrollment modal
                     }
                   }}
@@ -325,183 +334,33 @@ const DashboardCard: React.FC<DashboardCardProps> = ({
         ))}
       </div>
 
-      {/* Enrollment Modal */}
-      {enrollingCourse && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-300">
-          <div className="bg-white/80 backdrop-blur-sm border border-white/50 rounded-2xl shadow-xl p-6 max-w-lg w-full relative transform scale-100 animate-in slide-in-from-bottom-4 duration-500">
-            {/* Close Button */}
-            <button
-              onClick={() => {
-                setEnrollingCourse(null);
-                resetPaymentForm();
-              }}
-              className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all duration-200"
-            >
-              <svg
-                className="w-5 h-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
-            </button>
-
-            {/* Header with Course Info */}
-            <div className="mb-2">
-              <h2 className="text-3xl font-bold bg-gradient-to-r from-[#004e64] to-[#025a73] bg-clip-text text-transparent mb-3">
-                {enrollingCourse.title}
-              </h2>
-
-              <p className="text-gray-600 leading-relaxed mb-2">
-                {enrollingCourse.description}
-              </p>
-
-              <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-md p-2 border border-gray-200">
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-600 text-md">Course Price</span>
-                  <span className="text-lg font-bold text-[#004e64]">
-                    RWF {enrollingCourse.price}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Enhanced Enrollment Form */}
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                // Allow direct enrollment without payment requirement
-                handleEnrollingCourse();
-              }}
-              className="space-y-2"
-            >
-              {/* Location Selection */}
-              <div className="space-y-2">
-                <label className="block text-gray-700 font-semibold text-sm tracking-wide">
-                  Location
-                </label>
-                <div className="flex gap-2">
-                  {/* Province Select */}
-                  <div className="relative flex-1">
-                    <select
-                      value={selectedProvince}
-                      onChange={(e) => {
-                        setSelectedProvince(e.target.value);
-                        setSelectedDistrict("");
-                        setSelectedSector("");
-                      }}
-                      className="w-full px-2 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#004e64] focus:border-transparent transition-all duration-200 bg-white/50 text-xs"
-                    >
-                      <option value="">Province</option>
-                      {provinces.map((province) => (
-                        <option key={province} value={province}>
-                          {province}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* District Select */}
-                  <div className="relative flex-1">
-                    <select
-                      value={selectedDistrict}
-                      onChange={(e) => {
-                        setSelectedDistrict(e.target.value);
-                        setSelectedSector("");
-                      }}
-                      disabled={!selectedProvince}
-                      className="w-full px-2 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#004e64] focus:border-transparent transition-all duration-200 bg-white/50 text-xs disabled:bg-gray-100/50 disabled:text-gray-400"
-                    >
-                      <option value="">District</option>
-                      {districts.map((district) => (
-                        <option key={district} value={district}>
-                          {district}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Sector Select */}
-                  <div className="relative flex-1">
-                    <select
-                      value={selectedSector}
-                      onChange={(e) => setSelectedSector(e.target.value)}
-                      disabled={!selectedDistrict}
-                      className="w-full px-2 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#004e64] focus:border-transparent transition-all duration-200 bg-white/50 text-xs disabled:bg-gray-100/50 disabled:text-gray-400"
-                    >
-                      <option value="">Sector</option>
-                      {sectors.map((sector) => (
-                        <option key={sector} value={sector}>
-                          {sector}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-              </div>
-
-              {/* Phone Input with Country Code Selector */}
-              <div className="space-y-2">
-                <label className="block text-gray-700 font-semibold text-sm tracking-wide">
-                  Phone Number
-                </label>
-                <div className="flex gap-2">
-                  {/* Country Code Selector */}
-                  <select
-                    value={countryCode}
-                    onChange={(e) => setCountryCode(e.target.value)}
-                    className="w-32 px-2 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#004e64] focus:border-transparent transition-all duration-200 bg-white text-sm"
-                  >
-                    {COUNTRY_CODES.map((country) => (
-                      <option key={country.code} value={country.code}>
-                        {country.flag} {country.code}
-                      </option>
-                    ))}
-                  </select>
-
-                  {/* Phone Number Input */}
-                  <div className="relative flex-1">
-                    <svg
-                      className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
-                      />
-                    </svg>
-                    <input
-                      type="tel"
-                      required
-                      value={phoneNumber}
-                      onChange={(e) =>
-                        setPhoneNumber(e.target.value.replace(/\D/g, ""))
-                      }
-                      placeholder="733 123 450"
-                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#004e64] focus:border-transparent transition-all duration-200 bg-white"
-                    />
-                  </div>
-                </div>
-                <p className="text-xs text-gray-500 mt-1">
-                  Enter number without country code (e.g., 733123450)
-                </p>
-              </div>
-
-              {/* Enroll Button - Payment section disabled for now */}
+      {/* Enrollment Modal - Rendered via Portal */}
+      {enrollingCourse &&
+        ReactDOM.createPortal(
+          <div
+            style={{
+              position: "fixed",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: "rgba(0, 0, 0, 0.6)",
+              backdropFilter: "blur(4px)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: "16px",
+              zIndex: 999999,
+            }}
+          >
+            <div className="bg-white/80 backdrop-blur-sm border border-white/50 rounded-2xl shadow-xl p-6 max-w-lg w-full relative">
+              {/* Close Button */}
               <button
-                type="submit"
-                disabled={isEnrolling || !phoneNumber || !location}
-                className="w-full bg-gradient-to-r from-[#004e64] to-[#025a73] hover:from-[#025a73] hover:to-[#034153] text-white font-bold py-3 px-6 rounded-md shadow-md hover:shadow-lg transform cursor-pointer hover:scale-105 transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none mt-4"
+                onClick={() => {
+                  setEnrollingCourse(null);
+                  resetPaymentForm();
+                }}
+                className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all duration-200"
               >
                 <svg
                   className="w-5 h-5"
@@ -513,34 +372,202 @@ const DashboardCard: React.FC<DashboardCardProps> = ({
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     strokeWidth={2}
-                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                    d="M6 18L18 6M6 6l12 12"
                   />
                 </svg>
-                {isEnrolling ? "Enrolling..." : "Enroll Now"}
               </button>
 
-              <p className="text-xs text-center text-gray-500 mt-2">
-                Payment integration coming soon - Free enrollment for now
-              </p>
-            </form>
+              {/* Header with Course Info */}
+              <div className="mb-2">
+                <h2 className="text-3xl font-bold bg-gradient-to-r from-[#004e64] to-[#025a73] bg-clip-text text-transparent mb-3">
+                  {enrollingCourse.title}
+                </h2>
 
-            {/* Security Notice */}
-            <div className="mt-6 flex items-center gap-2 text-xs text-gray-500 bg-gray-50 rounded-lg p-3">
-              <svg
-                className="w-4 h-4 text-green-500"
-                fill="currentColor"
-                viewBox="0 0 20 20"
+                <p className="text-gray-600 leading-relaxed mb-2">
+                  {enrollingCourse.description}
+                </p>
+
+                <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-md p-2 border border-gray-200">
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-600 text-md">Course Price</span>
+                    <span className="text-lg font-bold text-[#004e64]">
+                      RWF {enrollingCourse.price}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Enhanced Enrollment Form */}
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  // Allow direct enrollment without payment requirement
+                  handleEnrollingCourse();
+                }}
+                className="space-y-4"
               >
-                <path
-                  fillRule="evenodd"
-                  d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                />
-              </svg>
-              Your information is secure and encrypted
+                {/* Location Selection */}
+                <div className="space-y-3">
+                  <label className="block text-gray-700 font-semibold text-sm tracking-wide">
+                    Location <span className="text-red-500">*</span>
+                  </label>
+
+                  {/* Province Select */}
+                  <div className="relative">
+                    <select
+                      value={selectedProvince}
+                      onChange={(e) => {
+                        setSelectedProvince(e.target.value);
+                        setSelectedDistrict("");
+                        setSelectedSector("");
+                      }}
+                      className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#004e64] focus:border-transparent transition-all duration-200 bg-white text-sm"
+                    >
+                      <option value="">Select Province</option>
+                      {provinces.map((province) => (
+                        <option key={province} value={province}>
+                          {province}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* District Select */}
+                  <div className="relative">
+                    <select
+                      value={selectedDistrict}
+                      onChange={(e) => {
+                        setSelectedDistrict(e.target.value);
+                        setSelectedSector("");
+                      }}
+                      disabled={!selectedProvince}
+                      className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#004e64] focus:border-transparent transition-all duration-200 bg-white text-sm disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
+                    >
+                      <option value="">Select District</option>
+                      {districts.map((district) => (
+                        <option key={district} value={district}>
+                          {district}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Sector Select */}
+                  <div className="relative">
+                    <select
+                      value={selectedSector}
+                      onChange={(e) => setSelectedSector(e.target.value)}
+                      disabled={!selectedDistrict}
+                      className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#004e64] focus:border-transparent transition-all duration-200 bg-white text-sm disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
+                    >
+                      <option value="">Select Sector</option>
+                      {sectors.map((sector) => (
+                        <option key={sector} value={sector}>
+                          {sector}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Phone Input with Country Code Selector */}
+                <div className="space-y-3">
+                  <label className="block text-gray-700 font-semibold text-sm tracking-wide">
+                    Phone Number <span className="text-red-500">*</span>
+                  </label>
+                  <div className="flex gap-3">
+                    {/* Country Code Selector */}
+                    <select
+                      value={countryCode}
+                      onChange={(e) => setCountryCode(e.target.value)}
+                      className="w-28 px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#004e64] focus:border-transparent transition-all duration-200 bg-white text-sm font-medium"
+                    >
+                      {COUNTRY_CODES.map((country) => (
+                        <option key={country.code} value={country.code}>
+                          {country.flag} {country.code}
+                        </option>
+                      ))}
+                    </select>
+
+                    {/* Phone Number Input */}
+                    <div className="relative flex-1">
+                      <svg
+                        className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
+                        />
+                      </svg>
+                      <input
+                        type="tel"
+                        required
+                        value={phoneNumber}
+                        onChange={(e) =>
+                          setPhoneNumber(e.target.value.replace(/\D/g, ""))
+                        }
+                        placeholder="733 123 450"
+                        className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#004e64] focus:border-transparent transition-all duration-200 bg-white text-sm"
+                      />
+                    </div>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1.5 ml-1">
+                    Enter number without country code (e.g., 733123450)
+                  </p>
+                </div>
+
+                {/* Enroll Button - Payment section disabled for now */}
+                <button
+                  type="submit"
+                  disabled={isEnrolling || !phoneNumber || !location}
+                  className="w-full bg-gradient-to-r from-[#004e64] to-[#025a73] hover:from-[#025a73] hover:to-[#034153] text-white font-bold py-3.5 px-6 rounded-lg shadow-md hover:shadow-lg transform cursor-pointer hover:scale-105 transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none mt-2"
+                >
+                  <svg
+                    className="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                  {isEnrolling ? "Enrolling..." : "Enroll Now"}
+                </button>
+
+                <p className="text-xs text-center text-gray-500 mt-3">
+                  Payment integration coming soon - Free enrollment for now
+                </p>
+              </form>
+
+              {/* Security Notice */}
+              <div className="mt-6 flex items-center gap-3 text-xs text-gray-500 bg-gray-50 rounded-lg p-3">
+                <svg
+                  className="w-4 h-4 flex-shrink-0 text-green-500"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                  />
+                </svg>
+                <span className="leading-relaxed">
+                  Your information is secure and encrypted
+                </span>
+              </div>
             </div>
-          </div>
-        </div>
-      )}
+          </div>,
+          document.body
+        )}
     </>
   );
 };
