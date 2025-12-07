@@ -5,6 +5,7 @@ import {
   useCreateSessionMutation,
   useCloseSessionMutation,
   useLazyGetSessionRecordsQuery,
+  useGetCourseSessionsQuery,
 } from "../state/api/attendanceApi";
 import { useParams } from "react-router-dom";
 import { useCreateLessonMutation } from "../state/api/lessonApi";
@@ -30,6 +31,7 @@ import {
   Play,
   Square,
   RotateCw,
+  Clock,
 } from "lucide-react";
 import { toast } from "react-toastify";
 import { SearchContext } from "../SearchContext";
@@ -158,6 +160,9 @@ const LessonsView = () => {
   const [closeSession, { isLoading: isClosingSession }] =
     useCloseSessionMutation();
   const [attendanceRecords, setAttendanceRecords] = useState<any>(null);
+  const { data: allSessions = [], refetch: refetchAllSessions } =
+    useGetCourseSessionsQuery(Number(id));
+  const [showHistory, setShowHistory] = useState(true); // Toggle between history and detail view
 
   const activeSession = activeSessions[0]; // Get the first active session for this course
 
@@ -192,15 +197,11 @@ const LessonsView = () => {
   const [getSessionRecords, { isLoading: isLoadingRecords }] =
     useLazyGetSessionRecordsQuery();
 
-  const handleViewAttendance = async () => {
-    if (!activeSession) return;
-    try {
-      const data = await getSessionRecords(activeSession.id).unwrap();
-      setAttendanceRecords(data);
-      updateModals({ showAttendanceRecords: true });
-    } catch (error: any) {
-      toast.error("Failed to load attendance records");
-    }
+  const handleViewAttendance = () => {
+    setShowHistory(true);
+    setAttendanceRecords(null);
+    refetchAllSessions();
+    updateModals({ showAttendanceRecords: true });
   };
 
   const handleDownloadExcel = () => {
@@ -736,9 +737,8 @@ const LessonsView = () => {
                       <button
                         className="w-full text-left cursor-pointer px-4 py-2.5 hover:bg-gray-50 transition-colors flex items-center gap-2 text-gray-700 font-medium"
                         onClick={handleViewAttendance}
-                        disabled={!activeSession}
                       >
-                        <Users size={16} /> View Attendance
+                        <Clock size={16} /> Attendance History
                       </button>
 
                       {courseData?.status === CourseStatus.ENDED ? (
@@ -1119,116 +1119,226 @@ const LessonsView = () => {
         </div>
       )}
       {/* Attendance Records Modal */}
-      {modals.showAttendanceRecords && attendanceRecords && (
+      {modals.showAttendanceRecords && (
         <div className="fixed inset-0 scroll-hide bg-black/50 flex justify-center items-center z-50 px-4">
           <div className="bg-white/80 backdrop-blur-sm scroll-hide w-full max-w-4xl p-0 rounded-2xl shadow-xl overflow-hidden max-h-[90vh] border border-white/50 mt-8 flex flex-col">
             <ModalHeader
-              title="Attendance Records"
-              subtitle={`Session: ${attendanceRecords.session.title}`}
+              title={showHistory ? "Attendance History" : "Attendance Records"}
+              subtitle={
+                showHistory
+                  ? "View all past attendance sessions"
+                  : `Session: ${attendanceRecords?.session?.title || ""}`
+              }
               onClose={() => updateModals({ showAttendanceRecords: false })}
             />
 
-            <div className="p-6 overflow-y-auto">
-              {/* Summary Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                <div className="bg-blue-50 p-4 rounded-xl border border-blue-100">
-                  <p className="text-sm text-blue-600 font-semibold mb-1">
-                    Total Students
-                  </p>
-                  <p className="text-2xl font-bold text-blue-900">
-                    {attendanceRecords.summary.totalStudents}
-                  </p>
-                </div>
-                <div className="bg-green-50 p-4 rounded-xl border border-green-100">
-                  <p className="text-sm text-green-600 font-semibold mb-1">
-                    Present
-                  </p>
-                  <p className="text-2xl font-bold text-green-900">
-                    {attendanceRecords.summary.present}
-                  </p>
-                </div>
-                <div className="bg-red-50 p-4 rounded-xl border border-red-100">
-                  <p className="text-sm text-red-600 font-semibold mb-1">
-                    Absent
-                  </p>
-                  <p className="text-2xl font-bold text-red-900">
-                    {attendanceRecords.summary.absent}
-                  </p>
-                </div>
-              </div>
-
-              {/* Student List */}
-              <div className="border rounded-xl overflow-hidden">
-                <table className="w-full text-left text-sm">
-                  <thead className="bg-gray-50 border-b">
-                    <tr>
-                      <th className="px-6 py-3 font-semibold text-gray-900">
-                        Student Name
-                      </th>
-                      <th className="px-6 py-3 font-semibold text-gray-900">
-                        Email
-                      </th>
-                      <th className="px-6 py-3 font-semibold text-gray-900">
-                        Status
-                      </th>
-                      <th className="px-6 py-3 font-semibold text-gray-900">
-                        Time
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100">
-                    {attendanceRecords.attendanceList.map(
-                      (record: any, index: number) => (
-                        <tr key={index} className="hover:bg-gray-50/50">
-                          <td className="px-6 py-3 font-medium text-gray-900">
-                            {record.studentName}
-                          </td>
-                          <td className="px-6 py-3 text-gray-600">
-                            {record.email}
-                          </td>
-                          <td className="px-6 py-3">
-                            <span
-                              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                record.present
-                                  ? "bg-green-100 text-green-800"
-                                  : "bg-red-100 text-red-800"
+            <div className="p-6 overflow-y-auto flex-1">
+              {showHistory ? (
+                // History List View
+                <div className="space-y-4">
+                  {allSessions.length === 0 ? (
+                    <div className="text-center py-12 text-gray-500">
+                      <Clock className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                      <p>No attendance sessions found for this course.</p>
+                    </div>
+                  ) : (
+                    <div className="grid gap-4">
+                      {allSessions.map((session) => (
+                        <div
+                          key={session.id}
+                          onClick={async () => {
+                            try {
+                              const data = await getSessionRecords(
+                                session.id
+                              ).unwrap();
+                              setAttendanceRecords(data);
+                              setShowHistory(false);
+                            } catch (err) {
+                              toast.error("Failed to load session details");
+                            }
+                          }}
+                          className="bg-white border hover:border-blue-300 p-4 rounded-xl cursor-pointer transition-all hover:shadow-md group flex items-center justify-between"
+                        >
+                          <div className="flex items-center gap-4">
+                            <div
+                              className={`p-3 rounded-lg ${
+                                session.status === "ACTIVE"
+                                  ? "bg-green-100 text-green-600"
+                                  : "bg-gray-100 text-gray-600"
                               }`}
                             >
-                              {record.present ? "Present" : "Absent"}
-                            </span>
-                          </td>
-                          <td className="px-6 py-3 text-gray-500">
-                            {record.markedAt
-                              ? new Date(record.markedAt).toLocaleTimeString(
+                              <Clock size={20} />
+                            </div>
+                            <div>
+                              <h4 className="font-semibold text-gray-900 group-hover:text-blue-700 transition-colors">
+                                {session.title}
+                              </h4>
+                              <p className="text-sm text-gray-500">
+                                {new Date(session.createdAt).toLocaleDateString(
+                                  undefined,
+                                  {
+                                    weekday: "long",
+                                    year: "numeric",
+                                    month: "long",
+                                    day: "numeric",
+                                  }
+                                )}{" "}
+                                •{" "}
+                                {new Date(session.createdAt).toLocaleTimeString(
                                   [],
                                   {
                                     hour: "2-digit",
                                     minute: "2-digit",
                                   }
-                                )
-                              : "-"}
-                          </td>
-                        </tr>
-                      )
-                    )}
-                  </tbody>
-                </table>
-              </div>
+                                )}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-6">
+                            <div className="text-right">
+                              <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">
+                                Attendees
+                              </p>
+                              <p className="font-bold text-gray-900 text-lg">
+                                {session.records?.length || 0}
+                              </p>
+                            </div>
+                            <div className="text-right">
+                              <span
+                                className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                  session.status === "ACTIVE"
+                                    ? "bg-green-100 text-green-800"
+                                    : "bg-gray-100 text-gray-800"
+                                }`}
+                              >
+                                {session.status}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                // Detailed Records View
+                <>
+                  <button
+                    onClick={() => setShowHistory(true)}
+                    className="mb-6 flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors font-medium"
+                  >
+                    ← Back to History
+                  </button>
+
+                  {attendanceRecords && (
+                    <>
+                      {/* Summary Cards */}
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                        <div className="bg-blue-50 p-4 rounded-xl border border-blue-100">
+                          <p className="text-sm text-blue-600 font-semibold mb-1">
+                            Total Students
+                          </p>
+                          <p className="text-2xl font-bold text-blue-900">
+                            {attendanceRecords.summary.totalStudents}
+                          </p>
+                        </div>
+                        <div className="bg-green-50 p-4 rounded-xl border border-green-100">
+                          <p className="text-sm text-green-600 font-semibold mb-1">
+                            Present
+                          </p>
+                          <p className="text-2xl font-bold text-green-900">
+                            {attendanceRecords.summary.present}
+                          </p>
+                        </div>
+                        <div className="bg-red-50 p-4 rounded-xl border border-red-100">
+                          <p className="text-sm text-red-600 font-semibold mb-1">
+                            Absent
+                          </p>
+                          <p className="text-2xl font-bold text-red-900">
+                            {attendanceRecords.summary.absent}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Student List */}
+                      <div className="border rounded-xl overflow-hidden">
+                        <table className="w-full text-left text-sm">
+                          <thead className="bg-gray-50 border-b">
+                            <tr>
+                              <th className="px-6 py-3 font-semibold text-gray-900">
+                                Student Name
+                              </th>
+                              <th className="px-6 py-3 font-semibold text-gray-900">
+                                Email
+                              </th>
+                              <th className="px-6 py-3 font-semibold text-gray-900">
+                                Status
+                              </th>
+                              <th className="px-6 py-3 font-semibold text-gray-900">
+                                Time
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-gray-100">
+                            {attendanceRecords.attendanceList.map(
+                              (record: any, index: number) => (
+                                <tr key={index} className="hover:bg-gray-50/50">
+                                  <td className="px-6 py-3 font-medium text-gray-900">
+                                    {record.studentName}
+                                  </td>
+                                  <td className="px-6 py-3 text-gray-600">
+                                    {record.email}
+                                  </td>
+                                  <td className="px-6 py-3">
+                                    <span
+                                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                        record.present
+                                          ? "bg-green-100 text-green-800"
+                                          : "bg-red-100 text-red-800"
+                                      }`}
+                                    >
+                                      {record.present ? "Present" : "Absent"}
+                                    </span>
+                                  </td>
+                                  <td className="px-6 py-3 text-gray-500">
+                                    {record.markedAt
+                                      ? new Date(
+                                          record.markedAt
+                                        ).toLocaleTimeString([], {
+                                          hour: "2-digit",
+                                          minute: "2-digit",
+                                        })
+                                      : "-"}
+                                  </td>
+                                </tr>
+                              )
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                    </>
+                  )}
+                </>
+              )}
             </div>
 
             <div className="p-6 border-t bg-gray-50 rounded-b-2xl flex justify-between items-center">
-              <button
-                onClick={handleDownloadExcel}
-                className="text-[#034153] hover:text-[#022f40] font-semibold flex items-center gap-2 transition-colors cursor-pointer"
-              >
-                Download Excel Report
-              </button>
-              <button
-                onClick={() => updateModals({ showAttendanceRecords: false })}
-                className="bg-white border hover:bg-gray-50 text-gray-700 px-6 py-2.5 rounded-xl font-semibold transition-all shadow-sm cursor-pointer"
-              >
-                Close
-              </button>
+              {!showHistory && (
+                <button
+                  onClick={handleDownloadExcel}
+                  className="text-[#034153] hover:text-[#022f40] font-semibold flex items-center gap-2 transition-colors cursor-pointer"
+                >
+                  Download Excel Report
+                </button>
+              )}
+              <div className={showHistory ? "ml-auto" : ""}>
+                <button
+                  onClick={() => updateModals({ showAttendanceRecords: false })}
+                  className="bg-white border hover:bg-gray-50 text-gray-700 px-6 py-2.5 rounded-xl font-semibold transition-all shadow-sm cursor-pointer"
+                >
+                  Close
+                </button>
+              </div>
             </div>
           </div>
         </div>

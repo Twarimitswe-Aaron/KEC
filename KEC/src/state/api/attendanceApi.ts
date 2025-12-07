@@ -13,6 +13,7 @@ export interface AttendanceSession {
   status: AttendanceStatus;
   createdAt: string;
   closedAt?: string;
+  records?: AttendanceRecord[];
 }
 
 export interface AttendanceRecord {
