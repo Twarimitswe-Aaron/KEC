@@ -492,7 +492,9 @@ export type District<P extends Province> = P extends any
 
 export type Sector<P extends Province, D extends District<P>> = P extends any
   ? D extends keyof (typeof RWANDA_LOCATIONS)[P]
-    ? (typeof RWANDA_LOCATIONS)[P][D][number]
+    ? (typeof RWANDA_LOCATIONS)[P][D] extends readonly (infer S)[]
+      ? S
+      : never
     : never
   : never;
 
