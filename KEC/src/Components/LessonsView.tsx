@@ -1132,12 +1132,12 @@ const LessonsView = () => {
               onClose={() => updateModals({ showAttendanceRecords: false })}
             />
 
-            <div className="p-6 overflow-y-auto flex-1">
+            <div className="p-6 overflow-y-auto flex-1 bg-gradient-to-br from-[#f8feff] to-white">
               {showHistory ? (
                 // History List View
                 <div className="space-y-4">
                   {allSessions.length === 0 ? (
-                    <div className="text-center py-12 text-gray-500">
+                    <div className="text-center py-12 text-gray-500 bg-white/50 rounded-2xl backdrop-blur-sm border border-white/50">
                       <Clock className="w-12 h-12 mx-auto mb-4 opacity-50" />
                       <p>No attendance sessions found for this course.</p>
                     </div>
@@ -1157,58 +1157,60 @@ const LessonsView = () => {
                               toast.error("Failed to load session details");
                             }
                           }}
-                          className="bg-white border hover:border-blue-300 p-4 rounded-xl cursor-pointer transition-all hover:shadow-md group flex items-center justify-between"
+                          className="bg-white/80 backdrop-blur-sm border border-white/50 p-6 rounded-2xl cursor-pointer transition-all duration-300 hover:shadow-xl hover:scale-[1.01] group flex items-center justify-between shadow-sm"
                         >
                           <div className="flex items-center gap-4">
                             <div
-                              className={`p-3 rounded-lg ${
+                              className={`p-3 rounded-xl shadow-inner ${
                                 session.status === "ACTIVE"
                                   ? "bg-green-100 text-green-600"
                                   : "bg-gray-100 text-gray-600"
                               }`}
                             >
-                              <Clock size={20} />
+                              <Clock size={24} />
                             </div>
                             <div>
-                              <h4 className="font-semibold text-gray-900 group-hover:text-blue-700 transition-colors">
+                              <h4 className="font-bold text-lg text-[#004e64] group-hover:text-[#022F40] transition-colors">
                                 {session.title}
                               </h4>
-                              <p className="text-sm text-gray-500">
-                                {new Date(session.createdAt).toLocaleDateString(
-                                  undefined,
-                                  {
-                                    weekday: "long",
+                              <p className="text-sm text-gray-500 mt-1 flex items-center gap-2">
+                                <span className="bg-gray-100 px-2 py-0.5 rounded text-xs">
+                                  {new Date(
+                                    session.createdAt
+                                  ).toLocaleDateString(undefined, {
+                                    weekday: "short",
                                     year: "numeric",
-                                    month: "long",
+                                    month: "short",
                                     day: "numeric",
-                                  }
-                                )}{" "}
-                                •{" "}
-                                {new Date(session.createdAt).toLocaleTimeString(
-                                  [],
-                                  {
+                                  })}
+                                </span>
+                                <span>•</span>
+                                <span className="bg-gray-100 px-2 py-0.5 rounded text-xs">
+                                  {new Date(
+                                    session.createdAt
+                                  ).toLocaleTimeString([], {
                                     hour: "2-digit",
                                     minute: "2-digit",
-                                  }
-                                )}
+                                  })}
+                                </span>
                               </p>
                             </div>
                           </div>
-                          <div className="flex items-center gap-6">
+                          <div className="flex items-center gap-8">
                             <div className="text-right">
-                              <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">
+                              <p className="text-xs text-gray-500 font-medium uppercase tracking-wide mb-1">
                                 Attendees
                               </p>
-                              <p className="font-bold text-gray-900 text-lg">
+                              <p className="font-bold text-[#004e64] text-2xl">
                                 {session.records?.length || 0}
                               </p>
                             </div>
                             <div className="text-right">
                               <span
-                                className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                className={`inline-flex items-center px-4 py-1.5 rounded-full text-xs font-bold shadow-sm ${
                                   session.status === "ACTIVE"
-                                    ? "bg-green-100 text-green-800"
-                                    : "bg-gray-100 text-gray-800"
+                                    ? "bg-gradient-to-r from-green-500 to-green-600 text-white"
+                                    : "bg-gradient-to-r from-gray-500 to-gray-600 text-white"
                                 }`}
                               >
                                 {session.status}
@@ -1222,85 +1224,91 @@ const LessonsView = () => {
                 </div>
               ) : (
                 // Detailed Records View
-                <>
+                <div className="space-y-6">
                   <button
                     onClick={() => setShowHistory(true)}
-                    className="mb-6 flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors font-medium"
+                    className="flex items-center gap-2 text-[#004e64] hover:text-[#022F40] transition-colors font-semibold group"
                   >
-                    ← Back to History
+                    <span className="p-1 rounded-full bg-blue-50 group-hover:bg-blue-100 transition-colors">
+                      ←
+                    </span>{" "}
+                    Back to History
                   </button>
 
                   {attendanceRecords && (
                     <>
                       {/* Summary Cards */}
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                        <div className="bg-blue-50 p-4 rounded-xl border border-blue-100">
-                          <p className="text-sm text-blue-600 font-semibold mb-1">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div className="bg-white/80 backdrop-blur-sm p-6 rounded-2xl border border-white/50 shadow-lg hover:shadow-xl transition-all duration-300">
+                          <p className="text-sm text-[#004e64] font-semibold mb-2 uppercase tracking-wide">
                             Total Students
                           </p>
-                          <p className="text-2xl font-bold text-blue-900">
+                          <p className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-blue-800">
                             {attendanceRecords.summary.totalStudents}
                           </p>
                         </div>
-                        <div className="bg-green-50 p-4 rounded-xl border border-green-100">
-                          <p className="text-sm text-green-600 font-semibold mb-1">
+                        <div className="bg-white/80 backdrop-blur-sm p-6 rounded-2xl border border-white/50 shadow-lg hover:shadow-xl transition-all duration-300">
+                          <p className="text-sm text-green-700 font-semibold mb-2 uppercase tracking-wide">
                             Present
                           </p>
-                          <p className="text-2xl font-bold text-green-900">
+                          <p className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-green-600 to-green-800">
                             {attendanceRecords.summary.present}
                           </p>
                         </div>
-                        <div className="bg-red-50 p-4 rounded-xl border border-red-100">
-                          <p className="text-sm text-red-600 font-semibold mb-1">
+                        <div className="bg-white/80 backdrop-blur-sm p-6 rounded-2xl border border-white/50 shadow-lg hover:shadow-xl transition-all duration-300">
+                          <p className="text-sm text-red-700 font-semibold mb-2 uppercase tracking-wide">
                             Absent
                           </p>
-                          <p className="text-2xl font-bold text-red-900">
+                          <p className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-red-600 to-red-800">
                             {attendanceRecords.summary.absent}
                           </p>
                         </div>
                       </div>
 
                       {/* Student List */}
-                      <div className="border rounded-xl overflow-hidden">
+                      <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl border border-white/50 overflow-hidden">
                         <table className="w-full text-left text-sm">
-                          <thead className="bg-gray-50 border-b">
+                          <thead className="bg-gray-50/50 border-b border-gray-100">
                             <tr>
-                              <th className="px-6 py-3 font-semibold text-gray-900">
+                              <th className="px-6 py-4 font-bold text-[#004e64] uppercase text-xs tracking-wider">
                                 Student Name
                               </th>
-                              <th className="px-6 py-3 font-semibold text-gray-900">
+                              <th className="px-6 py-4 font-bold text-[#004e64] uppercase text-xs tracking-wider">
                                 Email
                               </th>
-                              <th className="px-6 py-3 font-semibold text-gray-900">
+                              <th className="px-6 py-4 font-bold text-[#004e64] uppercase text-xs tracking-wider">
                                 Status
                               </th>
-                              <th className="px-6 py-3 font-semibold text-gray-900">
+                              <th className="px-6 py-4 font-bold text-[#004e64] uppercase text-xs tracking-wider">
                                 Time
                               </th>
                             </tr>
                           </thead>
-                          <tbody className="divide-y divide-gray-100">
+                          <tbody className="divide-y divide-gray-100/50">
                             {attendanceRecords.attendanceList.map(
                               (record: any, index: number) => (
-                                <tr key={index} className="hover:bg-gray-50/50">
-                                  <td className="px-6 py-3 font-medium text-gray-900">
+                                <tr
+                                  key={index}
+                                  className="hover:bg-blue-50/50 transition-colors"
+                                >
+                                  <td className="px-6 py-4 font-semibold text-gray-900">
                                     {record.studentName}
                                   </td>
-                                  <td className="px-6 py-3 text-gray-600">
+                                  <td className="px-6 py-4 text-gray-600">
                                     {record.email}
                                   </td>
-                                  <td className="px-6 py-3">
+                                  <td className="px-6 py-4">
                                     <span
-                                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                      className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold shadow-sm ${
                                         record.present
-                                          ? "bg-green-100 text-green-800"
-                                          : "bg-red-100 text-red-800"
+                                          ? "bg-green-100 text-green-700 border border-green-200"
+                                          : "bg-red-100 text-red-700 border border-red-200"
                                       }`}
                                     >
                                       {record.present ? "Present" : "Absent"}
                                     </span>
                                   </td>
-                                  <td className="px-6 py-3 text-gray-500">
+                                  <td className="px-6 py-4 text-gray-500 font-mono">
                                     {record.markedAt
                                       ? new Date(
                                           record.markedAt
@@ -1308,7 +1316,7 @@ const LessonsView = () => {
                                           hour: "2-digit",
                                           minute: "2-digit",
                                         })
-                                      : "-"}
+                                      : "--:--"}
                                   </td>
                                 </tr>
                               )
@@ -1318,15 +1326,15 @@ const LessonsView = () => {
                       </div>
                     </>
                   )}
-                </>
+                </div>
               )}
             </div>
 
-            <div className="p-6 border-t bg-gray-50 rounded-b-2xl flex justify-between items-center">
+            <div className="p-6 border-t border-gray-100 bg-white/80 backdrop-blur-sm flex justify-between items-center z-10">
               {!showHistory && (
                 <button
                   onClick={handleDownloadExcel}
-                  className="text-[#034153] hover:text-[#022f40] font-semibold flex items-center gap-2 transition-colors cursor-pointer"
+                  className="text-[#004e64] hover:text-[#022F40] font-bold flex items-center gap-2 transition-colors cursor-pointer bg-blue-50 hover:bg-blue-100 px-4 py-2 rounded-lg"
                 >
                   Download Excel Report
                 </button>
@@ -1334,7 +1342,7 @@ const LessonsView = () => {
               <div className={showHistory ? "ml-auto" : ""}>
                 <button
                   onClick={() => updateModals({ showAttendanceRecords: false })}
-                  className="bg-white border hover:bg-gray-50 text-gray-700 px-6 py-2.5 rounded-xl font-semibold transition-all shadow-sm cursor-pointer"
+                  className="px-8 py-2.5 rounded-xl cursor-pointer bg-gradient-to-r from-[#004e64] via-[#025d75] to-[#022F40] text-white font-semibold hover:shadow-lg transform hover:scale-105 transition-all duration-300 shadow-md"
                 >
                   Close
                 </button>
