@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { FaLinkedin, FaMapMarkerAlt } from "react-icons/fa";
+import { FaLinkedin, FaMapMarkerAlt, FaPhone } from "react-icons/fa";
 import { IoLogoInstagram } from "react-icons/io5";
 import { AiFillYoutube, AiOutlineMail } from "react-icons/ai";
-import { FaPhone } from "react-icons/fa";
 import { BiTime } from "react-icons/bi";
 import { HiLocationMarker } from "react-icons/hi";
 
@@ -27,21 +26,21 @@ export const Footer = () => {
   const socialLinks = [
     { 
       name: "YouTube", 
-      icon: <AiFillYoutube size={28} />,
+      icon: <AiFillYoutube size={24} />,
       url: "#",
-      color: "hover:text-red-500"
+      color: "hover:text-red-500 hover:shadow-[0_0_15px_rgba(239,68,68,0.6)]"
     },
     { 
       name: "LinkedIn", 
-      icon: <FaLinkedin size={28} />,
+      icon: <FaLinkedin size={24} />,
       url: "#",
-      color: "hover:text-blue-400"
+      color: "hover:text-blue-400 hover:shadow-[0_0_15px_rgba(96,165,250,0.6)]"
     },
     { 
       name: "Instagram", 
-      icon: <IoLogoInstagram size={28} />,
+      icon: <IoLogoInstagram size={24} />,
       url: "#",
-      color: "hover:text-pink-400"
+      color: "hover:text-pink-400 hover:shadow-[0_0_15px_rgba(244,114,182,0.6)]"
     },
   ];
 
@@ -69,164 +68,180 @@ export const Footer = () => {
 
   const formatDate = (date: Date) => {
     return date.toLocaleDateString('en-US', { 
-      weekday: 'long',
+      weekday: 'short',
       year: 'numeric',
-      month: 'long',
+      month: 'short',
       day: 'numeric'
-    });
+    }).toUpperCase();
   };
 
   return (
-    <footer className="w-full bg-[#022f40] text-white mt-12 font-['Inter',sans-serif]">
-      {/* Main Footer Content */}
-      <div className="container mx-auto px-6 py-12 max-w-7xl">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
+    <footer className="w-full bg-[#011a24] text-cyan-50 mt-12 font-['Inter',sans-serif] relative overflow-hidden border-t border-cyan-500/30">
+      {/* Background Grid Effect */}
+      <div className="absolute inset-0 bg-[linear-gradient(rgba(2,47,64,0.1)_1px,transparent_1px),linear-gradient(90deg,rgba(2,47,64,0.1)_1px,transparent_1px)] bg-[size:20px_20px] pointer-events-none opacity-20"></div>
+      
+      {/* Top Accent Line with Glow */}
+      <div className="absolute top-0 left-0 right-0 h-[1px] bg-cyan-500 shadow-[0_0_10px_rgba(6,182,212,0.8)]"></div>
+
+      <div className="container mx-auto px-6 py-12 max-w-7xl relative z-10">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
           
-          {/* Company Info */}
-          <div className="space-y-4">
-            <h3 className="text-2xl font-bold tracking-tight">KEC</h3>
-            <p className="text-gray-300 text-sm leading-relaxed">
-              Kigali Engineers College - Building the future through excellence in engineering education and innovation.
+          {/* Brand & Identity */}
+          <div className="space-y-6">
+            <div className="relative inline-block">
+              <h3 className="text-3xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500 drop-shadow-[0_0_5px_rgba(6,182,212,0.5)]">
+                KEC
+              </h3>
+              <div className="absolute -bottom-1 left-0 w-full h-[2px] bg-cyan-500/50 rounded-full"></div>
+            </div>
+            <p className="text-gray-400 text-sm leading-relaxed border-l-2 border-cyan-500/30 pl-3">
+              Kigali Engineers College. <br />
+              <span className="text-cyan-400/80">System Status: Online</span>
             </p>
             
-            {/* Live Clock */}
-            <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 mt-4">
-              <div className="flex items-center gap-2 mb-2">
-                <BiTime className="text-cyan-400" size={20} />
-                <span className="font-semibold text-sm">Current Time</span>
+            {/* Digital Clock Module */}
+            <div className="bg-[#022f40]/50 backdrop-blur-md border border-cyan-500/30 rounded-md p-4 relative group overflow-hidden">
+               <div className="absolute top-0 left-0 w-1 h-full bg-cyan-500/50"></div>
+               <div className="absolute top-0 right-0 w-[5px] h-[5px] border-t border-r border-cyan-400"></div>
+               <div className="absolute bottom-0 right-0 w-[5px] h-[5px] border-b border-r border-cyan-400"></div>
+               
+              <div className="flex items-center gap-2 mb-2 border-b border-cyan-500/20 pb-2">
+                <BiTime className="text-cyan-400 animate-pulse" size={16} />
+                <span className="font-mono text-xs text-cyan-300 tracking-widest uppercase">System Time</span>
               </div>
-              <div className="font-mono text-2xl font-bold text-cyan-400">
+              <div className="font-mono text-2xl font-bold text-cyan-50 tracking-wider shadow-cyan-500/20 drop-shadow-md">
                 {formatTime(time)}
               </div>
-              <div className="text-xs text-gray-300 mt-1">
+              <div className="font-mono text-xs text-cyan-400/70 mt-1 uppercase tracking-wider">
                 {formatDate(time)}
               </div>
             </div>
           </div>
 
-          {/* Quick Links */}
+          {/* Quick Nav */}
           <div>
-            <h4 className="text-lg font-bold mb-4 tracking-tight">Quick Links</h4>
+            <h4 className="font-mono text-sm font-bold mb-6 text-cyan-400 uppercase tracking-widest flex items-center gap-2">
+              <span className="w-2 h-2 bg-cyan-500 rounded-full shadow-[0_0_5px_cyan]"></span>
+              Navigation
+            </h4>
             <ul className="space-y-2">
               {quickLinks.map((link, index) => (
                 <li key={index}>
                   <a 
                     href={link.url}
-                    className="text-gray-300 hover:text-white hover:translate-x-1 inline-block transition-all duration-200 text-sm"
+                    className="group flex items-center gap-2 text-gray-400 hover:text-cyan-300 transition-all duration-300 text-sm"
                   >
-                    → {link.name}
+                    <span className="w-1 h-1 bg-gray-600 group-hover:bg-cyan-400 group-hover:shadow-[0_0_5px_cyan] transition-all duration-300 rounded-full"></span>
+                    <span className="group-hover:translate-x-1 transition-transform duration-300">{link.name}</span>
                   </a>
                 </li>
               ))}
             </ul>
           </div>
 
-          {/* Contact Information */}
+          {/* Contact Data */}
           <div>
-            <h4 className="text-lg font-bold mb-4 tracking-tight">Contact Us</h4>
-            <ul className="space-y-3">
-              <li className="flex items-start gap-3 text-sm">
-                <FaPhone className="mt-1 text-cyan-400 flex-shrink-0" size={16} />
-                <div>
-                  <a href={`tel:${contactInfo.phone}`} className="text-gray-300 hover:text-white transition-colors">
+            <h4 className="font-mono text-sm font-bold mb-6 text-cyan-400 uppercase tracking-widest flex items-center gap-2">
+              <span className="w-2 h-2 bg-cyan-500 rounded-full shadow-[0_0_5px_cyan]"></span>
+              Comm_Link
+            </h4>
+            <ul className="space-y-4">
+              <li className="flex items-start gap-3 text-sm group">
+                <div className="p-2 bg-cyan-500/10 rounded border border-cyan-500/20 group-hover:border-cyan-400/50 group-hover:bg-cyan-500/20 transition-all duration-300 text-cyan-400">
+                   <FaPhone size={14} />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-xs text-gray-500 font-mono text-[10px] uppercase">Phone</span>
+                  <a href={`tel:${contactInfo.phone}`} className="text-gray-300 hover:text-white transition-colors font-mono">
                     {contactInfo.phone}
                   </a>
                 </div>
               </li>
-              <li className="flex items-start gap-3 text-sm">
-                <AiOutlineMail className="mt-1 text-cyan-400 flex-shrink-0" size={16} />
-                <div>
+              <li className="flex items-start gap-3 text-sm group">
+                <div className="p-2 bg-cyan-500/10 rounded border border-cyan-500/20 group-hover:border-cyan-400/50 group-hover:bg-cyan-500/20 transition-all duration-300 text-cyan-400">
+                   <AiOutlineMail size={14} />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-xs text-gray-500 font-mono text-[10px] uppercase">Email</span>
                   <a href={`mailto:${contactInfo.email}`} className="text-gray-300 hover:text-white transition-colors break-all">
                     {contactInfo.email}
                   </a>
                 </div>
               </li>
-              <li className="flex items-start gap-3 text-sm">
-                <HiLocationMarker className="mt-1 text-cyan-400 flex-shrink-0" size={16} />
-                <span className="text-gray-300">{contactInfo.address}</span>
-              </li>
-              <li className="flex items-start gap-3 text-sm">
-                <BiTime className="mt-1 text-cyan-400 flex-shrink-0" size={16} />
-                <span className="text-gray-300">{contactInfo.workingHours}</span>
+              <li className="flex items-start gap-3 text-sm group">
+                <div className="p-2 bg-cyan-500/10 rounded border border-cyan-500/20 group-hover:border-cyan-400/50 group-hover:bg-cyan-500/20 transition-all duration-300 text-cyan-400">
+                   <HiLocationMarker size={14} />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-xs text-gray-500 font-mono text-[10px] uppercase">HQ Coordinates</span>
+                  <span className="text-gray-300">{contactInfo.address}</span>
+                </div>
               </li>
             </ul>
           </div>
 
-          {/* Social Media & Newsletter */}
+          {/* Network & Input */}
           <div>
-            <h4 className="text-lg font-bold mb-4 tracking-tight">Connect With Us</h4>
+            <h4 className="font-mono text-sm font-bold mb-6 text-cyan-400 uppercase tracking-widest flex items-center gap-2">
+              <span className="w-2 h-2 bg-cyan-500 rounded-full shadow-[0_0_5px_cyan]"></span>
+              Network
+            </h4>
             
-            {/* Social Links */}
-            <div className="flex gap-4 mb-6">
+            <div className="flex gap-3 mb-6">
               {socialLinks.map((link, index) => (
                 <a
                   key={index}
                   href={link.url}
                   aria-label={link.name}
-                  className={`bg-white/10 p-3 rounded-lg ${link.color} transition-all duration-300 hover:bg-white/20 hover:scale-110`}
+                  className={`bg-[#022f40] p-3 rounded border border-cyan-500/20 text-gray-400 hover:text-white hover:border-cyan-500/50 hover:-translate-y-1 transition-all duration-300 ${link.color}`}
                 >
                   {link.icon}
                 </a>
               ))}
             </div>
 
-            {/* Newsletter Signup */}
-            <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
-              <h5 className="font-semibold text-sm mb-2">Subscribe to Newsletter</h5>
-              <p className="text-xs text-gray-300 mb-3">Get updates and news</p>
-              <div className="flex gap-2">
-                <input
-                  type="email"
-                  placeholder="Your email"
-                  className="flex-1 px-3 py-2 rounded bg-white/20 border border-white/30 text-white placeholder-gray-400 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-400"
-                />
-                <button className="bg-cyan-500 hover:bg-cyan-600 px-4 py-2 rounded font-semibold text-sm transition-colors">
-                  Subscribe
-                </button>
+            <div className="relative">
+               <div className="absolute inset-0 bg-cyan-500/5 blur-md rounded-lg"></div>
+               <div className="bg-[#022f40]/80 backdrop-blur-sm border border-cyan-500/30 rounded-lg p-1 relative">
+                <div className="flex">
+                  <input
+                    type="email"
+                    placeholder="ENTER_EMAIL_ADDRESS"
+                    className="flex-1 bg-transparent border-none text-cyan-50 placeholder-cyan-500/30 text-xs px-3 py-2 font-mono focus:ring-0 focus:outline-none"
+                  />
+                  <button className="bg-cyan-500/20 hover:bg-cyan-500 hover:text-[#022f40] text-cyan-400 px-4 py-1.5 rounded border border-cyan-500/50 text-xs font-bold font-mono tracking-wider transition-all duration-300 uppercase">
+                    Connect
+                  </button>
+                </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Divider */}
-        <div className="border-t border-white/20 my-8"></div>
-
-        {/* Bottom Bar */}
-        <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-          
-          {/* Copyright */}
-          <div className="text-center md:text-left">
-            <p className="text-sm text-gray-300">
-              © {year} <span className="font-semibold">Kigali Engineers College</span>. All rights reserved.
-            </p>
+        {/* Footer Data Line */}
+        <div className="border-t border-cyan-500/20 pt-8 mt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-xs">
+          <div className="font-mono text-gray-500">
+            <span className="text-cyan-500/50">ID:</span> KEC-WEB-V1.0 // © {year}
           </div>
 
-          {/* Legal Links */}
-          <div className="flex flex-wrap justify-center gap-2 text-sm">
+          <div className="flex gap-6">
             {legalLinks.map((link, index) => (
-              <React.Fragment key={index}>
-                <a
-                  href={link.url}
-                  className="text-gray-300 hover:text-white transition-colors"
-                >
-                  {link.name}
-                </a>
-                {index < legalLinks.length - 1 && (
-                  <span className="text-gray-500">|</span>
-                )}
-              </React.Fragment>
+              <a
+                key={index}
+                href={link.url}
+                className="text-gray-500 hover:text-cyan-400 transition-colors uppercase tracking-wider font-mono text-[10px]"
+              >
+                {link.name}
+              </a>
             ))}
           </div>
 
-          {/* Made with love */}
-          <div className="text-sm text-gray-300">
-            Made with <span className="text-red-500">❤</span> in Rwanda
+          <div className="font-mono text-gray-500 flex items-center gap-2">
+             <span>INITIATED IN RWANDA</span>
+             <span className="w-2 h-2 bg-red-500/50 rounded-full animate-pulse shadow-[0_0_8px_red]"></span>
           </div>
         </div>
       </div>
-
-      {/* Bottom Accent Line */}
-      <div className="h-1 bg-gradient-to-r from-cyan-500 via-blue-500 to-cyan-500"></div>
     </footer>
   );
 };
