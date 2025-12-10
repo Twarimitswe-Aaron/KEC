@@ -1,4 +1,4 @@
-import React from "react";
+import { SiWhatsapp } from "react-icons/si";
 import {
   CoreTeam,
   FAQ,
@@ -13,55 +13,32 @@ import {
   OtherBusinessesDescription,
 } from "../Routes";
 import KECServiceForm from "../Components/Landing/OtherBusinesses/OtherBusinesses";
-import { AnimatedSection } from "../Components/Common/AnimatedSection";
-import "../styles/animations.css";
 
 const Landing = () => {
   return (
-    <div className="font-robot overflow-x-hidden w-[95%] max-w-[1440px] mx-auto border-x border-gray-200 bg-white relative shadow-sm">
+    <div className="font-robot px-10 overflow-x-hidden w-[95%] max-w-[1440px] mx-auto border-x border-gray-200  relative ">
       <Header />
 
-      <AnimatedSection animationType="fade-in">
-        <Hero />
-      </AnimatedSection>
-
-      <AnimatedSection animationType="slide-up" delay={100}>
-        <Main />
-      </AnimatedSection>
-
-      <AnimatedSection animationType="slide-up" delay={150}>
-        <FeaturedCourses />
-      </AnimatedSection>
-
-      <AnimatedSection animationType="slide-up" delay={100}>
-        <WhatStudentsSay />
-      </AnimatedSection>
-
-      <AnimatedSection animationType="slide-up" delay={100}>
-        <WhyUs />
-      </AnimatedSection>
-
-      <AnimatedSection animationType="slide-up" delay={100}>
-        <OtherBusinessesDescription />
-      </AnimatedSection>
-
-      <AnimatedSection animationType="slide-up" delay={100}>
-        <KECServiceForm />
-      </AnimatedSection>
-
-      <AnimatedSection animationType="slide-up" delay={100}>
-        <CoreTeam />
-      </AnimatedSection>
-
-      <AnimatedSection animationType="slide-up" delay={100}>
-        <FAQ />
-      </AnimatedSection>
-
-      <AnimatedSection animationType="slide-up" delay={100}>
-        <JoinRwanda />
-      </AnimatedSection>
-
+      <Hero />
+      <Main />
+      <FeaturedCourses />
+      <WhatStudentsSay />
+      <WhyUs />
+      <OtherBusinessesDescription />
+      <KECServiceForm />
+      <CoreTeam />
+      <FAQ />
+      <JoinRwanda />
       <Footer />
+
+      <a
+        href="https://wa.me/yourphonenumber"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="fixed bottom-8 right-8 w-14 h-14 rounded-full flex items-center justify-center bg-[#25D366] text-white shadow-lg transition-transform duration-300 hover:scale-110 hover:-translate-y-1 z-50"
+      >
+       <SiWhatsapp size={28} />
+      </a>
     </div>
   );
 };
