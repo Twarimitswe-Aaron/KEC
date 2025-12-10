@@ -2,9 +2,18 @@ import React, { useState } from "react";
 import { BsGlobe } from "react-icons/bs";
 import { HashLink } from "react-router-hash-link";
 import { Link } from "react-router-dom";
+import { AnimatedTextButton } from "../../../Components/Common/AnimatedTextButton";
 
 const HeaderPage: React.FC = () => {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [showLangMenu, setShowLangMenu] = useState(false);
+  const [currentLang, setCurrentLang] = useState("EN");
+
+  const languages = [
+    { code: "EN", label: "English" },
+    { code: "KINY", label: "Kinyarwanda" },
+    { code: "KISW", label: "Kiswahili" }
+  ];
 
   const links = [
     { to: "#hero", name: "Home" },
@@ -22,11 +31,10 @@ const HeaderPage: React.FC = () => {
       smooth
       to={link.to}
       onClick={() => isMobile && setMenuOpen(false)}
-      className={`relative px-4 py-2 rounded-full font-medium text-sm transition-all duration-300 ${
-        isMobile
-          ? "text-white text-lg font-semibold py-3 block hover:translate-x-1"
-          : "text-[#555] hover:text-[#111] hover:bg-white/50"
-      }`}
+      className={`relative px-4 py-2 rounded-full font-medium text-sm transition-all duration-300 ${isMobile
+        ? "text-white text-lg font-semibold py-3 block hover:translate-x-1"
+        : "text-[#555] hover:text-[#111] hover:bg-white/50"
+        }`}
     >
       <span className="relative z-10">{link.name}</span>
     </HashLink>
@@ -47,13 +55,33 @@ const HeaderPage: React.FC = () => {
         <nav className="flex gap-1 bg-[#EBEBEB] rounded-full px-2 py-1 items-center">
           {links.map((link, idx) => renderLink(link, idx))}
         </nav>
-        <div className="w-auto flex justify-end">
-          <div className="hidden lg:flex items-center gap-3 bg-[#151619] rounded-full p-1 pl-5 pr-1 shadow-[0_7px_20px_0.5px_rgba(0,0,0,0.5)] hover:scale-105 transition-transform duration-300 group cursor-pointer">
-            <span className="text-white font-medium text-sm">EN</span>
-            <div className="bg-[#FF3700] w-9 h-9 rounded-full flex items-center justify-center">
-              <BsGlobe className="text-[#151619] text-xl group-hover:rotate-12 transition-transform duration-300" />
+        <div className="w-auto flex justify-end relative">
+          <AnimatedTextButton
+            text={currentLang}
+            icon={<BsGlobe size={20} />}
+            variant="secondary"
+            className="shadow-[0_7px_20px_0.5px_rgba(0,0,0,0.5)] z-20 relative"
+            onClick={() => setShowLangMenu(!showLangMenu)}
+          />
+
+          {showLangMenu && (
+            <div className="absolute top-full right-0 mt-2 w-48 bg-[#151619] rounded-2xl shadow-xl overflow-hidden py-2 z-10 border border-white/10">
+              {languages.map((lang) => (
+                <button
+                  key={lang.code}
+                  onClick={() => {
+                    setCurrentLang(lang.code);
+                    setShowLangMenu(false);
+                  }}
+                  className={`w-full text-left px-4 py-3 text-sm font-medium transition-colors hover:bg-white/10 flex items-center justify-between ${currentLang === lang.code ? "text-[#FF3700]" : "text-white"
+                    }`}
+                >
+                  {lang.label}
+                  {currentLang === lang.code && <div className="w-2 h-2 rounded-full bg-[#FF3700]" />}
+                </button>
+              ))}
             </div>
-          </div>
+          )}
         </div>
       </div>
 
@@ -75,12 +103,13 @@ const HeaderPage: React.FC = () => {
         <Link className="inline-flex items-center" to="/">
           <img alt="Logo" className="w-32 h-8 object-contain" src="/images/Logo.svg" />
         </Link>
-        <div className="flex items-center gap-2 bg-[#151619] rounded-full p-1 pl-3 pr-1 shadow-md cursor-pointer">
-          <span className="text-white font-medium text-xs">EN</span>
-          <div className="bg-[#FF3700] w-7 h-7 rounded-full flex items-center justify-center">
-            <BsGlobe className="text-[#151619] text-sm" />
-          </div>
-        </div>
+        <AnimatedTextButton
+          text={currentLang}
+          icon={<BsGlobe size={18} />}
+          variant="secondary"
+          className="shadow-md"
+          onClick={() => setShowLangMenu(!showLangMenu)}
+        />
       </div>
 
       {/* Mobile Menu Overlay */}
@@ -110,6 +139,28 @@ const HeaderPage: React.FC = () => {
 
           <div className="flex-1 p-6 flex flex-col gap-4 overflow-y-auto">
             {links.map((link, idx) => renderLink(link, idx, true))}
+
+            <div className="mt-8 border-t border-white/10 pt-8">
+              <p className="text-white/50 text-sm font-medium mb-4 uppercase tracking-wider">Select Language</p>
+              <div className="grid grid-cols-1 gap-2">
+                {languages.map((lang) => (
+                  <button
+                    key={lang.code}
+                    onClick={() => {
+                      setCurrentLang(lang.code);
+                      setMenuOpen(false);
+                    }}
+                    className={`flex items-center justify-between p-4 rounded-xl transition-all ${currentLang === lang.code
+                        ? "bg-[#FF3700] text-white"
+                        : "bg-white/5 text-white hover:bg-white/10"
+                      }`}
+                  >
+                    <span className="font-bold">{lang.label}</span>
+                    {currentLang === lang.code && <BsGlobe />}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       )}

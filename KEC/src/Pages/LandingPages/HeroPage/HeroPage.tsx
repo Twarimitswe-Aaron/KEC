@@ -1,7 +1,8 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, Phone } from "lucide-react";
+import { UserPlus, LogIn } from "lucide-react";
 import { motion, Variants } from "framer-motion";
+import { AnimatedTextButton } from "../../../Components/Common/AnimatedTextButton";
 
 // Using existing images as placeholders for the design grid
 import heroImg from "/images/Hero.png";
@@ -15,38 +16,7 @@ import phoneImg from "/images/phone landing page.png";
 
 
 
-function AnimatedTextButton({ text }: { text: string }) {
-  return (
-    <motion.button
-      initial="initial"
-      whileHover="hovered"
-      className="relative overflow-hidden px-6 py-3 rounded-full font-bold text-lg shadow-xl bg-[#FF4D00] text-white"
-    >
-      <div className="relative overflow-hidden h-[1.25em]">
-        <motion.span
-          variants={{
-            initial: { y: 0 },
-            hovered: { y: "-100%" },
-          }}
-          transition={{ duration: 0.25, ease: "easeInOut" }}
-          className="block"
-        >
-          {text}
-        </motion.span>
-        <motion.span
-          variants={{
-            initial: { y: "100%" },
-            hovered: { y: 0 },
-          }}
-          transition={{ duration: 0.25, ease: "easeInOut" }}
-          className="absolute inset-0 block"
-        >
-          {text}
-        </motion.span>
-      </div>
-    </motion.button>
-  );
-}
+
 
 
 
@@ -122,13 +92,21 @@ const HeroPage = () => {
             Learn, get guidance, and receive local assistance for installations, repairs, and all mechanical needs.
           </p>
 
-          <div className="flex">
-            <Link to="/pricing">
-              <AnimatedTextButton text="Create Account" />
+          <div className="flex flex-col sm:flex-row gap-4 items-center">
+            <Link to="/register">
+              <AnimatedTextButton
+                text="Create Account"
+                icon={<UserPlus size={24} />}
+                variant="primary"
+              />
             </Link>
 
-            <Link to="/contact">
-              <AnimatedTextButton text="Login" />
+            <Link to="/login">
+              <AnimatedTextButton
+                text="Login"
+                icon={<LogIn size={24} />}
+                variant="secondary"
+              />
             </Link>
           </div>
         </div>
