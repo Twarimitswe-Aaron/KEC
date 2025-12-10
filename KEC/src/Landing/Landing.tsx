@@ -18,7 +18,7 @@ import "../styles/animations.css";
 
 const Landing = () => {
   return (
-    <div className="font-robot overflow-x-hidden">
+    <div className="font-robot overflow-x-hidden w-[95%] max-w-[1440px] mx-auto border-x border-gray-200 bg-white relative shadow-sm">
       <Header />
 
       <AnimatedSection animationType="fade-in">

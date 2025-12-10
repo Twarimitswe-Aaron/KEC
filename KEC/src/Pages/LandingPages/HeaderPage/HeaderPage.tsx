@@ -13,7 +13,7 @@ const HeaderPage: React.FC = () => {
   ];
 
   return (
-    <header className="fixed top-0 left-0 w-full z-50 p-4 sm:p-6">
+    <header className="fixed top-0 left-1/2 -translate-x-1/2 w-[95%] max-w-[1440px] z-50 p-4 sm:p-6 border-x border-gray-200">
       <div className="hidden lg:flex justify-between items-center gap-4 max-w-[1400px] mx-auto">
         <Link className="flex items-center gap-2" to="/">
           <div className="w-8 h-8 flex items-center justify-center text-[#111]">
