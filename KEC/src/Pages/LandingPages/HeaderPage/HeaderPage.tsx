@@ -3,11 +3,39 @@ import { BsGlobe } from "react-icons/bs";
 import { HashLink } from "react-router-hash-link";
 import { Link } from "react-router-dom";
 import { AnimatedTextButton } from "../../../Components/Common/AnimatedTextButton";
+import { AnimatedNavLink } from "../../../Components/Common/AnimatedNavLink";
 
 const HeaderPage: React.FC = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [showLangMenu, setShowLangMenu] = useState(false);
+
   const [currentLang, setCurrentLang] = useState("EN");
+  const [activeSection, setActiveSection] = useState("#hero");
+
+  React.useEffect(() => {
+    const options = {
+      root: null,
+      rootMargin: "-40% 0px -40% 0px",
+      threshold: 0,
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          setActiveSection(`#${entry.target.id}`);
+        }
+      });
+    }, options);
+
+    const sections = document.querySelectorAll(
+      "#hero, #main, #featuredCourses, #assistance, #whyUs, #faqs"
+    );
+    sections.forEach((section) => observer.observe(section));
+
+    return () => {
+      sections.forEach((section) => observer.unobserve(section));
+    };
+  }, []);
 
   const languages = [
     { code: "EN", label: "English" },
@@ -25,20 +53,31 @@ const HeaderPage: React.FC = () => {
   ];
 
   // Reusable link component
-  const renderLink = (link: { to: string; name: string }, idx: number, isMobile = false) => (
-    <HashLink
-      key={idx}
-      smooth
-      to={link.to}
-      onClick={() => isMobile && setMenuOpen(false)}
-      className={`relative px-4 py-2 rounded-full font-medium text-sm transition-all duration-300 ${isMobile
-        ? "text-white text-lg font-semibold py-3 block hover:translate-x-1"
-        : "text-[#555] hover:text-[#111] hover:bg-white/50"
-        }`}
-    >
-      <span className="relative z-10">{link.name}</span>
-    </HashLink>
-  );
+  const renderLink = (link: { to: string; name: string }, idx: number, isMobile = false) => {
+    if (isMobile) {
+      return (
+        <HashLink
+          key={idx}
+          smooth
+          to={link.to}
+          onClick={() => setMenuOpen(false)}
+          className="relative px-4 py-2 rounded-full font-medium text-sm transition-all duration-300 text-white text-lg font-semibold py-3 block hover:translate-x-1"
+        >
+          <span className="relative z-10">{link.name}</span>
+        </HashLink>
+      );
+    }
+
+    return (
+      <AnimatedNavLink
+        key={idx}
+        to={link.to}
+        text={link.name}
+        isActive={activeSection === link.to}
+        className="px-4 py-2 rounded-full font-medium text-sm text-[#555] hover:text-[#111] transition-colors duration-300"
+      />
+    );
+  };
 
   return (
     <header className="fixed top-0 left-1/2 -translate-x-1/2 w-[95%] max-w-[1440px] z-50 sm:pl-9 sm:pr-10 p-4 sm:py-4">
@@ -151,8 +190,8 @@ const HeaderPage: React.FC = () => {
                       setMenuOpen(false);
                     }}
                     className={`flex items-center justify-between p-4 rounded-xl transition-all ${currentLang === lang.code
-                        ? "bg-[#FF3700] text-white"
-                        : "bg-white/5 text-white hover:bg-white/10"
+                      ? "bg-[#FF3700] text-white"
+                      : "bg-white/5 text-white hover:bg-white/10"
                       }`}
                   >
                     <span className="font-bold">{lang.label}</span>

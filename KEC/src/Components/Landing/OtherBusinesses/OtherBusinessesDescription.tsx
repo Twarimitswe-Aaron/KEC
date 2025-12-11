@@ -44,7 +44,7 @@ export default function OtherBusinessesDescription() {
   ];
 
   return (
-    <div className="w-[95%] max-w-[1440px] mx-auto border-x border-gray-200">
+    <div id="assistance" className="w-[95%] max-w-[1440px] mx-auto border-x border-gray-200">
       <div className="min-h-screen bg-white">
         {/* Clean Hero */}
         <div className="bg-[#022F40] py-16 px-4">
@@ -85,8 +85,8 @@ export default function OtherBusinessesDescription() {
                   onMouseEnter={() => setHoveredCard(null)}
                   onMouseLeave={() => setHoveredCard(null)}
                   className={`bg-white rounded-lg border border-gray-200 overflow-hidden transition-all duration-300 ${hoveredCard === partner.id
-                      ? 'shadow-xl transform -translate-y-1'
-                      : 'shadow-md'
+                    ? 'shadow-xl transform -translate-y-1'
+                    : 'shadow-md'
                     }`}
                 >
                   {/* Image */}
