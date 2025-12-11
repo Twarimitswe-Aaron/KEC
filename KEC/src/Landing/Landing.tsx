@@ -13,31 +13,52 @@ import {
   OtherBusinessesDescription,
 } from "../Routes";
 import KECServiceForm from "../Components/Landing/OtherBusinesses/OtherBusinesses";
+import { ScrollReveal } from "../Components/Common/ScrollReveal";
 
 const Landing = () => {
   return (
     <div className="font-robot w-full relative">
       <Header />
       <div className="w-full border-t border-gray-200" />
-      <Hero />
+      <ScrollReveal>
+        <Hero />
+      </ScrollReveal>
       <div className="w-full border-t border-gray-200" />
-      <Main />
+      <ScrollReveal delay={0.1}>
+        <Main />
+      </ScrollReveal>
       <div className="w-full border-t border-gray-200" />
-      <FeaturedCourses />
+      <ScrollReveal delay={0.1}>
+        <FeaturedCourses />
+      </ScrollReveal>
       <div className="w-full border-t border-gray-200" />
-      <WhatStudentsSay />
+      <ScrollReveal delay={0.1}>
+        <WhatStudentsSay />
+      </ScrollReveal>
       <div className="w-full border-t border-gray-200" />
-      <WhyUs />
+      <ScrollReveal delay={0.1}>
+        <WhyUs />
+      </ScrollReveal>
       <div className="w-full border-t border-gray-200" />
-      <OtherBusinessesDescription />
+      <ScrollReveal delay={0.1}>
+        <OtherBusinessesDescription />
+      </ScrollReveal>
       <div className="w-full border-t border-gray-200" />
-      <KECServiceForm />
+      <ScrollReveal delay={0.1}>
+        <KECServiceForm />
+      </ScrollReveal>
       <div className="w-full border-t border-gray-200" />
-      <CoreTeam />
+      <ScrollReveal delay={0.1}>
+        <CoreTeam />
+      </ScrollReveal>
       <div className="w-full border-t border-gray-200" />
-      <FAQ />
+      <ScrollReveal delay={0.1}>
+        <FAQ />
+      </ScrollReveal>
       <div className="w-full border-t border-gray-200" />
-      <JoinRwanda />
+      <ScrollReveal delay={0.1}>
+        <JoinRwanda />
+      </ScrollReveal>
       <div className="w-full border-t border-gray-200" />
       <Footer />
 

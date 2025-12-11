@@ -1,210 +1,185 @@
-import React, { useEffect, useState } from "react";
-import styles from "../../../Styles/styles";
-import { FaArrowRight } from "react-icons/fa6";
-import Skeleton from '../../../Components/Dashboard/Skeleton';
+import React from "react";
+import { Monitor, Award, BookOpen, Video, Sparkles, Check } from "lucide-react";
+import { motion } from "framer-motion";
 
-type DataItem = {
+// Importing existing images from your project
+import heroImg from "/images/AzAdX1DYmhihXP38LmibbAVL8g8.jpg";
+import ipadImg from "/images/ETCssBH90lwo0gbiqpQ7LHR8E.jpg";
+import subHeroImg from "/images/hnVZOXiTRpBVsQ6SOl9xIaPVPRg.jpg";
+
+type ServiceData = {
+  icon: React.ReactNode;
   title: string;
-  content: string;
+  description: string;
+  tags: string[];
+  images: string[];
 };
 
-const ArrowIcon: React.FC = () => (
-  <div className="flex items-center justify-center w-[40px] h-[40px] bg-white rounded-full shadow-lg cursor-pointer ml-3">
-    <FaArrowRight className="text-[#022F40] w-6 h-6" />
-  </div>
-);
+const serviceData: ServiceData[] = [
+  {
+    icon: <Monitor size={24} />,
+    title: "Easy to use",
+    description: "Our platform is simple and intuitive, helping all users quickly access tools and resources.",
+    tags: ["User Friendly", "Quick Access", "Intuitive Design"],
+    images: [heroImg, ipadImg, subHeroImg]
+  },
+  {
+    icon: <Award size={24} />,
+    title: "Earn certificates",
+    description: "Receive a certificate automatically when finishing a course to prove your skills and accomplishments.",
+    tags: ["Certificates", "Achievements", "Recognition"],
+    images: [subHeroImg, heroImg, ipadImg]
+  },
+  {
+    icon: <BookOpen size={24} />,
+    title: "Enroll in courses",
+    description: "Browse top Mechanical Engineering courses and enroll easily after previewing the course content offered.",
+    tags: ["Course Catalog", "Easy Enrollment", "Preview Content"],
+    images: [ipadImg, subHeroImg, heroImg]
+  },
+  {
+    icon: <Video size={24} />,
+    title: "Learn online",
+    description: "Watch engaging videos, complete quizzes and assignments, and monitor your learning progress throughout courses.",
+    tags: ["Video Lessons", "Quizzes", "Progress Tracking"],
+    images: [heroImg, ipadImg, subHeroImg]
+  }
+];
 
-const PhoneArrow: React.FC<{
-  idx: number;
-  currentIndex: number;
-  onClick: (i: number) => void;
-}> = ({ idx, currentIndex, onClick }) => (
-  <div
-    onClick={() => onClick(idx)}
-    className={`flex items-center justify-center w-[20px] h-[20px] bg-white rounded-full shadow-lg cursor-pointer ml-0 ${
-      idx === currentIndex ? "text-[#022F40] font-bold" : "text-[#000]"
-    }`}
-  >
-    <FaArrowRight size={12} />
-  </div>
-);
+const ImageCarousel = ({ images }: { images: string[] }) => {
+  const [currentIndex, setCurrentIndex] = React.useState(0);
 
-const MainPage: React.FC = () => {
-  const [index1, setIndex] = useState(0);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
+  React.useEffect(() => {
     const interval = setInterval(() => {
-      setIndex((prevIndex) => (prevIndex === 3 ? 0 : prevIndex + 1));
-    }, 5000);
+      setCurrentIndex((prev) => (prev + 1) % images.length);
+    }, 3000);
     return () => clearInterval(interval);
-  }, []);
-
-  useEffect(() => {
-    // Simulate loading for demonstration
-    const timer = setTimeout(() => setLoading(false), 1200);
-    return () => clearTimeout(timer);
-  }, []);
-
-  const data: DataItem[] = [
-    {
-      title: "Easy to use",
-      content:
-        "Our platform is simple and intuitive, helping all users quickly access tools and resources.",
-    },
-    {
-      title: "Earn certificates",
-      content:
-        "Receive a certificate automatically when finishing a course to prove your skills and accomplishments.",
-    },
-    {
-      title: "Enroll in courses",
-      content:
-        "Browse top Mechanical Engineering courses and enroll easily after previewing the course content offered.",
-    },
-    {
-      title: "Learn online",
-      content:
-        "Watch engaging videos, complete quizzes and assignments, and monitor your learning progress throughout courses.",
-    },
-  ];
+  }, [images.length]);
 
   return (
-    <>
-      {/* Desktop view */}
-      <div className={`hidden sm:flex ${styles.parent_section}`} id="main">
-        <div className={`hidden sm:block ${styles.section}`}>
-          <div className="block w-full">
-            <div className="block my-10">
-              <h1 className="text-[35px] my-6 font-poppins font-bold">
-                How we work
-              </h1>
-              <p className="sm:text-[13px] md:text-[16px] text-sm lg:text-lg">
-                Welcome to our platform, offering comprehensive online courses
-                in Mechanical Engineering. Here's how our system works to
-                provide an exceptional learning experience.
+    <div className="relative w-full aspect-[4/3] rounded-2xl overflow-hidden shadow-md">
+      {images.map((img, idx) => (
+        <motion.div
+          key={idx}
+          className="absolute inset-0"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: idx === currentIndex ? 1 : 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          <img
+            src={img}
+            alt={`Slide ${idx + 1}`}
+            className="w-full h-full object-cover"
+          />
+        </motion.div>
+      ))}
+
+      {/* Pagination dots */}
+      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 bg-[rgb(240,240,240)] rounded-full px-2 py-1.5">
+        {images.map((_, idx) => (
+          <button
+            key={idx}
+            onClick={() => setCurrentIndex(idx)}
+            className="transition-opacity"
+          >
+            <div
+              className={`w-1.5 h-1.5 rounded-full bg-[rgb(21,22,25)] transition-opacity ${idx === currentIndex ? 'opacity-100' : 'opacity-50'
+                }`}
+            />
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+const ServiceCard = ({ service, index }: { service: ServiceData; index: number }) => {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 30, scale: 0.95 }}
+      whileInView={{ opacity: 1, y: 0, scale: 1 }}
+      viewport={{ once: true, margin: "-100px" }}
+      transition={{
+        duration: 0.6,
+        delay: index * 0.1,
+        ease: [0.25, 0.1, 0.25, 1],
+      }}
+      className="bg-[rgb(229,229,229)] rounded-3xl p-1"
+    >
+      <div className="bg-[rgb(240,240,240)] rounded-2xl p-6 shadow-[rgba(0,0,0,0.08)_0px_0.602187px_0.602187px_-0.916667px,rgba(0,0,0,0.08)_0px_2.28853px_2.28853px_-1.83333px,rgba(0,0,0,0.07)_0px_10px_10px_-2.75px]">
+        {/* Header */}
+        <div className="flex items-start justify-between mb-6">
+          <div className="flex-1">
+            {/* Icon */}
+            <div className="w-12 h-12 bg-[rgb(21,22,25)] rounded-lg flex items-center justify-center mb-4 text-[rgb(240,240,240)]">
+              {service.icon}
+            </div>
+
+            {/* Title & Description */}
+            <div>
+              <h3 className="text-2xl font-bold text-[rgb(21,22,25)] mb-3">
+                {service.title}
+              </h3>
+              <p className="text-base text-gray-700 leading-relaxed">
+                {service.description}
               </p>
             </div>
 
-            <div className="flex w-full">
-              <div className="w-[50%]">
-                {loading ? (
-                  <Skeleton width="w-full" height="h-[370px]" rounded="rounded" />
-                ) : (
-                  <img
-                    src="/images/subHero.png"
-                    className="object-cover rounded h-[370px]"
-                    alt="Mechanical engineering learning platform"
-                  />
-                )}
-              </div>
-
-              <div className="w-[50%]">
-                {loading ? (
-                  <>
-                    {[...Array(4)].map((_, idx) => (
-                      <div key={idx} className="flex gap-4 w-full pb-4">
-                        <Skeleton width="w-8" height="h-8" rounded="rounded-full" />
-                        <div className="flex-1">
-                          <Skeleton width="w-32" />
-                          <Skeleton width="w-48" />
-                        </div>
-                      </div>
-                    ))}
-                  </>
-                ) : (
-                  data.map((item, idx) => (
-                    <div
-                      key={`${item.title}-${idx}`}
-                      className="flex gap-4 w-full pb-4"
-                    >
-                      <div className="flex justify-center">
-                        <ArrowIcon />
-                      </div>
-                      <div className="text-justify">
-                        <h1 className="font-semibold text-2xl text-[#022F40] ">
-                          {item.title}
-                        </h1>
-                        <p className="text-[13px] text-gray-700 lg:text-[16px]">
-                          {item.content}
-                        </p>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
+            {/* Tags */}
+            <div className="flex flex-wrap gap-2 mt-4">
+              {service.tags.map((tag, idx) => (
+                <div
+                  key={idx}
+                  className="bg-[rgb(229,229,229)] rounded-xl px-3 py-1.5 flex items-center gap-2"
+                >
+                  <Check size={16} className="text-[rgb(79,79,79)]" />
+                  <span className="text-sm text-[rgb(79,79,79)]">{tag}</span>
+                </div>
+              ))}
             </div>
           </div>
         </div>
+
+        {/* Image Carousel */}
+        <ImageCarousel images={service.images} />
       </div>
+    </motion.div>
+  );
+};
 
-      {/* Mobile view */}
-      <div className={`block sm:hidden ${styles.parent_section}`} id="main">
-        <div className={`block sm:hidden ${styles.section}`}>
-          <div className="block w-full">
-            <div className="flex my-3 justify-center">
-              <h1 className="text-[20px] font-bold">How we work</h1>
-            </div>
+const MainPage: React.FC = () => {
+  return (
+    <section
+      id="main"
+      className="w-[95%] max-w-[1440px] mx-auto px-6 py-16 md:py-24"
+    >
+      {/* Header Section */}
+      <div className="mb-16">
+        {/* Badge */}
+        <div className="inline-flex items-center gap-2 px-4 py-2 bg-[rgb(21,22,25)] text-white rounded-full mb-6">
+          <span className="text-[rgb(255,71,38)]">//</span>
+          <span className="text-sm font-medium">Services</span>
+          <span className="text-[rgb(255,71,38)]">//</span>
+        </div>
 
-            <div className="text-justify text-[11px] font-poppins">
-              <p>
-                Welcome to our platform, offering comprehensive online courses
-                in Mechanical Engineering. Here's how our system works to
-                provide an exceptional learning experience.
-              </p>
-
-              <div className="flex flex-col md:flex-row mt-5 w-full">
-                <div className="md:w-[50%] rounded-md w-full">
-                  {loading ? (
-                    <Skeleton width="w-full" height="h-[200px]" rounded="rounded" />
-                  ) : (
-                    <img
-                      src="/images/subHero.png"
-                      alt="Mechanical engineering learning platform"
-                      className="h-[200px] w-full rounded-t-md md:rounded-full  object-cover"
-                    />
-                  )}
-                </div>
-                <div className="md:w-[70%] w-full bg-white shadow-[0_4px_4px_rgba(0,0,0,0.5)] rounded-[3px] p-4 h-auto">
-                  {loading ? (
-                    <>
-                      {[...Array(4)].map((_, idx) => (
-                        <div key={idx} className="flex gap-4 w-full pb-4">
-                          <Skeleton width="w-8" height="h-8" rounded="rounded-full" />
-                          <div className="flex-1">
-                            <Skeleton width="w-32" />
-                            <Skeleton width="w-48" />
-                          </div>
-                        </div>
-                      ))}
-                    </>
-                  ) : (
-                    data.map((item, idx) => (
-                      <div
-                        key={`${item.title}-${idx}`}
-                        className="flex gap-4 w-full pb-4"
-                      >
-                        <div className="flex justify-center">
-                          <ArrowIcon />
-                        </div>
-                        <div className="text-justify">
-                          <h1 className="font-semibold text-2xl text-[#022F40] ">
-                            {item.title}
-                          </h1>
-                          <p className="text-[13px] text-gray-700 lg:text-[16px]">
-                            {item.content}
-                          </p>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
+        {/* Heading */}
+        <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
+          <h2 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-[rgb(21,22,25)] max-w-2xl leading-tight">
+            How We Help <span className="text-[rgb(79,79,79)]">Your Learning</span>
+          </h2>
+          <p className="text-lg text-gray-600 max-w-md">
+            We combine strategy, speed, and skill to deliver exceptional education — every time.
+          </p>
         </div>
       </div>
-    </>
+
+      {/* Services Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {serviceData.map((service, index) => (
+          <ServiceCard key={index} service={service} index={index} />
+        ))}
+      </div>
+    </section>
   );
 };
 

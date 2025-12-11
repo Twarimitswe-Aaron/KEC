@@ -15,7 +15,7 @@ const HeaderPage: React.FC = () => {
   React.useEffect(() => {
     const options = {
       root: null,
-      rootMargin: "-30% 0px -30% 0px",
+      rootMargin: "-40% 0px -40% 0px",
       threshold: 0,
     };
 
