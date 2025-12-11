@@ -5,10 +5,10 @@ import { motion, Variants } from "framer-motion";
 import { AnimatedTextButton } from "../../../Components/Common/AnimatedTextButton";
 
 // Using existing images as placeholders for the design grid
-import heroImg from "/images/Hero.png";
-import ipadImg from "/images/ipad landing page.png";
-import subHeroImg from "/images/subHero.png";
-import phoneImg from "/images/phone landing page.png";
+import heroImg from "/images/AzAdX1DYmhihXP38LmibbAVL8g8.jpg";
+import ipadImg from "/images/ETCssBH90lwo0gbiqpQ7LHR8E.jpg";
+import subHeroImg from "/images/hnVZOXiTRpBVsQ6SOl9xIaPVPRg.jpg";
+import phoneImg from "/images/jO9MJRjVZu3o8KV1TAcdBp3k.webp";
 
 
 
@@ -25,7 +25,7 @@ import phoneImg from "/images/phone landing page.png";
 // Helper Components for Animation
 const Column = ({ children, direction, duration = 20 }: { children: React.ReactNode, direction: "up" | "down", duration?: number }) => {
   return (
-    <div className="relative flex flex-col w-full min-w-[250px] md:min-w-[280px]">
+    <div className="relative flex flex-col w-full min-w-[180px] md:min-w-[220px]">
       <motion.div
         animate={{ y: direction === "up" ? ["0%", "-50%"] : ["-50%", "0%"] }}
         transition={{
@@ -113,7 +113,7 @@ const HeroPage = () => {
 
         {/* Right Column: Image Grid (Animated) */}
         <div
-          className="relative w-full h-full hidden md:flex items-start justify-center gap-3 overflow-hidden"
+          className="relative w-full h-full hidden md:flex items-start justify-center gap-3 pl-6 overflow-hidden"
         >
           <div className="absolute left-0 top-0 bottom-0 w-[1px]"></div>
           {/* Left Scroll Column (Moves UP) */}
