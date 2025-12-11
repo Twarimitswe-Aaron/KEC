@@ -1,4 +1,6 @@
 import { Routes, Route } from "react-router-dom";
+import { useEffect } from "react";
+import Lenis from "@studio-freight/lenis";
 
 import DashboardLayout from "./layouts/DashBoard/DashboardLayout.tsx";
 import AdminCourseManagementLayout from "./layouts/DashBoard/AdminCourseManagementLayout";
@@ -40,6 +42,26 @@ import StudentCourses from "./routes/StudentCourses";
 import WorkshopManagement from "./routes/WorkshopManagement";
 
 function App() {
+  useEffect(() => {
+    const lenis = new Lenis({
+      duration: 2.0,
+      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+      smoothTouch: false,
+      wheelMultiplier: 0.7,
+    });
+
+    function raf(time: number) {
+      lenis.raf(time);
+      requestAnimationFrame(raf);
+    }
+
+    requestAnimationFrame(raf);
+
+    return () => {
+      lenis.destroy();
+    };
+  }, []);
+
   return (
     <>
       <ToastContainer

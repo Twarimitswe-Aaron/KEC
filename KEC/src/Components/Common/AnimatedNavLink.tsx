@@ -33,7 +33,18 @@ export const AnimatedNavLink = ({
             {isActive && (
                 <motion.div
                     layoutId="active-nav-pill"
-                    className="absolute inset-0 bg-white/50 rounded-full"
+                    className="absolute inset-0 rounded-full"
+                    style={{
+                        backgroundColor: "rgb(229, 229, 229)",
+                        boxShadow: `
+                            rgba(0, 0, 0, 0.08) 0px 0.602187px 0.421531px -0.833333px,
+                            rgba(0, 0, 0, 0.08) 0px 2.28853px 1.60197px -1.66667px,
+                            rgba(0, 0, 0, 0.08) 0px 10px 7px -2.5px,
+                            rgba(0, 0, 0, 0.17) 0px 0.301094px 0.903281px -1.16667px inset,
+                            rgba(0, 0, 0, 0.15) 0px 1.14427px 3.4328px -2.33333px inset,
+                            rgba(0, 0, 0, 0.08) 0px 5px 15px -3.5px inset
+                        `
+                    }}
                     transition={{ type: "spring", stiffness: 300, damping: 30 }}
                 />
             )}
