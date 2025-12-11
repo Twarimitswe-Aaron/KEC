@@ -4,7 +4,7 @@ import styles from "../../../Styles/styles.ts";
 
 const Footer = () => {
   return (
-    <div>
+    <div className="w-[95%] max-w-[1440px] mx-auto border-x border-gray-200">
       <FooterPage />
     </div>
   );

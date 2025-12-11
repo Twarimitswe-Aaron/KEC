@@ -68,7 +68,7 @@ const Card = ({ src, alt, badge, icon, className = "" }: { src: string, alt: str
 };
 const HeroPage = () => {
   return (
-    <section className="w-full text-[#111] font-sans overflow-hidden relative h-screen min-h-[700px] flex items-center">
+    <section className="w-[94%] mx-auto text-[#111] font-sans overflow-hidden relative h-screen min-h-[700px] flex items-center">
       <div className="max-w-[1400px]  grid lg:grid-cols-2   w-full h-full">
 
         {/* Left Column: Content */}

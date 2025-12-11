@@ -16,19 +16,29 @@ import KECServiceForm from "../Components/Landing/OtherBusinesses/OtherBusinesse
 
 const Landing = () => {
   return (
-    <div className="font-robot px-10 overflow-x-hidden w-[95%] max-w-[1440px] mx-auto border-x border-gray-200  relative ">
+    <div className="font-robot w-full relative">
       <Header />
-
+      <div className="w-full border-t border-gray-200" />
       <Hero />
+      <div className="w-full border-t border-gray-200" />
       <Main />
+      <div className="w-full border-t border-gray-200" />
       <FeaturedCourses />
+      <div className="w-full border-t border-gray-200" />
       <WhatStudentsSay />
+      <div className="w-full border-t border-gray-200" />
       <WhyUs />
+      <div className="w-full border-t border-gray-200" />
       <OtherBusinessesDescription />
+      <div className="w-full border-t border-gray-200" />
       <KECServiceForm />
+      <div className="w-full border-t border-gray-200" />
       <CoreTeam />
+      <div className="w-full border-t border-gray-200" />
       <FAQ />
+      <div className="w-full border-t border-gray-200" />
       <JoinRwanda />
+      <div className="w-full border-t border-gray-200" />
       <Footer />
 
       <a
@@ -37,7 +47,7 @@ const Landing = () => {
         rel="noopener noreferrer"
         className="fixed bottom-8 right-8 w-14 h-14 rounded-full flex items-center justify-center bg-[#25D366] text-white shadow-lg transition-transform duration-300 hover:scale-110 hover:-translate-y-1 z-50"
       >
-       <SiWhatsapp size={28} />
+        <SiWhatsapp size={28} />
       </a>
     </div>
   );

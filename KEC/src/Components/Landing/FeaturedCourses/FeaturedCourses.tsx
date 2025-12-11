@@ -3,8 +3,8 @@ import FeaturedCoursesPage from '../../../Pages/LandingPages/FeaturedCoursesPage
 
 const FeaturedCourses = () => {
   return (
-    <div>
-      <FeaturedCoursesPage/>
+    <div className="w-[95%] max-w-[1440px] mx-auto border-x border-gray-200">
+      <FeaturedCoursesPage />
     </div>
   )
 }

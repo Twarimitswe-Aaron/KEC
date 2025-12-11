@@ -5,10 +5,8 @@ import styles from "../../../Styles/styles.js";
 const WhyUs = () => {
   return (
     <div>
-      <div className={styles.parent_section}>
-        <div className={styles.section}>
-          <WhyUsPage />
-        </div>
+      <div className="w-[95%] max-w-[1440px] mx-auto border-x border-gray-200">
+        <WhyUsPage />
       </div>
     </div>
   );

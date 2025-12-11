@@ -4,10 +4,8 @@ import styles from '../../../Styles/styles'
 
 const WhatStudentsSay = () => {
   return (
-    <div className={styles.parent_section}>
-      <div className={`${styles.section}`}>
-      <WhatStudentsSayPage/>
-      </div>
+    <div className="w-[95%] max-w-[1440px] mx-auto border-x border-gray-200">
+      <WhatStudentsSayPage />
     </div>
   )
 }

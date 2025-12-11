@@ -1,13 +1,9 @@
-import React from "react";
 import JoinRwandaPage from "../../../Pages/LandingPages/JoinRwandaPage/JoinRwandaPage.js";
-import styles from "../../../Styles/styles.js";
 
 const JoinRwanda = () => {
   return (
-    <div className={styles.parent_section}>
-      <div className={styles.section}>
-        <JoinRwandaPage />
-      </div>
+    <div className="w-[95%] max-w-[1440px] mx-auto border-x border-gray-200">
+      <JoinRwandaPage />
     </div>
   );
 };
