@@ -27,7 +27,7 @@ export function AnimatedTextButton({
             initial="initial"
             whileHover="hovered"
             onClick={onClick}
-            className={`relative pl-3 pr-1 py-1 rounded-full font-bold text-sm shadow-[0px_7px_20px_0.5px_rgba(0,0,0,0.5)] ${bgClass} ${textClass} flex items-center gap-2 ${className}`}
+            className={`relative cursor-pointer pl-3 pr-2 ml-5 py-2 rounded-full font-bold text-sm shadow-[0px_7px_20px_0.5px_rgba(0,0,0,0.5)] ${bgClass} ${textClass} flex items-center gap-2 ${className}`}
         >
             <div className="relative overflow-hidden h-[1.25em] -mt-[2px] leading-none">
                 <motion.span
@@ -52,8 +52,8 @@ export function AnimatedTextButton({
                 </motion.span>
             </div>
             {icon && (
-                <div className={`p-1.5 rounded-full ${iconBgClass} ${iconColorClass} flex items-center justify-center`}>
-                    <div className="relative overflow-hidden grid place-items-center">
+                <div className={`p-1 rounded-full ${iconBgClass} ${iconColorClass} flex items-center justify-center`}>
+                    <div className="relativer overflow-hidden grid place-items-center">
                         <motion.span
                             variants={{
                                 initial: { x: 0 },
