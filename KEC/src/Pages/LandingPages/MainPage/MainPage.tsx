@@ -57,37 +57,42 @@ const ImageCarousel = ({ images }: { images: string[] }) => {
   }, [images.length]);
 
   return (
-    <div className="relative  aspect-[4/3] rounded-3xl overflow-hidden shadow-md">
-      {images.map((img, idx) => (
-        <motion.div
-          key={idx}
-          className="absolute inset-0"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: idx === currentIndex ? 1 : 0 }}
-          transition={{ duration: 0.5 }}
-        >
-          <img
-            src={img}
-            alt={`Slide ${idx + 1}`}
-            className="w-full h-full object-cover"
-          />
-        </motion.div>
-      ))}
-
-      {/* Pagination dots */}
-      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 bg-[rgb(240,240,240)] rounded-full px-2 py-1.5">
-        {images.map((_, idx) => (
-          <button
+    <div className="relative aspect-[4/3] rounded-3xl overflow-hidden shadow-md">
+      <div className="relative w-full h-full rounded-2xl overflow-hidden">
+        {images.map((img, idx) => (
+          <motion.div
             key={idx}
-            onClick={() => setCurrentIndex(idx)}
-            className="transition-opacity"
+            className="absolute inset-0"
+            initial={{ opacity: 0, x: 100 }}
+            animate={{
+              opacity: idx === currentIndex ? 1 : 0,
+              x: idx === currentIndex ? 0 : (idx < currentIndex ? -100 : 100)
+            }}
+            transition={{ duration: 1.5, ease: [0.25, 0.1, 0.25, 1] }}
           >
-            <div
-              className={`w-1.5 h-1.5 rounded-full bg-[rgb(21,22,25)] transition-opacity ${idx === currentIndex ? 'opacity-100' : 'opacity-50'
-                }`}
+            <img
+              src={img}
+              alt={`Slide ${idx + 1}`}
+              className="w-full h-full object-cover"
             />
-          </button>
+          </motion.div>
         ))}
+
+        {/* Pagination dots */}
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 bg-[rgb(240,240,240)] rounded-full px-2 py-1.5">
+          {images.map((_, idx) => (
+            <button
+              key={idx}
+              onClick={() => setCurrentIndex(idx)}
+              className="transition-opacity"
+            >
+              <div
+                className={`w-1.5 h-1.5 rounded-full bg-[rgb(21,22,25)] transition-opacity ${idx === currentIndex ? 'opacity-100' : 'opacity-50'
+                  }`}
+              />
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -148,9 +153,25 @@ const ServiceCard = React.memo(({ service, index }: { service: ServiceData; inde
           </div>
 
           {/* Right: Image Carousel */}
-          <div className="w-full md:w-1/2">
+          <motion.div
+            className="w-full md:w-1/2"
+            initial={{
+              opacity: 0,
+              x: isReversed ? -100 : 100 // Slide from left if reversed, right if normal
+            }}
+            whileInView={{
+              opacity: 1,
+              x: 0
+            }}
+            viewport={{ once: false, margin: "-100px" }}
+            transition={{
+              duration: 0.8,
+              delay: 4,
+              ease: [0.25, 0.1, 0.25, 1],
+            }}
+          >
             <ImageCarousel images={service.images} />
-          </div>
+          </motion.div>
         </div>
 
         {/* Horizontal Layout: Text Left, Image Right */}
