@@ -62,6 +62,15 @@ const Landing = () => {
       <div className="w-full border-t border-gray-200" />
       <Footer />
 
+      {/* Global Bottom Blur Overlay */}
+      <div className="fixed bottom-0 left-0 right-0 h-[150px] z-[100] pointer-events-none">
+        <div style={{ position: "absolute", inset: "0px", overflow: "hidden" }}>
+          <div style={{ opacity: 1, position: "absolute", inset: "0px", zIndex: 6, maskImage: "linear-gradient(rgba(0, 0, 0, 0) 62.5%, rgb(0, 0, 0) 75%, rgb(0, 0, 0) 87.5%, rgba(0, 0, 0, 0) 100%)", WebkitMaskImage: "linear-gradient(rgba(0, 0, 0, 0) 62.5%, rgb(0, 0, 0) 75%, rgb(0, 0, 0) 87.5%, rgba(0, 0, 0, 0) 100%)", backdropFilter: "blur(2px)" }} /> 
+          <div style={{ opacity: 1, position: "absolute", inset: "0px", zIndex: 7, maskImage: "linear-gradient(rgba(0, 0, 0, 0) 75%, rgb(0, 0, 0) 87.5%, rgb(0, 0, 0) 100%)", WebkitMaskImage: "linear-gradient(rgba(0, 0, 0, 0) 75%, rgb(0, 0, 0) 87.5%, rgb(0, 0, 0) 100%)", backdropFilter: "blur(3px)" }} />
+          <div style={{ opacity: 1, position: "absolute", inset: "0px", zIndex: 8, maskImage: "linear-gradient(rgba(0, 0, 0, 0) 87.5%, rgb(0, 0, 0) 100%)", WebkitMaskImage: "linear-gradient(rgba(0, 0, 0, 0) 87.5%, rgb(0, 0, 0) 100%)", backdropFilter: "blur(4px)" }} />
+        </div>
+      </div>
+
       <a
         href="https://wa.me/yourphonenumber"
         target="_blank"

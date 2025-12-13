@@ -59,7 +59,7 @@ const WhyUsPage = () => {
         </div>
 
         {/* Content Grid: Left Big Card (30%) + Right 2x2 Grid (70%) */}
-        <div className="grid grid-cols-1 lg:grid-cols-[30%_1fr] gap-1">
+        <div className="grid grid-cols-1 lg:grid-cols-[30%_1fr] gap-[7px]">
 
           {/* Left Large Card - "Robert Park" Style */}
           <motion.div
@@ -78,18 +78,6 @@ const WhyUsPage = () => {
 
             {/* Overlay Info */}
             <div className="absolute inset-0 p-2 flex flex-col justify-end">
-              {/* Gradient Overlay */}
-              {/* Progressive Blur Overlay */}
-              <div style={{ position: "absolute", inset: "0px", overflow: "hidden" }}>
-                <div style={{ opacity: 1, position: "absolute", inset: "0px", zIndex: 1, maskImage: "linear-gradient(rgba(0, 0, 0, 0) 0%, rgb(0, 0, 0) 12.5%, rgb(0, 0, 0) 25%, rgba(0, 0, 0, 0) 37.5%)", backdropFilter: "blur(0.078125px)" }} />
-                <div style={{ opacity: 1, position: "absolute", inset: "0px", zIndex: 2, maskImage: "linear-gradient(rgba(0, 0, 0, 0) 12.5%, rgb(0, 0, 0) 25%, rgb(0, 0, 0) 37.5%, rgba(0, 0, 0, 0) 50%)", backdropFilter: "blur(0.15625px)" }} />
-                <div style={{ opacity: 1, position: "absolute", inset: "0px", zIndex: 3, maskImage: "linear-gradient(rgba(0, 0, 0, 0) 25%, rgb(0, 0, 0) 37.5%, rgb(0, 0, 0) 50%, rgba(0, 0, 0, 0) 62.5%)", backdropFilter: "blur(0.3125px)" }} />
-                <div style={{ opacity: 1, position: "absolute", inset: "0px", zIndex: 4, maskImage: "linear-gradient(rgba(0, 0, 0, 0) 37.5%, rgb(0, 0, 0) 50%, rgb(0, 0, 0) 62.5%, rgba(0, 0, 0, 0) 75%)", backdropFilter: "blur(0.625px)" }} />
-                <div style={{ opacity: 1, position: "absolute", inset: "0px", zIndex: 5, maskImage: "linear-gradient(rgba(0, 0, 0, 0) 50%, rgb(0, 0, 0) 62.5%, rgb(0, 0, 0) 75%, rgba(0, 0, 0, 0) 87.5%)", backdropFilter: "blur(1.25px)" }} />
-                <div style={{ opacity: 1, position: "absolute", inset: "0px", zIndex: 6, maskImage: "linear-gradient(rgba(0, 0, 0, 0) 62.5%, rgb(0, 0, 0) 75%, rgb(0, 0, 0) 87.5%, rgba(0, 0, 0, 0) 100%)", backdropFilter: "blur(2.5px)" }} />
-                <div style={{ opacity: 1, position: "absolute", inset: "0px", zIndex: 7, maskImage: "linear-gradient(rgba(0, 0, 0, 0) 75%, rgb(0, 0, 0) 87.5%, rgb(0, 0, 0) 100%)", backdropFilter: "blur(5px)" }} />
-                <div style={{ opacity: 1, position: "absolute", inset: "0px", zIndex: 8, maskImage: "linear-gradient(rgba(0, 0, 0, 0) 87.5%, rgb(0, 0, 0) 100%)", backdropFilter: "blur(10px)" }} />
-              </div>
 
               {/* Content */}
               <div className="relative backdrop-blur-[10px] bg-[#00000014] p-4 rounded-[16px] z-10 flex items-end justify-between">
