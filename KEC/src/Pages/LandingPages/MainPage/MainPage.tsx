@@ -62,7 +62,7 @@ const ImageCarousel = React.memo(({ images }: { images: string[] }) => {
   React.useEffect(() => {
     const interval = setInterval(() => {
       setCurrentIndex((prev) => (prev + 1) % displayImages.length);
-    }, 5000); // 5s interval as requested
+    }, 7000); // 7s interval as requested
     return () => clearInterval(interval);
   }, [displayImages.length]);
 
@@ -218,7 +218,7 @@ const ServiceCard = React.memo(({ service, index }: { service: ServiceData; inde
               opacity: 1,
               x: 0
             }}
-            viewport={{ once: false, margin: "-100px" }}
+            viewport={{ once: true, margin: "-100px" }}
             transition={{
               duration: 0.8,
               delay: 0.2,
@@ -239,7 +239,7 @@ const MainPage: React.FC = () => {
   return (
     <section
       id="main"
-      className="w-[95%] max-w-[1440px] mx-auto px-6 py-12 md:py-16"
+      className="w-[94%] mx-auto max-w-[1440px] py-12 md:py-16"
     >
       {/* Header Section */}
       <div className="mb-10">
