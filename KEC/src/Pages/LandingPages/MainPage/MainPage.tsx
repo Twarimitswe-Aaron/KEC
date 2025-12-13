@@ -46,57 +46,112 @@ const serviceData: ServiceData[] = [
   }
 ];
 
-const ImageCarousel = ({ images }: { images: string[] }) => {
+const ImageCarousel = React.memo(({ images }: { images: string[] }) => {
+  // Ensure we have enough slides for the "Previous" vs "Next" logic to work simultaneously without conflict
+  // We need at least 3, better 4, to have: [Prev, Active, Next, Waiting]
+  const displayImages = React.useMemo(() => {
+    let result = [...images];
+    while (result.length < 4) {
+      result = [...result, ...images];
+    }
+    return result;
+  }, [images]);
+
   const [currentIndex, setCurrentIndex] = React.useState(0);
 
   React.useEffect(() => {
     const interval = setInterval(() => {
-      setCurrentIndex((prev) => (prev + 1) % images.length);
-    }, 3000);
+      setCurrentIndex((prev) => (prev + 1) % displayImages.length);
+    }, 5000); // 5s interval as requested
     return () => clearInterval(interval);
-  }, [images.length]);
+  }, [displayImages.length]);
 
   return (
     <div className="relative aspect-[4/3] rounded-3xl overflow-hidden shadow-md">
       <div className="relative w-full h-full rounded-2xl overflow-hidden">
-        {images.map((img, idx) => (
-          <motion.div
-            key={idx}
-            className="absolute inset-0"
-            initial={{ opacity: 0, x: 100 }}
-            animate={{
-              opacity: idx === currentIndex ? 1 : 0,
-              x: idx === currentIndex ? 0 : (idx < currentIndex ? -100 : 100)
-            }}
-            transition={{ duration: 1.5, ease: [0.25, 0.1, 0.25, 1] }}
-          >
-            <img
-              src={img}
-              alt={`Slide ${idx + 1}`}
-              className="w-full h-full object-cover"
-            />
-          </motion.div>
-        ))}
+        {displayImages.map((img, idx) => {
+
+          const length = displayImages.length;
+          // Standard circular difference: (idx - currentIndex + length) % length
+          // 0 = Active, 1 = Next, length-1 = Previous
+          const relativeIdx = (idx - currentIndex + length) % length;
+
+          // Determine target position based on relative index
+          let position = "calc(100% + 1rem)"; // Default: waiting on right with gap
+          let zIndex = 0;
+          let transitionDuration = 0; // Default: instant snap
+
+          if (relativeIdx === 0) {
+            // Active slide: At center
+            position = "0%";
+            zIndex = 10;
+            transitionDuration = 1; // Fast entry
+          } else if (relativeIdx === length - 1) {
+            // Previous slide (just left): Move to left with gap
+            position = "calc(-100% - 1rem)";
+            zIndex = 5;
+            transitionDuration = 1; // Fast exit
+          }
+          // All others stay at calc(100% + 1rem) (right) waiting to enter
+
+          return (
+            <motion.div
+              key={idx}
+              className="absolute inset-0 rounded-2xl overflow-hidden"
+              initial={false}
+              animate={{
+                x: position,
+                zIndex: zIndex
+              }}
+              transition={{
+                duration: transitionDuration,
+                ease: "linear"
+              }}
+            >
+              <img
+                src={img}
+                alt={`Slide ${idx + 1}`}
+                className="w-full h-full object-cover rounded-2xl"
+              />
+            </motion.div>
+          );
+        })}
 
         {/* Pagination dots */}
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 bg-[rgb(240,240,240)] rounded-full px-2 py-1.5">
-          {images.map((_, idx) => (
-            <button
-              key={idx}
-              onClick={() => setCurrentIndex(idx)}
-              className="transition-opacity"
-            >
-              <div
-                className={`w-1.5 h-1.5 rounded-full bg-[rgb(21,22,25)] transition-opacity ${idx === currentIndex ? 'opacity-100' : 'opacity-50'
-                  }`}
-              />
-            </button>
-          ))}
+        <div
+          className="absolute bottom-[14px] left-1/2 -translate-x-1/2 flex bg-[rgb(240,240,240)] rounded-[50px] select-none pointer-events-auto z-20"
+        >
+          {images.map((_, originalIdx) => {
+            const isFirst = originalIdx === 0;
+            const isLast = originalIdx === images.length - 1;
+
+            // Replicate specific padding logic from user snippet
+            // First: 7px 3.5px 7px 7px (pl-7 pr-3.5)
+            // Last: 7px 7px 7px 3.5px (pl-3.5 pr-7)
+            // Middle: 7px 3.5px (px-3.5)
+            let paddingClass = "px-[3.5px]";
+            if (isFirst) paddingClass = "pl-[7px] pr-[3.5px]";
+            if (isLast) paddingClass = "pl-[3.5px] pr-[7px]";
+
+            return (
+              <button
+                key={originalIdx}
+                onClick={() => setCurrentIndex(originalIdx)}
+                className={`border-none bg-transparent cursor-pointer m-0 py-[7px] flex items-center justify-center ${paddingClass}`}
+                aria-label={`Scroll to page ${originalIdx + 1}`}
+              >
+                <div
+                  className={`w-[7px] h-[7px] rounded-full bg-[rgb(21,22,25)] transition-opacity duration-300 ${currentIndex % images.length === originalIdx ? 'opacity-100' : 'opacity-50'
+                    }`}
+                />
+              </button>
+            );
+          })}
         </div>
       </div>
     </div>
   );
-};
+});
 
 const ServiceCard = React.memo(({ service, index }: { service: ServiceData; index: number }) => {
   const isReversed = index % 2 === 1; // Reverse layout for even indices (0-based: 1, 3, 5...)
@@ -166,7 +221,7 @@ const ServiceCard = React.memo(({ service, index }: { service: ServiceData; inde
             viewport={{ once: false, margin: "-100px" }}
             transition={{
               duration: 0.8,
-              delay: 4,
+              delay: 0.2,
               ease: [0.25, 0.1, 0.25, 1],
             }}
           >
