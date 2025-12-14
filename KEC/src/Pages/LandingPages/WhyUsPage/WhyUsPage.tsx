@@ -1,5 +1,3 @@
-import React from "react";
-
 import { FaLinkedinIn, FaInstagram, FaTwitter } from "react-icons/fa";
 import { motion } from "framer-motion";
 
@@ -38,8 +36,8 @@ const WhyUsPage = () => {
 
 
   return (
-    <section id="whyUs" className="w-full py-20 px-4 md:px-8">
-      <div className="max-w-[1400px] mx-auto">
+    <section id="whyUs" className="w-full ">
+      <div className="w-[94%] mx-auto max-w-[1440px] py-12">
 
         {/* Header Section - Flex Layout */}
         <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-8 mb-12 px-2">
@@ -72,7 +70,7 @@ const WhyUsPage = () => {
             {/* Background Image */}
             <img
               src="/images/hnVZOXiTRpBVsQ6SOl9xIaPVPRg.jpg"
-              alt="Robert Park"
+              alt="Shaphat"
               className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
             />
 
@@ -84,8 +82,8 @@ const WhyUsPage = () => {
 
                 {/* Text Wrapper */}
                 <div className="flex flex-col gap-1">
-                  <h4 className="text-white text-xl font-semibold tracking-tight">Robert Park</h4>
-                  <p className="text-[#A1A1A1] text-sm font-medium">Founder of KEC</p>
+                  <h4 className="text-white text-xl font-semibold tracking-tight">Shaphat</h4>
+                  <p className="text-[#] text-sm font-medium">Founder of KEC</p>
                 </div>
 
 
