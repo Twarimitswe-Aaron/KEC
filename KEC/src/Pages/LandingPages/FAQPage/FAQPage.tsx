@@ -77,7 +77,7 @@ export const FAQPage = () => {
           </div>
 
           {/* Right Side - FAQ Accordion */}
-          <div className="flex flex-col gap-2 rounded-[16px] p-2 bg-[#e5e5e5]">
+          <div className="flex flex-col p-2 bg-[#e5e5e5] rounded-[17px] gap-2">
             {faqs.map((faq, index) => {
               const isOpen = openIndex === index;
               return (
@@ -87,91 +87,137 @@ export const FAQPage = () => {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ duration: 0.3, delay: index * 0.05 }}
-                  className="bg-[#fff] rounded-[16px] overflow-hidden shadow-[0px_0.602187px_0.602187px_-0.916667px_rgba(0,0,0,0.08),0px_2.28853px_2.28853px_-1.83333px_rgba(0,0,0,0.08),0px_10px_10px_-2.75px_rgba(0,0,0,0.07)] cursor-pointer"
-                  style={{ willChange: "transform" }}
+                  className="cursor-pointer flex flex-col items-start w-full relative overflow-hidden"
+                  style={{
+                    backgroundColor: "#F0F0F0",
+                    borderRadius: "16px",
+                    boxShadow:
+                      "rgba(0, 0, 0, 0.08) 0px 0.602187px 0.602187px -0.916667px, rgba(0, 0, 0, 0.08) 0px 2.28853px 2.28853px -1.83333px, rgba(0, 0, 0, 0.07) 0px 10px 10px -2.75px",
+                    willChange: "transform",
+                  }}
                 >
-                  <motion.button
-                    onClick={() => setOpenIndex(isOpen ? -1 : index)}
-                    className="w-full p-5 flex items-center justify-between text-left"
-                    whileHover={{ backgroundColor: "#E5E5E5" }}
-                    transition={{ duration: 0.2 }}
+                  {/* Content Wrapper */}
+                  <div
+                    className="flex flex-col bg-white items-center gap-6 w-full p-5 relative"
+                    style={{ borderRadius: "10px" }}
                   >
-                    <p className="font-sans font-semibold text-[1.2rem] leading-[1.2em] tracking-[-0.05em] text-black text-left pr-4">
-                      {faq.question}
-                    </p>
+                    {/* Question Row */}
+                    <motion.button
+                      onClick={() => setOpenIndex(isOpen ? -1 : index)}
+                      className="w-full flex items-center justify-between"
+                      whileHover={{ backgroundColor: "rgba(0,0,0,0.02)" }}
+                      transition={{ duration: 0.2 }}
+                      style={{ backgroundColor: "transparent" }}
+                    >
+                      <p className="font-sans font-semibold text-[1.2rem] leading-[1.2em] tracking-[-0.05em] text-black text-left pr-4">
+                        {faq.question}
+                      </p>
 
-                    {/* Icon Container */}
-                    <div className="flex-shrink-0 w-8 h-8 bg-[#E5E5E5] rounded-full flex items-center justify-center relative">
-                      {/* Horizontal bar */}
-                      <motion.div
-                        className="absolute w-3 h-[2px] rounded-full"
-                        animate={{
-                          backgroundColor: isOpen ? "#FF3700" : "#151619",
+                      {/* Icon Container */}
+                      <div
+                        className="flex-shrink-0 w-8 h-8 flex items-center justify-center relative"
+                        style={{
+                          backgroundColor: "#E5E5E5",
+                          borderRadius: "30px",
                         }}
-                        transition={{ duration: 0.3 }}
-                      />
-                      {/* Vertical bar */}
-                      <motion.div
-                        className="absolute w-[2px] h-3 rounded-full"
-                        animate={{
-                          backgroundColor: isOpen ? "#FF3700" : "#151619",
-                          opacity: isOpen ? 0 : 1,
-                          rotate: isOpen ? 90 : 0,
-                        }}
-                        transition={{ duration: 0.3 }}
-                      />
-                    </div>
-                  </motion.button>
-
-                  <AnimatePresence initial={false} mode="wait">
-                    {isOpen && (
-                      <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ 
-                          height: "auto", 
-                          opacity: 1,
-                          transition: {
-                            height: { duration: 0.4, ease: [0.4, 0, 0.2, 1] },
-                            opacity: { duration: 0.35, ease: "easeOut", delay: 0.1 }
-                          }
-                        }}
-                        exit={{ 
-                          height: 0, 
-                          opacity: 0,
-                          transition: {
-                            height: { duration: 0.3, ease: [0.4, 0, 0.2, 1] },
-                            opacity: { duration: 0.2, ease: "easeIn" }
-                          }
-                        }}
-                        className="overflow-hidden border-t border-[rgba(0,0,0,0.08)]"
                       >
+                        {/* Horizontal bar */}
                         <motion.div
-                          initial={{ y: -15, opacity: 0 }}
-                          animate={{ 
-                            y: 0, 
+                          className="absolute rounded-full"
+                          style={{ width: "12px", height: "2px", borderRadius: "10px" }}
+                          animate={{
+                            backgroundColor: isOpen ? "#FF3700" : "#151619",
+                          }}
+                          transition={{ duration: 0.3 }}
+                        />
+                        {/* Vertical bar */}
+                        <motion.div
+                          className="absolute rounded-full"
+                          style={{
+                            width: "2px",
+                            height: "12px",
+                            borderRadius: "10px",
+                          }}
+                          animate={{
+                            backgroundColor: isOpen ? "#FF3700" : "#151619",
+                            opacity: isOpen ? 0 : 1,
+                            rotate: isOpen ? 90 : 0,
+                          }}
+                          transition={{ duration: 0.3 }}
+                        />
+                      </div>
+                    </motion.button>
+
+                    {/* Answer Section */}
+                    <AnimatePresence initial={false} mode="wait">
+                      {isOpen && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{
+                            height: "auto",
                             opacity: 1,
                             transition: {
-                              y: { duration: 0.4, ease: [0.4, 0, 0.2, 1] },
-                              opacity: { duration: 0.35, ease: "easeOut", delay: 0.15 }
-                            }
+                              height: { duration: 0.4, ease: [0.4, 0, 0.2, 1] },
+                              opacity: { duration: 0.35, ease: "easeOut", delay: 0.1 },
+                            },
                           }}
                           exit={{
-                            y: -10,
+                            height: 0,
                             opacity: 0,
                             transition: {
-                              duration: 0.2,
-                              ease: "easeIn"
-                            }
+                              height: { duration: 0.3, ease: [0.4, 0, 0.2, 1] },
+                              opacity: { duration: 0.2, ease: "easeIn" },
+                            },
                           }}
-                          className="px-5 pb-5 pt-4"
+                          className="w-full overflow-hidden"
+                          style={{
+                            borderTop: "1px solid rgba(0, 0, 0, 0.15)",
+                            borderBottom: "0px",
+                            borderLeft: "0px",
+                            borderRight: "0px",
+                            willChange: "transform",
+                          }}
                         >
-                          <p className="font-sans font-semibold text-[1.2rem] leading-[1.2em] tracking-[-0.05em] text-black text-left">
-                            {faq.answer}
-                          </p>
+                          <motion.div
+                            initial={{ y: -15, opacity: 0 }}
+                            animate={{
+                              y: 0,
+                              opacity: 1,
+                              transition: {
+                                y: { duration: 0.4, ease: [0.4, 0, 0.2, 1] },
+                                opacity: { duration: 0.35, ease: "easeOut", delay: 0.15 },
+                              },
+                            }}
+                            exit={{
+                              y: -10,
+                              opacity: 0,
+                              transition: {
+                                duration: 0.2,
+                                ease: "easeIn",
+                              },
+                            }}
+                            className="pt-6"
+                          >
+                            <p
+                              className="text-left"
+                              style={{
+                                fontFamily: "Inter, sans-serif",
+                                fontWeight: 500,
+                                fontSize: "1rem",
+                                letterSpacing: "-0.035em",
+                                lineHeight: "1.3em",
+                                color: "#707070",
+                                textDecoration: "none",
+                                textTransform: "none",
+                              }}
+                            >
+                        {faq.answer}
+                            </p>
+                          </motion.div>
                         </motion.div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+                      )}
+                    </AnimatePresence>
+                  </div>
                 </motion.div>
               );
             })}
