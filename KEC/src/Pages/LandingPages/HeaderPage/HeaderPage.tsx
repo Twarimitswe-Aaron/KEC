@@ -44,12 +44,12 @@ const HeaderPage: React.FC = () => {
   ];
 
   const links = [
-    { to: "#hero", name: "Home" },
-    { to: "#main", name: "Process" },
-    { to: "#featuredCourses", name: "Courses" },
-    { to: "#assistance", name: "Services" },
-    { to: "#whyUs", name: "Why Us?" },
-    { to: "#faqs", name: "FAQs" },
+    { to: "/#hero", name: "Home" },
+    { to: "/#main", name: "Process" },
+    { to: "/#featuredCourses", name: "Courses" },
+    { to: "/#assistance", name: "Services" },
+    { to: "/#whyUs", name: "Why Us?" },
+    { to: "/#faqs", name: "FAQs" },
   ];
 
   // Reusable link component
@@ -74,7 +74,7 @@ const HeaderPage: React.FC = () => {
         to={link.to}
         text={link.name}
         isActive={activeSection === link.to}
-        className="px-4 py-2 rounded-full font-medium text-sm text-[#555] hover:text-[#111] transition-colors duration-300"
+        className="px-3 py-3 rounded-full font-bold text-sm text-[#555] hover:text-[#111] transition-colors duration-300"
       />
     );
   };
@@ -99,7 +99,7 @@ const HeaderPage: React.FC = () => {
             text={currentLang}
             icon={<BsGlobe size={20} />}
             variant="secondary"
-            className="shadow-[0_7px_20px_0.5px_rgba(0,0,0,0.5)] z-20 relative"
+            className="ml-5 shadow-[0_7px_20px_0.5px_rgba(0,0,0,0.5)] z-20 relative text-lg !py-2 !pl-4 !pr-3"
             onClick={() => setShowLangMenu(!showLangMenu)}
           />
 
@@ -146,7 +146,7 @@ const HeaderPage: React.FC = () => {
           text={currentLang}
           icon={<BsGlobe size={18} />}
           variant="secondary"
-          className="shadow-md"
+          className="ml-5 shadow-md text-lg !py-2 !pl-4 !pr-3"
           onClick={() => setShowLangMenu(!showLangMenu)}
         />
       </div>

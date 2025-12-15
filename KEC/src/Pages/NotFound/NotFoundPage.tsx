@@ -10,11 +10,15 @@ const NotFoundPage = () => {
 
     return (
         <motion.div
-            initial={{ y: "120vh" }} // Start slightly further down to ensure cleared
-            animate={{ y: 0 }}
-            exit={{ y: "120vh" }}
-            transition={{ duration: 0.4, ease: [0.33, 1, 0.68, 1] }} // smooth cubic-bezier or similar "out" curve
-            className="font-sans w-full relative min-h-screen flex flex-col justify-between bg-[#F0F0F0]"
+            initial={{ y: "50vh", opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: "-100vh", opacity: 0 }}
+            transition={{
+                duration: 0.75,
+                ease: [0.7, 0, 0.3, 1],
+                opacity: { duration: 0.4 }
+            }}
+            className="font-sans w-full absolute top-0 left-0 min-h-screen flex flex-col justify-between bg-[#F0F0F0] z-[200]"
         >
             <Header />
 

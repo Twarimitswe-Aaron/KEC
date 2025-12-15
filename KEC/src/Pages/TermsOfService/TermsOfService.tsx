@@ -8,8 +8,8 @@ const TermsOfService = () => {
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: "-100vh", opacity: 0 }}
             transition={{
-                duration: 0.6,
-                ease: "easeOut",
+                duration: 0.75,
+                ease: [0.7, 0, 0.3, 1],
                 opacity: { duration: 0.4 }
             }}
             className="font-sans w-full absolute top-0 left-0 min-h-screen flex flex-col justify-between bg-[#F0F0F0] z-[200]"

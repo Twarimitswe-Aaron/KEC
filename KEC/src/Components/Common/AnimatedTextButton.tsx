@@ -27,7 +27,7 @@ export function AnimatedTextButton({
             initial="initial"
             whileHover="hovered"
             onClick={onClick}
-            className={`relative cursor-pointer pl-3 pr-2 ml-5 py-2 rounded-full font-bold text-sm shadow-[0px_7px_20px_0.5px_rgba(0,0,0,0.5)] ${bgClass} ${textClass} flex items-center gap-2 ${className}`}
+            className={`relative cursor-pointer pl-2 pr-1 py-1 ml-5 rounded-full font-bold text-base shadow-[0px_7px_20px_0.5px_rgba(0,0,0,0.5)] ${bgClass} ${textClass} flex items-center gap-2 ${className}`}
         >
             <div className="relative overflow-hidden h-[1.25em] -mt-[2px] leading-none">
                 <motion.span
@@ -35,7 +35,7 @@ export function AnimatedTextButton({
                         initial: { y: 0 },
                         hovered: { y: "-100%" },
                     }}
-                    transition={{ duration: 0.25, ease: [0.76, 0, 0.24, 1] }}
+                    transition={{ duration: 0.35, ease: [0.76, 0, 0.24, 1] }}
                     className="block"
                 >
                     {text}
@@ -45,7 +45,7 @@ export function AnimatedTextButton({
                         initial: { y: "100%" },
                         hovered: { y: 0 },
                     }}
-                    transition={{ duration: 0.25, ease: [0.76, 0, 0.24, 1] }}
+                    transition={{ duration: 0.35, ease: [0.76, 0, 0.24, 1] }}
                     className="absolute inset-0 block"
                 >
                     {text}
@@ -59,7 +59,7 @@ export function AnimatedTextButton({
                                 initial: { x: 0 },
                                 hovered: { x: "-100%" },
                             }}
-                            transition={{ duration: 0.25, ease: [0.76, 0, 0.24, 1] }}
+                            transition={{ duration: 0.35, ease: [0.76, 0, 0.24, 1], delay: 0.05 }}
                             style={{ gridArea: "1/1" }}
                         >
                             {icon}
@@ -69,7 +69,7 @@ export function AnimatedTextButton({
                                 initial: { x: "100%" },
                                 hovered: { x: 0 },
                             }}
-                            transition={{ duration: 0.25, ease: [0.76, 0, 0.24, 1] }}
+                            transition={{ duration: 0.35, ease: [0.76, 0, 0.24, 1], delay: 0.05 }}
                             style={{ gridArea: "1/1" }}
                         >
                             {icon}

@@ -1,10 +1,10 @@
 import React from 'react';
 import styles from "../../../Styles/styles.js";
-import CourseCarousel from './Coursecard.js';
+import CourseCarousel from './Coursecard';
 
 const FeaturedCoursesPage = () => {
   return (
-    <div className={`${styles.parent_section} font-roboto`} id='featuredCourses'> 
+    <div className={`${styles.parent_section} font-roboto`} id='featuredCourses'>
 
       <div className={`${styles.section}`}>
         <div className="flex justify-center">
@@ -14,10 +14,10 @@ const FeaturedCoursesPage = () => {
         </div>
         <div className="block justify-around overflow-hidden">
           <CourseCarousel />
-          
+
         </div>
       </div>
-      
+
     </div>
   );
 };

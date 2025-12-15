@@ -72,7 +72,12 @@ const HeroPage = () => {
       <div className="max-w-[1400px]  grid lg:grid-cols-2   w-full h-full">
 
         {/* Left Column: Content */}
-        <div className="flex flex-col items-start justify-center gap-8 z-10">
+        <motion.div
+          initial={{ y: 60, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.8, ease: [0.6, -0.05, 0.01, 0.99], delay: 0.1 }}
+          className="flex flex-col items-start justify-center gap-8 z-10"
+        >
 
           {/* Badge */}
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-[#1A1A1A] text-white rounded-full text-sm font-medium shadow-lg">
@@ -98,6 +103,7 @@ const HeroPage = () => {
                 text="Create Account"
                 icon={<UserPlus size={24} />}
                 variant="primary"
+                className="text-lg !py-2 !pl-4 !pr-3"
               />
             </Link>
 
@@ -106,13 +112,17 @@ const HeroPage = () => {
                 text="Login"
                 icon={<LogIn size={24} />}
                 variant="secondary"
+                className="text-lg !py-2 !pl-4 !pr-3"
               />
             </Link>
           </div>
-        </div>
+        </motion.div>
 
         {/* Right Column: Image Grid (Animated) */}
-        <div
+        <motion.div
+          initial={{ y: 100, opacity: 0, scale: 0.95 }}
+          animate={{ y: 0, opacity: 1, scale: 1 }}
+          transition={{ duration: 1.4, ease: [0.19, 1, 0.22, 1], delay: 0.4 }}
           className="relative w-full h-full hidden md:flex items-start justify-center gap-3 pl-6 overflow-hidden"
         >
           <div className="absolute left-0 top-0 bottom-0 w-[1px]"></div>
@@ -131,7 +141,7 @@ const HeroPage = () => {
             <Card src={ipadImg} alt="Design Mockup 4" />
             <Card src={phoneImg} alt="Design Mockup 3" />
           </Column>
-        </div>
+        </motion.div>
       </div>
 
 

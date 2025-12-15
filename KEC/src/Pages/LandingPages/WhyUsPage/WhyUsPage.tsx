@@ -51,7 +51,7 @@ const WhyUsPage = () => {
               Proven results for <br /> <span className="text-gray-500">every student</span>
             </h2>
           </div>
-          <p className="text-lg md:text-xl text-gray-600 max-w-sm leading-relaxed font-medium">
+          <p className="font-sans font-semibold text-[1.2rem] leading-[1.2em] tracking-[-0.05em] text-[#151619] max-w-sm">
             We combine strategy, speed, and skill to deliver exceptional education — every time.
           </p>
         </div>
@@ -133,7 +133,7 @@ const WhyUsPage = () => {
 
                 {/* Bottom: Subtitle & Desc Merged */}
                 <div className="mt-auto">
-                  <p className="font-sans font-semibold text-[1.2rem] leading-[1.2em] tracking-[-0.05em] text-black text-left">
+                  <p className="font-sans font-semibold text-[1.2rem] leading-[1.2em] tracking-[-0.05em] text-[#151619] text-left">
                     {feature.subtitle}. {feature.description}
                   </p>
                 </div>

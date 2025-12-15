@@ -1,5 +1,5 @@
 import React from "react";
-import { Monitor, Award, BookOpen, Video, Sparkles, Check } from "lucide-react";
+import { Monitor, Award, BookOpen, Video, Check } from "lucide-react";
 import { motion } from "framer-motion";
 
 // Importing existing images from your project
@@ -186,20 +186,20 @@ const ServiceCard = React.memo(({ service, index }: { service: ServiceData; inde
                   <h3 className="text-xl font-bold text-[rgb(21,22,25)] mb-2">
                     {service.title}
                   </h3>
-                  <p className="text-sm text-gray-600 leading-relaxed">
+                  <p className="font-sans font-semibold text-[1.2rem] leading-[1.2em] tracking-[-0.05em] text-[#151619]">
                     {service.description}
                   </p>
                 </div>
 
                 {/* Tags */}
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-3">
                   {service.tags.map((tag, idx) => (
                     <div
                       key={idx}
-                      className="bg-[rgb(229,229,229)] rounded-lg px-2.5 py-1 flex items-center gap-1.5"
+                      className="bg-[rgb(229,229,229)] rounded-lg px-5 py-3 flex items-center gap-2.5"
                     >
-                      <Check size={14} className="text-[rgb(79,79,79)]" />
-                      <span className="text-xs text-[rgb(79,79,79)]">{tag}</span>
+                      <Check size={20} className="text-[rgb(79,79,79)]" />
+                      <span className="text-base font-medium text-[rgb(79,79,79)]">{tag}</span>
                     </div>
                   ))}
                 </div>
@@ -256,7 +256,7 @@ const MainPage: React.FC = () => {
             How We Help <span className="text-[rgb(79,79,79)]">Your Learning</span>
           </h2>
           <br />
-          <p className="text-base text-gray-600 max-w-md">
+          <p className="font-sans font-semibold text-[1.2rem] leading-[1.2em] tracking-[-0.05em] text-[#151619] max-w-md">
             We combine strategy, speed, and skill to deliver exceptional education — every time.
           </p>
         </div>

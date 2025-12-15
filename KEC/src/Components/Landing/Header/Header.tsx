@@ -1,5 +1,5 @@
 import React from 'react'
-import HeaderPage from '../../../Pages/LandingPages/HeaderPage/HeaderPage.tsx'
+import HeaderPage from '../../../Pages/LandingPages/HeaderPage/HeaderPage'
 
 const Header = () => {
   return (
