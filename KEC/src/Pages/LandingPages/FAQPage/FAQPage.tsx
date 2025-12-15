@@ -4,33 +4,33 @@ import { motion, AnimatePresence } from "framer-motion";
 const faqs = [
   {
     id: 1,
-    question: "What we do?",
-    answer: "We offer hands-on training in tech and entrepreneurship.",
+    question: "How does the subscription model work?",
+    answer: "You pay a fixed monthly fee and get access to a dedicated design team. Submit unlimited requests, and we’ll deliver them one by one (or two at a time with the Pro plan). No hourly billing, no contracts — cancel or pause anytime.",
   },
   {
     id: 2,
-    question: "We take students who knows nothing?",
-    answer: "Yes! We train beginners from the ground up.",
+    question: "What kind of design tasks can I request?",
+    answer: "You can request a wide range of design tasks including UI/UX design, branding, illustrations, and marketing assets.",
   },
   {
     id: 3,
-    question: "You must be a student to be our fellow?",
-    answer: "Yes, student status is required to join.",
+    question: "How fast will I receive my designs?",
+    answer: "Most requests are delivered within 24-48 hours. complex tasks may take slightly longer.",
   },
   {
     id: 4,
-    question: "Where do we take application of what we study?",
-    answer: "In real-world projects, internships, and startup environments.",
+    question: "What tools do you use to manage the work?",
+    answer: "We use standard industry tools like Figma, Trello, and Slack for seamless management and communication.",
   },
   {
     id: 5,
-    question: "What we do?",
-    answer: "We mentor, teach, and empower students in tech.",
+    question: "Is there a limit to how many requests I can make?",
+    answer: "No limits! You can keep the queue full and we'll work through them systematically.",
   },
   {
     id: 6,
-    question: "What we do?",
-    answer: "Our goal is to prepare students for real industry roles.",
+    question: "Can I cancel or pause anytime?",
+    answer: "Yes, our service is flexible. You can pause or cancel your subscription at any time without penalty.",
   },
 ];
 
@@ -38,7 +38,7 @@ export const FAQPage = () => {
   const [openIndex, setOpenIndex] = useState<number>(0);
 
   return (
-    <section className="w-full py-16 bg-[#FAFAFA]" id="FAQ">
+    <section className="w-full py-16 bg-white" id="FAQ">
       <div className="w-[94%] mx-auto max-w-[1350px]">
         <div className="grid grid-cols-1 lg:grid-cols-[40%_1fr] gap-12 lg:gap-[50px]">
           {/* Left Side - Header */}
@@ -82,142 +82,74 @@ export const FAQPage = () => {
               const isOpen = openIndex === index;
               return (
                 <motion.div
+                  layout
                   key={faq.id}
                   initial={{ opacity: 0, y: 10 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
-                  transition={{ duration: 0.3, delay: index * 0.05 }}
-                  className="cursor-pointer flex flex-col items-start w-full relative overflow-hidden"
+                  transition={{ layout: { type: "spring", stiffness: 300, damping: 30 }, duration: 0.3 }}
+                  onClick={() => setOpenIndex(isOpen ? -1 : index)}
+                  className="w-full relative overflow-hidden cursor-pointer"
                   style={{
                     backgroundColor: "#F0F0F0",
                     borderRadius: "16px",
-                    boxShadow:
-                      "rgba(0, 0, 0, 0.08) 0px 0.602187px 0.602187px -0.916667px, rgba(0, 0, 0, 0.08) 0px 2.28853px 2.28853px -1.83333px, rgba(0, 0, 0, 0.07) 0px 10px 10px -2.75px",
-                    willChange: "transform",
+                    boxShadow: "rgba(0, 0, 0, 0.08) 0px 0.602187px 0.602187px -0.916667px, rgba(0, 0, 0, 0.08) 0px 2.28853px 2.28853px -1.83333px, rgba(0, 0, 0, 0.07) 0px 10px 10px -2.75px",
                   }}
                 >
-                  {/* Content Wrapper */}
-                  <div
-                    className="flex flex-col bg-white items-center gap-6 w-full p-5 relative"
-                    style={{ borderRadius: "10px" }}
+                  <motion.div
+                    layout="position"
+                    className="flex bg-white flex-col p-5"
                   >
-                    {/* Question Row */}
-                    <motion.button
-                      onClick={() => setOpenIndex(isOpen ? -1 : index)}
-                      className="w-full flex items-center justify-between"
-                      whileHover={{ backgroundColor: "rgba(0,0,0,0.02)" }}
-                      transition={{ duration: 0.2 }}
-                      style={{ backgroundColor: "transparent" }}
-                    >
-                      <p className="font-sans font-semibold text-[1.2rem] leading-[1.2em] tracking-[-0.05em] text-black text-left pr-4">
+                    {/* Header Row */}
+                    <div className="flex items-center justify-between w-full">
+                      <h3 className="font-sans font-semibold text-[1.2rem] text-[#151619] text-left pr-4 leading-[1.2em] tracking-[-0.05em]">
                         {faq.question}
-                      </p>
+                      </h3>
 
-                      {/* Icon Container */}
+                      {/* Icon */}
                       <div
-                        className="flex-shrink-0 w-8 h-8 flex items-center justify-center relative"
-                        style={{
-                          backgroundColor: "#E5E5E5",
-                          borderRadius: "30px",
-                        }}
+                        className="flex-shrink-0 w-8 h-8 flex items-center justify-center relative rounded-full bg-[#E5E5E5]"
                       >
-                        {/* Horizontal bar */}
                         <motion.div
-                          className="absolute rounded-full"
-                          style={{ width: "12px", height: "2px", borderRadius: "10px" }}
-                          animate={{
-                            backgroundColor: isOpen ? "#FF3700" : "#151619",
-                          }}
-                          transition={{ duration: 0.3 }}
+                          className="absolute rounded-full bg-[#FF3700]"
+                          style={{ width: "12px", height: "2px" }}
                         />
-                        {/* Vertical bar */}
                         <motion.div
-                          className="absolute rounded-full"
-                          style={{
-                            width: "2px",
-                            height: "12px",
-                            borderRadius: "10px",
-                          }}
-                          animate={{
-                            backgroundColor: isOpen ? "#FF3700" : "#151619",
-                            opacity: isOpen ? 0 : 1,
-                            rotate: isOpen ? 90 : 0,
-                          }}
-                          transition={{ duration: 0.3 }}
+                          className="absolute rounded-full bg-[#FF3700]"
+                          style={{ width: "2px", height: "12px" }}
+                          animate={{ rotate: isOpen ? 90 : 0, opacity: isOpen ? 0 : 1 }}
+                          transition={{ duration: 0.2 }}
                         />
                       </div>
-                    </motion.button>
+                    </div>
 
-                    {/* Answer Section */}
-                    <AnimatePresence initial={false} mode="wait">
+                    {/* Content */}
+                    <AnimatePresence mode="wait" initial={false}>
                       {isOpen && (
                         <motion.div
                           initial={{ height: 0, opacity: 0 }}
-                          animate={{
-                            height: "auto",
-                            opacity: 1,
-                            transition: {
-                              height: { duration: 0.4, ease: [0.4, 0, 0.2, 1] },
-                              opacity: { duration: 0.35, ease: "easeOut", delay: 0.1 },
-                            },
-                          }}
-                          exit={{
-                            height: 0,
-                            opacity: 0,
-                            transition: {
-                              height: { duration: 0.3, ease: [0.4, 0, 0.2, 1] },
-                              opacity: { duration: 0.2, ease: "easeIn" },
-                            },
+                          animate={{ height: "auto", opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{
+                            height: { type: "spring", stiffness: 300, damping: 30 },
+                            opacity: { duration: 0.2, delay: 0.1 }
                           }}
                           className="w-full overflow-hidden"
-                          style={{
-                            borderTop: "1px solid rgba(0, 0, 0, 0.15)",
-                            borderBottom: "0px",
-                            borderLeft: "0px",
-                            borderRight: "0px",
-                            willChange: "transform",
-                          }}
                         >
                           <motion.div
-                            initial={{ y: -15, opacity: 0 }}
-                            animate={{
-                              y: 0,
-                              opacity: 1,
-                              transition: {
-                                y: { duration: 0.4, ease: [0.4, 0, 0.2, 1] },
-                                opacity: { duration: 0.35, ease: "easeOut", delay: 0.15 },
-                              },
-                            }}
-                            exit={{
-                              y: -10,
-                              opacity: 0,
-                              transition: {
-                                duration: 0.2,
-                                ease: "easeIn",
-                              },
-                            }}
-                            className="pt-6"
-                          >
-                            <p
-                              className="text-left"
-                              style={{
-                                fontFamily: "Inter, sans-serif",
-                                fontWeight: 500,
-                                fontSize: "1rem",
-                                letterSpacing: "-0.035em",
-                                lineHeight: "1.3em",
-                                color: "#707070",
-                                textDecoration: "none",
-                                textTransform: "none",
-                              }}
-                            >
-                        {faq.answer}
-                            </p>
-                          </motion.div>
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 0.15 }}
+                            exit={{ opacity: 0 }}
+                            className="w-full h-[1px] bg-black mt-4 mb-4"
+                          />
+                          <p className="text-[#707070] text-base leading-relaxed font-sans font-medium text-left">
+                            {faq.answer}
+                          </p>
+                          <div className="h-2"></div> {/* Bottom padding compensation */}
                         </motion.div>
                       )}
                     </AnimatePresence>
-                  </div>
+                  </motion.div>
                 </motion.div>
               );
             })}

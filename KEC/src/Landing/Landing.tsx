@@ -14,10 +14,11 @@ import {
 } from "../Routes";
 import KECServiceForm from "../Components/Landing/OtherBusinesses/OtherBusinesses";
 import { ScrollReveal } from "../Components/Common/ScrollReveal";
+import PageTransition from "../Components/Common/PageTransition";
 
 const Landing = () => {
   return (
-    <div className="font-robot w-full relative">
+    <PageTransition className="font-robot w-full relative">
       <Header />
       <div className="w-full border-t border-gray-200" />
       <ScrollReveal>
@@ -65,7 +66,7 @@ const Landing = () => {
       {/* Global Bottom Blur Overlay */}
       <div className="fixed bottom-0 left-0 right-0 h-[150px] z-[100] pointer-events-none">
         <div style={{ position: "absolute", inset: "0px", overflow: "hidden" }}>
-          <div style={{ opacity: 1, position: "absolute", inset: "0px", zIndex: 6, maskImage: "linear-gradient(rgba(0, 0, 0, 0) 62.5%, rgb(0, 0, 0) 75%, rgb(0, 0, 0) 87.5%, rgba(0, 0, 0, 0) 100%)", WebkitMaskImage: "linear-gradient(rgba(0, 0, 0, 0) 62.5%, rgb(0, 0, 0) 75%, rgb(0, 0, 0) 87.5%, rgba(0, 0, 0, 0) 100%)", backdropFilter: "blur(2px)" }} /> 
+          <div style={{ opacity: 1, position: "absolute", inset: "0px", zIndex: 6, maskImage: "linear-gradient(rgba(0, 0, 0, 0) 62.5%, rgb(0, 0, 0) 75%, rgb(0, 0, 0) 87.5%, rgba(0, 0, 0, 0) 100%)", WebkitMaskImage: "linear-gradient(rgba(0, 0, 0, 0) 62.5%, rgb(0, 0, 0) 75%, rgb(0, 0, 0) 87.5%, rgba(0, 0, 0, 0) 100%)", backdropFilter: "blur(2px)" }} />
           <div style={{ opacity: 1, position: "absolute", inset: "0px", zIndex: 7, maskImage: "linear-gradient(rgba(0, 0, 0, 0) 75%, rgb(0, 0, 0) 87.5%, rgb(0, 0, 0) 100%)", WebkitMaskImage: "linear-gradient(rgba(0, 0, 0, 0) 75%, rgb(0, 0, 0) 87.5%, rgb(0, 0, 0) 100%)", backdropFilter: "blur(3px)" }} />
           <div style={{ opacity: 1, position: "absolute", inset: "0px", zIndex: 8, maskImage: "linear-gradient(rgba(0, 0, 0, 0) 87.5%, rgb(0, 0, 0) 100%)", WebkitMaskImage: "linear-gradient(rgba(0, 0, 0, 0) 87.5%, rgb(0, 0, 0) 100%)", backdropFilter: "blur(4px)" }} />
         </div>
@@ -79,7 +80,7 @@ const Landing = () => {
       >
         <SiWhatsapp size={28} />
       </a>
-    </div>
+    </PageTransition>
   );
 };
 

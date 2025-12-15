@@ -1,6 +1,7 @@
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, useLocation } from "react-router-dom";
 import { useEffect } from "react";
 import Lenis from "@studio-freight/lenis";
+import { AnimatePresence } from "framer-motion";
 
 import DashboardLayout from "./layouts/DashBoard/DashboardLayout.tsx";
 import AdminCourseManagementLayout from "./layouts/DashBoard/AdminCourseManagementLayout";
@@ -40,13 +41,17 @@ import ServiceRequest from "./Pages/ServiceRequest/ServiceRequest";
 import ServiceRequests from "./routes/ServiceRequests";
 import StudentCourses from "./routes/StudentCourses";
 import WorkshopManagement from "./routes/WorkshopManagement";
+import NotFoundPage from "./Pages/NotFound/NotFoundPage";
+
+import ScrollToTop from "./Components/Common/ScrollToTop";
 
 function App() {
+  const location = useLocation();
+
   useEffect(() => {
     const lenis = new Lenis({
       duration: 2.0,
       easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-      smoothTouch: false,
       wheelMultiplier: 0.7,
     });
 
@@ -64,6 +69,7 @@ function App() {
 
   return (
     <>
+      <ScrollToTop />
       <ToastContainer
         position="top-center"
         autoClose={5000}
@@ -76,65 +82,71 @@ function App() {
         pauseOnHover
         theme="light"
       />
-      <Routes>
-        <Route path="/" element={<Landing />} />
+      <AnimatePresence mode="wait">
+        <Routes location={location} key={location.pathname}>
+          <Route path="/" element={<Landing />} />
 
-        <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<Signup />} />
-        <Route path="/signup/verification" element={<Verification />} />
-        <Route path="/forgotPass" element={<ForgotPass />} />
-        <Route path="/forgotPass" element={<ForgotPass />} />
-        <Route path="/passReset" element={<PasswordReset />} />
-        <Route path="/service-request" element={<ServiceRequest />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route path="/signup/verification" element={<Verification />} />
+          <Route path="/forgotPass" element={<ForgotPass />} />
+          <Route path="/forgotPass" element={<ForgotPass />} />
+          <Route path="/passReset" element={<PasswordReset />} />
+          <Route path="/service-request" element={<ServiceRequest />} />
 
-        {/* Protected routes with DashboardLayout */}
-        <Route element={<DashboardLayout />}>
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/service-requests" element={<ServiceRequests />} />
-          <Route path="/workshop-management" element={<WorkshopManagement />} />
-          <Route path="/dashboard/course/:id" element={<UserLessonsView />} />
-          <Route
-            path="/dashboard/course/:id/quiz/:quizId"
-            element={<TakeQuiz />}
-          />
-          <Route path="/user-management" element={<UserManagement />} />
-          <Route path="/course-creation" element={<CourseManagement />} />
-          <Route path="/course-creation/course/:id" element={<LessonsView />} />
-          <Route
-            path="/course-management/create-modules"
-            element={<CreateModule />}
-          />
-          <Route path="/course-management/:id" element={<LessonsView />} />
-          <Route
-            path="/course-management/view-lessons/:id"
-            element={<LessonsView />}
-          />
-          <Route
-            path="/course-management"
-            element={<AdminCourseManagementLayout />}
-          >
-            <Route path="students" element={<StudentsRequest />} />
-            <Route path="requestedCourses" element={<RequestedCourses />} />
-            <Route path="" element={<AdminCourseManagement />} />
+          {/* Protected routes with DashboardLayout */}
+          <Route element={<DashboardLayout />}>
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/service-requests" element={<ServiceRequests />} />
+            <Route path="/workshop-management" element={<WorkshopManagement />} />
+            <Route path="/dashboard/course/:id" element={<UserLessonsView />} />
+            <Route
+              path="/dashboard/course/:id/quiz/:quizId"
+              element={<TakeQuiz />}
+            />
+            <Route path="/user-management" element={<UserManagement />} />
+            <Route path="/course-creation" element={<CourseManagement />} />
+            <Route path="/course-creation/course/:id" element={<LessonsView />} />
+            <Route
+              path="/course-management/create-modules"
+              element={<CreateModule />}
+            />
+            <Route path="/course-management/:id" element={<LessonsView />} />
+            <Route
+              path="/course-management/view-lessons/:id"
+              element={<LessonsView />}
+            />
+            <Route
+              path="/course-management"
+              element={<AdminCourseManagementLayout />}
+            >
+              <Route path="students" element={<StudentsRequest />} />
+              <Route path="requestedCourses" element={<RequestedCourses />} />
+              <Route path="" element={<AdminCourseManagement />} />
+            </Route>
+            <Route path="/announcements" element={<Announcements />} />
+            <Route path="/my-account" element={<MyProfile />} />
+            <Route path="/profile/:id" element={<ProfilePage />} />
+
+            <Route path="/feedback" element={<Feedback />} />
+            <Route path="/payment-management" element={<PaymentManagement />} />
+            <Route path="/certificate-creation" element={<Certificates />} />
+            <Route path="/my-certificates" element={<MyCertificates />} />
+            <Route
+              path="/certificate-management"
+              element={<CertificateManagement />}
+            />
+            <Route path="/logout" element={<Logout />} />
+            <Route path="/tasks" element={<Tasks />} />
+            <Route path="/courses" element={<StudentCourses />} />
           </Route>
-          <Route path="/announcements" element={<Announcements />} />
-          <Route path="/my-account" element={<MyProfile />} />
-          <Route path="/profile/:id" element={<ProfilePage />} />
+          <Route path="/inbox" element={<Inbox />} />
 
-          <Route path="/feedback" element={<Feedback />} />
-          <Route path="/payment-management" element={<PaymentManagement />} />
-          <Route path="/certificate-creation" element={<Certificates />} />
-          <Route path="/my-certificates" element={<MyCertificates />} />
-          <Route
-            path="/certificate-management"
-            element={<CertificateManagement />}
-          />
-          <Route path="/logout" element={<Logout />} />
-          <Route path="/tasks" element={<Tasks />} />
-          <Route path="/courses" element={<StudentCourses />} />
-        </Route>
-        <Route path="/inbox" element={<Inbox />} />
-      </Routes>
+          {/* 404 Routes */}
+          <Route path="/404" element={<NotFoundPage />} />
+          <Route path="*" element={<NotFoundPage />} />
+        </Routes>
+      </AnimatePresence>
     </>
   );
 }

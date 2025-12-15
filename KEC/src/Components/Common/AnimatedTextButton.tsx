@@ -17,10 +17,10 @@ export function AnimatedTextButton({
     onClick
 }: AnimatedTextButtonProps) {
     const isPrimary = variant === "primary";
-    const bgClass = isPrimary ? "bg-[#FF4726]" : "bg-[#151619]";
+    const bgClass = isPrimary ? "bg-[#FF3700]" : "bg-[#151619]";
     const textClass = isPrimary ? "text-[#1A1A1A]" : "text-white";
-    const iconBgClass = isPrimary ? "bg-[#1A1A1A]" : "bg-[#FF4726]";
-    const iconColorClass = isPrimary ? "text-[#FF4726]" : "text-[#1A1A1A]";
+    const iconBgClass = isPrimary ? "bg-[#1A1A1A]" : "bg-[#FF3700]";
+    const iconColorClass = isPrimary ? "text-[#FF3700]" : "text-[#1A1A1A]";
 
     return (
         <motion.button
