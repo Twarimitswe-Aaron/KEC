@@ -84,7 +84,7 @@ function App() {
         pauseOnHover
         theme="light"
       />
-      <AnimatePresence mode="wait">
+      <AnimatePresence>
         <Routes location={location} key={location.pathname}>
           <Route path="/" element={<Landing />} />
 

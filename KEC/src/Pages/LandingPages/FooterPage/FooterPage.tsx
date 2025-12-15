@@ -137,9 +137,7 @@ export const FooterPage = () => {
           <p className="text-[#A1A1A1] text-sm font-bold">
             © {year} KEC. All rights reserved.
           </p>
-          <p className="text-[#A1A1A1] text-sm font-bold">
-            Designed By Marso
-          </p>
+         
         </div>
 
       </div>

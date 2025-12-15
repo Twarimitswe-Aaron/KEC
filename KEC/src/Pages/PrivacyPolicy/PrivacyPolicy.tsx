@@ -8,11 +8,11 @@ const PrivacyPolicy = () => {
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: "-100vh", opacity: 0 }}
             transition={{
-                duration: 0.5,
-                ease: [0.22, 1, 0.36, 1],
+                duration: 0.6,
+                ease: "easeOut",
                 opacity: { duration: 0.4 }
             }}
-            className="font-sans w-full relative min-h-screen flex flex-col justify-between bg-[#F0F0F0]"
+            className="font-sans w-full absolute top-0 left-0 min-h-screen flex flex-col justify-between bg-[#F0F0F0] z-[200]"
         >
             <Header />
 
@@ -114,7 +114,7 @@ const PrivacyPolicy = () => {
                             <h2 className="text-2xl font-bold text-gray-900">6. Contact</h2>
                             <p className="text-[1.1rem] font-medium tracking-[-0.035em] leading-[1.35em] text-[#707070]">
                                 If you have any questions about this Privacy Policy, feel free to reach out at: <br />
-                                <a href="mailto:designedbymarso@gmail.com" className="hover:underline text-gray-900 font-medium">aarontwarimitswe@gmail.com</a>
+                                <a href="mailto:aarontwarimitswe@gmail.com" className="hover:underline text-gray-900 font-medium">aarontwarimitswe@gmail.com</a>
                             </p>
                         </section>
                     </div>
