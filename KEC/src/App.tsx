@@ -42,6 +42,8 @@ import ServiceRequests from "./routes/ServiceRequests";
 import StudentCourses from "./routes/StudentCourses";
 import WorkshopManagement from "./routes/WorkshopManagement";
 import NotFoundPage from "./Pages/NotFound/NotFoundPage";
+import TermsOfService from "./Pages/TermsOfService/TermsOfService";
+import PrivacyPolicy from "./Pages/PrivacyPolicy/PrivacyPolicy";
 
 import ScrollToTop from "./Components/Common/ScrollToTop";
 
@@ -143,6 +145,8 @@ function App() {
           <Route path="/inbox" element={<Inbox />} />
 
           {/* 404 Routes */}
+          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+          <Route path="/terms-of-service" element={<TermsOfService />} />
           <Route path="/404" element={<NotFoundPage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>

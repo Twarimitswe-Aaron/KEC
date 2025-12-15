@@ -52,7 +52,7 @@ export function AnimatedTextButton({
                 </motion.span>
             </div>
             {icon && (
-                <div className={`p-1 rounded-full ${iconBgClass} ${iconColorClass} flex items-center justify-center`}>
+                <div className={`p-[10px] rounded-full ${iconBgClass} ${iconColorClass} flex items-center justify-center`}>
                     <div className="relativer overflow-hidden grid place-items-center">
                         <motion.span
                             variants={{

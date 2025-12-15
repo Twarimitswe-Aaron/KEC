@@ -27,8 +27,8 @@ export const FooterPage = () => {
   ];
 
   const resourceLinks = [
-    { label: "Privacy Policy", href: "#" },
-    { label: "Terms of Service", href: "#" },
+    { label: "Privacy Policy", href: "/privacy-policy" },
+    { label: "Terms of Service", href: "/terms-of-service" },
     { label: "404 Page", href: "/404" },
   ];
 
@@ -37,8 +37,8 @@ export const FooterPage = () => {
       <div
         className="w-full p-8 md:p-12 lg:p-16 text-white"
         style={{
-          backgroundColor: "#151619",
-          borderRadius: "20px"
+          backgroundColor: "#151619"
+        
         }}
       >
         <div className="flex flex-col lg:flex-row gap-12 lg:gap-20 justify-between">
@@ -72,7 +72,7 @@ export const FooterPage = () => {
             </div>
 
             {/* Restored Contact Info */}
-            <div className="flex flex-col gap-2 mt-2 text-[#999999] text-sm">
+            <div className="flex flex-col gap-2 mt-2 text-[#999999] text-sm font-bold">
               <p>kigaliengineerscollege@gmail.com</p>
               <p>+250 788 667 900</p>
             </div>
@@ -89,7 +89,7 @@ export const FooterPage = () => {
                   <RollingTextLink
                     key={idx}
                     href={link.href}
-                    className="text-[#A1A1A1] hover:text-white text-[15px] font-medium transition-colors"
+                    className="text-[#A1A1A1] hover:text-white text-[15px] font-bold transition-colors"
                   >
                     {link.label}
                   </RollingTextLink>
@@ -105,7 +105,7 @@ export const FooterPage = () => {
                   <RollingTextLink
                     key={idx}
                     href={link.href}
-                    className="text-[#A1A1A1] hover:text-white text-[15px] font-medium transition-colors"
+                    className="text-[#A1A1A1] hover:text-white text-[15px] font-bold transition-colors"
                   >
                     {link.label}
                   </RollingTextLink>
@@ -121,7 +121,7 @@ export const FooterPage = () => {
                   <RollingTextLink
                     key={idx}
                     href={link.href}
-                    className="text-[#A1A1A1] hover:text-white text-[15px] font-medium transition-colors"
+                    className="text-[#A1A1A1] hover:text-white text-[15px] font-bold transition-colors"
                   >
                     {link.label}
                   </RollingTextLink>
@@ -134,10 +134,10 @@ export const FooterPage = () => {
 
         {/* Bottom Section */}
         <div className="mt-16 pt-8 border-t border-white/10 flex flex-col md:flex-row justify-between items-center bg-transparent gap-4">
-          <p className="text-[#A1A1A1] text-sm">
+          <p className="text-[#A1A1A1] text-sm font-bold">
             © {year} KEC. All rights reserved.
           </p>
-          <p className="text-[#A1A1A1] text-sm">
+          <p className="text-[#A1A1A1] text-sm font-bold">
             Designed By Marso
           </p>
         </div>
