@@ -17,13 +17,13 @@ export const FooterPage = () => {
   ];
 
   const navigationLinks = [
-    { label: "Services", href: "#FeaturedCourses" },
-    { label: "Why Us", href: "#WhyUs" },
-    { label: "Benefits", href: "#" },
-    { label: "Work", href: "#" },
-    { label: "Pricing", href: "#" },
-    { label: "Reviews", href: "#Testimonials" },
-    { label: "FAQs", href: "#FAQ" },
+    { label: "Services", href: "/#FeaturedCourses" },
+    { label: "Why Us", href: "/#WhyUs" },
+    { label: "Benefits", href: "/#" },
+    { label: "Work", href: "/#" },
+    { label: "Pricing", href: "/#" },
+    { label: "Reviews", href: "/#Testimonials" },
+    { label: "FAQs", href: "/#FAQ" },
   ];
 
   const resourceLinks = [
@@ -38,7 +38,7 @@ export const FooterPage = () => {
         className="w-full p-8 md:p-12 lg:p-16 text-white"
         style={{
           backgroundColor: "#151619"
-        
+
         }}
       >
         <div className="flex flex-col lg:flex-row gap-12 lg:gap-20 justify-between">
@@ -137,7 +137,7 @@ export const FooterPage = () => {
           <p className="text-[#A1A1A1] text-sm font-bold">
             © {year} KEC. All rights reserved.
           </p>
-         
+
         </div>
 
       </div>

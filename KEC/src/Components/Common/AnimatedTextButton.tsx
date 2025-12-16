@@ -27,7 +27,7 @@ export function AnimatedTextButton({
             initial="initial"
             whileHover="hovered"
             onClick={onClick}
-            className={`relative cursor-pointer pl-2 pr-1 py-1 ml-5 rounded-full font-bold text-base shadow-[0px_7px_20px_0.5px_rgba(0,0,0,0.5)] ${bgClass} ${textClass} flex items-center gap-2 ${className}`}
+            className={`relative cursor-pointer pl-6 pr-6 py-3 rounded-full font-bold text-base shadow-[0px_7px_20px_0.5px_rgba(0,0,0,0.5)] ${bgClass} ${textClass} flex items-center justify-center gap-2 ${className}`}
         >
             <div className="relative overflow-hidden h-[1.25em] -mt-[2px] leading-none">
                 <motion.span

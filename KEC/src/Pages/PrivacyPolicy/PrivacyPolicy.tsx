@@ -1,19 +1,9 @@
 import { Header, Footer } from "../../Routes";
-import { motion } from "framer-motion";
+import PageTransition from "../../Components/Common/PageTransition";
 
 const PrivacyPolicy = () => {
     return (
-        <motion.div
-            initial={{ y: "50vh", opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: "-100vh", opacity: 0 }}
-            transition={{
-                duration: 0.75,
-                ease: [0.7, 0, 0.3, 1],
-                opacity: { duration: 0.4 }
-            }}
-            className="font-sans w-full absolute top-0 left-0 min-h-screen flex flex-col justify-between bg-[#F0F0F0] z-[200]"
-        >
+        <PageTransition className="font-sans flex flex-col justify-between bg-[#F0F0F0]">
             <Header />
 
             <div className="w-full border-t border-gray-200" />
@@ -123,7 +113,7 @@ const PrivacyPolicy = () => {
 
             <div className="w-full border-t border-gray-200" />
             <Footer />
-        </motion.div>
+        </PageTransition>
     );
 };
 

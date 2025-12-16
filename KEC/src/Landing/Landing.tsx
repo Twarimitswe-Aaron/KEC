@@ -18,7 +18,7 @@ import PageTransition from "../Components/Common/PageTransition";
 
 const Landing = () => {
   return (
-    <PageTransition className="font-robot w-full relative">
+    <PageTransition className="font-robot">
       <Header />
       <div className="w-full border-t border-gray-200" />
       <ScrollReveal>
