@@ -703,24 +703,6 @@ export default function KECServiceForm() {
             </div>
           </div>
 
-          {/* Help Section */}
-          <div className="bg-white/90 backdrop-blur-md rounded-2xl shadow-xl border border-white/50 p-6 mt-6">
-            <h3 className="text-lg font-bold text-gray-900 mb-3">
-              Need Assistance?
-            </h3>
-            <div className="space-y-2 text-sm">
-              <div className="flex items-center gap-3">
-                <Phone size={16} className="text-gray-700" />
-                <span className="text-gray-700">+250 788 123 456</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <Wrench size={16} className="text-gray-700" />
-                <span className="text-gray-700">
-                  Mon - Fri: 8:00 AM - 6:00 PM
-                </span>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </div>
